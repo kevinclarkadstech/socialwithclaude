@@ -3,6 +3,10 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 
+console.log('INITIALIZING SERVER')
+
+console.log(process.env.DATABASE_URL)
+
 const app = new Hono();
 
 app.use(logger());
