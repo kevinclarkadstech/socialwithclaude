@@ -2,10 +2,12 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { db } from "./data-access";
+import { loadServerConfig } from "./config";
 
 console.log('INITIALIZING SERVER')
 
-console.log(process.env.DATABASE_URL)
+loadServerConfig();
 
 const app = new Hono();
 
@@ -32,7 +34,8 @@ app.use(
 //   }),
 // );
 
-app.get("/", (c) => {
+app.get("/api2/ok", (c) => {
+
     return c.text("OK");
 });
 

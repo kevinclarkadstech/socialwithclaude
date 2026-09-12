@@ -9,7 +9,11 @@
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "db:generate": "drizzle-kit generate --config=src/server/data-access/db/drizzle.config.ts",
+    "db:migrate": "drizzle-kit migrate --config=src/server/data-access/db/drizzle.config.ts",
+    "db:push": "drizzle-kit push --config=src/server/data-access/db/drizzle.config.ts",
+    "db:studio": "drizzle-kit studio --config=src/server/data-access/db/drizzle.config.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
