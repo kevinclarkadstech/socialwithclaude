@@ -1,11 +1,10 @@
-import { loadServerConfig, getServerConfig } from '@/server/config';
-import { defineConfig } from 'drizzle-kit';
-loadServerConfig();
+import { serverConfig } from '@/server/config';
+import { defineConfig } from 'drizzle-kit';;
 export default defineConfig({
     out: './drizzle',
     schema: './src/server/data-access/db/schema.ts',
     dialect: 'postgresql',
     dbCredentials: {
-        url: getServerConfig().DATABASE_URL,
+        url: serverConfig.DATABASE_URL,
     },
 });

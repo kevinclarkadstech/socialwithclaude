@@ -1,27 +1,65 @@
 
-import { Hono } from "hono";
+import { Hono, type Env } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { db } from "./data-access";
-import { loadServerConfig } from "./config";
+import { requestId } from "hono/request-id"
+
+import { rootLogger, type AppLogger } from "./observability/logs";
+import { withSpan } from "./observability";
+
+export type AppHonoEnv = Env & {
+    Variables: {
+        logger: AppLogger
+
+    },
+    Bindings: {};
+}
 
 console.log('INITIALIZING SERVER')
 
-loadServerConfig();
+const app = new Hono<AppHonoEnv>()
+    .use(requestId())
+    .use(logger())
+    .use("*", async (c, next) => {
+        const requestId = c.get('requestId')
+        const logger = rootLogger.child({
+            requestId,
+        });
+        rootLogger.info("Root logger");
+        logger.info("child logger")
+        c.set('logger', logger)
+        const start = performance.now();
+        await next();
 
-const app = new Hono();
+        logger.info(
+            {
+                method: c.req.method,
+                path: c.req.path,
+                status: c.res.status,
+                durationMs: Math.round(performance.now() - start),
+            },
+            'request completed'
+        );
+    })
+    .use(
+        "/*",
+        cors({
+            origin: "",
+            allowMethods: ["GET", "POST", "OPTIONS"],
+            allowHeaders: ["Content-Type", "Authorization"],
+            credentials: true,
+        }),
+    )
+    .get("/api2/ok", (c) => {
+        withSpan('/api2/ok', async () => {
+            c.get('logger').info({}, "returning OK ")
 
-app.use(logger());
-app.use(
-    "/*",
-    cors({
-        origin: "",
-        allowMethods: ["GET", "POST", "OPTIONS"],
-        allowHeaders: ["Content-Type", "Authorization"],
-        credentials: true,
-    }),
-);
+        });
+        return c.text("OK");
+    })
+    .notFound((c) => c.text("Custom Hono 404: Route Not Found", 404));
 
+export default app;
 // app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
 // app.use(
@@ -33,12 +71,3 @@ app.use(
 //     },
 //   }),
 // );
-
-app.get("/api2/ok", (c) => {
-
-    return c.text("OK");
-});
-
-app.notFound((c) => c.text("Custom Hono 404: Route Not Found", 404));
-
-export default app;

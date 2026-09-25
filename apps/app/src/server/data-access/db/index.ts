@@ -1,8 +1,6 @@
-import { getServerConfig } from '@/server/config';
+import { serverConfig } from '@/server/config';
 import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/node-postgres';
-
-const serverConfig = getServerConfig();
 console.log(serverConfig.DATABASE_URL)
 
 export const db = drizzle(serverConfig.DATABASE_URL);

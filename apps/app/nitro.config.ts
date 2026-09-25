@@ -6,5 +6,12 @@ export default defineConfig({
     // plugins: ["src/server/plugins/env.ts"],
     runtimeConfig: {
         databaseUrl: ""
-    }
+    },
+    // handlers: [
+    //     {
+    //         route: "/api/**",
+    //         handler: "./src/server/observability/middleware.ts",
+    //         middleware: true,
+    //     },
+    // ],
 });
