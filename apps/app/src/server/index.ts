@@ -6,6 +6,7 @@ import { requestId } from "hono/request-id"
 
 import { rootLogger, type AppLogger } from "./observability/logs";
 import { withSpan } from "./observability";
+import { auth } from "./auth";
 
 export type AppHonoEnv = Env & {
     Variables: {
@@ -50,6 +51,7 @@ const app = new Hono<AppHonoEnv>()
             credentials: true,
         }),
     )
+    .on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw))
     .get("/api2/ok", (c) => {
         withSpan('/api2/ok', async () => {
             c.get('logger').info({}, "returning OK ")
@@ -60,7 +62,6 @@ const app = new Hono<AppHonoEnv>()
     .notFound((c) => c.text("Custom Hono 404: Route Not Found", 404));
 
 export default app;
-// app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
 // app.use(
 //   "/trpc/*",

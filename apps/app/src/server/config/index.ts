@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 
 export const ServerConfigSchema = z.object({
     DATABASE_URL: z.string(),
+    BETTER_AUTH_SECRET: z.string(),
+    BETTER_AUTH_URL: z.string(),
 });
 
 export const serverConfig = (() => {

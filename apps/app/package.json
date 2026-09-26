@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
+    "@better-auth/drizzle-adapter": "^1.7.6",
     "@fontsource-variable/inter": "^5.3.0",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/auto-instrumentations-node": "^0.80.0",
@@ -33,6 +34,7 @@
     "@opentelemetry/semantic-conventions": "^1.43.0",
     "@tabler/icons-react": "^3.46.0",
     "@tailwindcss/vite": "^4",
+    "better-auth": "^1.7.6",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.2.5",
     "dotenv": "^17.4.2",
