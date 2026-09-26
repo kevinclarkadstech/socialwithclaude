@@ -7,11 +7,13 @@ import { requestId } from "hono/request-id"
 import { rootLogger, type AppLogger } from "./observability/logs";
 import { withSpan } from "./observability";
 import { auth } from "./auth";
+import { serverConfig } from "./config";
 
 export type AppHonoEnv = Env & {
     Variables: {
         logger: AppLogger
-
+        user: typeof auth.$Infer.Session.user | null
+        session: typeof auth.$Infer.Session.session | null
     },
     Bindings: {};
 }
@@ -45,13 +47,24 @@ const app = new Hono<AppHonoEnv>()
     .use(
         "/*",
         cors({
-            origin: "",
+            origin: serverConfig.BETTER_AUTH_URL,
             allowMethods: ["GET", "POST", "OPTIONS"],
             allowHeaders: ["Content-Type", "Authorization"],
             credentials: true,
         }),
     )
+    .use("*", async (c, next) => {
+        const session = await auth.api.getSession({ headers: c.req.raw.headers });
+        c.set("user", session?.user ?? null);
+        c.set("session", session?.session ?? null);
+        return next();
+    })
     .on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw))
+    .get("/api/me", (c) => {
+        const user = c.get("user");
+        if (!user) return c.body(null, 401);
+        return c.json(user);
+    })
     .get("/api2/ok", (c) => {
         withSpan('/api2/ok', async () => {
             c.get('logger').info({}, "returning OK ")

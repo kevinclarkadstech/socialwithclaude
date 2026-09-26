@@ -1,27 +1,23 @@
 import { boolean, pgTable, text, timestamp } from "drizzle-orm/pg-core";
-// export const usersTable = pgTable("users", {
-//     id: integer().primaryKey().generatedAlwaysAsIdentity(),
-//     name: varchar({ length: 255 }).notNull(),
-//     age: integer().notNull(),
-//     email: varchar({ length: 255 }).notNull().unique(),
-// });
+
+const commonFields = {
+    id: text("id").primaryKey(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}
 
 export const users = pgTable("users", {
-    id: text("id").primaryKey(),
+    ...commonFields,
     name: text("name").notNull(),
     email: text("email").notNull().unique(),
     emailVerified: boolean("email_verified").notNull().default(false),
     image: text("image"),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-    updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const sessions = pgTable("sessions", {
-    id: text("id").primaryKey(),
+    ...commonFields,
     expiresAt: timestamp("expires_at").notNull(),
     token: text("token").notNull().unique(),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-    updatedAt: timestamp("updated_at").notNull().defaultNow(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
     userId: text("user_id")
@@ -30,7 +26,7 @@ export const sessions = pgTable("sessions", {
 });
 
 export const accounts = pgTable("accounts", {
-    id: text("id").primaryKey(),
+    ...commonFields,
     accountId: text("account_id").notNull(),
     providerId: text("provider_id").notNull(),
     userId: text("user_id")
@@ -43,15 +39,11 @@ export const accounts = pgTable("accounts", {
     refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
     scope: text("scope"),
     password: text("password"),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-    updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const verifications = pgTable("verifications", {
-    id: text("id").primaryKey(),
+    ...commonFields,
     identifier: text("identifier").notNull(),
     value: text("value").notNull(),
     expiresAt: timestamp("expires_at").notNull(),
-    createdAt: timestamp("created_at").defaultNow(),
-    updatedAt: timestamp("updated_at").defaultNow(),
 });
