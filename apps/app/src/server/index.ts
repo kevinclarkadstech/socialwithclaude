@@ -6,21 +6,25 @@ import { requestId } from "hono/request-id"
 
 import { rootLogger, type AppLogger } from "./observability/logs";
 import { withSpan } from "./observability";
-import { auth } from "./auth";
+import { createAuthInstance } from "./auth";
 import { serverConfig } from "./config";
 import { createAppFeatureFlagStore, type AppFeatureFlagStore } from "@/shared/feature-flags";
+import { db } from "./data-access";
 
 export type AppHonoEnv = Env & {
     Variables: {
         logger: AppLogger;
         featureFlagStore: AppFeatureFlagStore;
-        user: typeof auth.$Infer.Session.user | null
-        session: typeof auth.$Infer.Session.session | null
+        auth: ReturnType<typeof createAuthInstance>;
+        user: null
+        session: null
     },
     Bindings: {};
 }
 
 console.log('INITIALIZING SERVER')
+
+const auth = createAuthInstance(db);
 
 const app = new Hono<AppHonoEnv>()
     .use(requestId())
@@ -34,6 +38,7 @@ const app = new Hono<AppHonoEnv>()
         });
         await featureFlagStore.initialize();
         c.set('featureFlagStore', featureFlagStore);
+        c.set('auth', auth);
         const requestId = c.get('requestId')
         const logger = rootLogger.child({
             requestId,
@@ -64,12 +69,13 @@ const app = new Hono<AppHonoEnv>()
         }),
     )
     .use("*", async (c, next) => {
+        const auth = c.get('auth');
         const session = await auth.api.getSession({ headers: c.req.raw.headers });
-        c.set("user", session?.user ?? null);
-        c.set("session", session?.session ?? null);
+        //  c.set("user", session?.user ?? null);
+        //  c.set("session", session?.session ?? null);
         return next();
     })
-    .on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw))
+    .on(["POST", "GET"], "/api/auth/*", (c) => c.get('auth').handler(c.req.raw))
     .get("/api/me", (c) => {
         const user = c.get("user");
         if (!user) return c.body(null, 401);
