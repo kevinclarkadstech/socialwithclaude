@@ -1,4 +1,5 @@
-import { boolean, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, check, index, integer, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 const commonFields = {
     id: text("id").primaryKey(),
@@ -47,3 +48,46 @@ export const verifications = pgTable("verifications", {
     value: text("value").notNull(),
     expiresAt: timestamp("expires_at").notNull(),
 });
+
+export const profiles = pgTable("profiles", {
+    userId: text("user_id")
+        .primaryKey()
+        .references(() => users.id, { onDelete: "cascade" }),
+    username: text("username").notNull(),
+    firstName: text("first_name"),
+    lastName: text("last_name"),
+    bio: text("bio"),
+    avatarUrl: text("avatar_url"),
+    numFollowers: integer("num_followers").notNull().default(0),
+    numFollowing: integer("num_following").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (t) => [
+    uniqueIndex("profiles_username_lower_idx").on(sql`lower(${t.username})`),
+    check("profiles_num_followers_non_negative", sql`${t.numFollowers} >= 0`),
+    check("profiles_num_following_non_negative", sql`${t.numFollowing} >= 0`),
+]);
+
+export const userSettings = pgTable("user_settings", {
+    userId: text("user_id")
+        .primaryKey()
+        .references(() => users.id, { onDelete: "cascade" }),
+    emailNotifications: boolean("email_notifications").notNull().default(true),
+    privateProfile: boolean("private_profile").notNull().default(false),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const follows = pgTable("follows", {
+    followerId: text("follower_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    followingId: text("following_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+    primaryKey({ columns: [t.followerId, t.followingId] }),
+    index("follows_following_id_idx").on(t.followingId),
+    check("follows_no_self_follow", sql`${t.followerId} <> ${t.followingId}`),
+]);
