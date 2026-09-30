@@ -8,10 +8,12 @@ import { rootLogger, type AppLogger } from "./observability/logs";
 import { withSpan } from "./observability";
 import { auth } from "./auth";
 import { serverConfig } from "./config";
+import { createAppFeatureFlagStore, type AppFeatureFlagStore } from "@/shared/feature-flags";
 
 export type AppHonoEnv = Env & {
     Variables: {
-        logger: AppLogger
+        logger: AppLogger;
+        featureFlagStore: AppFeatureFlagStore;
         user: typeof auth.$Infer.Session.user | null
         session: typeof auth.$Infer.Session.session | null
     },
@@ -24,6 +26,14 @@ const app = new Hono<AppHonoEnv>()
     .use(requestId())
     .use(logger())
     .use("*", async (c, next) => {
+        const featureFlagStore = createAppFeatureFlagStore({
+            flagsOrLoader: {
+                usersCanPost: true,
+                userSignup: false,
+            }
+        });
+        await featureFlagStore.initialize();
+        c.set('featureFlagStore', featureFlagStore);
         const requestId = c.get('requestId')
         const logger = rootLogger.child({
             requestId,
@@ -67,6 +77,7 @@ const app = new Hono<AppHonoEnv>()
     })
     .get("/api2/ok", (c) => {
         withSpan('/api2/ok', async () => {
+            c.get('logger').info({}, `Is user signup enabled? ${c.get('featureFlagStore').isEnabled('userSignup')}`)
             c.get('logger').info({}, "returning OK ")
 
         });
