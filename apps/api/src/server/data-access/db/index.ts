@@ -1,4 +1,4 @@
-import { serverConfig } from '@/server/config';
+import { serverConfig } from '../../config';
 import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/node-postgres';
 

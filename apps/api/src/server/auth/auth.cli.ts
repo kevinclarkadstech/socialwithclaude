@@ -1,4 +1,4 @@
-import { db } from "@/server/data-access";
+import { db } from "../data-access";
 import { createAuthInstance } from "./index";
 
 // The `@better-auth/cli` statically resolves an exported `auth` instance and

@@ -1,4 +1,4 @@
-import { serverConfig } from '@/server/config';
+import { serverConfig } from '../../config';
 import { defineConfig } from 'drizzle-kit';;
 export default defineConfig({
     out: './drizzle',

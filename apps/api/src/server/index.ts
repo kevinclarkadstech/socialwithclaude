@@ -8,16 +8,19 @@ import { rootLogger, type AppLogger } from "./observability/logs";
 import { withSpan } from "./observability";
 import { createAuthInstance } from "./auth";
 import { serverConfig } from "./config";
-import { createAppFeatureFlagStore, type AppFeatureFlagStore } from "@/shared/feature-flags";
+import { createAppFeatureFlagStore, type AppFeatureFlagStore } from "./shared/feature-flags";
 import { db } from "./data-access";
+import { followUser, getUserIdByUsername, unfollowUser } from "./data-access/resolvers";
+
+type Auth = ReturnType<typeof createAuthInstance>;
 
 export type AppHonoEnv = Env & {
     Variables: {
         logger: AppLogger;
         featureFlagStore: AppFeatureFlagStore;
-        auth: ReturnType<typeof createAuthInstance>;
-        user: null
-        session: null
+        auth: Auth;
+        user: Auth["$Infer"]["Session"]["user"] | null
+        session: Auth["$Infer"]["Session"]["session"] | null
     },
     Bindings: {};
 }
@@ -49,15 +52,12 @@ const app = new Hono<AppHonoEnv>()
         const start = performance.now();
         await next();
 
-        logger.info(
-            {
-                method: c.req.method,
-                path: c.req.path,
-                status: c.res.status,
-                durationMs: Math.round(performance.now() - start),
-            },
-            'request completed'
-        );
+        logger.info('request completed', {
+            method: c.req.method,
+            path: c.req.path,
+            status: c.res.status,
+            durationMs: Math.round(performance.now() - start),
+        });
     })
     .use(
         "/*",
@@ -71,8 +71,8 @@ const app = new Hono<AppHonoEnv>()
     .use("*", async (c, next) => {
         const auth = c.get('auth');
         const session = await auth.api.getSession({ headers: c.req.raw.headers });
-        //  c.set("user", session?.user ?? null);
-        //  c.set("session", session?.session ?? null);
+        c.set("user", session?.user ?? null);
+        c.set("session", session?.session ?? null);
         return next();
     })
     .on(["POST", "GET"], "/api/auth/*", (c) => c.get('auth').handler(c.req.raw))
@@ -81,15 +81,47 @@ const app = new Hono<AppHonoEnv>()
         if (!user) return c.body(null, 401);
         return c.json(user);
     })
+    .post("/api/users/:username/follow", async (c) => {
+        const user = c.get("user");
+        if (!user) return c.body(null, 401);
+
+        const targetUserId = await getUserIdByUsername(db, c.req.param("username"));
+        if (!targetUserId) return c.body(null, 404);
+        if (targetUserId === user.id) return c.json({ error: "Cannot follow yourself" }, 400);
+
+        await followUser(db, user.id, targetUserId);
+        return c.body(null, 204);
+    })
+    .delete("/api/users/:username/follow", async (c) => {
+        const user = c.get("user");
+        if (!user) return c.body(null, 401);
+
+        const targetUserId = await getUserIdByUsername(db, c.req.param("username"));
+        if (!targetUserId) return c.body(null, 404);
+
+        await unfollowUser(db, user.id, targetUserId);
+        return c.body(null, 204);
+    })
     .get("/api2/ok", (c) => {
         withSpan('/api2/ok', async () => {
-            c.get('logger').info({}, `Is user signup enabled? ${c.get('featureFlagStore').isEnabled('userSignup')}`)
-            c.get('logger').info({}, "returning OK ")
-
+            c.get('logger').info(`Is user signup enabled? ${c.get('featureFlagStore').isEnabled('userSignup')}`)
+            c.get('logger').info("returning OK ")
+            if (serverConfig.DATABASE_URL) {
+                c.get('logger').error("Error with config", { why: "serverConfig has a db url", fix: "remove db url from config" })
+            }
         });
         return c.text("OK");
     })
-    .notFound((c) => c.text("Custom Hono 404: Route Not Found", 404));
+    .all('*', (c) => {
+        console.log('IN AALL')
+        return c.text('Custom 404 - Not Found', 404);
+    })
+    .notFound((c) => c.text("Custom Hono 404: Route Not Found", 404))
+    .onError((err, c) => {
+        c.get('logger').error(err.message, { err });
+
+        return c.json({ statusCode: 500, message: "Internal Server Error" }, 500);
+    });
 
 export default app;
 
