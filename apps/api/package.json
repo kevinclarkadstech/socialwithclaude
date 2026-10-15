@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.7.6",
+    "@hono/trpc-server": "^0.4.2",
     "@myapp/shared": "workspace:*",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/api-logs": "^0.223.0",
@@ -33,6 +34,7 @@
     "@opentelemetry/sdk-node": "^0.222.0",
     "@opentelemetry/sdk-trace-base": "^2.11.0",
     "@opentelemetry/semantic-conventions": "^1.43.0",
+    "@trpc/server": "^11.19.0",
     "better-auth": "^1.7.6",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^1.0.0-rc.4",

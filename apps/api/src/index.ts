@@ -1,5 +1,5 @@
 
-import { Hono, type Env } from "hono";
+import { Hono, type Context, type Env } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { requestId } from "hono/request-id";
@@ -12,8 +12,9 @@ import { withSpan } from "./observability";
 import { createAuthInstance } from "./auth";
 import { serverConfig } from "./config";
 import { createAppFeatureFlagStore, type AppFeatureFlagStore } from "./shared/feature-flags";
+import { trpcServer } from "@hono/trpc-server";
 import { db } from "./data-access";
-import { followUser, getUserIdByUsername, unfollowUser } from "./data-access/resolvers";
+import { appRouter, createContext } from "./trpc";
 
 type Auth = ReturnType<typeof createAuthInstance>;
 
@@ -80,32 +81,18 @@ const app = new Hono<AppHonoEnv>()
         return next();
     })
     .on(["POST", "GET"], "/api/auth/*", (c) => c.get('auth').handler(c.req.raw))
-    .get("/api/me", (c) => {
-        const user = c.get("user");
-        if (!user) return c.body(null, 401);
-        return c.json(user);
-    })
-    .post("/api/users/:username/follow", async (c) => {
-        const user = c.get("user");
-        if (!user) return c.body(null, 401);
-
-        const targetUserId = await getUserIdByUsername(db, c.req.param("username"));
-        if (!targetUserId) return c.body(null, 404);
-        if (targetUserId === user.id) return c.json({ error: "Cannot follow yourself" }, 400);
-
-        await followUser(db, user.id, targetUserId);
-        return c.body(null, 204);
-    })
-    .delete("/api/users/:username/follow", async (c) => {
-        const user = c.get("user");
-        if (!user) return c.body(null, 401);
-
-        const targetUserId = await getUserIdByUsername(db, c.req.param("username"));
-        if (!targetUserId) return c.body(null, 404);
-
-        await unfollowUser(db, user.id, targetUserId);
-        return c.body(null, 204);
-    })
+    .use(
+        "/api/trpc/*",
+        trpcServer({
+            endpoint: "/api/trpc",
+            router: appRouter,
+            createContext: (opts, c) => createContext(opts, c as Context<AppHonoEnv>),
+            onError: ({ error, path, ctx }) => {
+                if (error.code !== "INTERNAL_SERVER_ERROR") return;
+                (ctx?.logger ?? rootLogger).error(error.message, { err: error, path });
+            },
+        }),
+    )
     .get("/api2/ok", (c) => {
         withSpan('/api2/ok', async () => {
             c.get('logger').info(`Is user signup enabled? ${c.get('featureFlagStore').isEnabled('userSignup')}`)
@@ -129,12 +116,4 @@ const app = new Hono<AppHonoEnv>()
 
 export default app;
 
-// app.use(
-//   "/trpc/*",
-//   trpcServer({
-//     router: appRouter,
-//     createContext: (_opts, context) => {
-//       return createContext({ context });
-//     },
-//   }),
-// );
+export type { AppRouter } from "./trpc";
