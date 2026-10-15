@@ -2,9 +2,12 @@
 import { Hono, type Env } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { requestId } from "hono/request-id"
-
-import { rootLogger, type AppLogger } from "./observability/logs";
+import { requestId } from "hono/request-id";
+import {
+    contextStorage,
+} from 'hono/context-storage';
+import type { AppLogger } from "@myapp/shared/observability";
+import { rootLogger } from "./observability/logs";
 import { withSpan } from "./observability";
 import { createAuthInstance } from "./auth";
 import { serverConfig } from "./config";
@@ -30,6 +33,7 @@ console.log('INITIALIZING SERVER')
 const auth = createAuthInstance(db);
 
 const app = new Hono<AppHonoEnv>()
+    .use(contextStorage())
     .use(requestId())
     .use(logger())
     .use("*", async (c, next) => {
