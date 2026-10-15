@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
-import { ProfileAlreadyExistsError, signUp, UsernameTakenError } from "../../data-access";
+import { signUp } from "../../data-access";
 import { requireUser } from "../context";
 import { procedure, router } from "../trpc";
 
@@ -29,17 +29,7 @@ export const authRouter = router({
             throw new TRPCError({ code: "FORBIDDEN", message: "SIGNUP_DISABLED" });
         }
 
-        try {
-            return await signUp(ctx.db, { userId: user.id, ...input });
-        } catch (err) {
-            if (err instanceof UsernameTakenError) {
-                throw new TRPCError({ code: "CONFLICT", message: "USERNAME_TAKEN", cause: err });
-            }
-            if (err instanceof ProfileAlreadyExistsError) {
-                throw new TRPCError({ code: "CONFLICT", message: "PROFILE_ALREADY_EXISTS", cause: err });
-            }
-            throw err;
-        }
+        return signUp(ctx.db, { userId: user.id, ...input });
     }),
 
     signOut: procedure.mutation(async ({ ctx }) => {

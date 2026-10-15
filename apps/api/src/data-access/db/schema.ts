@@ -1,5 +1,6 @@
 import { boolean, check, index, integer, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import { monotonicFactory } from "ulid";
 
 const commonFields = {
     id: text("id").primaryKey(),
@@ -90,4 +91,39 @@ export const follows = pgTable("follows", {
     primaryKey({ columns: [t.followerId, t.followingId] }),
     index("follows_following_id_idx").on(t.followingId),
     check("follows_no_self_follow", sql`${t.followerId} <> ${t.followingId}`),
+]);
+// ULIDs sort by creation time, so `id` doubles as a pagination cursor. Monotonic
+// so IDs created in the same millisecond still sort in creation order.
+const ulid = monotonicFactory();
+const ulidId = () => text("id").primaryKey().$defaultFn(() => ulid());
+
+export const posts = pgTable("posts", {
+    id: ulidId(),
+    authorId: text("author_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    numComments: integer("num_comments").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    deletedAt: timestamp("deleted_at"),
+}, (t) => [
+    index("posts_author_id_idx").on(t.authorId, t.id),
+    check("posts_num_comments_non_negative", sql`${t.numComments} >= 0`),
+]);
+
+export const comments = pgTable("comments", {
+    id: ulidId(),
+    postId: text("post_id")
+        .notNull()
+        .references(() => posts.id, { onDelete: "cascade" }),
+    authorId: text("author_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    deletedAt: timestamp("deleted_at"),
+}, (t) => [
+    index("comments_post_id_idx").on(t.postId, t.id),
 ]);

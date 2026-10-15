@@ -152,3 +152,5 @@ export async function unfollowUser(db: Database, followerId: string, followingId
             .where(eq(schema.profiles.userId, followingId));
     });
 }
+
+export * from './posts';

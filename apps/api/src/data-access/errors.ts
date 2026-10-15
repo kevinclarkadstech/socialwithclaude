@@ -14,6 +14,34 @@ export class ProfileAlreadyExistsError extends Error {
     }
 }
 
+export class PostNotFoundError extends Error {
+    constructor(postId: string) {
+        super(`Post ${postId} not found`);
+        this.name = "PostNotFoundError";
+    }
+}
+
+export class NotPostAuthorError extends Error {
+    constructor(postId: string, userId: string) {
+        super(`User ${userId} is not the author of post ${postId}`);
+        this.name = "NotPostAuthorError";
+    }
+}
+
+export class CommentNotFoundError extends Error {
+    constructor(commentId: string) {
+        super(`Comment ${commentId} not found`);
+        this.name = "CommentNotFoundError";
+    }
+}
+
+export class NotCommentAuthorError extends Error {
+    constructor(commentId: string, userId: string) {
+        super(`User ${userId} may not modify comment ${commentId}`);
+        this.name = "NotCommentAuthorError";
+    }
+}
+
 /** Returns the constraint name if `err` is a Postgres unique violation (23505). */
 export function getUniqueViolationConstraint(err: unknown): string | null {
     const cause = err instanceof DrizzleQueryError ? err.cause : err;
