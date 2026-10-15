@@ -1,8 +1,8 @@
 import { defineConfig } from "nitro";
 
 export default defineConfig({
-    serverDir: "./src/server",
-    serverEntry: "./src/server/index.ts",
+    serverDir: "./src",
+    serverEntry: "./src/index.ts",
     runtimeConfig: {
         databaseUrl: ""
     },

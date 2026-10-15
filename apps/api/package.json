@@ -4,18 +4,18 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "cross-env NODE_OPTIONS=\"--import ./src/server/observability/otel.mjs\" nitro dev",
+    "dev": "cross-env NODE_OPTIONS=\"--import ./src/observability/otel.mjs\" nitro dev",
     "build": "nitro build",
-    "start": "cross-env NODE_ENV=production node --import ./src/server/observability/otel.mjs .output/server/index.mjs",
+    "start": "cross-env NODE_ENV=production node --import ./src/observability/otel.mjs .output/server/index.mjs",
     "preview": "nitro preview",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "db:generate": "drizzle-kit generate --config=src/server/data-access/db/drizzle.config.ts",
-    "db:migrate": "drizzle-kit migrate --config=src/server/data-access/db/drizzle.config.ts",
-    "db:push": "drizzle-kit push --config=src/server/data-access/db/drizzle.config.ts",
-    "db:studio": "drizzle-kit studio --config=src/server/data-access/db/drizzle.config.ts",
-    "auth:generate": "npx @better-auth/cli generate --config=src/server/auth/auth.cli.ts",
-    "auth:migrate": "npx @better-auth/cli migrate --config=src/server/auth/auth.cli.ts"
+    "db:generate": "drizzle-kit generate --config=src/data-access/db/drizzle.config.ts",
+    "db:migrate": "drizzle-kit migrate --config=src/data-access/db/drizzle.config.ts",
+    "db:push": "drizzle-kit push --config=src/data-access/db/drizzle.config.ts",
+    "db:studio": "drizzle-kit studio --config=src/data-access/db/drizzle.config.ts",
+    "auth:generate": "npx @better-auth/cli generate --config=src/auth/auth.cli.ts",
+    "auth:migrate": "npx @better-auth/cli migrate --config=src/auth/auth.cli.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.7.6",

@@ -10,7 +10,7 @@ export const ServerConfigSchema = z.object({
 
 export const serverConfig = (() => {
     if (process.env.NODE_ENV !== 'production') {
-        const serverEnvPath = path.resolve(process.cwd(), './src/server/.env.local');
+        const serverEnvPath = path.resolve(process.cwd(), './.env.local');
         console.log(serverEnvPath)
         dotenv.config({
             path: serverEnvPath
