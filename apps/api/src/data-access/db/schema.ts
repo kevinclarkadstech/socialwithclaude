@@ -116,7 +116,7 @@ export const posts = pgTable("posts", {
     check("posts_kind_valid", sql`${t.kind} in ('post', 'listing')`),
 ]);
 
-export const comments = pgTable("comments", {
+export const postComments = pgTable("post_comments", {
     id: ulidId(),
     postId: text("post_id")
         .notNull()
@@ -134,29 +134,29 @@ export const comments = pgTable("comments", {
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
     deletedAt: timestamp("deleted_at"),
 }, (t) => [
-    index("comments_post_id_idx").on(t.postId, t.id),
-    check("comments_num_upvotes_non_negative", sql`${t.numUpvotes} >= 0`),
-    check("comments_num_downvotes_non_negative", sql`${t.numDownvotes} >= 0`),
+    index("post_comments_post_id_idx").on(t.postId, t.id),
+    check("post_comments_num_upvotes_non_negative", sql`${t.numUpvotes} >= 0`),
+    check("post_comments_num_downvotes_non_negative", sql`${t.numDownvotes} >= 0`),
 ]);
 
 /** One vote per user per comment: 1 = upvote, -1 = downvote. */
-export const commentVotes = pgTable("comment_votes", {
+export const postCommentVotes = pgTable("post_comment_votes", {
     userId: text("user_id")
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
     commentId: text("comment_id")
         .notNull()
-        .references(() => comments.id, { onDelete: "cascade" }),
+        .references(() => postComments.id, { onDelete: "cascade" }),
     value: smallint("value").notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (t) => [
     primaryKey({ columns: [t.userId, t.commentId] }),
-    index("comment_votes_comment_id_idx").on(t.commentId),
-    check("comment_votes_value_valid", sql`${t.value} in (-1, 1)`),
+    index("post_comment_votes_comment_id_idx").on(t.commentId),
+    check("post_comment_votes_value_valid", sql`${t.value} in (-1, 1)`),
 ]);
 
-export const savedPosts = pgTable("saved_posts", {
+export const postSaves = pgTable("post_saves", {
     userId: text("user_id")
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
@@ -168,8 +168,8 @@ export const savedPosts = pgTable("saved_posts", {
     createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [
     primaryKey({ columns: [t.userId, t.postId] }),
-    index("saved_posts_user_id_id_idx").on(t.userId, t.id),
-    index("saved_posts_post_id_idx").on(t.postId),
+    index("post_saves_user_id_id_idx").on(t.userId, t.id),
+    index("post_saves_post_id_idx").on(t.postId),
 ]);
 
 export const listingPriceTypes = ["fixed", "negotiable", "free", "multiple"] as const;
@@ -209,7 +209,7 @@ export const listings = pgTable("listings", {
  * Photos attached to a post, in display order. Rows only exist for submitted
  * posts; abandoned uploads never get a row (storage expires them).
  */
-export const media = pgTable("media", {
+export const postMedia = pgTable("post_media", {
     id: ulidId(),
     postId: text("post_id")
         .notNull()
@@ -223,9 +223,9 @@ export const media = pgTable("media", {
     altText: text("alt_text"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [
-    uniqueIndex("media_post_id_position_idx").on(t.postId, t.position),
-    check("media_position_range", sql`${t.position} between 0 and 9`),
-    check("media_mime_type_valid", sql`${t.mimeType} in ('image/jpeg', 'image/png', 'image/webp')`),
-    check("media_size_valid", sql`${t.sizeBytes} > 0 and ${t.sizeBytes} <= 1048576`),
-    check("media_dimensions_positive", sql`${t.width} > 0 and ${t.height} > 0`),
+    uniqueIndex("post_media_post_id_position_idx").on(t.postId, t.position),
+    check("post_media_position_range", sql`${t.position} between 0 and 9`),
+    check("post_media_mime_type_valid", sql`${t.mimeType} in ('image/jpeg', 'image/png', 'image/webp')`),
+    check("post_media_size_valid", sql`${t.sizeBytes} > 0 and ${t.sizeBytes} <= 1048576`),
+    check("post_media_dimensions_positive", sql`${t.width} > 0 and ${t.height} > 0`),
 ]);

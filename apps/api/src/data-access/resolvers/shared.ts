@@ -48,29 +48,29 @@ export type MediaDto = MediaJson & { url: string };
 
 // Written with explicit table-qualified names: Drizzle drops the qualifier when
 // the outer query reads a single table, which inside these correlated
-// subqueries would make "id" resolve to media.id instead of posts.id.
+// subqueries would make "id" resolve to post_media.id instead of posts.id.
 const mediaJsonObject = sql.raw(`json_build_object(
-    'id', "media"."id",
-    'key', "media"."storage_key",
-    'mimeType', "media"."mime_type",
-    'width', "media"."width",
-    'height', "media"."height",
-    'altText', "media"."alt_text"
+    'id', "post_media"."id",
+    'key', "post_media"."storage_key",
+    'mimeType', "post_media"."mime_type",
+    'width', "post_media"."width",
+    'height', "post_media"."height",
+    'altText', "post_media"."alt_text"
 )`);
 
 /** All of the post's photos in order (correlated on posts.id). */
 export const postMediaSql = sql<MediaJson[]>`coalesce((
-    select json_agg(${mediaJsonObject} order by "media"."position")
-    from "media"
-    where "media"."post_id" = "posts"."id"
+    select json_agg(${mediaJsonObject} order by "post_media"."position")
+    from "post_media"
+    where "post_media"."post_id" = "posts"."id"
 ), '[]'::json)`;
 
 /** The post's first photo, or null (correlated on posts.id). */
 export const postThumbnailSql = sql<MediaJson | null>`(
     select ${mediaJsonObject}
-    from "media"
-    where "media"."post_id" = "posts"."id"
-    order by "media"."position"
+    from "post_media"
+    where "post_media"."post_id" = "posts"."id"
+    order by "post_media"."position"
     limit 1
 )`;
 
@@ -79,7 +79,7 @@ export function toMediaDto(media: MediaJson): MediaDto {
 }
 
 /** Maps inserted or selected media rows to the shape reads return. */
-export function rowToMediaDto(row: typeof schema.media.$inferSelect): MediaDto {
+export function rowToMediaDto(row: typeof schema.postMedia.$inferSelect): MediaDto {
     return toMediaDto({
         id: row.id,
         key: row.storageKey,

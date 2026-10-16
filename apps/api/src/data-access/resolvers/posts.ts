@@ -21,17 +21,17 @@ import {
 } from "./shared";
 
 const commentFields = {
-    id: schema.comments.id,
-    body: schema.comments.body,
-    numUpvotes: schema.comments.numUpvotes,
-    numDownvotes: schema.comments.numDownvotes,
-    score: schema.comments.score,
-    createdAt: schema.comments.createdAt,
-    updatedAt: schema.comments.updatedAt,
+    id: schema.postComments.id,
+    body: schema.postComments.body,
+    numUpvotes: schema.postComments.numUpvotes,
+    numDownvotes: schema.postComments.numDownvotes,
+    score: schema.postComments.score,
+    createdAt: schema.postComments.createdAt,
+    updatedAt: schema.postComments.updatedAt,
 };
 
 const notDeleted = postNotDeleted;
-const commentNotDeleted = isNull(schema.comments.deletedAt);
+const commentNotDeleted = isNull(schema.postComments.deletedAt);
 
 /**
  * True when the comment's post exists and isn't deleted (comments on deleted
@@ -44,7 +44,7 @@ function commentPostIsLive(db: Database, postAuthorId?: string) {
             .from(schema.posts)
             .where(
                 and(
-                    eq(schema.posts.id, schema.comments.postId),
+                    eq(schema.posts.id, schema.postComments.postId),
                     notDeleted,
                     postAuthorId ? eq(schema.posts.authorId, postAuthorId) : undefined,
                 ),
@@ -65,17 +65,17 @@ export async function getPostById(db: Database, postId: string, viewerId: string
             author: authorFields,
             listing: listingFields,
             media: postMediaSql,
-            isSaved: sql<boolean>`${schema.savedPosts.postId} is not null`,
+            isSaved: sql<boolean>`${schema.postSaves.postId} is not null`,
         })
         .from(schema.posts)
         .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.authorId))
         .leftJoin(schema.listings, eq(schema.listings.postId, schema.posts.id))
         .leftJoin(
-            schema.savedPosts,
+            schema.postSaves,
             viewerId
                 ? and(
-                    eq(schema.savedPosts.userId, viewerId),
-                    eq(schema.savedPosts.postId, schema.posts.id),
+                    eq(schema.postSaves.userId, viewerId),
+                    eq(schema.postSaves.postId, schema.posts.id),
                 )
                 : sql`false`,
         )
@@ -98,14 +98,14 @@ export async function savePost(db: Database, userId: string, postId: string) {
         .limit(1);
     if (!post) throw new PostNotFoundError(postId);
 
-    await db.insert(schema.savedPosts).values({ userId, postId }).onConflictDoNothing();
+    await db.insert(schema.postSaves).values({ userId, postId }).onConflictDoNothing();
 }
 
 /** Removes a save. A no-op if it wasn't saved, and works even if the post was deleted. */
 export async function unsavePost(db: Database, userId: string, postId: string) {
     await db
-        .delete(schema.savedPosts)
-        .where(and(eq(schema.savedPosts.userId, userId), eq(schema.savedPosts.postId, postId)));
+        .delete(schema.postSaves)
+        .where(and(eq(schema.postSaves.userId, userId), eq(schema.postSaves.postId, postId)));
 }
 
 /**
@@ -124,21 +124,21 @@ export async function getSavedPosts(
             author: authorFields,
             listing: listingFields,
             thumbnail: postThumbnailSql,
-            savedAt: schema.savedPosts.createdAt,
-            saveId: schema.savedPosts.id,
+            savedAt: schema.postSaves.createdAt,
+            saveId: schema.postSaves.id,
         })
-        .from(schema.savedPosts)
-        .innerJoin(schema.posts, eq(schema.posts.id, schema.savedPosts.postId))
+        .from(schema.postSaves)
+        .innerJoin(schema.posts, eq(schema.posts.id, schema.postSaves.postId))
         .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.authorId))
         .leftJoin(schema.listings, eq(schema.listings.postId, schema.posts.id))
         .where(
             and(
-                eq(schema.savedPosts.userId, userId),
+                eq(schema.postSaves.userId, userId),
                 notDeleted,
-                cursor ? lt(schema.savedPosts.id, cursor) : undefined,
+                cursor ? lt(schema.postSaves.id, cursor) : undefined,
             ),
         )
-        .orderBy(desc(schema.savedPosts.id))
+        .orderBy(desc(schema.postSaves.id))
         .limit(limit + 1);
 
     const hasMore = rows.length > limit;
@@ -155,7 +155,7 @@ export async function getSavedPosts(
 
 export type CommentSort = "oldest" | "top";
 
-const cursorComment = alias(schema.comments, "cursor_comment");
+const cursorComment = alias(schema.postComments, "cursor_comment");
 
 /**
  * Returns a page of a post's comments with their authors and the viewer's
@@ -183,7 +183,7 @@ export async function getPostComments(
         .limit(1);
     if (!post) throw new PostNotFoundError(postId);
 
-    const { id, score } = schema.comments;
+    const { id, score } = schema.postComments;
     let after: SQL | undefined;
     if (cursor && sort === "top") {
         // Continue after the cursor comment's current score, breaking ties by id.
@@ -206,20 +206,20 @@ export async function getPostComments(
         .select({
             ...commentFields,
             author: authorFields,
-            myVote: sql<number>`coalesce(${schema.commentVotes.value}, 0)`.mapWith(Number),
+            myVote: sql<number>`coalesce(${schema.postCommentVotes.value}, 0)`.mapWith(Number),
         })
-        .from(schema.comments)
-        .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.comments.authorId))
+        .from(schema.postComments)
+        .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.postComments.authorId))
         .leftJoin(
-            schema.commentVotes,
+            schema.postCommentVotes,
             viewerId
                 ? and(
-                    eq(schema.commentVotes.userId, viewerId),
-                    eq(schema.commentVotes.commentId, schema.comments.id),
+                    eq(schema.postCommentVotes.userId, viewerId),
+                    eq(schema.postCommentVotes.commentId, schema.postComments.id),
                 )
                 : sql`false`,
         )
-        .where(and(eq(schema.comments.postId, postId), commentNotDeleted, after))
+        .where(and(eq(schema.postComments.postId, postId), commentNotDeleted, after))
         .orderBy(...(sort === "top" ? [desc(score), asc(id)] : [asc(id)]))
         .limit(limit + 1);
 
@@ -246,32 +246,32 @@ export async function voteOnPostComment(
         // Lock the comment row so concurrent votes by the same user can't
         // both count; the counter update below would lock it anyway.
         const [comment] = await tx
-            .select({ id: schema.comments.id })
-            .from(schema.comments)
-            .where(and(eq(schema.comments.id, commentId), commentNotDeleted, commentPostIsLive(db)))
+            .select({ id: schema.postComments.id })
+            .from(schema.postComments)
+            .where(and(eq(schema.postComments.id, commentId), commentNotDeleted, commentPostIsLive(db)))
             .limit(1)
             .for("update");
         if (!comment) throw new CommentNotFoundError(commentId);
 
         const voteKey = and(
-            eq(schema.commentVotes.userId, userId),
-            eq(schema.commentVotes.commentId, commentId),
+            eq(schema.postCommentVotes.userId, userId),
+            eq(schema.postCommentVotes.commentId, commentId),
         );
         const [existing] = await tx
-            .select({ value: schema.commentVotes.value })
-            .from(schema.commentVotes)
+            .select({ value: schema.postCommentVotes.value })
+            .from(schema.postCommentVotes)
             .where(voteKey)
             .limit(1);
         const previous = existing?.value ?? 0;
 
         if (value === 0) {
-            await tx.delete(schema.commentVotes).where(voteKey);
+            await tx.delete(schema.postCommentVotes).where(voteKey);
         } else if (value !== previous) {
             await tx
-                .insert(schema.commentVotes)
+                .insert(schema.postCommentVotes)
                 .values({ userId, commentId, value })
                 .onConflictDoUpdate({
-                    target: [schema.commentVotes.userId, schema.commentVotes.commentId],
+                    target: [schema.postCommentVotes.userId, schema.postCommentVotes.commentId],
                     set: { value, updatedAt: new Date() },
                 });
         }
@@ -280,16 +280,16 @@ export async function voteOnPostComment(
         const downDelta = (value === -1 ? 1 : 0) - (previous === -1 ? 1 : 0);
 
         const [counts] = await tx
-            .update(schema.comments)
+            .update(schema.postComments)
             .set({
-                numUpvotes: sql`${schema.comments.numUpvotes} + ${upDelta}`,
-                numDownvotes: sql`${schema.comments.numDownvotes} + ${downDelta}`,
+                numUpvotes: sql`${schema.postComments.numUpvotes} + ${upDelta}`,
+                numDownvotes: sql`${schema.postComments.numDownvotes} + ${downDelta}`,
             })
-            .where(eq(schema.comments.id, commentId))
+            .where(eq(schema.postComments.id, commentId))
             .returning({
-                numUpvotes: schema.comments.numUpvotes,
-                numDownvotes: schema.comments.numDownvotes,
-                score: schema.comments.score,
+                numUpvotes: schema.postComments.numUpvotes,
+                numDownvotes: schema.postComments.numDownvotes,
+                score: schema.postComments.score,
             });
 
         return { ...counts!, myVote: value };
@@ -311,7 +311,7 @@ export async function createPostComment(db: Database, authorId: string, postId: 
         if (!post) throw new PostNotFoundError(postId);
 
         const [comment] = await tx
-            .insert(schema.comments)
+            .insert(schema.postComments)
             .values({ postId, authorId, body })
             .returning(commentFields);
 
@@ -327,12 +327,12 @@ export async function createPostComment(db: Database, authorId: string, postId: 
  */
 export async function updatePostComment(db: Database, userId: string, commentId: string, body: string) {
     const [comment] = await db
-        .update(schema.comments)
+        .update(schema.postComments)
         .set({ body, updatedAt: new Date() })
         .where(
             and(
-                eq(schema.comments.id, commentId),
-                eq(schema.comments.authorId, userId),
+                eq(schema.postComments.id, commentId),
+                eq(schema.postComments.authorId, userId),
                 commentNotDeleted,
                 commentPostIsLive(db),
             ),
@@ -353,17 +353,17 @@ export async function updatePostComment(db: Database, userId: string, commentId:
 export async function deletePostComment(db: Database, userId: string, commentId: string) {
     const deleted = await db.transaction(async (tx) => {
         const [comment] = await tx
-            .update(schema.comments)
+            .update(schema.postComments)
             .set({ deletedAt: new Date() })
             .where(
                 and(
-                    eq(schema.comments.id, commentId),
+                    eq(schema.postComments.id, commentId),
                     commentNotDeleted,
                     commentPostIsLive(db),
-                    or(eq(schema.comments.authorId, userId), commentPostIsLive(db, userId)),
+                    or(eq(schema.postComments.authorId, userId), commentPostIsLive(db, userId)),
                 ),
             )
-            .returning({ postId: schema.comments.postId });
+            .returning({ postId: schema.postComments.postId });
         if (!comment) return false;
 
         await tx
@@ -379,9 +379,9 @@ export async function deletePostComment(db: Database, userId: string, commentId:
 /** Called after a guarded comment write matched no rows, to report the right reason. */
 async function throwWhyCommentNotWritable(db: Database, userId: string, commentId: string): Promise<never> {
     const [comment] = await db
-        .select({ id: schema.comments.id })
-        .from(schema.comments)
-        .where(and(eq(schema.comments.id, commentId), commentNotDeleted, commentPostIsLive(db)))
+        .select({ id: schema.postComments.id })
+        .from(schema.postComments)
+        .where(and(eq(schema.postComments.id, commentId), commentNotDeleted, commentPostIsLive(db)))
         .limit(1);
 
     if (!comment) throw new CommentNotFoundError(commentId);

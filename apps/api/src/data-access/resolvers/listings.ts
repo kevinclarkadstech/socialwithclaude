@@ -159,17 +159,17 @@ export async function getListings(
             author: authorFields,
             listing: listingFields,
             thumbnail: postThumbnailSql,
-            isSaved: sql<boolean>`${schema.savedPosts.postId} is not null`,
+            isSaved: sql<boolean>`${schema.postSaves.postId} is not null`,
         })
         .from(schema.listings)
         .innerJoin(schema.posts, eq(schema.posts.id, schema.listings.postId))
         .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.authorId))
         .leftJoin(
-            schema.savedPosts,
+            schema.postSaves,
             viewerId
                 ? and(
-                    eq(schema.savedPosts.userId, viewerId),
-                    eq(schema.savedPosts.postId, schema.posts.id),
+                    eq(schema.postSaves.userId, viewerId),
+                    eq(schema.postSaves.postId, schema.posts.id),
                 )
                 : sql`false`,
         )

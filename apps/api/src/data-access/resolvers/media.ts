@@ -10,16 +10,16 @@ type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 export async function getPostMediaRows(db: Database, postId: string): Promise<MediaRowInput[]> {
     return db
         .select({
-            storageKey: schema.media.storageKey,
-            mimeType: schema.media.mimeType,
-            sizeBytes: schema.media.sizeBytes,
-            width: schema.media.width,
-            height: schema.media.height,
-            altText: schema.media.altText,
+            storageKey: schema.postMedia.storageKey,
+            mimeType: schema.postMedia.mimeType,
+            sizeBytes: schema.postMedia.sizeBytes,
+            width: schema.postMedia.width,
+            height: schema.postMedia.height,
+            altText: schema.postMedia.altText,
         })
-        .from(schema.media)
-        .where(eq(schema.media.postId, postId))
-        .orderBy(asc(schema.media.position));
+        .from(schema.postMedia)
+        .where(eq(schema.postMedia.postId, postId))
+        .orderBy(asc(schema.postMedia.position));
 }
 
 /**
@@ -27,11 +27,11 @@ export async function getPostMediaRows(db: Database, postId: string): Promise<Me
  * post's write transaction. Returns the photos as reads return them.
  */
 export async function replacePostMedia(tx: Transaction, postId: string, rows: MediaRowInput[]) {
-    await tx.delete(schema.media).where(eq(schema.media.postId, postId));
+    await tx.delete(schema.postMedia).where(eq(schema.postMedia.postId, postId));
     if (rows.length === 0) return [];
 
     const inserted = await tx
-        .insert(schema.media)
+        .insert(schema.postMedia)
         .values(rows.map((row, position) => ({ ...row, postId, position })))
         .returning();
 
