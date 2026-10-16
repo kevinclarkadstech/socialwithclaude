@@ -1,4 +1,4 @@
-import { and, asc, eq, exists, gt, isNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, exists, gt, isNull, lt, or, sql } from "drizzle-orm";
 
 import { schema, type Database } from "../db";
 import {
@@ -53,16 +53,94 @@ function commentPostIsLive(db: Database, postAuthorId?: string) {
     );
 }
 
-/** Returns the post with its author, or null if it doesn't exist or was deleted. */
-export async function getPostById(db: Database, postId: string) {
+/**
+ * Returns the post with its author, or null if it doesn't exist or was deleted.
+ * When `viewerId` is given, `isSaved` reports whether the viewer saved it.
+ */
+export async function getPostById(db: Database, postId: string, viewerId: string | null) {
     const [post] = await db
-        .select({ ...postFields, author: authorFields })
+        .select({
+            ...postFields,
+            author: authorFields,
+            isSaved: sql<boolean>`${schema.savedPosts.postId} is not null`,
+        })
         .from(schema.posts)
         .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.authorId))
+        .leftJoin(
+            schema.savedPosts,
+            viewerId
+                ? and(
+                    eq(schema.savedPosts.userId, viewerId),
+                    eq(schema.savedPosts.postId, schema.posts.id),
+                )
+                : sql`false`,
+        )
         .where(and(eq(schema.posts.id, postId), notDeleted))
         .limit(1);
 
     return post ?? null;
+}
+
+/**
+ * Saves (bookmarks) a post for a user. Saving an already-saved post is a no-op.
+ *
+ * @throws PostNotFoundError if the post doesn't exist or was deleted.
+ */
+export async function savePost(db: Database, userId: string, postId: string) {
+    const [post] = await db
+        .select({ id: schema.posts.id })
+        .from(schema.posts)
+        .where(and(eq(schema.posts.id, postId), notDeleted))
+        .limit(1);
+    if (!post) throw new PostNotFoundError(postId);
+
+    await db.insert(schema.savedPosts).values({ userId, postId }).onConflictDoNothing();
+}
+
+/** Removes a save. A no-op if it wasn't saved, and works even if the post was deleted. */
+export async function unsavePost(db: Database, userId: string, postId: string) {
+    await db
+        .delete(schema.savedPosts)
+        .where(and(eq(schema.savedPosts.userId, userId), eq(schema.savedPosts.postId, postId)));
+}
+
+/**
+ * Returns a page of the user's saved posts, most recently saved first, with
+ * their authors. Deleted posts are skipped. Pass the previous page's
+ * `nextCursor` as `cursor` to get the next page.
+ */
+export async function getSavedPosts(
+    db: Database,
+    userId: string,
+    { cursor, limit }: { cursor?: string | null; limit: number },
+) {
+    const rows = await db
+        .select({
+            ...postFields,
+            author: authorFields,
+            savedAt: schema.savedPosts.createdAt,
+            saveId: schema.savedPosts.id,
+        })
+        .from(schema.savedPosts)
+        .innerJoin(schema.posts, eq(schema.posts.id, schema.savedPosts.postId))
+        .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.authorId))
+        .where(
+            and(
+                eq(schema.savedPosts.userId, userId),
+                notDeleted,
+                cursor ? lt(schema.savedPosts.id, cursor) : undefined,
+            ),
+        )
+        .orderBy(desc(schema.savedPosts.id))
+        .limit(limit + 1);
+
+    const hasMore = rows.length > limit;
+    const page = hasMore ? rows.slice(0, limit) : rows;
+
+    return {
+        items: page.map(({ saveId: _, ...post }) => post),
+        nextCursor: hasMore ? page[page.length - 1]!.saveId : null,
+    };
 }
 
 /**

@@ -127,3 +127,19 @@ export const comments = pgTable("comments", {
 }, (t) => [
     index("comments_post_id_idx").on(t.postId, t.id),
 ]);
+
+export const savedPosts = pgTable("saved_posts", {
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    postId: text("post_id")
+        .notNull()
+        .references(() => posts.id, { onDelete: "cascade" }),
+    // Time-ordered, used as the cursor for "my saved posts, newest first".
+    id: text("id").notNull().unique().$defaultFn(() => ulid()),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+    primaryKey({ columns: [t.userId, t.postId] }),
+    index("saved_posts_user_id_id_idx").on(t.userId, t.id),
+    index("saved_posts_post_id_idx").on(t.postId),
+]);

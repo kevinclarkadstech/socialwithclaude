@@ -8,6 +8,9 @@ import {
     deletePostComment,
     getPostById,
     getPostComments,
+    getSavedPosts,
+    savePost,
+    unsavePost,
     updatePost,
     updatePostComment,
 } from "../../data-access";
@@ -17,24 +20,40 @@ import { procedure, router } from "../trpc";
 const postIdInput = z.object({ id: z.string().min(1) });
 const postBody = z.string().trim().min(1).max(1000);
 const commentBody = z.string().trim().min(1).max(1000);
+const pageInput = z.object({
+    cursor: z.string().nullish(),
+    limit: z.number().int().min(1).max(100).default(20),
+});
 
 export const postsRouter = router({
     getPostById: procedure.input(postIdInput).query(async ({ ctx, input }) => {
-        const post = await getPostById(ctx.db, input.id);
+        const post = await getPostById(ctx.db, input.id, ctx.user?.id ?? null);
         if (!post) throw new TRPCError({ code: "NOT_FOUND", message: "POST_NOT_FOUND" });
 
         return post;
     }),
 
+    /** Idempotent: saving an already-saved post succeeds. */
+    savePost: procedure.input(postIdInput).mutation(async ({ ctx, input }) => {
+        const { user } = await requireUserAndProfile(ctx);
+        await savePost(ctx.db, user.id, input.id);
+    }),
+
+    /** Idempotent: unsaving a post that isn't saved succeeds. */
+    unsavePost: procedure.input(postIdInput).mutation(async ({ ctx, input }) => {
+        const { user } = await requireUserAndProfile(ctx);
+        await unsavePost(ctx.db, user.id, input.id);
+    }),
+
+    /** The caller's saved posts, most recently saved first. Pass `nextCursor` as `cursor`. */
+    getMySavedPosts: procedure.input(pageInput).query(async ({ ctx, input }) => {
+        const { user } = await requireUserAndProfile(ctx);
+        return getSavedPosts(ctx.db, user.id, input);
+    }),
+
     /** Oldest first. Pass the previous page's `nextCursor` as `cursor`. */
     getPostComments: procedure
-        .input(
-            z.object({
-                postId: z.string().min(1),
-                cursor: z.string().nullish(),
-                limit: z.number().int().min(1).max(100).default(20),
-            }),
-        )
+        .input(pageInput.extend({ postId: z.string().min(1) }))
         .query(({ ctx, input }) =>
             getPostComments(ctx.db, input.postId, { cursor: input.cursor, limit: input.limit }),
         ),
