@@ -13,6 +13,7 @@ import {
     unsavePost,
     updatePost,
     updatePostComment,
+    voteOnPostComment,
 } from "../../data-access";
 import { requireUserAndProfile } from "../context";
 import { procedure, router } from "../trpc";
@@ -51,14 +52,22 @@ export const postsRouter = router({
         return getSavedPosts(ctx.db, user.id, input);
     }),
 
-    /** Oldest first. Pass the previous page's `nextCursor` as `cursor`. */
+    /**
+     * `sort`: "oldest" (default) or "top" (highest score first). Pass the
+     * previous page's `nextCursor` as `cursor`, keeping the same `sort`.
+     */
     getPostComments: procedure
-        .input(pageInput.extend({ postId: z.string().min(1) }))
+        .input(
+            pageInput.extend({
+                postId: z.string().min(1),
+                sort: z.enum(["oldest", "top"]).default("oldest"),
+            }),
+        )
         .query(({ ctx, input }) =>
-            getPostComments(ctx.db, input.postId, { cursor: input.cursor, limit: input.limit }),
+            getPostComments(ctx.db, input.postId, ctx.user?.id ?? null, input),
         ),
 
-    /** Returns the comment with the same `author` shape as getPostComments. */
+    /** Returns the comment in the same shape as getPostComments items. */
     createPostComment: procedure
         .input(z.object({ postId: z.string().min(1), body: commentBody }))
         .mutation(async ({ ctx, input }) => {
@@ -66,7 +75,27 @@ export const postsRouter = router({
             const comment = await createPostComment(ctx.db, profile.userId, input.postId, input.body);
 
             const { userId, username, firstName, lastName, avatarUrl } = profile;
-            return { ...comment, author: { userId, username, firstName, lastName, avatarUrl } };
+            return {
+                ...comment,
+                author: { userId, username, firstName, lastName, avatarUrl },
+                myVote: 0,
+            };
+        }),
+
+    /**
+     * Sets the caller's vote: 1 (up), -1 (down) or 0 (remove). Returns the
+     * comment's new counts and the caller's vote.
+     */
+    voteOnPostComment: procedure
+        .input(
+            z.object({
+                id: z.string().min(1),
+                value: z.union([z.literal(1), z.literal(-1), z.literal(0)]),
+            }),
+        )
+        .mutation(async ({ ctx, input }) => {
+            const { user } = await requireUserAndProfile(ctx);
+            return voteOnPostComment(ctx.db, user.id, input.id, input.value);
         }),
 
     /** Only the comment's author may edit it. */

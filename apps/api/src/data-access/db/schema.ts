@@ -1,4 +1,4 @@
-import { boolean, check, index, integer, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, check, index, integer, pgTable, primaryKey, smallint, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { monotonicFactory } from "ulid";
 
@@ -121,11 +121,35 @@ export const comments = pgTable("comments", {
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
     body: text("body").notNull(),
+    numUpvotes: integer("num_upvotes").notNull().default(0),
+    numDownvotes: integer("num_downvotes").notNull().default(0),
+    score: integer("score")
+        .notNull()
+        .generatedAlwaysAs(sql`"num_upvotes" - "num_downvotes"`),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
     deletedAt: timestamp("deleted_at"),
 }, (t) => [
     index("comments_post_id_idx").on(t.postId, t.id),
+    check("comments_num_upvotes_non_negative", sql`${t.numUpvotes} >= 0`),
+    check("comments_num_downvotes_non_negative", sql`${t.numDownvotes} >= 0`),
+]);
+
+/** One vote per user per comment: 1 = upvote, -1 = downvote. */
+export const commentVotes = pgTable("comment_votes", {
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    commentId: text("comment_id")
+        .notNull()
+        .references(() => comments.id, { onDelete: "cascade" }),
+    value: smallint("value").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (t) => [
+    primaryKey({ columns: [t.userId, t.commentId] }),
+    index("comment_votes_comment_id_idx").on(t.commentId),
+    check("comment_votes_value_valid", sql`${t.value} in (-1, 1)`),
 ]);
 
 export const savedPosts = pgTable("saved_posts", {

@@ -1,0 +1,1 @@
+DROP INDEX "comments_post_id_score_idx";

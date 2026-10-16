@@ -1,4 +1,5 @@
-import { and, asc, desc, eq, exists, gt, isNull, lt, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, exists, gt, isNull, lt, lte, or, sql, type SQL } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 import { schema, type Database } from "../db";
 import {
@@ -27,6 +28,9 @@ const postFields = {
 const commentFields = {
     id: schema.comments.id,
     body: schema.comments.body,
+    numUpvotes: schema.comments.numUpvotes,
+    numDownvotes: schema.comments.numDownvotes,
+    score: schema.comments.score,
     createdAt: schema.comments.createdAt,
     updatedAt: schema.comments.updatedAt,
 };
@@ -143,16 +147,28 @@ export async function getSavedPosts(
     };
 }
 
+export type CommentSort = "oldest" | "top";
+
+const cursorComment = alias(schema.comments, "cursor_comment");
+
 /**
- * Returns a page of a post's comments, oldest first, with their authors.
- * Pass the previous page's `nextCursor` as `cursor` to get the next page.
+ * Returns a page of a post's comments with their authors and the viewer's
+ * vote (`myVote`: 1, -1, or 0 when not voted or signed out).
+ *
+ * - "oldest": oldest first.
+ * - "top": highest score first, oldest first among ties. Scores can change
+ *   between pages, so a comment may occasionally repeat or be skipped.
+ *
+ * The cursor is always the last comment's id: pass the previous page's
+ * `nextCursor` as `cursor`, with the same `sort`, to get the next page.
  *
  * @throws PostNotFoundError if the post doesn't exist or was deleted.
  */
 export async function getPostComments(
     db: Database,
     postId: string,
-    { cursor, limit }: { cursor?: string | null; limit: number },
+    viewerId: string | null,
+    { cursor, limit, sort }: { cursor?: string | null; limit: number; sort: CommentSort },
 ) {
     const [post] = await db
         .select({ id: schema.posts.id })
@@ -161,24 +177,117 @@ export async function getPostComments(
         .limit(1);
     if (!post) throw new PostNotFoundError(postId);
 
+    const { id, score } = schema.comments;
+    let after: SQL | undefined;
+    if (cursor && sort === "top") {
+        // Continue after the cursor comment's current score, breaking ties by id.
+        // There's no score index: "top" sorts a post's comments in memory, which
+        // is cheap at our comment volumes. Add (post_id, score DESC, id) if a
+        // post's comments ever get large.
+        const cursorScore = db
+            .select({ score: cursorComment.score })
+            .from(cursorComment)
+            .where(eq(cursorComment.id, cursor));
+        after = and(
+            lte(score, sql`(${cursorScore})`),
+            or(lt(score, sql`(${cursorScore})`), gt(id, cursor)),
+        );
+    } else if (cursor) {
+        after = gt(id, cursor);
+    }
+
     const rows = await db
-        .select({ ...commentFields, author: authorFields })
+        .select({
+            ...commentFields,
+            author: authorFields,
+            myVote: sql<number>`coalesce(${schema.commentVotes.value}, 0)`.mapWith(Number),
+        })
         .from(schema.comments)
         .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.comments.authorId))
-        .where(
-            and(
-                eq(schema.comments.postId, postId),
-                commentNotDeleted,
-                cursor ? gt(schema.comments.id, cursor) : undefined,
-            ),
+        .leftJoin(
+            schema.commentVotes,
+            viewerId
+                ? and(
+                    eq(schema.commentVotes.userId, viewerId),
+                    eq(schema.commentVotes.commentId, schema.comments.id),
+                )
+                : sql`false`,
         )
-        .orderBy(asc(schema.comments.id))
+        .where(and(eq(schema.comments.postId, postId), commentNotDeleted, after))
+        .orderBy(...(sort === "top" ? [desc(score), asc(id)] : [asc(id)]))
         .limit(limit + 1);
 
     const hasMore = rows.length > limit;
     const items = hasMore ? rows.slice(0, limit) : rows;
 
     return { items, nextCursor: hasMore ? items[items.length - 1]!.id : null };
+}
+
+/**
+ * Sets the user's vote on a comment: 1 (up), -1 (down) or 0 (remove), and
+ * adjusts the comment's vote counts in the same transaction. Users may vote on
+ * their own comments.
+ *
+ * @throws CommentNotFoundError if the comment or its post doesn't exist or was deleted.
+ */
+export async function voteOnPostComment(
+    db: Database,
+    userId: string,
+    commentId: string,
+    value: -1 | 0 | 1,
+) {
+    return db.transaction(async (tx) => {
+        // Lock the comment row so concurrent votes by the same user can't
+        // both count; the counter update below would lock it anyway.
+        const [comment] = await tx
+            .select({ id: schema.comments.id })
+            .from(schema.comments)
+            .where(and(eq(schema.comments.id, commentId), commentNotDeleted, commentPostIsLive(db)))
+            .limit(1)
+            .for("update");
+        if (!comment) throw new CommentNotFoundError(commentId);
+
+        const voteKey = and(
+            eq(schema.commentVotes.userId, userId),
+            eq(schema.commentVotes.commentId, commentId),
+        );
+        const [existing] = await tx
+            .select({ value: schema.commentVotes.value })
+            .from(schema.commentVotes)
+            .where(voteKey)
+            .limit(1);
+        const previous = existing?.value ?? 0;
+
+        if (value === 0) {
+            await tx.delete(schema.commentVotes).where(voteKey);
+        } else if (value !== previous) {
+            await tx
+                .insert(schema.commentVotes)
+                .values({ userId, commentId, value })
+                .onConflictDoUpdate({
+                    target: [schema.commentVotes.userId, schema.commentVotes.commentId],
+                    set: { value, updatedAt: new Date() },
+                });
+        }
+
+        const upDelta = (value === 1 ? 1 : 0) - (previous === 1 ? 1 : 0);
+        const downDelta = (value === -1 ? 1 : 0) - (previous === -1 ? 1 : 0);
+
+        const [counts] = await tx
+            .update(schema.comments)
+            .set({
+                numUpvotes: sql`${schema.comments.numUpvotes} + ${upDelta}`,
+                numDownvotes: sql`${schema.comments.numDownvotes} + ${downDelta}`,
+            })
+            .where(eq(schema.comments.id, commentId))
+            .returning({
+                numUpvotes: schema.comments.numUpvotes,
+                numDownvotes: schema.comments.numDownvotes,
+                score: schema.comments.score,
+            });
+
+        return { ...counts!, myVote: value };
+    });
 }
 
 /**
