@@ -28,6 +28,13 @@ export class NotPostAuthorError extends Error {
     }
 }
 
+export class ListingNotFoundError extends Error {
+    constructor(postId: string) {
+        super(`Listing ${postId} not found`);
+        this.name = "ListingNotFoundError";
+    }
+}
+
 export class CommentNotFoundError extends Error {
     constructor(commentId: string) {
         super(`Comment ${commentId} not found`);

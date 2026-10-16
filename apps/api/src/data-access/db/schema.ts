@@ -97,11 +97,14 @@ export const follows = pgTable("follows", {
 const ulid = monotonicFactory();
 const ulidId = () => text("id").primaryKey().$defaultFn(() => ulid());
 
+export const postKinds = ["post", "listing"] as const;
+
 export const posts = pgTable("posts", {
     id: ulidId(),
     authorId: text("author_id")
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: postKinds }).notNull().default("post"),
     body: text("body").notNull(),
     numComments: integer("num_comments").notNull().default(0),
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -110,6 +113,7 @@ export const posts = pgTable("posts", {
 }, (t) => [
     index("posts_author_id_idx").on(t.authorId, t.id),
     check("posts_num_comments_non_negative", sql`${t.numComments} >= 0`),
+    check("posts_kind_valid", sql`${t.kind} in ('post', 'listing')`),
 ]);
 
 export const comments = pgTable("comments", {
@@ -166,4 +170,37 @@ export const savedPosts = pgTable("saved_posts", {
     primaryKey({ columns: [t.userId, t.postId] }),
     index("saved_posts_user_id_id_idx").on(t.userId, t.id),
     index("saved_posts_post_id_idx").on(t.postId),
+]);
+
+export const listingPriceTypes = ["fixed", "negotiable", "free", "multiple"] as const;
+export const listingConditions = ["new", "used"] as const;
+export const listingStatuses = ["available", "pending", "sold"] as const;
+
+/**
+ * Extra details for posts with kind 'listing' (1:1 with posts). The post body
+ * is the listing's description. Prices are integer cents.
+ */
+export const listings = pgTable("listings", {
+    postId: text("post_id")
+        .primaryKey()
+        .references(() => posts.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    // 'free' and 'multiple' ("multiple items, see description") have no price.
+    priceType: text("price_type", { enum: listingPriceTypes }).notNull(),
+    priceCents: integer("price_cents"),
+    condition: text("condition", { enum: listingConditions }),
+    status: text("status", { enum: listingStatuses }).notNull().default("available"),
+    location: text("location"),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (t) => [
+    // Marketplace feed: filter by status, newest first.
+    index("listings_status_post_id_idx").on(t.status, t.postId),
+    check("listings_price_type_valid", sql`${t.priceType} in ('fixed', 'negotiable', 'free', 'multiple')`),
+    check("listings_condition_valid", sql`${t.condition} in ('new', 'used')`),
+    check("listings_status_valid", sql`${t.status} in ('available', 'pending', 'sold')`),
+    check("listings_price_non_negative", sql`${t.priceCents} >= 0`),
+    check(
+        "listings_price_matches_type",
+        sql`(${t.priceType} in ('fixed', 'negotiable')) = (${t.priceCents} is not null)`,
+    ),
 ]);

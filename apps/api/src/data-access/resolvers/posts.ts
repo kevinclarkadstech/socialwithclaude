@@ -8,22 +8,7 @@ import {
     NotPostAuthorError,
     PostNotFoundError,
 } from "../errors";
-
-const authorFields = {
-    userId: schema.profiles.userId,
-    username: schema.profiles.username,
-    firstName: schema.profiles.firstName,
-    lastName: schema.profiles.lastName,
-    avatarUrl: schema.profiles.avatarUrl,
-};
-
-const postFields = {
-    id: schema.posts.id,
-    body: schema.posts.body,
-    numComments: schema.posts.numComments,
-    createdAt: schema.posts.createdAt,
-    updatedAt: schema.posts.updatedAt,
-};
+import { authorFields, listingFields, postFields, postNotDeleted } from "./shared";
 
 const commentFields = {
     id: schema.comments.id,
@@ -35,7 +20,7 @@ const commentFields = {
     updatedAt: schema.comments.updatedAt,
 };
 
-const notDeleted = isNull(schema.posts.deletedAt);
+const notDeleted = postNotDeleted;
 const commentNotDeleted = isNull(schema.comments.deletedAt);
 
 /**
@@ -59,6 +44,7 @@ function commentPostIsLive(db: Database, postAuthorId?: string) {
 
 /**
  * Returns the post with its author, or null if it doesn't exist or was deleted.
+ * `listing` holds the listing details when `kind` is "listing", else null.
  * When `viewerId` is given, `isSaved` reports whether the viewer saved it.
  */
 export async function getPostById(db: Database, postId: string, viewerId: string | null) {
@@ -66,10 +52,12 @@ export async function getPostById(db: Database, postId: string, viewerId: string
         .select({
             ...postFields,
             author: authorFields,
+            listing: listingFields,
             isSaved: sql<boolean>`${schema.savedPosts.postId} is not null`,
         })
         .from(schema.posts)
         .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.authorId))
+        .leftJoin(schema.listings, eq(schema.listings.postId, schema.posts.id))
         .leftJoin(
             schema.savedPosts,
             viewerId
@@ -122,12 +110,14 @@ export async function getSavedPosts(
         .select({
             ...postFields,
             author: authorFields,
+            listing: listingFields,
             savedAt: schema.savedPosts.createdAt,
             saveId: schema.savedPosts.id,
         })
         .from(schema.savedPosts)
         .innerJoin(schema.posts, eq(schema.posts.id, schema.savedPosts.postId))
         .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.authorId))
+        .leftJoin(schema.listings, eq(schema.listings.postId, schema.posts.id))
         .where(
             and(
                 eq(schema.savedPosts.userId, userId),
