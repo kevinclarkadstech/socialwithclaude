@@ -8,7 +8,17 @@ import {
     NotPostAuthorError,
     PostNotFoundError,
 } from "../errors";
-import { authorFields, listingFields, postFields, postNotDeleted } from "./shared";
+import type { MediaRowInput } from "../../media";
+import { replacePostMedia } from "./media";
+import {
+    authorFields,
+    listingFields,
+    postFields,
+    postMediaSql,
+    postNotDeleted,
+    postThumbnailSql,
+    toMediaDto,
+} from "./shared";
 
 const commentFields = {
     id: schema.comments.id,
@@ -45,6 +55,7 @@ function commentPostIsLive(db: Database, postAuthorId?: string) {
 /**
  * Returns the post with its author, or null if it doesn't exist or was deleted.
  * `listing` holds the listing details when `kind` is "listing", else null.
+ * `media` is the post's photos in order.
  * When `viewerId` is given, `isSaved` reports whether the viewer saved it.
  */
 export async function getPostById(db: Database, postId: string, viewerId: string | null) {
@@ -53,6 +64,7 @@ export async function getPostById(db: Database, postId: string, viewerId: string
             ...postFields,
             author: authorFields,
             listing: listingFields,
+            media: postMediaSql,
             isSaved: sql<boolean>`${schema.savedPosts.postId} is not null`,
         })
         .from(schema.posts)
@@ -70,7 +82,7 @@ export async function getPostById(db: Database, postId: string, viewerId: string
         .where(and(eq(schema.posts.id, postId), notDeleted))
         .limit(1);
 
-    return post ?? null;
+    return post ? { ...post, media: post.media.map(toMediaDto) } : null;
 }
 
 /**
@@ -98,7 +110,7 @@ export async function unsavePost(db: Database, userId: string, postId: string) {
 
 /**
  * Returns a page of the user's saved posts, most recently saved first, with
- * their authors. Deleted posts are skipped. Pass the previous page's
+ * their authors and first photo (`thumbnail`). Deleted posts are skipped. Pass the previous page's
  * `nextCursor` as `cursor` to get the next page.
  */
 export async function getSavedPosts(
@@ -111,6 +123,7 @@ export async function getSavedPosts(
             ...postFields,
             author: authorFields,
             listing: listingFields,
+            thumbnail: postThumbnailSql,
             savedAt: schema.savedPosts.createdAt,
             saveId: schema.savedPosts.id,
         })
@@ -132,7 +145,10 @@ export async function getSavedPosts(
     const page = hasMore ? rows.slice(0, limit) : rows;
 
     return {
-        items: page.map(({ saveId: _, ...post }) => post),
+        items: page.map(({ saveId: _, thumbnail, ...post }) => ({
+            ...post,
+            thumbnail: thumbnail && toMediaDto(thumbnail),
+        })),
         nextCursor: hasMore ? page[page.length - 1]!.saveId : null,
     };
 }
@@ -372,28 +388,53 @@ async function throwWhyCommentNotWritable(db: Database, userId: string, commentI
     throw new NotCommentAuthorError(commentId, userId);
 }
 
-export async function createPost(db: Database, authorId: string, body: string) {
-    const [post] = await db
-        .insert(schema.posts)
-        .values({ authorId, body })
-        .returning(postFields);
+/** Creates a post with its photos (already validated and moved by withMedia). */
+export async function createPost(db: Database, authorId: string, body: string, media: MediaRowInput[]) {
+    return db.transaction(async (tx) => {
+        const [post] = await tx
+            .insert(schema.posts)
+            .values({ authorId, body })
+            .returning(postFields);
 
-    return post!;
+        return { ...post!, media: await replacePostMedia(tx, post!.id, media) };
+    });
 }
 
 /**
+ * Updates the body and, when `media` is given, replaces the photos.
+ *
  * @throws PostNotFoundError if the post doesn't exist or was deleted.
  * @throws NotPostAuthorError if `userId` didn't write the post.
  */
-export async function updatePost(db: Database, userId: string, postId: string, body: string) {
-    const [post] = await db
-        .update(schema.posts)
-        .set({ body, updatedAt: new Date() })
-        .where(and(eq(schema.posts.id, postId), eq(schema.posts.authorId, userId), notDeleted))
-        .returning(postFields);
+export async function updatePost(
+    db: Database,
+    userId: string,
+    postId: string,
+    body: string,
+    media?: MediaRowInput[],
+) {
+    const result = await db.transaction(async (tx) => {
+        const [post] = await tx
+            .update(schema.posts)
+            .set({ body, updatedAt: new Date() })
+            .where(and(eq(schema.posts.id, postId), eq(schema.posts.authorId, userId), notDeleted))
+            .returning(postFields);
+        if (!post) return null;
 
-    if (!post) await throwWhyPostNotWritable(db, userId, postId);
-    return post!;
+        if (media) return { ...post, media: await replacePostMedia(tx, postId, media) };
+        return { ...post, media: null };
+    });
+    if (!result) return throwWhyPostNotWritable(db, userId, postId);
+
+    // Photos unchanged: read them back so the response shape is the same.
+    if (!result.media) {
+        const [current] = await db
+            .select({ media: postMediaSql })
+            .from(schema.posts)
+            .where(eq(schema.posts.id, postId));
+        return { ...result, media: current!.media.map(toMediaDto) };
+    }
+    return { ...result, media: result.media };
 }
 
 /**

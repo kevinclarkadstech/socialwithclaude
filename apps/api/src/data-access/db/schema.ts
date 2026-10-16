@@ -204,3 +204,28 @@ export const listings = pgTable("listings", {
         sql`(${t.priceType} in ('fixed', 'negotiable')) = (${t.priceCents} is not null)`,
     ),
 ]);
+
+/**
+ * Photos attached to a post, in display order. Rows only exist for submitted
+ * posts; abandoned uploads never get a row (storage expires them).
+ */
+export const media = pgTable("media", {
+    id: ulidId(),
+    postId: text("post_id")
+        .notNull()
+        .references(() => posts.id, { onDelete: "cascade" }),
+    position: integer("position").notNull(),
+    storageKey: text("storage_key").notNull().unique(),
+    mimeType: text("mime_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    width: integer("width"),
+    height: integer("height"),
+    altText: text("alt_text"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+    uniqueIndex("media_post_id_position_idx").on(t.postId, t.position),
+    check("media_position_range", sql`${t.position} between 0 and 9`),
+    check("media_mime_type_valid", sql`${t.mimeType} in ('image/jpeg', 'image/png', 'image/webp')`),
+    check("media_size_valid", sql`${t.sizeBytes} > 0 and ${t.sizeBytes} <= 1048576`),
+    check("media_dimensions_positive", sql`${t.width} > 0 and ${t.height} > 0`),
+]);

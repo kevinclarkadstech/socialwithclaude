@@ -8,6 +8,7 @@ import {
     deletePostComment,
     getPostById,
     getPostComments,
+    getPostMediaRows,
     getSavedPosts,
     savePost,
     unsavePost,
@@ -15,7 +16,9 @@ import {
     updatePostComment,
     voteOnPostComment,
 } from "../../data-access";
-import { requireUserAndProfile } from "../context";
+import { withMedia } from "../../media";
+import { mediaContext, requireUserAndProfile } from "../context";
+import { mediaInput } from "../inputs";
 import { procedure, router } from "../trpc";
 
 const postIdInput = z.object({ id: z.string().min(1) });
@@ -114,21 +117,35 @@ export const postsRouter = router({
             await deletePostComment(ctx.db, user.id, input.id);
         }),
 
-    createPost: procedure.input(z.object({ body: postBody })).mutation(async ({ ctx, input }) => {
-        const { user } = await requireUserAndProfile(ctx);
-
-        if (!ctx.featureFlagStore.isEnabled("usersCanPost")) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "POSTING_DISABLED" });
-        }
-
-        return createPost(ctx.db, user.id, input.body);
-    }),
-
-    updatePost: procedure
-        .input(postIdInput.extend({ body: postBody }))
+    /** `media`: photo keys from media.createUploadUrl, in display order. */
+    createPost: procedure
+        .input(z.object({ body: postBody, media: mediaInput.default([]) }))
         .mutation(async ({ ctx, input }) => {
             const { user } = await requireUserAndProfile(ctx);
-            return updatePost(ctx.db, user.id, input.id, input.body);
+
+            if (!ctx.featureFlagStore.isEnabled("usersCanPost")) {
+                throw new TRPCError({ code: "FORBIDDEN", message: "POSTING_DISABLED" });
+            }
+
+            return withMedia(mediaContext(ctx, user.id), input.media, [], (rows) =>
+                createPost(ctx.db, user.id, input.body, rows),
+            );
+        }),
+
+    /**
+     * Omit `media` to leave photos unchanged; send it to replace them (existing
+     * keys keep their photo, new upload keys are added, missing ones removed).
+     */
+    updatePost: procedure
+        .input(postIdInput.extend({ body: postBody, media: mediaInput.optional() }))
+        .mutation(async ({ ctx, input }) => {
+            const { user } = await requireUserAndProfile(ctx);
+            if (!input.media) return updatePost(ctx.db, user.id, input.id, input.body);
+
+            const existing = await getPostMediaRows(ctx.db, input.id);
+            return withMedia(mediaContext(ctx, user.id), input.media, existing, (rows) =>
+                updatePost(ctx.db, user.id, input.id, input.body, rows),
+            );
         }),
 
     deletePost: procedure.input(postIdInput).mutation(async ({ ctx, input }) => {

@@ -2,7 +2,17 @@ import { and, desc, eq, exists, lt, sql } from "drizzle-orm";
 
 import { schema, type Database } from "../db";
 import { ListingNotFoundError, NotPostAuthorError } from "../errors";
-import { authorFields, listingFields, postFields, postNotDeleted } from "./shared";
+import type { MediaRowInput } from "../../media";
+import { replacePostMedia } from "./media";
+import {
+    authorFields,
+    listingFields,
+    postFields,
+    postMediaSql,
+    postNotDeleted,
+    postThumbnailSql,
+    toMediaDto,
+} from "./shared";
 
 type ListingStatus = (typeof schema.listingStatuses)[number];
 
@@ -17,11 +27,12 @@ export type ListingDetails = {
 
 const isListingPost = eq(schema.posts.kind, "listing");
 
-/** Creates a post of kind "listing" and its details in one transaction. */
+/** Creates a post of kind "listing" with its details and photos in one transaction. */
 export async function createListing(
     db: Database,
     authorId: string,
     { body, ...details }: ListingDetails & { body: string },
+    media: MediaRowInput[],
 ) {
     return db.transaction(async (tx) => {
         const [post] = await tx
@@ -34,13 +45,17 @@ export async function createListing(
             .values({ postId: post!.id, ...details })
             .returning(listingFields);
 
-        return { ...post!, listing: listing! };
+        return {
+            ...post!,
+            listing: listing!,
+            media: await replacePostMedia(tx, post!.id, media),
+        };
     });
 }
 
 /**
- * Replaces a listing's description (the post body) and details. Status is
- * changed separately with setListingStatus.
+ * Replaces a listing's description (the post body) and details, and its photos
+ * when `media` is given. Status is changed separately with setListingStatus.
  *
  * @throws ListingNotFoundError if the listing doesn't exist or was deleted.
  * @throws NotPostAuthorError if `userId` didn't create the listing.
@@ -50,6 +65,7 @@ export async function updateListing(
     userId: string,
     postId: string,
     { body, ...details }: ListingDetails & { body: string },
+    media?: MediaRowInput[],
 ) {
     const result = await db.transaction(async (tx) => {
         const now = new Date();
@@ -73,10 +89,23 @@ export async function updateListing(
             .where(eq(schema.listings.postId, postId))
             .returning(listingFields);
 
-        return { ...post, listing: listing! };
+        return {
+            ...post,
+            listing: listing!,
+            media: media ? await replacePostMedia(tx, postId, media) : null,
+        };
     });
+    if (!result) return throwWhyListingNotWritable(db, userId, postId);
 
-    return result ?? throwWhyListingNotWritable(db, userId, postId);
+    // Photos unchanged: read them back so the response shape is the same.
+    if (!result.media) {
+        const [current] = await db
+            .select({ media: postMediaSql })
+            .from(schema.posts)
+            .where(eq(schema.posts.id, postId));
+        return { ...result, media: current!.media.map(toMediaDto) };
+    }
+    return { ...result, media: result.media };
 }
 
 /**
@@ -116,7 +145,7 @@ export async function setListingStatus(
 
 /**
  * Marketplace feed: listings newest first, optionally filtered by status, with
- * authors and `isSaved` for the viewer. Deleted listings are skipped. Pass the
+ * authors, first photo (`thumbnail`) and `isSaved` for the viewer. Deleted listings are skipped. Pass the
  * previous page's `nextCursor` as `cursor` to get the next page.
  */
 export async function getListings(
@@ -129,6 +158,7 @@ export async function getListings(
             ...postFields,
             author: authorFields,
             listing: listingFields,
+            thumbnail: postThumbnailSql,
             isSaved: sql<boolean>`${schema.savedPosts.postId} is not null`,
         })
         .from(schema.listings)
@@ -156,7 +186,13 @@ export async function getListings(
     const hasMore = rows.length > limit;
     const items = hasMore ? rows.slice(0, limit) : rows;
 
-    return { items, nextCursor: hasMore ? items[items.length - 1]!.id : null };
+    return {
+        items: items.map(({ thumbnail, ...item }) => ({
+            ...item,
+            thumbnail: thumbnail && toMediaDto(thumbnail),
+        })),
+        nextCursor: hasMore ? items[items.length - 1]!.id : null,
+    };
 }
 
 /** Called after a guarded listing write matched no rows, to report the right reason. */

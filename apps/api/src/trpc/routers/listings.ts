@@ -4,11 +4,14 @@ import { TRPCError } from "@trpc/server";
 import {
     createListing,
     getListings,
+    getPostMediaRows,
     schema,
     setListingStatus,
     updateListing,
 } from "../../data-access";
-import { requireUserAndProfile } from "../context";
+import { withMedia } from "../../media";
+import { mediaContext, requireUserAndProfile } from "../context";
+import { mediaInput } from "../inputs";
 import { procedure, router } from "../trpc";
 
 const optionalText = (max: number) =>
@@ -36,23 +39,39 @@ const listingInput = z
     .and(price);
 
 export const listingsRouter = router({
-    createListing: procedure.input(listingInput).mutation(async ({ ctx, input }) => {
-        const { user } = await requireUserAndProfile(ctx);
-
-        if (!ctx.featureFlagStore.isEnabled("usersCanPost")) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "POSTING_DISABLED" });
-        }
-
-        return createListing(ctx.db, user.id, input);
-    }),
-
-    /** Replaces the description and details; author only. */
-    updateListing: procedure
-        .input(z.object({ id: z.string().min(1) }).and(listingInput))
+    /** `media`: photo keys from media.createUploadUrl, in display order. */
+    createListing: procedure
+        .input(listingInput.and(z.object({ media: mediaInput.default([]) })))
         .mutation(async ({ ctx, input }) => {
             const { user } = await requireUserAndProfile(ctx);
-            const { id, ...listing } = input;
-            return updateListing(ctx.db, user.id, id, listing);
+
+            if (!ctx.featureFlagStore.isEnabled("usersCanPost")) {
+                throw new TRPCError({ code: "FORBIDDEN", message: "POSTING_DISABLED" });
+            }
+
+            const { media, ...listing } = input;
+            return withMedia(mediaContext(ctx, user.id), media, [], (rows) =>
+                createListing(ctx.db, user.id, listing, rows),
+            );
+        }),
+
+    /**
+     * Replaces the description and details; author only. Omit `media` to leave
+     * photos unchanged, or send it to replace them (as in posts.updatePost).
+     */
+    updateListing: procedure
+        .input(
+            z.object({ id: z.string().min(1), media: mediaInput.optional() }).and(listingInput),
+        )
+        .mutation(async ({ ctx, input }) => {
+            const { user } = await requireUserAndProfile(ctx);
+            const { id, media, ...listing } = input;
+            if (!media) return updateListing(ctx.db, user.id, id, listing);
+
+            const existing = await getPostMediaRows(ctx.db, id);
+            return withMedia(mediaContext(ctx, user.id), media, existing, (rows) =>
+                updateListing(ctx.db, user.id, id, listing, rows),
+            );
         }),
 
     /** Mark available / pending / sold; author only. */

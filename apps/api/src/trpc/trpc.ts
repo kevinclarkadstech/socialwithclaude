@@ -9,6 +9,7 @@ import {
     ProfileAlreadyExistsError,
     UsernameTakenError,
 } from "../data-access";
+import { InvalidMediaError } from "../media";
 import type { TRPCContext } from "./context";
 
 const t = initTRPC.context<TRPCContext>().create();
@@ -24,6 +25,7 @@ const domainErrors: [new (...args: never[]) => Error, TRPC_ERROR_CODE_KEY, strin
     [NotPostAuthorError, "FORBIDDEN", "NOT_POST_AUTHOR"],
     [ListingNotFoundError, "NOT_FOUND", "LISTING_NOT_FOUND"],
     [CommentNotFoundError, "NOT_FOUND", "COMMENT_NOT_FOUND"],
+    [InvalidMediaError, "BAD_REQUEST", "INVALID_MEDIA"],
     [NotCommentAuthorError, "FORBIDDEN", "NOT_COMMENT_AUTHOR"],
 ];
 

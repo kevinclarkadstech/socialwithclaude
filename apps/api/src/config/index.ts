@@ -6,6 +6,8 @@ export const ServerConfigSchema = z.object({
     DATABASE_URL: z.string(),
     BETTER_AUTH_SECRET: z.string(),
     BETTER_AUTH_URL: z.string(),
+    // Public base URL of the media bucket (or a CDN in front of it); keys are appended.
+    MEDIA_PUBLIC_URL: z.string().default("http://localhost:9000/media-bucket"),
 });
 
 export const serverConfig = (() => {

@@ -4,10 +4,12 @@ import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 
 import type { AppHonoEnv } from "../index";
 import { db, getProfileByUserId } from "../data-access";
+import { mediaStorage } from "../media";
 
 export function createContext(opts: FetchCreateContextFnOptions, c: Context<AppHonoEnv>) {
     return {
         db,
+        storage: mediaStorage,
         auth: c.get("auth"),
         reqHeaders: opts.req.headers,
         /** Headers to send back on the response, e.g. Set-Cookie from better-auth. */
@@ -39,4 +41,9 @@ export async function requireUserAndProfile(ctx: TRPCContext) {
     const profile = await getProfileByUserId(ctx.db, user.id);
     if (!profile) throw new TRPCError({ code: "FORBIDDEN", message: "PROFILE_REQUIRED" });
     return { user, profile };
+}
+
+/** What withMedia() needs from the request. */
+export function mediaContext(ctx: TRPCContext, userId: string) {
+    return { storage: ctx.storage, logger: ctx.logger, userId };
 }
