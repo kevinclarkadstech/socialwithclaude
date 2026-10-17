@@ -1,7 +1,8 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
 
 import { schema, type Database, type Transaction } from "../db";
 import { getUniqueViolationConstraint, ProfileAlreadyExistsError, UsernameTakenError } from "../errors";
+import { authorFields, startsWithPattern } from "./shared";
 
 export async function getUserIdByUsername(db: Database, username: string) {
     const [profile] = await db
@@ -99,6 +100,32 @@ export async function getProfileByUsername(db: Database, username: string, viewe
     return profile ?? null;
 }
 
+/**
+ * Profiles whose username, first name, last name or full name starts with
+ * `query` (case-insensitive). An exact username match comes first, then the
+ * most followed.
+ */
+export async function searchProfiles(db: Database, query: string, { limit }: { limit: number }) {
+    const pattern = startsWithPattern(query);
+    return db
+        .select({ ...authorFields, numFollowers: schema.profiles.numFollowers })
+        .from(schema.profiles)
+        .where(
+            or(
+                ilike(schema.profiles.username, pattern),
+                ilike(schema.profiles.firstName, pattern),
+                ilike(schema.profiles.lastName, pattern),
+                ilike(sql`concat_ws(' ', ${schema.profiles.firstName}, ${schema.profiles.lastName})`, pattern),
+            ),
+        )
+        .orderBy(
+            desc(sql`lower(${schema.profiles.username}) = lower(${query})`),
+            desc(schema.profiles.numFollowers),
+            asc(schema.profiles.username),
+        )
+        .limit(limit);
+}
+
 export async function followUser(db: Database, followerId: string, followingId: string) {
     if (followerId === followingId) {
         throw new Error("Cannot follow yourself");
@@ -162,3 +189,4 @@ export * from './media';
 export * from './blocks';
 export * from './feedback';
 export * from './settings';
+export * from './search';

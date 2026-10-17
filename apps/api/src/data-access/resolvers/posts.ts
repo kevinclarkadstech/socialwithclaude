@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, exists, gt, isNull, lt, lte, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, exists, gt, ilike, isNull, lt, lte, or, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import { schema, type Database } from "../db";
@@ -15,6 +15,7 @@ import type { MediaRowInput } from "../../media";
 import { replacePostMedia } from "./media";
 import {
     authorFields,
+    containsPattern,
     listingFields,
     postFields,
     postMediaSql,
@@ -139,6 +140,51 @@ export async function getFeed(
 
     return {
         items: items.map((post) => ({ ...post, media: post.media.map(toMediaDto) })),
+        nextCursor: hasMore ? items[items.length - 1]!.id : null,
+    };
+}
+
+/**
+ * Posts whose body (or, for listings, title) contains `query`
+ * (case-insensitive), newest first, with authors, listing details and first
+ * photo (`thumbnail`). `kind` limits it to posts or listings. Pass the
+ * previous page's `nextCursor` as `cursor` to get the next page.
+ */
+export async function searchPosts(
+    db: Database,
+    query: string,
+    { kind, cursor, limit }: { kind?: (typeof schema.postKinds)[number] | null; cursor?: string | null; limit: number },
+) {
+    const pattern = containsPattern(query);
+    const rows = await db
+        .select({
+            ...postFields,
+            author: authorFields,
+            listing: listingFields,
+            thumbnail: postThumbnailSql,
+        })
+        .from(schema.posts)
+        .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.authorId))
+        .leftJoin(schema.postListingDetails, eq(schema.postListingDetails.postId, schema.posts.id))
+        .where(
+            and(
+                notDeleted,
+                kind ? eq(schema.posts.kind, kind) : undefined,
+                or(ilike(schema.posts.body, pattern), ilike(schema.postListingDetails.title, pattern)),
+                cursor ? postsBefore(db, cursor) : undefined,
+            ),
+        )
+        .orderBy(desc(schema.posts.createdAt), desc(schema.posts.id))
+        .limit(limit + 1);
+
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+
+    return {
+        items: items.map(({ thumbnail, ...post }) => ({
+            ...post,
+            thumbnail: thumbnail && toMediaDto(thumbnail),
+        })),
         nextCursor: hasMore ? items[items.length - 1]!.id : null,
     };
 }
