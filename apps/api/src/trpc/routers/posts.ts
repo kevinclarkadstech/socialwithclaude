@@ -6,6 +6,7 @@ import {
     createPost,
     deletePost,
     deletePostComment,
+    getFeed,
     getPostById,
     getPostComments,
     getPostMediaRows,
@@ -36,6 +37,11 @@ export const postsRouter = router({
 
         return post;
     }),
+
+    /** The Feed tab: regular posts (not listings), newest first. Pass `nextCursor` as `cursor`. */
+    getFeed: procedure
+        .input(pageInput)
+        .query(({ ctx, input }) => getFeed(ctx.db, ctx.user?.id ?? null, input)),
 
     /** Idempotent: saving an already-saved post succeeds. */
     savePost: procedure.input(postIdInput).mutation(async ({ ctx, input }) => {

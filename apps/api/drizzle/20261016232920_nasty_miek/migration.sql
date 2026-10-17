@@ -22,22 +22,6 @@ CREATE TABLE "follows" (
 	CONSTRAINT "follows_no_self_follow" CHECK ("follower_id" <> "following_id")
 );
 --> statement-breakpoint
-CREATE TABLE "listings" (
-	"post_id" text PRIMARY KEY,
-	"title" text NOT NULL,
-	"price_type" text NOT NULL,
-	"price_cents" integer,
-	"condition" text,
-	"status" text DEFAULT 'available' NOT NULL,
-	"location" text,
-	"updated_at" timestamp DEFAULT now() NOT NULL,
-	CONSTRAINT "listings_price_type_valid" CHECK ("price_type" in ('fixed', 'negotiable', 'free', 'multiple')),
-	CONSTRAINT "listings_condition_valid" CHECK ("condition" in ('new', 'used')),
-	CONSTRAINT "listings_status_valid" CHECK ("status" in ('available', 'pending', 'sold')),
-	CONSTRAINT "listings_price_non_negative" CHECK ("price_cents" >= 0),
-	CONSTRAINT "listings_price_matches_type" CHECK (("price_type" in ('fixed', 'negotiable')) = ("price_cents" is not null))
-);
---> statement-breakpoint
 CREATE TABLE "post_comment_votes" (
 	"user_id" text,
 	"comment_id" text,
@@ -61,6 +45,22 @@ CREATE TABLE "post_comments" (
 	"deleted_at" timestamp,
 	CONSTRAINT "post_comments_num_upvotes_non_negative" CHECK ("num_upvotes" >= 0),
 	CONSTRAINT "post_comments_num_downvotes_non_negative" CHECK ("num_downvotes" >= 0)
+);
+--> statement-breakpoint
+CREATE TABLE "post_listing_details" (
+	"post_id" text PRIMARY KEY,
+	"title" text NOT NULL,
+	"price_type" text NOT NULL,
+	"price_cents" integer,
+	"condition" text,
+	"status" text DEFAULT 'available' NOT NULL,
+	"location" text,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "post_listing_details_price_type_valid" CHECK ("price_type" in ('fixed', 'negotiable', 'free', 'multiple')),
+	CONSTRAINT "post_listing_details_condition_valid" CHECK ("condition" in ('new', 'used')),
+	CONSTRAINT "post_listing_details_status_valid" CHECK ("status" in ('available', 'pending', 'sold')),
+	CONSTRAINT "post_listing_details_price_non_negative" CHECK ("price_cents" >= 0),
+	CONSTRAINT "post_listing_details_price_matches_type" CHECK (("price_type" in ('fixed', 'negotiable')) = ("price_cents" is not null))
 );
 --> statement-breakpoint
 CREATE TABLE "post_media" (
@@ -155,22 +155,23 @@ CREATE TABLE "verifications" (
 );
 --> statement-breakpoint
 CREATE INDEX "follows_following_id_idx" ON "follows" ("following_id");--> statement-breakpoint
-CREATE INDEX "listings_status_post_id_idx" ON "listings" ("status","post_id");--> statement-breakpoint
 CREATE INDEX "post_comment_votes_comment_id_idx" ON "post_comment_votes" ("comment_id");--> statement-breakpoint
 CREATE INDEX "post_comments_post_id_idx" ON "post_comments" ("post_id","id");--> statement-breakpoint
+CREATE INDEX "post_listing_details_status_post_id_idx" ON "post_listing_details" ("status","post_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "post_media_post_id_position_idx" ON "post_media" ("post_id","position");--> statement-breakpoint
 CREATE INDEX "post_saves_user_id_id_idx" ON "post_saves" ("user_id","id");--> statement-breakpoint
 CREATE INDEX "post_saves_post_id_idx" ON "post_saves" ("post_id");--> statement-breakpoint
 CREATE INDEX "posts_author_id_idx" ON "posts" ("author_id","id");--> statement-breakpoint
+CREATE INDEX "posts_kind_id_idx" ON "posts" ("kind","id");--> statement-breakpoint
 CREATE UNIQUE INDEX "profiles_username_lower_idx" ON "profiles" (lower("username"));--> statement-breakpoint
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "follows" ADD CONSTRAINT "follows_follower_id_users_id_fkey" FOREIGN KEY ("follower_id") REFERENCES "users"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "follows" ADD CONSTRAINT "follows_following_id_users_id_fkey" FOREIGN KEY ("following_id") REFERENCES "users"("id") ON DELETE CASCADE;--> statement-breakpoint
-ALTER TABLE "listings" ADD CONSTRAINT "listings_post_id_posts_id_fkey" FOREIGN KEY ("post_id") REFERENCES "posts"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "post_comment_votes" ADD CONSTRAINT "post_comment_votes_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "post_comment_votes" ADD CONSTRAINT "post_comment_votes_comment_id_post_comments_id_fkey" FOREIGN KEY ("comment_id") REFERENCES "post_comments"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "post_comments" ADD CONSTRAINT "post_comments_post_id_posts_id_fkey" FOREIGN KEY ("post_id") REFERENCES "posts"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "post_comments" ADD CONSTRAINT "post_comments_author_id_users_id_fkey" FOREIGN KEY ("author_id") REFERENCES "users"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "post_listing_details" ADD CONSTRAINT "post_listing_details_post_id_posts_id_fkey" FOREIGN KEY ("post_id") REFERENCES "posts"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "post_media" ADD CONSTRAINT "post_media_post_id_posts_id_fkey" FOREIGN KEY ("post_id") REFERENCES "posts"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "post_saves" ADD CONSTRAINT "post_saves_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "post_saves" ADD CONSTRAINT "post_saves_post_id_posts_id_fkey" FOREIGN KEY ("post_id") REFERENCES "posts"("id") ON DELETE CASCADE;--> statement-breakpoint

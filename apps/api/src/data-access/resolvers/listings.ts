@@ -41,7 +41,7 @@ export async function createListing(
             .returning(postFields);
 
         const [listing] = await tx
-            .insert(schema.listings)
+            .insert(schema.postListingDetails)
             .values({ postId: post!.id, ...details })
             .returning(listingFields);
 
@@ -84,9 +84,9 @@ export async function updateListing(
         if (!post) return null;
 
         const [listing] = await tx
-            .update(schema.listings)
+            .update(schema.postListingDetails)
             .set({ ...details, updatedAt: now })
-            .where(eq(schema.listings.postId, postId))
+            .where(eq(schema.postListingDetails.postId, postId))
             .returning(listingFields);
 
         return {
@@ -119,18 +119,18 @@ export async function setListingStatus(
     status: ListingStatus,
 ) {
     const [listing] = await db
-        .update(schema.listings)
+        .update(schema.postListingDetails)
         .set({ status, updatedAt: new Date() })
         .where(
             and(
-                eq(schema.listings.postId, postId),
+                eq(schema.postListingDetails.postId, postId),
                 exists(
                     db
                         .select({ one: sql`1` })
                         .from(schema.posts)
                         .where(
                             and(
-                                eq(schema.posts.id, schema.listings.postId),
+                                eq(schema.posts.id, schema.postListingDetails.postId),
                                 eq(schema.posts.authorId, userId),
                                 postNotDeleted,
                             ),
@@ -161,8 +161,8 @@ export async function getListings(
             thumbnail: postThumbnailSql,
             isSaved: sql<boolean>`${schema.postSaves.postId} is not null`,
         })
-        .from(schema.listings)
-        .innerJoin(schema.posts, eq(schema.posts.id, schema.listings.postId))
+        .from(schema.postListingDetails)
+        .innerJoin(schema.posts, eq(schema.posts.id, schema.postListingDetails.postId))
         .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.authorId))
         .leftJoin(
             schema.postSaves,
@@ -176,11 +176,11 @@ export async function getListings(
         .where(
             and(
                 postNotDeleted,
-                status ? eq(schema.listings.status, status) : undefined,
-                cursor ? lt(schema.listings.postId, cursor) : undefined,
+                status ? eq(schema.postListingDetails.status, status) : undefined,
+                cursor ? lt(schema.postListingDetails.postId, cursor) : undefined,
             ),
         )
-        .orderBy(desc(schema.listings.postId))
+        .orderBy(desc(schema.postListingDetails.postId))
         .limit(limit + 1);
 
     const hasMore = rows.length > limit;

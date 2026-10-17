@@ -112,6 +112,8 @@ export const posts = pgTable("posts", {
     deletedAt: timestamp("deleted_at"),
 }, (t) => [
     index("posts_author_id_idx").on(t.authorId, t.id),
+    // Feed: one kind, newest first.
+    index("posts_kind_id_idx").on(t.kind, t.id),
     check("posts_num_comments_non_negative", sql`${t.numComments} >= 0`),
     check("posts_kind_valid", sql`${t.kind} in ('post', 'listing')`),
 ]);
@@ -180,7 +182,7 @@ export const listingStatuses = ["available", "pending", "sold"] as const;
  * Extra details for posts with kind 'listing' (1:1 with posts). The post body
  * is the listing's description. Prices are integer cents.
  */
-export const listings = pgTable("listings", {
+export const postListingDetails = pgTable("post_listing_details", {
     postId: text("post_id")
         .primaryKey()
         .references(() => posts.id, { onDelete: "cascade" }),
@@ -194,13 +196,13 @@ export const listings = pgTable("listings", {
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (t) => [
     // Marketplace feed: filter by status, newest first.
-    index("listings_status_post_id_idx").on(t.status, t.postId),
-    check("listings_price_type_valid", sql`${t.priceType} in ('fixed', 'negotiable', 'free', 'multiple')`),
-    check("listings_condition_valid", sql`${t.condition} in ('new', 'used')`),
-    check("listings_status_valid", sql`${t.status} in ('available', 'pending', 'sold')`),
-    check("listings_price_non_negative", sql`${t.priceCents} >= 0`),
+    index("post_listing_details_status_post_id_idx").on(t.status, t.postId),
+    check("post_listing_details_price_type_valid", sql`${t.priceType} in ('fixed', 'negotiable', 'free', 'multiple')`),
+    check("post_listing_details_condition_valid", sql`${t.condition} in ('new', 'used')`),
+    check("post_listing_details_status_valid", sql`${t.status} in ('available', 'pending', 'sold')`),
+    check("post_listing_details_price_non_negative", sql`${t.priceCents} >= 0`),
     check(
-        "listings_price_matches_type",
+        "post_listing_details_price_matches_type",
         sql`(${t.priceType} in ('fixed', 'negotiable')) = (${t.priceCents} is not null)`,
     ),
 ]);

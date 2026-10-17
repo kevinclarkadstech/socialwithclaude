@@ -24,13 +24,13 @@ export const postFields = {
 
 /** Select after a LEFT JOIN on listings; Drizzle returns null when there's no row. */
 export const listingFields = {
-    title: schema.listings.title,
-    priceType: schema.listings.priceType,
-    priceCents: schema.listings.priceCents,
-    condition: schema.listings.condition,
-    status: schema.listings.status,
-    location: schema.listings.location,
-    updatedAt: schema.listings.updatedAt,
+    title: schema.postListingDetails.title,
+    priceType: schema.postListingDetails.priceType,
+    priceCents: schema.postListingDetails.priceCents,
+    condition: schema.postListingDetails.condition,
+    status: schema.postListingDetails.status,
+    location: schema.postListingDetails.location,
+    updatedAt: schema.postListingDetails.updatedAt,
 };
 
 export const postNotDeleted = isNull(schema.posts.deletedAt);

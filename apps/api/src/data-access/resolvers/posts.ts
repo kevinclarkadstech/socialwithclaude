@@ -69,7 +69,7 @@ export async function getPostById(db: Database, postId: string, viewerId: string
         })
         .from(schema.posts)
         .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.authorId))
-        .leftJoin(schema.listings, eq(schema.listings.postId, schema.posts.id))
+        .leftJoin(schema.postListingDetails, eq(schema.postListingDetails.postId, schema.posts.id))
         .leftJoin(
             schema.postSaves,
             viewerId
@@ -83,6 +83,53 @@ export async function getPostById(db: Database, postId: string, viewerId: string
         .limit(1);
 
     return post ? { ...post, media: post.media.map(toMediaDto) } : null;
+}
+
+/**
+ * The Feed tab: regular posts (not listings), newest first, with authors,
+ * photos and `isSaved` for the viewer. Pass the previous page's `nextCursor`
+ * as `cursor` to get the next page.
+ */
+export async function getFeed(
+    db: Database,
+    viewerId: string | null,
+    { cursor, limit }: { cursor?: string | null; limit: number },
+) {
+    const rows = await db
+        .select({
+            ...postFields,
+            author: authorFields,
+            media: postMediaSql,
+            isSaved: sql<boolean>`${schema.postSaves.postId} is not null`,
+        })
+        .from(schema.posts)
+        .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.authorId))
+        .leftJoin(
+            schema.postSaves,
+            viewerId
+                ? and(
+                    eq(schema.postSaves.userId, viewerId),
+                    eq(schema.postSaves.postId, schema.posts.id),
+                )
+                : sql`false`,
+        )
+        .where(
+            and(
+                eq(schema.posts.kind, "post"),
+                notDeleted,
+                cursor ? lt(schema.posts.id, cursor) : undefined,
+            ),
+        )
+        .orderBy(desc(schema.posts.id))
+        .limit(limit + 1);
+
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+
+    return {
+        items: items.map((post) => ({ ...post, media: post.media.map(toMediaDto) })),
+        nextCursor: hasMore ? items[items.length - 1]!.id : null,
+    };
 }
 
 /**
@@ -130,7 +177,7 @@ export async function getSavedPosts(
         .from(schema.postSaves)
         .innerJoin(schema.posts, eq(schema.posts.id, schema.postSaves.postId))
         .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.authorId))
-        .leftJoin(schema.listings, eq(schema.listings.postId, schema.posts.id))
+        .leftJoin(schema.postListingDetails, eq(schema.postListingDetails.postId, schema.posts.id))
         .where(
             and(
                 eq(schema.postSaves.userId, userId),
