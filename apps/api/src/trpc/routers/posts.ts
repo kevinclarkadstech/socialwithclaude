@@ -185,7 +185,7 @@ export const postsRouter = router({
         .input(z.object({ id: z.string().min(1), body: commentBody }))
         .mutation(async ({ ctx, input }) => {
             const { user } = await requireUserAndProfile(ctx);
-            return updatePostComment(ctx.db, user.id, input.id, input.body);
+            await updatePostComment(ctx.db, user.id, input.id, input.body);
         }),
 
     /** The comment's author or the post's author may delete it. */
@@ -231,7 +231,7 @@ export const postsRouter = router({
             if (!input.media) return updatePost(ctx.db, user.id, input.id, input.body);
 
             const existing = await getPostMediaRows(ctx.db, input.id);
-            return withMedia(mediaContext(ctx, user.id), input.media, existing, (rows) =>
+            await withMedia(mediaContext(ctx, user.id), input.media, existing, (rows) =>
                 updatePost(ctx.db, user.id, input.id, input.body, rows),
             );
         }),

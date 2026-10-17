@@ -83,7 +83,7 @@ export const listingsRouter = router({
             if (!media) return updateListing(ctx.db, user.id, id, listing);
 
             const existing = await getPostMediaRows(ctx.db, id);
-            return withMedia(mediaContext(ctx, user.id), media, existing, (rows) =>
+            await withMedia(mediaContext(ctx, user.id), media, existing, (rows) =>
                 updateListing(ctx.db, user.id, id, listing, rows),
             );
         }),
@@ -93,7 +93,7 @@ export const listingsRouter = router({
         .input(z.object({ id: z.string().min(1), status: z.enum(schema.listingStatuses) }))
         .mutation(async ({ ctx, input }) => {
             const { user } = await requireUserAndProfile(ctx);
-            return setListingStatus(ctx.db, user.id, input.id, input.status);
+            await setListingStatus(ctx.db, user.id, input.id, input.status);
         }),
 
     /** Newest first, optionally filtered by status. Pass `nextCursor` as `cursor`. */

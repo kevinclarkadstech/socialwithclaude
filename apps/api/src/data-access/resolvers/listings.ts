@@ -9,7 +9,6 @@ import {
     authorFields,
     listingFields,
     postFields,
-    postMediaSql,
     postNotDeleted,
     postThumbnailSql,
     toMediaDto,
@@ -82,7 +81,7 @@ export async function updateListing(
     { body, ...details }: ListingDetails & { body: string },
     media?: MediaRowInput[],
 ) {
-    const result = await db.transaction(async (tx) => {
+    const updated = await db.transaction(async (tx) => {
         const now = new Date();
         const [post] = await tx
             .update(schema.posts)
@@ -95,32 +94,18 @@ export async function updateListing(
                     postNotDeleted,
                 ),
             )
-            .returning(postFields);
-        if (!post) return null;
+            .returning({ id: schema.posts.id });
+        if (!post) return false;
 
-        const [listing] = await tx
+        await tx
             .update(schema.postListingDetails)
             .set({ ...details, updatedAt: now })
-            .where(eq(schema.postListingDetails.postId, postId))
-            .returning(listingFields);
+            .where(eq(schema.postListingDetails.postId, postId));
 
-        return {
-            ...post,
-            listing: listing!,
-            media: media ? await replacePostMedia(tx, postId, media) : null,
-        };
+        if (media) await replacePostMedia(tx, postId, media);
+        return true;
     });
-    if (!result) return throwWhyListingNotWritable(db, userId, postId);
-
-    // Photos unchanged: read them back so the response shape is the same.
-    if (!result.media) {
-        const [current] = await db
-            .select({ media: postMediaSql })
-            .from(schema.posts)
-            .where(eq(schema.posts.id, postId));
-        return { ...result, media: current!.media.map(toMediaDto) };
-    }
-    return { ...result, media: result.media };
+    if (!updated) await throwWhyListingNotWritable(db, userId, postId);
 }
 
 /**
@@ -153,9 +138,9 @@ export async function setListingStatus(
                 ),
             ),
         )
-        .returning(listingFields);
+        .returning({ postId: schema.postListingDetails.postId });
 
-    return listing ?? throwWhyListingNotWritable(db, userId, postId);
+    if (!listing) await throwWhyListingNotWritable(db, userId, postId);
 }
 
 /**

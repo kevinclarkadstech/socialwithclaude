@@ -517,17 +517,18 @@ export async function updatePostComment(db: Database, userId: string, commentId:
                 commentPostIsLive(db),
             ),
         )
-        .returning(commentFields);
+        .returning({ id: schema.postComments.id });
 
     if (!comment) await throwWhyCommentNotWritable(db, userId, commentId);
-    return comment!;
 }
 
 /**
  * Soft-deletes a comment and lowers the post's comment count in one
  * transaction. The comment's author or the post's author may delete it.
+ * Deleting a comment that's already gone (or whose post is) succeeds, so
+ * retried deletes are safe.
  *
- * @throws CommentNotFoundError if the comment or its post doesn't exist or was deleted.
+ * @throws CommentNotFoundError if the comment doesn't exist.
  * @throws NotCommentAuthorError if `userId` wrote neither the comment nor the post.
  */
 export async function deletePostComment(db: Database, userId: string, commentId: string) {
@@ -553,7 +554,27 @@ export async function deletePostComment(db: Database, userId: string, commentId:
         return true;
     });
 
-    if (!deleted) await throwWhyCommentNotWritable(db, userId, commentId);
+    if (deleted) return;
+
+    // Already deleted (or its post was) by someone allowed to delete it: done.
+    const [gone] = await db
+        .select({
+            authorId: schema.postComments.authorId,
+            deletedAt: schema.postComments.deletedAt,
+            postAuthorId: schema.posts.authorId,
+            postDeletedAt: schema.posts.deletedAt,
+        })
+        .from(schema.postComments)
+        .innerJoin(schema.posts, eq(schema.posts.id, schema.postComments.postId))
+        .where(eq(schema.postComments.id, commentId));
+    if (
+        gone &&
+        (gone.deletedAt || gone.postDeletedAt) &&
+        (gone.authorId === userId || gone.postAuthorId === userId)
+    ) {
+        return;
+    }
+    await throwWhyCommentNotWritable(db, userId, commentId);
 }
 
 /** Called after a guarded comment write matched no rows, to report the right reason. */
@@ -628,34 +649,25 @@ export async function updatePost(
     body: string,
     media?: MediaRowInput[],
 ) {
-    const result = await db.transaction(async (tx) => {
+    const updated = await db.transaction(async (tx) => {
         const [post] = await tx
             .update(schema.posts)
             .set({ body, updatedAt: new Date() })
             .where(and(eq(schema.posts.id, postId), eq(schema.posts.authorId, userId), notDeleted))
-            .returning(postFields);
-        if (!post) return null;
+            .returning({ id: schema.posts.id });
+        if (!post) return false;
 
-        if (media) return { ...post, media: await replacePostMedia(tx, postId, media) };
-        return { ...post, media: null };
+        if (media) await replacePostMedia(tx, postId, media);
+        return true;
     });
-    if (!result) return throwWhyPostNotWritable(db, userId, postId);
-
-    // Photos unchanged: read them back so the response shape is the same.
-    if (!result.media) {
-        const [current] = await db
-            .select({ media: postMediaSql })
-            .from(schema.posts)
-            .where(eq(schema.posts.id, postId));
-        return { ...result, media: current!.media.map(toMediaDto) };
-    }
-    return { ...result, media: result.media };
+    if (!updated) await throwWhyPostNotWritable(db, userId, postId);
 }
 
 /**
  * Soft-deletes a post; it and its comments stop appearing in queries.
+ * Deleting your own already-deleted post succeeds, so retried deletes are safe.
  *
- * @throws PostNotFoundError if the post doesn't exist or was already deleted.
+ * @throws PostNotFoundError if the post doesn't exist.
  * @throws NotPostAuthorError if `userId` didn't write the post.
  */
 export async function deletePost(db: Database, userId: string, postId: string) {
@@ -664,8 +676,15 @@ export async function deletePost(db: Database, userId: string, postId: string) {
         .set({ deletedAt: new Date() })
         .where(and(eq(schema.posts.id, postId), eq(schema.posts.authorId, userId), notDeleted))
         .returning({ id: schema.posts.id });
+    if (post) return;
 
-    if (!post) await throwWhyPostNotWritable(db, userId, postId);
+    const [gone] = await db
+        .select({ authorId: schema.posts.authorId, deletedAt: schema.posts.deletedAt })
+        .from(schema.posts)
+        .where(eq(schema.posts.id, postId));
+    if (gone?.deletedAt && gone.authorId === userId) return;
+
+    await throwWhyPostNotWritable(db, userId, postId);
 }
 
 /** Called after a guarded write matched no rows, to report the right reason. */
