@@ -161,3 +161,4 @@ export * from './listings';
 export * from './media';
 export * from './blocks';
 export * from './feedback';
+export * from './settings';

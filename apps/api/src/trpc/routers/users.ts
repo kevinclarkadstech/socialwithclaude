@@ -8,14 +8,35 @@ import {
     getProfileByUserId,
     getProfileByUsername,
     getUserIdByUsername,
+    getUserSettings,
     unblockUser,
     unfollowUser,
+    updateUserSettings,
 } from "../../data-access/resolvers";
+import { schema } from "../../data-access";
 import { getUserBlockList, isBlocked } from "../blocking";
 import { requireUserAndProfile } from "../context";
 import { procedure, router } from "../trpc";
 
 const usernameInput = z.object({ username: z.string().min(1) });
+
+/** Same groups as the settings returned by getMySettings; every field optional. */
+const updateSettingsInput = z.object({
+    display: z
+        .object({
+            darkModeEnabled: z.boolean(),
+        })
+        .partial()
+        .optional(),
+    privacy: z
+        .object({
+            followersCanTag: z.boolean(),
+            nonFollowersCanTag: z.boolean(),
+            profileVisibility: z.enum(schema.profileVisibilities),
+        })
+        .partial()
+        .optional(),
+});
 
 export const usersRouter = router({
     /**
@@ -92,5 +113,20 @@ export const usersRouter = router({
     getMyBlockedUsers: procedure.query(async ({ ctx }) => {
         const { user } = await requireUserAndProfile(ctx);
         return getBlockedUsers(ctx.db, user.id);
+    }),
+
+    /** The caller's settings, grouped as `display` and `privacy`. */
+    getMySettings: procedure.query(async ({ ctx }) => {
+        const { user } = await requireUserAndProfile(ctx);
+        return getUserSettings(ctx.db, user.id);
+    }),
+
+    /**
+     * Changes only the settings given; omitted groups and fields are left
+     * as they are. Returns nothing.
+     */
+    updateMySettings: procedure.input(updateSettingsInput).mutation(async ({ ctx, input }) => {
+        const { user } = await requireUserAndProfile(ctx);
+        await updateUserSettings(ctx.db, user.id, { ...input.display, ...input.privacy });
     }),
 });
