@@ -35,6 +35,15 @@ export const listingFields = {
 
 export const postNotDeleted = isNull(schema.posts.deletedAt);
 
+/** Escapes LIKE wildcards so user input matches literally. */
+const escapeLike = (text: string) => text.replace(/[\\%_]/g, (c) => `\\${c}`);
+
+/** ILIKE pattern: text that starts with `query`. */
+export const startsWithPattern = (query: string) => `${escapeLike(query)}%`;
+
+/** ILIKE pattern: text that contains `query`. */
+export const containsPattern = (query: string) => `%${escapeLike(query)}%`;
+
 type MediaJson = {
     id: string;
     key: string;

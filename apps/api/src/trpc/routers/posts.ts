@@ -17,6 +17,7 @@ import {
     reportPost,
     reportPostComment,
     savePost,
+    searchPosts,
     unsavePost,
     updatePost,
     updatePostComment,
@@ -59,6 +60,24 @@ async function assertCommentNotBlocked(ctx: TRPCContext, commentId: string) {
     if (isBlocked(blockList, authors.authorId) || isBlocked(blockList, authors.postAuthorId)) {
         throw commentNotFound();
     }
+}
+
+/**
+ * A page of posts or listings matching `query` that the caller can see:
+ * authors blocked either way are left out. Pass `nextCursor` as `cursor`.
+ */
+export async function searchVisiblePosts(
+    ctx: TRPCContext,
+    query: string,
+    { kind, ...page }: { kind: "post" | "listing"; cursor?: string | null; limit: number },
+) {
+    const blockList = await getUserBlockList(ctx);
+    return fillVisiblePage(
+        (cursor, limit) => searchPosts(ctx.db, query, { kind, cursor, limit }),
+        page,
+        (p) => !isBlocked(blockList, p.author.userId),
+        (p) => p.id,
+    );
 }
 
 export const postsRouter = router({

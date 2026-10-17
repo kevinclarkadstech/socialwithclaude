@@ -69,15 +69,28 @@ export const profiles = pgTable("profiles", {
     check("profiles_num_following_non_negative", sql`${t.numFollowing} >= 0`),
 ]);
 
+export const profileVisibilities = ["public", "followers"] as const;
+
+/**
+ * One row per user, created at sign-up. Kept flat (one column per setting) so
+ * adding a setting is one ADD COLUMN with a default; the API groups them
+ * (see toUserSettingsDto).
+ */
 export const userSettings = pgTable("user_settings", {
     userId: text("user_id")
         .primaryKey()
         .references(() => users.id, { onDelete: "cascade" }),
-    emailNotifications: boolean("email_notifications").notNull().default(true),
-    privateProfile: boolean("private_profile").notNull().default(false),
+    // Display
+    darkModeEnabled: boolean("dark_mode_enabled").notNull().default(false),
+    // Privacy and security
+    followersCanTag: boolean("followers_can_tag").notNull().default(true),
+    nonFollowersCanTag: boolean("non_followers_can_tag").notNull().default(false),
+    profileVisibility: text("profile_visibility", { enum: profileVisibilities }).notNull().default("public"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (t) => [
+    check("user_settings_profile_visibility_valid", sql`${t.profileVisibility} in ('public', 'followers')`),
+]);
 
 export const userFollows = pgTable("user_follows", {
     followerId: text("follower_id")
