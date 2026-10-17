@@ -79,7 +79,7 @@ export const userSettings = pgTable("user_settings", {
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const follows = pgTable("follows", {
+export const userFollows = pgTable("user_follows", {
     followerId: text("follower_id")
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
@@ -89,8 +89,24 @@ export const follows = pgTable("follows", {
     createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [
     primaryKey({ columns: [t.followerId, t.followingId] }),
-    index("follows_following_id_idx").on(t.followingId),
-    check("follows_no_self_follow", sql`${t.followerId} <> ${t.followingId}`),
+    index("user_follows_following_id_idx").on(t.followingId),
+    check("user_follows_no_self_follow", sql`${t.followerId} <> ${t.followingId}`),
+]);
+
+/** `user_id` has blocked `blocked_user_id`. Blocking hides content both ways. */
+export const userBlocks = pgTable("user_blocks", {
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    blockedUserId: text("blocked_user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+    primaryKey({ columns: [t.userId, t.blockedUserId] }),
+    // "Who has blocked me" direction of the block list.
+    index("user_blocks_blocked_user_id_idx").on(t.blockedUserId),
+    check("user_blocks_no_self_block", sql`${t.userId} <> ${t.blockedUserId}`),
 ]);
 // ULIDs sort by creation time, so `id` doubles as a pagination cursor. Monotonic
 // so IDs created in the same millisecond still sort in creation order.

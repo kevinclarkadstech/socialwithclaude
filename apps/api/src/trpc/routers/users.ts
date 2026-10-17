@@ -2,12 +2,16 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
 import {
+    blockUser,
     followUser,
+    getBlockedUsers,
     getProfileByUserId,
     getProfileByUsername,
     getUserIdByUsername,
+    unblockUser,
     unfollowUser,
 } from "../../data-access/resolvers";
+import { getUserBlockList, isBlocked } from "../blocking";
 import { requireUserAndProfile } from "../context";
 import { procedure, router } from "../trpc";
 
@@ -25,9 +29,12 @@ export const usersRouter = router({
         return { user: ctx.user, profile };
     }),
 
+    /** NOT_FOUND if either user has blocked the other. */
     getUserProfile: procedure.input(usernameInput).query(async ({ ctx, input }) => {
         const profile = await getProfileByUsername(ctx.db, input.username, ctx.user?.id ?? null);
-        if (!profile) throw new TRPCError({ code: "NOT_FOUND" });
+        if (!profile || isBlocked(await getUserBlockList(ctx), profile.userId)) {
+            throw new TRPCError({ code: "NOT_FOUND" });
+        }
 
         return profile;
     }),
@@ -36,7 +43,9 @@ export const usersRouter = router({
         const { user } = await requireUserAndProfile(ctx);
 
         const targetUserId = await getUserIdByUsername(ctx.db, input.username);
-        if (!targetUserId) throw new TRPCError({ code: "NOT_FOUND" });
+        if (!targetUserId || isBlocked(await getUserBlockList(ctx), targetUserId)) {
+            throw new TRPCError({ code: "NOT_FOUND" });
+        }
         if (targetUserId === user.id) {
             throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot follow yourself" });
         }
@@ -51,5 +60,37 @@ export const usersRouter = router({
         if (!targetUserId) throw new TRPCError({ code: "NOT_FOUND" });
 
         await unfollowUser(ctx.db, user.id, targetUserId);
+    }),
+
+    /**
+     * Blocks a user: hides each other's content both ways and removes follows
+     * in both directions. Blocking an already-blocked user succeeds.
+     */
+    blockUser: procedure.input(usernameInput).mutation(async ({ ctx, input }) => {
+        const { user } = await requireUserAndProfile(ctx);
+
+        const targetUserId = await getUserIdByUsername(ctx.db, input.username);
+        if (!targetUserId) throw new TRPCError({ code: "NOT_FOUND" });
+        if (targetUserId === user.id) {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "CANNOT_BLOCK_SELF" });
+        }
+
+        await blockUser(ctx.db, user.id, targetUserId);
+    }),
+
+    /** Unblocking a user who isn't blocked succeeds. */
+    unblockUser: procedure.input(usernameInput).mutation(async ({ ctx, input }) => {
+        const { user } = await requireUserAndProfile(ctx);
+
+        const targetUserId = await getUserIdByUsername(ctx.db, input.username);
+        if (!targetUserId) throw new TRPCError({ code: "NOT_FOUND" });
+
+        await unblockUser(ctx.db, user.id, targetUserId);
+    }),
+
+    /** Users the caller has blocked, most recent first. */
+    getMyBlockedUsers: procedure.query(async ({ ctx }) => {
+        const { user } = await requireUserAndProfile(ctx);
+        return getBlockedUsers(ctx.db, user.id);
     }),
 });

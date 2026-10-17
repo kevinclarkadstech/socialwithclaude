@@ -1,10 +1,8 @@
 import { asc, eq } from "drizzle-orm";
 
 import type { MediaRowInput } from "../../media";
-import { schema, type Database } from "../db";
+import { schema, type Database, type Transaction } from "../db";
 import { rowToMediaDto } from "./shared";
-
-type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 
 /** The post's photos in order, in the shape withMedia() takes as `existing`. */
 export async function getPostMediaRows(db: Database, postId: string): Promise<MediaRowInput[]> {

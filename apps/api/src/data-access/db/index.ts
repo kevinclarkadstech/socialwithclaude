@@ -8,6 +8,9 @@ export function createDb(connectionString: string) {
 
 export type Database = ReturnType<typeof createDb>;
 
+/** The `tx` handed to db.transaction() callbacks. */
+export type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
+
 export const db = createDb(serverConfig.DATABASE_URL);
 
 export * as schema from './schema';

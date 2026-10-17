@@ -152,6 +152,29 @@ export async function savePost(db: Database, userId: string, postId: string) {
 
 type ReportInput = { reason: (typeof schema.reportReasons)[number]; details: string | null };
 
+/** The author of a live (not deleted) post, or null. */
+export async function getPostAuthorId(db: Database, postId: string) {
+    const [post] = await db
+        .select({ authorId: schema.posts.authorId })
+        .from(schema.posts)
+        .where(and(eq(schema.posts.id, postId), notDeleted))
+        .limit(1);
+
+    return post?.authorId ?? null;
+}
+
+/** The authors of a live comment and of its (live) post, or null. */
+export async function getPostCommentAuthorIds(db: Database, commentId: string) {
+    const [row] = await db
+        .select({ authorId: schema.postComments.authorId, postAuthorId: schema.posts.authorId })
+        .from(schema.postComments)
+        .innerJoin(schema.posts, eq(schema.posts.id, schema.postComments.postId))
+        .where(and(eq(schema.postComments.id, commentId), commentNotDeleted, notDeleted))
+        .limit(1);
+
+    return row ?? null;
+}
+
 /**
  * Reports a post. Each user has one report per post: reporting again updates
  * the reason and details (status is left alone).
@@ -226,7 +249,8 @@ export async function getSavedPosts(
     const page = hasMore ? rows.slice(0, limit) : rows;
 
     return {
-        items: page.map(({ saveId: _, thumbnail, ...post }) => ({
+        // `saveId` is each item's cursor position (the API layer strips it).
+        items: page.map(({ thumbnail, ...post }) => ({
             ...post,
             thumbnail: thumbnail && toMediaDto(thumbnail),
         })),

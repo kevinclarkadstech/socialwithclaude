@@ -1,6 +1,6 @@
 import { and, eq, sql } from "drizzle-orm";
 
-import { schema, type Database } from "../db";
+import { schema, type Database, type Transaction } from "../db";
 import { getUniqueViolationConstraint, ProfileAlreadyExistsError, UsernameTakenError } from "../errors";
 
 export async function getUserIdByUsername(db: Database, username: string) {
@@ -81,15 +81,15 @@ export async function getProfileByUsername(db: Database, username: string, viewe
             numFollowers: schema.profiles.numFollowers,
             numFollowing: schema.profiles.numFollowing,
             createdAt: schema.profiles.createdAt,
-            isFollowing: sql<boolean>`${schema.follows.followerId} is not null`,
+            isFollowing: sql<boolean>`${schema.userFollows.followerId} is not null`,
         })
         .from(schema.profiles)
         .leftJoin(
-            schema.follows,
+            schema.userFollows,
             viewerId
                 ? and(
-                    eq(schema.follows.followerId, viewerId),
-                    eq(schema.follows.followingId, schema.profiles.userId),
+                    eq(schema.userFollows.followerId, viewerId),
+                    eq(schema.userFollows.followingId, schema.profiles.userId),
                 )
                 : sql`false`,
         )
@@ -106,7 +106,7 @@ export async function followUser(db: Database, followerId: string, followingId: 
 
     await db.transaction(async (tx) => {
         const [inserted] = await tx
-            .insert(schema.follows)
+            .insert(schema.userFollows)
             .values({ followerId, followingId })
             .onConflictDoNothing()
             .returning();
@@ -127,32 +127,36 @@ export async function followUser(db: Database, followerId: string, followingId: 
 }
 
 export async function unfollowUser(db: Database, followerId: string, followingId: string) {
-    await db.transaction(async (tx) => {
-        const deleted = await tx
-            .delete(schema.follows)
-            .where(
-                and(
-                    eq(schema.follows.followerId, followerId),
-                    eq(schema.follows.followingId, followingId),
-                ),
-            )
-            .returning();
+    await db.transaction((tx) => removeFollow(tx, followerId, followingId));
+}
 
-        // Wasn't following; leave counts untouched.
-        if (deleted.length === 0) return;
+/** Deletes a follow and adjusts both counts; a no-op if it doesn't exist. */
+export async function removeFollow(tx: Transaction, followerId: string, followingId: string) {
+    const deleted = await tx
+        .delete(schema.userFollows)
+        .where(
+            and(
+                eq(schema.userFollows.followerId, followerId),
+                eq(schema.userFollows.followingId, followingId),
+            ),
+        )
+        .returning();
 
-        await tx
-            .update(schema.profiles)
-            .set({ numFollowing: sql`${schema.profiles.numFollowing} - 1` })
-            .where(eq(schema.profiles.userId, followerId));
+    // Wasn't following; leave counts untouched.
+    if (deleted.length === 0) return;
 
-        await tx
-            .update(schema.profiles)
-            .set({ numFollowers: sql`${schema.profiles.numFollowers} - 1` })
-            .where(eq(schema.profiles.userId, followingId));
-    });
+    await tx
+        .update(schema.profiles)
+        .set({ numFollowing: sql`${schema.profiles.numFollowing} - 1` })
+        .where(eq(schema.profiles.userId, followerId));
+
+    await tx
+        .update(schema.profiles)
+        .set({ numFollowers: sql`${schema.profiles.numFollowers} - 1` })
+        .where(eq(schema.profiles.userId, followingId));
 }
 
 export * from './posts';
 export * from './listings';
 export * from './media';
+export * from './blocks';

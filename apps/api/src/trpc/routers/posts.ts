@@ -7,7 +7,9 @@ import {
     deletePost,
     deletePostComment,
     getFeed,
+    getPostAuthorId,
     getPostById,
+    getPostCommentAuthorIds,
     getPostComments,
     getPostMediaRows,
     getSavedPosts,
@@ -20,7 +22,8 @@ import {
     voteOnPostComment,
 } from "../../data-access";
 import { withMedia } from "../../media";
-import { mediaContext, requireUserAndProfile } from "../context";
+import { fillVisiblePage, getUserBlockList, isBlocked } from "../blocking";
+import { mediaContext, requireUserAndProfile, type TRPCContext } from "../context";
 import { mediaInput, reportInput } from "../inputs";
 import { procedure, router } from "../trpc";
 
@@ -32,22 +35,53 @@ const pageInput = z.object({
     limit: z.number().int().min(1).max(100).default(20),
 });
 
+const postNotFound = () => new TRPCError({ code: "NOT_FOUND", message: "POST_NOT_FOUND" });
+const commentNotFound = () => new TRPCError({ code: "NOT_FOUND", message: "COMMENT_NOT_FOUND" });
+
+/**
+ * POST_NOT_FOUND if the caller and the post's author have blocked each other.
+ * A missing post is left for the data-access call to report.
+ */
+async function assertPostNotBlocked(ctx: TRPCContext, postId: string) {
+    if (!ctx.user) return;
+    const authorId = await getPostAuthorId(ctx.db, postId);
+    if (authorId && isBlocked(await getUserBlockList(ctx), authorId)) throw postNotFound();
+}
+
+/** COMMENT_NOT_FOUND if the caller is blocked with the comment's or the post's author. */
+async function assertCommentNotBlocked(ctx: TRPCContext, commentId: string) {
+    if (!ctx.user) return;
+    const authors = await getPostCommentAuthorIds(ctx.db, commentId);
+    if (!authors) return;
+    const blockList = await getUserBlockList(ctx);
+    if (isBlocked(blockList, authors.authorId) || isBlocked(blockList, authors.postAuthorId)) {
+        throw commentNotFound();
+    }
+}
+
 export const postsRouter = router({
     getPostById: procedure.input(postIdInput).query(async ({ ctx, input }) => {
         const post = await getPostById(ctx.db, input.id, ctx.user?.id ?? null);
-        if (!post) throw new TRPCError({ code: "NOT_FOUND", message: "POST_NOT_FOUND" });
+        if (!post || isBlocked(await getUserBlockList(ctx), post.author.userId)) throw postNotFound();
 
         return post;
     }),
 
     /** The Feed tab: regular posts (not listings), newest first. Pass `nextCursor` as `cursor`. */
-    getFeed: procedure
-        .input(pageInput)
-        .query(({ ctx, input }) => getFeed(ctx.db, ctx.user?.id ?? null, input)),
+    getFeed: procedure.input(pageInput).query(async ({ ctx, input }) => {
+        const blockList = await getUserBlockList(ctx);
+        return fillVisiblePage(
+            (cursor, limit) => getFeed(ctx.db, ctx.user?.id ?? null, { cursor, limit }),
+            input,
+            (p) => !isBlocked(blockList, p.author.userId),
+            (p) => p.id,
+        );
+    }),
 
     /** Idempotent: saving an already-saved post succeeds. */
     savePost: procedure.input(postIdInput).mutation(async ({ ctx, input }) => {
         const { user } = await requireUserAndProfile(ctx);
+        await assertPostNotBlocked(ctx, input.id);
         await savePost(ctx.db, user.id, input.id);
     }),
 
@@ -69,7 +103,14 @@ export const postsRouter = router({
     /** The caller's saved posts, most recently saved first. Pass `nextCursor` as `cursor`. */
     getMySavedPosts: procedure.input(pageInput).query(async ({ ctx, input }) => {
         const { user } = await requireUserAndProfile(ctx);
-        return getSavedPosts(ctx.db, user.id, input);
+        const blockList = await getUserBlockList(ctx);
+        const visible = await fillVisiblePage(
+            (cursor, limit) => getSavedPosts(ctx.db, user.id, { cursor, limit }),
+            input,
+            (p) => !isBlocked(blockList, p.author.userId),
+            (p) => p.saveId,
+        );
+        return { ...visible, items: visible.items.map(({ saveId: _, ...post }) => post) };
     }),
 
     /**
@@ -83,15 +124,28 @@ export const postsRouter = router({
                 sort: z.enum(["oldest", "top"]).default("oldest"),
             }),
         )
-        .query(({ ctx, input }) =>
-            getPostComments(ctx.db, input.postId, ctx.user?.id ?? null, input),
-        ),
+        .query(async ({ ctx, input }) => {
+            await assertPostNotBlocked(ctx, input.postId);
+            const blockList = await getUserBlockList(ctx);
+            return fillVisiblePage(
+                (cursor, limit) =>
+                    getPostComments(ctx.db, input.postId, ctx.user?.id ?? null, {
+                        sort: input.sort,
+                        cursor,
+                        limit,
+                    }),
+                input,
+                (c) => !isBlocked(blockList, c.author.userId),
+                (c) => c.id,
+            );
+        }),
 
     /** Returns the comment in the same shape as getPostComments items. */
     createPostComment: procedure
         .input(z.object({ postId: z.string().min(1), body: commentBody }))
         .mutation(async ({ ctx, input }) => {
             const { profile } = await requireUserAndProfile(ctx);
+            await assertPostNotBlocked(ctx, input.postId);
             const comment = await createPostComment(ctx.db, profile.userId, input.postId, input.body);
 
             const { userId, username, firstName, lastName, avatarUrl } = profile;
@@ -115,6 +169,7 @@ export const postsRouter = router({
         )
         .mutation(async ({ ctx, input }) => {
             const { user } = await requireUserAndProfile(ctx);
+            await assertCommentNotBlocked(ctx, input.id);
             return voteOnPostComment(ctx.db, user.id, input.id, input.value);
         }),
 

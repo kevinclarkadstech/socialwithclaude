@@ -10,6 +10,7 @@ import {
     updateListing,
 } from "../../data-access";
 import { withMedia } from "../../media";
+import { fillVisiblePage, getUserBlockList, isBlocked } from "../blocking";
 import { mediaContext, requireUserAndProfile } from "../context";
 import { mediaInput } from "../inputs";
 import { procedure, router } from "../trpc";
@@ -91,5 +92,14 @@ export const listingsRouter = router({
                 limit: z.number().int().min(1).max(100).default(20),
             }),
         )
-        .query(({ ctx, input }) => getListings(ctx.db, ctx.user?.id ?? null, input)),
+        .query(async ({ ctx, input }) => {
+            const blockList = await getUserBlockList(ctx);
+            return fillVisiblePage(
+                (cursor, limit) =>
+                    getListings(ctx.db, ctx.user?.id ?? null, { status: input.status, cursor, limit }),
+                input,
+                (l) => !isBlocked(blockList, l.author.userId),
+                (l) => l.id,
+            );
+        }),
 });
