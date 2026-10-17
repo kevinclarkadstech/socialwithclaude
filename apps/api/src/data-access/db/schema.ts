@@ -1,5 +1,5 @@
 import { boolean, check, index, integer, pgTable, primaryKey, smallint, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
+import { sql, type AnyColumn } from "drizzle-orm";
 import { monotonicFactory } from "ulid";
 
 const commonFields = {
@@ -232,7 +232,8 @@ export const postMedia = pgTable("post_media", {
     check("post_media_dimensions_positive", sql`${t.width} > 0 and ${t.height} > 0`),
 ]);
 
-export const postReportReasons = [
+/** Reasons and review statuses shared by all report tables. */
+export const reportReasons = [
     "spam",
     "harassment",
     "hate",
@@ -242,7 +243,11 @@ export const postReportReasons = [
     "prohibited_item",
     "other",
 ] as const;
-export const postReportStatuses = ["open", "reviewed", "dismissed"] as const;
+export const reportStatuses = ["open", "reviewed", "dismissed"] as const;
+
+/** `column in ('a', 'b', …)` for CHECK constraints built from a const list. */
+const isOneOf = (column: AnyColumn, values: readonly string[]) =>
+    sql`${column} in (${sql.raw(values.map((v) => `'${v}'`).join(", "))})`;
 
 /** One report per user per post; reporting again updates reason/details. */
 export const postReports = pgTable("post_reports", {
@@ -253,9 +258,9 @@ export const postReports = pgTable("post_reports", {
     reporterId: text("reporter_id")
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
-    reason: text("reason", { enum: postReportReasons }).notNull(),
+    reason: text("reason", { enum: reportReasons }).notNull(),
     details: text("details"),
-    status: text("status", { enum: postReportStatuses }).notNull().default("open"),
+    status: text("status", { enum: reportStatuses }).notNull().default("open"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (t) => [
@@ -263,9 +268,29 @@ export const postReports = pgTable("post_reports", {
     index("post_reports_post_id_idx").on(t.postId),
     // Moderation queue: open reports, oldest first.
     index("post_reports_status_id_idx").on(t.status, t.id),
-    check(
-        "post_reports_reason_valid",
-        sql`${t.reason} in ('spam', 'harassment', 'hate', 'violence', 'sexual_content', 'scam', 'prohibited_item', 'other')`,
-    ),
-    check("post_reports_status_valid", sql`${t.status} in ('open', 'reviewed', 'dismissed')`),
+    check("post_reports_reason_valid", isOneOf(t.reason, reportReasons)),
+    check("post_reports_status_valid", isOneOf(t.status, reportStatuses)),
+]);
+
+/** One report per user per comment; reporting again updates reason/details. */
+export const postCommentReports = pgTable("post_comment_reports", {
+    id: ulidId(),
+    commentId: text("comment_id")
+        .notNull()
+        .references(() => postComments.id, { onDelete: "cascade" }),
+    reporterId: text("reporter_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    reason: text("reason", { enum: reportReasons }).notNull(),
+    details: text("details"),
+    status: text("status", { enum: reportStatuses }).notNull().default("open"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (t) => [
+    uniqueIndex("post_comment_reports_reporter_id_comment_id_idx").on(t.reporterId, t.commentId),
+    index("post_comment_reports_comment_id_idx").on(t.commentId),
+    // Moderation queue: open reports, oldest first.
+    index("post_comment_reports_status_id_idx").on(t.status, t.id),
+    check("post_comment_reports_reason_valid", isOneOf(t.reason, reportReasons)),
+    check("post_comment_reports_status_valid", isOneOf(t.status, reportStatuses)),
 ]);

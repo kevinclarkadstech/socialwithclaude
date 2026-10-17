@@ -1,6 +1,7 @@
 import { initTRPC, TRPCError, type TRPC_ERROR_CODE_KEY } from "@trpc/server";
 
 import {
+    CannotReportOwnCommentError,
     CannotReportOwnPostError,
     CommentNotFoundError,
     ListingNotFoundError,
@@ -29,6 +30,7 @@ const domainErrors: [new (...args: never[]) => Error, TRPC_ERROR_CODE_KEY, strin
     [CommentNotFoundError, "NOT_FOUND", "COMMENT_NOT_FOUND"],
     [InvalidMediaError, "BAD_REQUEST", "INVALID_MEDIA"],
     [NotCommentAuthorError, "FORBIDDEN", "NOT_COMMENT_AUTHOR"],
+    [CannotReportOwnCommentError, "BAD_REQUEST", "CANNOT_REPORT_OWN_COMMENT"],
 ];
 
 const mapDomainErrors = t.middleware(async ({ next }) => {

@@ -35,6 +35,13 @@ export class CannotReportOwnPostError extends Error {
     }
 }
 
+export class CannotReportOwnCommentError extends Error {
+    constructor(commentId: string) {
+        super(`Cannot report your own comment ${commentId}`);
+        this.name = "CannotReportOwnCommentError";
+    }
+}
+
 export class ListingNotFoundError extends Error {
     constructor(postId: string) {
         super(`Listing ${postId} not found`);

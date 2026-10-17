@@ -12,8 +12,8 @@ import {
     getPostMediaRows,
     getSavedPosts,
     reportPost,
+    reportPostComment,
     savePost,
-    schema,
     unsavePost,
     updatePost,
     updatePostComment,
@@ -21,7 +21,7 @@ import {
 } from "../../data-access";
 import { withMedia } from "../../media";
 import { mediaContext, requireUserAndProfile } from "../context";
-import { mediaInput } from "../inputs";
+import { mediaInput, reportInput } from "../inputs";
 import { procedure, router } from "../trpc";
 
 const postIdInput = z.object({ id: z.string().min(1) });
@@ -55,22 +55,10 @@ export const postsRouter = router({
      * Reports a post. `details` is required when `reason` is "other".
      * Reporting the same post again updates the reason and details.
      */
-    reportPost: procedure
-        .input(
-            postIdInput
-                .extend({
-                    reason: z.enum(schema.postReportReasons),
-                    details: z.string().trim().max(1000).nullish().transform((v) => v || null),
-                })
-                .refine((input) => input.reason !== "other" || input.details, {
-                    message: "Details are required when the reason is 'other'",
-                    path: ["details"],
-                }),
-        )
-        .mutation(async ({ ctx, input }) => {
-            const { user } = await requireUserAndProfile(ctx);
-            await reportPost(ctx.db, user.id, input.id, input);
-        }),
+    reportPost: procedure.input(reportInput).mutation(async ({ ctx, input }) => {
+        const { user } = await requireUserAndProfile(ctx);
+        await reportPost(ctx.db, user.id, input.id, input);
+    }),
 
     /** Idempotent: unsaving a post that isn't saved succeeds. */
     unsavePost: procedure.input(postIdInput).mutation(async ({ ctx, input }) => {
@@ -129,6 +117,15 @@ export const postsRouter = router({
             const { user } = await requireUserAndProfile(ctx);
             return voteOnPostComment(ctx.db, user.id, input.id, input.value);
         }),
+
+    /**
+     * Reports a comment. `details` is required when `reason` is "other".
+     * Reporting the same comment again updates the reason and details.
+     */
+    reportPostComment: procedure.input(reportInput).mutation(async ({ ctx, input }) => {
+        const { user } = await requireUserAndProfile(ctx);
+        await reportPostComment(ctx.db, user.id, input.id, input);
+    }),
 
     /** Only the comment's author may edit it. */
     updatePostComment: procedure

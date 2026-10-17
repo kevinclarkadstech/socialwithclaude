@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { schema } from "../data-access";
 import { MEDIA_MAX_PER_POST } from "../media";
 
 /**
@@ -16,3 +17,15 @@ export const mediaInput = z
         }),
     )
     .max(MEDIA_MAX_PER_POST);
+
+/** Report a post or comment. `details` is required when `reason` is "other". */
+export const reportInput = z
+    .object({
+        id: z.string().min(1),
+        reason: z.enum(schema.reportReasons),
+        details: z.string().trim().max(1000).nullish().transform((v) => v || null),
+    })
+    .refine((input) => input.reason !== "other" || input.details, {
+        message: "Details are required when the reason is 'other'",
+        path: ["details"],
+    });

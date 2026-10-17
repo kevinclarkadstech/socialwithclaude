@@ -3,6 +3,7 @@ import { alias } from "drizzle-orm/pg-core";
 
 import { schema, type Database } from "../db";
 import {
+    CannotReportOwnCommentError,
     CannotReportOwnPostError,
     CommentNotFoundError,
     NotCommentAuthorError,
@@ -149,6 +150,8 @@ export async function savePost(db: Database, userId: string, postId: string) {
     await db.insert(schema.postSaves).values({ userId, postId }).onConflictDoNothing();
 }
 
+type ReportInput = { reason: (typeof schema.reportReasons)[number]; details: string | null };
+
 /**
  * Reports a post. Each user has one report per post: reporting again updates
  * the reason and details (status is left alone).
@@ -160,7 +163,7 @@ export async function reportPost(
     db: Database,
     reporterId: string,
     postId: string,
-    { reason, details }: { reason: (typeof schema.postReportReasons)[number]; details: string | null },
+    { reason, details }: ReportInput,
 ) {
     const [post] = await db
         .select({ authorId: schema.posts.authorId })
@@ -395,6 +398,38 @@ export async function createPostComment(db: Database, authorId: string, postId: 
 
         return comment!;
     });
+}
+
+/**
+ * Reports a comment. Each user has one report per comment: reporting again
+ * updates the reason and details (status is left alone).
+ *
+ * @throws CommentNotFoundError if the comment or its post doesn't exist or was deleted.
+ * @throws CannotReportOwnCommentError if `reporterId` wrote the comment.
+ */
+export async function reportPostComment(
+    db: Database,
+    reporterId: string,
+    commentId: string,
+    { reason, details }: ReportInput,
+) {
+    const [comment] = await db
+        .select({ authorId: schema.postComments.authorId })
+        .from(schema.postComments)
+        .where(
+            and(eq(schema.postComments.id, commentId), commentNotDeleted, commentPostIsLive(db)),
+        )
+        .limit(1);
+    if (!comment) throw new CommentNotFoundError(commentId);
+    if (comment.authorId === reporterId) throw new CannotReportOwnCommentError(commentId);
+
+    await db
+        .insert(schema.postCommentReports)
+        .values({ commentId, reporterId, reason, details })
+        .onConflictDoUpdate({
+            target: [schema.postCommentReports.reporterId, schema.postCommentReports.commentId],
+            set: { reason, details, updatedAt: new Date() },
+        });
 }
 
 /**
