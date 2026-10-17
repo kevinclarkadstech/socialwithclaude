@@ -5,6 +5,7 @@ import {
     createListing,
     getListings,
     getPostMediaRows,
+    isOwnPostId,
     schema,
     setListingStatus,
     updateListing,
@@ -12,6 +13,7 @@ import {
 import { withMedia } from "../../media";
 import { fillVisiblePage, getUserBlockList, isBlocked } from "../blocking";
 import { mediaContext, requireUserAndProfile } from "../context";
+import { clientId, createOnce } from "../client-ids";
 import { mediaInput } from "../inputs";
 import { procedure, router } from "../trpc";
 
@@ -40,9 +42,15 @@ const listingInput = z
     .and(price);
 
 export const listingsRouter = router({
-    /** `media`: photo keys from media.createUploadUrl, in display order. */
+    /**
+     * `media`: photo keys from media.createUploadUrl, in display order. `id` is
+     * an optional client-generated ULID; retrying with it succeeds without
+     * creating the listing again. Returns nothing (fire and forget).
+     */
     createListing: procedure
-        .input(listingInput.and(z.object({ media: mediaInput.default([]) })))
+        .input(
+            listingInput.and(z.object({ id: clientId.optional(), media: mediaInput.default([]) })),
+        )
         .mutation(async ({ ctx, input }) => {
             const { user } = await requireUserAndProfile(ctx);
 
@@ -50,9 +58,14 @@ export const listingsRouter = router({
                 throw new TRPCError({ code: "FORBIDDEN", message: "POSTING_DISABLED" });
             }
 
-            const { media, ...listing } = input;
-            return withMedia(mediaContext(ctx, user.id), media, [], (rows) =>
-                createListing(ctx.db, user.id, listing, rows),
+            const { id, media, ...listing } = input;
+            await createOnce(
+                id,
+                () => isOwnPostId(ctx.db, id!, user.id, "listing"),
+                () =>
+                    withMedia(mediaContext(ctx, user.id), media, [], (rows) =>
+                        createListing(ctx.db, user.id, listing, rows, id),
+                    ),
             );
         }),
 

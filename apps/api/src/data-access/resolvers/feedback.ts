@@ -1,8 +1,18 @@
-import { schema, type Database } from "../db";
+import { eq } from "drizzle-orm";
 
+import { schema, type Database } from "../db";
+import { IdConflictError } from "../errors";
+
+/**
+ * Stores feedback. `id` is client-generated (optional); retrying with the
+ * same id succeeds without storing it again.
+ *
+ * @throws IdConflictError if `id` belongs to another user's feedback.
+ */
 export async function submitFeedback(
     db: Database,
     values: {
+        id?: string;
         userId: string;
         category: (typeof schema.feedbackCategories)[number];
         message: string;
@@ -13,7 +23,13 @@ export async function submitFeedback(
     const [feedback] = await db
         .insert(schema.userFeedback)
         .values(values)
-        .returning({ id: schema.userFeedback.id, createdAt: schema.userFeedback.createdAt });
+        .onConflictDoNothing({ target: schema.userFeedback.id })
+        .returning({ id: schema.userFeedback.id });
+    if (feedback) return;
 
-    return feedback!;
+    const [existing] = await db
+        .select({ userId: schema.userFeedback.userId })
+        .from(schema.userFeedback)
+        .where(eq(schema.userFeedback.id, values.id!));
+    if (!existing || existing.userId !== values.userId) throw new IdConflictError(values.id!);
 }

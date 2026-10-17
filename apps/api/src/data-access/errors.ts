@@ -28,6 +28,17 @@ export class NotPostAuthorError extends Error {
     }
 }
 
+/**
+ * A client-supplied id is already used by a different record (another user's,
+ * or a different kind of record). Retries of your own create don't raise this.
+ */
+export class IdConflictError extends Error {
+    constructor(id: string) {
+        super(`Id ${id} is already in use`);
+        this.name = "IdConflictError";
+    }
+}
+
 export class CannotReportOwnPostError extends Error {
     constructor(postId: string) {
         super(`Cannot report your own post ${postId}`);

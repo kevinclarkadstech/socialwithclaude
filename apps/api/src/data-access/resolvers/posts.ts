@@ -3,6 +3,7 @@ import { alias } from "drizzle-orm/pg-core";
 
 import { schema, type Database } from "../db";
 import {
+    IdConflictError,
     CannotReportOwnCommentError,
     CannotReportOwnPostError,
     CommentNotFoundError,
@@ -34,6 +35,20 @@ const commentFields = {
 
 const notDeleted = postNotDeleted;
 const commentNotDeleted = isNull(schema.postComments.deletedAt);
+
+const cursorPost = alias(schema.posts, "cursor_post");
+
+/**
+ * Posts after the cursor post in newest-first order: (created_at, id) less
+ * than the cursor's. The cursor stays an id; its created_at is looked up.
+ */
+function postsBefore(db: Database, cursor: string) {
+    const cursorRow = db
+        .select({ createdAt: cursorPost.createdAt, id: cursorPost.id })
+        .from(cursorPost)
+        .where(eq(cursorPost.id, cursor));
+    return sql`(${schema.posts.createdAt}, ${schema.posts.id}) < (${cursorRow})`;
+}
 
 /**
  * True when the comment's post exists and isn't deleted (comments on deleted
@@ -88,7 +103,7 @@ export async function getPostById(db: Database, postId: string, viewerId: string
 }
 
 /**
- * The Feed tab: regular posts (not listings), newest first, with authors,
+ * The Feed tab: regular posts (not listings), newest first by server time, with authors,
  * photos and `isSaved` for the viewer. Pass the previous page's `nextCursor`
  * as `cursor` to get the next page.
  */
@@ -115,14 +130,8 @@ export async function getFeed(
                 )
                 : sql`false`,
         )
-        .where(
-            and(
-                eq(schema.posts.kind, "post"),
-                notDeleted,
-                cursor ? lt(schema.posts.id, cursor) : undefined,
-            ),
-        )
-        .orderBy(desc(schema.posts.id))
+        .where(and(eq(schema.posts.kind, "post"), notDeleted, cursor ? postsBefore(db, cursor) : undefined))
+        .orderBy(desc(schema.posts.createdAt), desc(schema.posts.id))
         .limit(limit + 1);
 
     const hasMore = rows.length > limit;
@@ -304,7 +313,12 @@ export async function getPostComments(
             or(lt(score, sql`(${cursorScore})`), gt(id, cursor)),
         );
     } else if (cursor) {
-        after = gt(id, cursor);
+        // Oldest first by server time; the cursor's created_at is looked up.
+        const cursorRow = db
+            .select({ createdAt: cursorComment.createdAt, id: cursorComment.id })
+            .from(cursorComment)
+            .where(eq(cursorComment.id, cursor));
+        after = sql`(${schema.postComments.createdAt}, ${id}) > (${cursorRow})`;
     }
 
     const rows = await db
@@ -325,7 +339,11 @@ export async function getPostComments(
                 : sql`false`,
         )
         .where(and(eq(schema.postComments.postId, postId), commentNotDeleted, after))
-        .orderBy(...(sort === "top" ? [desc(score), asc(id)] : [asc(id)]))
+        .orderBy(
+            ...(sort === "top"
+                ? [desc(score), asc(id)]
+                : [asc(schema.postComments.createdAt), asc(id)]),
+        )
         .limit(limit + 1);
 
     const hasMore = rows.length > limit;
@@ -404,24 +422,49 @@ export async function voteOnPostComment(
 /**
  * Adds a comment and bumps the post's comment count in one transaction.
  *
+ * `id` is client-generated (optional). Retrying with the same id succeeds
+ * without adding or counting the comment again.
+ *
  * @throws PostNotFoundError if the post doesn't exist or was deleted.
+ * @throws IdConflictError if `id` belongs to another user's or another post's comment.
  */
-export async function createPostComment(db: Database, authorId: string, postId: string, body: string) {
-    return db.transaction(async (tx) => {
-        const [post] = await tx
-            .update(schema.posts)
-            .set({ numComments: sql`${schema.posts.numComments} + 1` })
-            .where(and(eq(schema.posts.id, postId), notDeleted))
-            .returning({ id: schema.posts.id });
-        if (!post) throw new PostNotFoundError(postId);
+export async function createPostComment(
+    db: Database,
+    authorId: string,
+    postId: string,
+    body: string,
+    id?: string,
+) {
+    class AlreadyExists extends Error {}
 
-        const [comment] = await tx
-            .insert(schema.postComments)
-            .values({ postId, authorId, body })
-            .returning(commentFields);
+    try {
+        return await db.transaction(async (tx) => {
+            const [post] = await tx
+                .update(schema.posts)
+                .set({ numComments: sql`${schema.posts.numComments} + 1` })
+                .where(and(eq(schema.posts.id, postId), notDeleted))
+                .returning({ id: schema.posts.id });
+            if (!post) throw new PostNotFoundError(postId);
 
-        return comment!;
-    });
+            const [comment] = await tx
+                .insert(schema.postComments)
+                .values({ id, postId, authorId, body })
+                .onConflictDoNothing({ target: schema.postComments.id })
+                .returning({ id: schema.postComments.id });
+            // Roll back the count bump; a retry is checked below.
+            if (!comment) throw new AlreadyExists();
+        });
+    } catch (err) {
+        if (!(err instanceof AlreadyExists)) throw err;
+
+        const [existing] = await db
+            .select({ authorId: schema.postComments.authorId, postId: schema.postComments.postId })
+            .from(schema.postComments)
+            .where(eq(schema.postComments.id, id!));
+        if (!existing || existing.authorId !== authorId || existing.postId !== postId) {
+            throw new IdConflictError(id!);
+        }
+    }
 }
 
 /**
@@ -525,16 +568,51 @@ async function throwWhyCommentNotWritable(db: Database, userId: string, commentI
     throw new NotCommentAuthorError(commentId, userId);
 }
 
-/** Creates a post with its photos (already validated and moved by withMedia). */
-export async function createPost(db: Database, authorId: string, body: string, media: MediaRowInput[]) {
+/**
+ * Creates a post with its photos (already validated and moved by withMedia).
+ * `id` is client-generated (optional).
+ *
+ * @throws IdConflictError if `id` is already used (the API layer checks
+ *   isOwnPostId first, so this means a concurrent retry or another user).
+ */
+export async function createPost(
+    db: Database,
+    authorId: string,
+    body: string,
+    media: MediaRowInput[],
+    id?: string,
+) {
     return db.transaction(async (tx) => {
         const [post] = await tx
             .insert(schema.posts)
-            .values({ authorId, body })
-            .returning(postFields);
+            .values({ id, authorId, body })
+            .onConflictDoNothing({ target: schema.posts.id })
+            .returning({ id: schema.posts.id });
+        if (!post) throw new IdConflictError(id!);
 
-        return { ...post!, media: await replacePostMedia(tx, post!.id, media) };
+        await replacePostMedia(tx, post.id, media);
     });
+}
+
+/**
+ * For retried creates: true if `authorId` already created a post of kind
+ * `kind` with this id, false if the id is unused.
+ *
+ * @throws IdConflictError if the id belongs to someone else or another kind.
+ */
+export async function isOwnPostId(
+    db: Database,
+    id: string,
+    authorId: string,
+    kind: "post" | "listing",
+) {
+    const [post] = await db
+        .select({ authorId: schema.posts.authorId, kind: schema.posts.kind })
+        .from(schema.posts)
+        .where(eq(schema.posts.id, id));
+    if (!post) return false;
+    if (post.authorId !== authorId || post.kind !== kind) throw new IdConflictError(id);
+    return true;
 }
 
 /**

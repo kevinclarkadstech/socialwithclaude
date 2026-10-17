@@ -12,6 +12,7 @@ import {
     getPostCommentAuthorIds,
     getPostComments,
     getPostMediaRows,
+    isOwnPostId,
     getSavedPosts,
     reportPost,
     reportPostComment,
@@ -24,6 +25,7 @@ import {
 import { withMedia } from "../../media";
 import { fillVisiblePage, getUserBlockList, isBlocked } from "../blocking";
 import { mediaContext, requireUserAndProfile, type TRPCContext } from "../context";
+import { clientId, createOnce } from "../client-ids";
 import { mediaInput, reportInput } from "../inputs";
 import { procedure, router } from "../trpc";
 
@@ -140,20 +142,16 @@ export const postsRouter = router({
             );
         }),
 
-    /** Returns the comment in the same shape as getPostComments items. */
+    /**
+     * Returns nothing (fire and forget). `id` is an optional client-generated
+     * ULID; retrying with it succeeds without adding the comment again.
+     */
     createPostComment: procedure
-        .input(z.object({ postId: z.string().min(1), body: commentBody }))
+        .input(z.object({ id: clientId.optional(), postId: z.string().min(1), body: commentBody }))
         .mutation(async ({ ctx, input }) => {
-            const { profile } = await requireUserAndProfile(ctx);
+            const { user } = await requireUserAndProfile(ctx);
             await assertPostNotBlocked(ctx, input.postId);
-            const comment = await createPostComment(ctx.db, profile.userId, input.postId, input.body);
-
-            const { userId, username, firstName, lastName, avatarUrl } = profile;
-            return {
-                ...comment,
-                author: { userId, username, firstName, lastName, avatarUrl },
-                myVote: 0,
-            };
+            await createPostComment(ctx.db, user.id, input.postId, input.body, input.id);
         }),
 
     /**
@@ -198,9 +196,13 @@ export const postsRouter = router({
             await deletePostComment(ctx.db, user.id, input.id);
         }),
 
-    /** `media`: photo keys from media.createUploadUrl, in display order. */
+    /**
+     * `media`: photo keys from media.createUploadUrl, in display order. `id` is
+     * an optional client-generated ULID; retrying with it succeeds without
+     * creating the post again. Returns nothing (fire and forget).
+     */
     createPost: procedure
-        .input(z.object({ body: postBody, media: mediaInput.default([]) }))
+        .input(z.object({ id: clientId.optional(), body: postBody, media: mediaInput.default([]) }))
         .mutation(async ({ ctx, input }) => {
             const { user } = await requireUserAndProfile(ctx);
 
@@ -208,8 +210,13 @@ export const postsRouter = router({
                 throw new TRPCError({ code: "FORBIDDEN", message: "POSTING_DISABLED" });
             }
 
-            return withMedia(mediaContext(ctx, user.id), input.media, [], (rows) =>
-                createPost(ctx.db, user.id, input.body, rows),
+            await createOnce(
+                input.id,
+                () => isOwnPostId(ctx.db, input.id!, user.id, "post"),
+                () =>
+                    withMedia(mediaContext(ctx, user.id), input.media, [], (rows) =>
+                        createPost(ctx.db, user.id, input.body, rows, input.id),
+                    ),
             );
         }),
 

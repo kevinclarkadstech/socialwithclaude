@@ -4,6 +4,7 @@ import {
     CannotReportOwnCommentError,
     CannotReportOwnPostError,
     CommentNotFoundError,
+    IdConflictError,
     ListingNotFoundError,
     NotCommentAuthorError,
     NotPostAuthorError,
@@ -22,6 +23,7 @@ const t = initTRPC.context<TRPCContext>().create();
  */
 const domainErrors: [new (...args: never[]) => Error, TRPC_ERROR_CODE_KEY, string][] = [
     [UsernameTakenError, "CONFLICT", "USERNAME_TAKEN"],
+    [IdConflictError, "CONFLICT", "ID_CONFLICT"],
     [ProfileAlreadyExistsError, "CONFLICT", "PROFILE_ALREADY_EXISTS"],
     [PostNotFoundError, "NOT_FOUND", "POST_NOT_FOUND"],
     [NotPostAuthorError, "FORBIDDEN", "NOT_POST_AUTHOR"],

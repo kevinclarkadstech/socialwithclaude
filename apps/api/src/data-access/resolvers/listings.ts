@@ -1,7 +1,8 @@
-import { and, desc, eq, exists, lt, sql } from "drizzle-orm";
+import { and, desc, eq, exists, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 import { schema, type Database } from "../db";
-import { ListingNotFoundError, NotPostAuthorError } from "../errors";
+import { IdConflictError, ListingNotFoundError, NotPostAuthorError } from "../errors";
 import type { MediaRowInput } from "../../media";
 import { replacePostMedia } from "./media";
 import {
@@ -27,29 +28,43 @@ export type ListingDetails = {
 
 const isListingPost = eq(schema.posts.kind, "listing");
 
-/** Creates a post of kind "listing" with its details and photos in one transaction. */
+const cursorListing = alias(schema.postListingDetails, "cursor_listing");
+
+/** Listings after the cursor listing in newest-first (server time) order. */
+function listingsBefore(db: Database, cursor: string) {
+    const cursorRow = db
+        .select({ createdAt: cursorListing.createdAt, postId: cursorListing.postId })
+        .from(cursorListing)
+        .where(eq(cursorListing.postId, cursor));
+    return sql`(${schema.postListingDetails.createdAt}, ${schema.postListingDetails.postId}) < (${cursorRow})`;
+}
+
+/**
+ * Creates a post of kind "listing" with its details and photos in one
+ * transaction. `id` is client-generated (optional).
+ *
+ * @throws IdConflictError if `id` is already used (the API layer checks
+ *   isOwnPostId first, so this means a concurrent retry or another user).
+ */
 export async function createListing(
     db: Database,
     authorId: string,
     { body, ...details }: ListingDetails & { body: string },
     media: MediaRowInput[],
+    id?: string,
 ) {
     return db.transaction(async (tx) => {
         const [post] = await tx
             .insert(schema.posts)
-            .values({ authorId, body, kind: "listing" })
-            .returning(postFields);
+            .values({ id, authorId, body, kind: "listing" })
+            .onConflictDoNothing({ target: schema.posts.id })
+            .returning({ id: schema.posts.id, createdAt: schema.posts.createdAt });
+        if (!post) throw new IdConflictError(id!);
 
-        const [listing] = await tx
+        await tx
             .insert(schema.postListingDetails)
-            .values({ postId: post!.id, ...details })
-            .returning(listingFields);
-
-        return {
-            ...post!,
-            listing: listing!,
-            media: await replacePostMedia(tx, post!.id, media),
-        };
+            .values({ postId: post.id, createdAt: post.createdAt, ...details });
+        await replacePostMedia(tx, post.id, media);
     });
 }
 
@@ -177,10 +192,10 @@ export async function getListings(
             and(
                 postNotDeleted,
                 status ? eq(schema.postListingDetails.status, status) : undefined,
-                cursor ? lt(schema.postListingDetails.postId, cursor) : undefined,
+                cursor ? listingsBefore(db, cursor) : undefined,
             ),
         )
-        .orderBy(desc(schema.postListingDetails.postId))
+        .orderBy(desc(schema.postListingDetails.createdAt), desc(schema.postListingDetails.postId))
         .limit(limit + 1);
 
     const hasMore = rows.length > limit;
