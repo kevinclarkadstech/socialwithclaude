@@ -354,7 +354,8 @@ export async function getPostComments(
 
 /**
  * Sets the user's vote on a comment: 1 (up), -1 (down) or 0 (remove), and
- * adjusts the comment's vote counts in the same transaction. Users may vote on
+ * adjusts the comment's vote counts in the same transaction. Setting the vote
+ * the user already has is a no-op, so retries are safe. Users may vote on
  * their own comments.
  *
  * @throws CommentNotFoundError if the comment or its post doesn't exist or was deleted.
@@ -365,7 +366,7 @@ export async function voteOnPostComment(
     commentId: string,
     value: -1 | 0 | 1,
 ) {
-    return db.transaction(async (tx) => {
+    await db.transaction(async (tx) => {
         // Lock the comment row so concurrent votes by the same user can't
         // both count; the counter update below would lock it anyway.
         const [comment] = await tx
@@ -386,10 +387,11 @@ export async function voteOnPostComment(
             .where(voteKey)
             .limit(1);
         const previous = existing?.value ?? 0;
+        if (value === previous) return;
 
         if (value === 0) {
             await tx.delete(schema.postCommentVotes).where(voteKey);
-        } else if (value !== previous) {
+        } else {
             await tx
                 .insert(schema.postCommentVotes)
                 .values({ userId, commentId, value })
@@ -402,20 +404,13 @@ export async function voteOnPostComment(
         const upDelta = (value === 1 ? 1 : 0) - (previous === 1 ? 1 : 0);
         const downDelta = (value === -1 ? 1 : 0) - (previous === -1 ? 1 : 0);
 
-        const [counts] = await tx
+        await tx
             .update(schema.postComments)
             .set({
                 numUpvotes: sql`${schema.postComments.numUpvotes} + ${upDelta}`,
                 numDownvotes: sql`${schema.postComments.numDownvotes} + ${downDelta}`,
             })
-            .where(eq(schema.postComments.id, commentId))
-            .returning({
-                numUpvotes: schema.postComments.numUpvotes,
-                numDownvotes: schema.postComments.numDownvotes,
-                score: schema.postComments.score,
-            });
-
-        return { ...counts!, myVote: value };
+            .where(eq(schema.postComments.id, commentId));
     });
 }
 

@@ -155,8 +155,8 @@ export const postsRouter = router({
         }),
 
     /**
-     * Sets the caller's vote: 1 (up), -1 (down) or 0 (remove). Returns the
-     * comment's new counts and the caller's vote.
+     * Sets the caller's vote: 1 (up), -1 (down) or 0 (remove). Returns nothing;
+     * resending the same vote is a no-op.
      */
     voteOnPostComment: procedure
         .input(
@@ -168,7 +168,7 @@ export const postsRouter = router({
         .mutation(async ({ ctx, input }) => {
             const { user } = await requireUserAndProfile(ctx);
             await assertCommentNotBlocked(ctx, input.id);
-            return voteOnPostComment(ctx.db, user.id, input.id, input.value);
+            await voteOnPostComment(ctx.db, user.id, input.id, input.value);
         }),
 
     /**
