@@ -160,3 +160,4 @@ export * from './posts';
 export * from './listings';
 export * from './media';
 export * from './blocks';
+export * from './feedback';

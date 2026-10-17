@@ -310,3 +310,27 @@ export const postCommentReports = pgTable("post_comment_reports", {
     check("post_comment_reports_reason_valid", isOneOf(t.reason, reportReasons)),
     check("post_comment_reports_status_valid", isOneOf(t.status, reportStatuses)),
 ]);
+
+export const feedbackCategories = ["bug", "idea", "other"] as const;
+export const feedbackStatuses = ["new", "read", "done"] as const;
+
+/** Feedback users send from the app. */
+export const userFeedback = pgTable("user_feedback", {
+    id: ulidId(),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    category: text("category", { enum: feedbackCategories }).notNull(),
+    message: text("message").notNull(),
+    // Where it was sent from, to help reproduce bugs.
+    pageUrl: text("page_url"),
+    userAgent: text("user_agent"),
+    status: text("status", { enum: feedbackStatuses }).notNull().default("new"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+    // Inbox: new feedback, oldest first.
+    index("user_feedback_status_id_idx").on(t.status, t.id),
+    index("user_feedback_user_id_idx").on(t.userId),
+    check("user_feedback_category_valid", isOneOf(t.category, feedbackCategories)),
+    check("user_feedback_status_valid", isOneOf(t.status, feedbackStatuses)),
+]);
