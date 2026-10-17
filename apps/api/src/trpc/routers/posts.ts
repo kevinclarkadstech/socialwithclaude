@@ -11,7 +11,9 @@ import {
     getPostComments,
     getPostMediaRows,
     getSavedPosts,
+    reportPost,
     savePost,
+    schema,
     unsavePost,
     updatePost,
     updatePostComment,
@@ -48,6 +50,27 @@ export const postsRouter = router({
         const { user } = await requireUserAndProfile(ctx);
         await savePost(ctx.db, user.id, input.id);
     }),
+
+    /**
+     * Reports a post. `details` is required when `reason` is "other".
+     * Reporting the same post again updates the reason and details.
+     */
+    reportPost: procedure
+        .input(
+            postIdInput
+                .extend({
+                    reason: z.enum(schema.postReportReasons),
+                    details: z.string().trim().max(1000).nullish().transform((v) => v || null),
+                })
+                .refine((input) => input.reason !== "other" || input.details, {
+                    message: "Details are required when the reason is 'other'",
+                    path: ["details"],
+                }),
+        )
+        .mutation(async ({ ctx, input }) => {
+            const { user } = await requireUserAndProfile(ctx);
+            await reportPost(ctx.db, user.id, input.id, input);
+        }),
 
     /** Idempotent: unsaving a post that isn't saved succeeds. */
     unsavePost: procedure.input(postIdInput).mutation(async ({ ctx, input }) => {

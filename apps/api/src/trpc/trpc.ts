@@ -1,6 +1,7 @@
 import { initTRPC, TRPCError, type TRPC_ERROR_CODE_KEY } from "@trpc/server";
 
 import {
+    CannotReportOwnPostError,
     CommentNotFoundError,
     ListingNotFoundError,
     NotCommentAuthorError,
@@ -23,6 +24,7 @@ const domainErrors: [new (...args: never[]) => Error, TRPC_ERROR_CODE_KEY, strin
     [ProfileAlreadyExistsError, "CONFLICT", "PROFILE_ALREADY_EXISTS"],
     [PostNotFoundError, "NOT_FOUND", "POST_NOT_FOUND"],
     [NotPostAuthorError, "FORBIDDEN", "NOT_POST_AUTHOR"],
+    [CannotReportOwnPostError, "BAD_REQUEST", "CANNOT_REPORT_OWN_POST"],
     [ListingNotFoundError, "NOT_FOUND", "LISTING_NOT_FOUND"],
     [CommentNotFoundError, "NOT_FOUND", "COMMENT_NOT_FOUND"],
     [InvalidMediaError, "BAD_REQUEST", "INVALID_MEDIA"],

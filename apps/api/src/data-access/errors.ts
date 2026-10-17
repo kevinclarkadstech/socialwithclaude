@@ -28,6 +28,13 @@ export class NotPostAuthorError extends Error {
     }
 }
 
+export class CannotReportOwnPostError extends Error {
+    constructor(postId: string) {
+        super(`Cannot report your own post ${postId}`);
+        this.name = "CannotReportOwnPostError";
+    }
+}
+
 export class ListingNotFoundError extends Error {
     constructor(postId: string) {
         super(`Listing ${postId} not found`);

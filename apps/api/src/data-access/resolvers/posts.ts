@@ -3,6 +3,7 @@ import { alias } from "drizzle-orm/pg-core";
 
 import { schema, type Database } from "../db";
 import {
+    CannotReportOwnPostError,
     CommentNotFoundError,
     NotCommentAuthorError,
     NotPostAuthorError,
@@ -146,6 +147,36 @@ export async function savePost(db: Database, userId: string, postId: string) {
     if (!post) throw new PostNotFoundError(postId);
 
     await db.insert(schema.postSaves).values({ userId, postId }).onConflictDoNothing();
+}
+
+/**
+ * Reports a post. Each user has one report per post: reporting again updates
+ * the reason and details (status is left alone).
+ *
+ * @throws PostNotFoundError if the post doesn't exist or was deleted.
+ * @throws CannotReportOwnPostError if `reporterId` wrote the post.
+ */
+export async function reportPost(
+    db: Database,
+    reporterId: string,
+    postId: string,
+    { reason, details }: { reason: (typeof schema.postReportReasons)[number]; details: string | null },
+) {
+    const [post] = await db
+        .select({ authorId: schema.posts.authorId })
+        .from(schema.posts)
+        .where(and(eq(schema.posts.id, postId), notDeleted))
+        .limit(1);
+    if (!post) throw new PostNotFoundError(postId);
+    if (post.authorId === reporterId) throw new CannotReportOwnPostError(postId);
+
+    await db
+        .insert(schema.postReports)
+        .values({ postId, reporterId, reason, details })
+        .onConflictDoUpdate({
+            target: [schema.postReports.reporterId, schema.postReports.postId],
+            set: { reason, details, updatedAt: new Date() },
+        });
 }
 
 /** Removes a save. A no-op if it wasn't saved, and works even if the post was deleted. */
