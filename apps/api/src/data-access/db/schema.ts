@@ -352,3 +352,48 @@ export const userFeedback = pgTable("user_feedback", {
     check("user_feedback_category_valid", isOneOf(t.category, feedbackCategories)),
     check("user_feedback_status_valid", isOneOf(t.status, feedbackStatuses)),
 ]);
+
+/**
+ * A private conversation. Only 1:1 chats for now: `direct_key` is the two
+ * member ids, sorted and joined with ":", so each pair has one chat. (It's
+ * nullable so group chats can be added without one.)
+ */
+export const chats = pgTable("chats", {
+    id: ulidId(),
+    directKey: text("direct_key").unique(),
+    // Time of the newest message; null until the first one. Orders the inbox.
+    lastMessageAt: timestamp("last_message_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const chatMembers = pgTable("chat_members", {
+    chatId: text("chat_id")
+        .notNull()
+        .references(() => chats.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    // Messages after this are unread for this member; null when nothing is read.
+    lastReadAt: timestamp("last_read_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+    primaryKey({ columns: [t.chatId, t.userId] }),
+    // "My chats" (the inbox).
+    index("chat_members_user_id_idx").on(t.userId),
+]);
+
+export const chatMessages = pgTable("chat_messages", {
+    id: ulidId(),
+    chatId: text("chat_id")
+        .notNull()
+        .references(() => chats.id, { onDelete: "cascade" }),
+    senderId: text("sender_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+    // A chat's messages by server time (id breaks ties); also the latest
+    // message and unread counts.
+    index("chat_messages_chat_id_created_at_id_idx").on(t.chatId, t.createdAt, t.id),
+]);
