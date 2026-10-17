@@ -9,13 +9,14 @@ import {
     getProfileByUsername,
     getUserIdByUsername,
     getUserSettings,
+    searchProfiles,
     unblockUser,
     unfollowUser,
     updateUserSettings,
 } from "../../data-access/resolvers";
 import { schema } from "../../data-access";
 import { getUserBlockList, isBlocked } from "../blocking";
-import { requireUserAndProfile } from "../context";
+import { requireUserAndProfile, type TRPCContext } from "../context";
 import { procedure, router } from "../trpc";
 
 const usernameInput = z.object({ username: z.string().min(1) });
@@ -37,6 +38,15 @@ const updateSettingsInput = z.object({
         .partial()
         .optional(),
 });
+
+/** Profiles matching `query` that the caller can see: users blocked either way are left out. */
+export async function searchVisibleProfiles(ctx: TRPCContext, query: string, { limit }: { limit: number }) {
+    const [profiles, blockList] = await Promise.all([
+        searchProfiles(ctx.db, query, { limit }),
+        getUserBlockList(ctx),
+    ]);
+    return profiles.filter((p) => !isBlocked(blockList, p.userId));
+}
 
 export const usersRouter = router({
     /**

@@ -189,4 +189,3 @@ export * from './media';
 export * from './blocks';
 export * from './feedback';
 export * from './settings';
-export * from './search';
