@@ -1,0 +1,13 @@
+# Store text files with LF line endings and check them out with LF on every
+# OS, so diffs don't flip whole files between CRLF and LF.
+* text=auto eol=lf
+
+# Binary files: never convert.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
