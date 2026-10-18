@@ -18,6 +18,7 @@ export const postFields = {
     kind: schema.posts.kind,
     body: schema.posts.body,
     numComments: schema.posts.numComments,
+    numSaves: schema.posts.numSaves,
     createdAt: schema.posts.createdAt,
     updatedAt: schema.posts.updatedAt,
 };

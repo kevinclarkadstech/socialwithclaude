@@ -202,7 +202,20 @@ export async function savePost(db: Database, userId: string, postId: string) {
         .limit(1);
     if (!post) throw new PostNotFoundError(postId);
 
-    await db.insert(schema.postSaves).values({ userId, postId }).onConflictDoNothing();
+    await db.transaction(async (tx) => {
+        const [saved] = await tx
+            .insert(schema.postSaves)
+            .values({ userId, postId })
+            .onConflictDoNothing()
+            .returning({ postId: schema.postSaves.postId });
+        // Already saved; leave the count untouched.
+        if (!saved) return;
+
+        await tx
+            .update(schema.posts)
+            .set({ numSaves: sql`${schema.posts.numSaves} + 1` })
+            .where(eq(schema.posts.id, postId));
+    });
 }
 
 type ReportInput = { reason: (typeof schema.reportReasons)[number]; details: string | null };
@@ -262,9 +275,19 @@ export async function reportPost(
 
 /** Removes a save. A no-op if it wasn't saved, and works even if the post was deleted. */
 export async function unsavePost(db: Database, userId: string, postId: string) {
-    await db
-        .delete(schema.postSaves)
-        .where(and(eq(schema.postSaves.userId, userId), eq(schema.postSaves.postId, postId)));
+    await db.transaction(async (tx) => {
+        const [unsaved] = await tx
+            .delete(schema.postSaves)
+            .where(and(eq(schema.postSaves.userId, userId), eq(schema.postSaves.postId, postId)))
+            .returning({ postId: schema.postSaves.postId });
+        // Wasn't saved; leave the count untouched.
+        if (!unsaved) return;
+
+        await tx
+            .update(schema.posts)
+            .set({ numSaves: sql`${schema.posts.numSaves} - 1` })
+            .where(eq(schema.posts.id, postId));
+    });
 }
 
 /**

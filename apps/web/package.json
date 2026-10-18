@@ -23,6 +23,7 @@
     "better-auth": "^1.7.6",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.2.5",
+    "dayjs": "^1.11.23",
     "posthog-js": "^1.438.7",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
