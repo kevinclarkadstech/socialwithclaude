@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Maybe } from "./misc";
+import type { Maybe } from "./misc";
 
 const AnalyticsEvent = z.discriminatedUnion("type", [
     z.object({
