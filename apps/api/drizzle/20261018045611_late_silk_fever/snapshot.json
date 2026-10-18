@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "ae6d17f8-ea16-4b37-a6c5-922c754aac39",
+  "id": "13a57509-a7d1-494a-bd02-f0af62785e27",
   "prevIds": [
     "0140b9c9-5816-4ea8-a841-2e772a42b554"
   ],
@@ -433,7 +433,20 @@
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "direct_key",
+      "name": "initiator_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "chats"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "receiver_id",
       "entityType": "columns",
       "schema": "public",
       "table": "chats"
@@ -2009,6 +2022,34 @@
       "nameExplicit": true,
       "columns": [
         {
+          "value": "least(\"initiator_id\", \"receiver_id\")",
+          "isExpression": true,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "greatest(\"initiator_id\", \"receiver_id\")",
+          "isExpression": true,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "chats_direct_pair_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "chats"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
           "value": "reporter_id",
           "isExpression": false,
           "asc": true,
@@ -2590,6 +2631,40 @@
     {
       "nameExplicit": false,
       "columns": [
+        "initiator_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "chats_initiator_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "chats"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "receiver_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "chats_receiver_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "chats"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
         "comment_id"
       ],
       "schemaTo": "public",
@@ -3152,17 +3227,6 @@
     {
       "nameExplicit": false,
       "columns": [
-        "direct_key"
-      ],
-      "nullsNotDistinct": false,
-      "name": "chats_direct_key_key",
-      "schema": "public",
-      "table": "chats",
-      "entityType": "uniques"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
         "storage_key"
       ],
       "nullsNotDistinct": false,
@@ -3203,6 +3267,20 @@
       "schema": "public",
       "table": "users",
       "entityType": "uniques"
+    },
+    {
+      "value": "\"initiator_id\" <> \"receiver_id\"",
+      "name": "chats_direct_not_self",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "chats"
+    },
+    {
+      "value": "(\"initiator_id\" is null) = (\"receiver_id\" is null)",
+      "name": "chats_direct_pair_complete",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "chats"
     },
     {
       "value": "\"reason\" in ('spam', 'harassment', 'hate', 'violence', 'sexual_content', 'scam', 'prohibited_item', 'other')",

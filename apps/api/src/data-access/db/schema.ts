@@ -354,17 +354,27 @@ export const userFeedback = pgTable("user_feedback", {
 ]);
 
 /**
- * A private conversation. Only 1:1 chats for now: `direct_key` is the two
- * member ids, sorted and joined with ":", so each pair has one chat. (It's
- * nullable so group chats can be added without one.)
+ * A private conversation. Only 1:1 chats for now: `initiator_id` started it
+ * and `receiver_id` is the other member. Each pair has one chat, whichever of
+ * them started it (the unique index ignores order). Both are null for future
+ * group chats.
  */
 export const chats = pgTable("chats", {
     id: ulidId(),
-    directKey: text("direct_key").unique(),
+    initiatorId: text("initiator_id").references(() => users.id, { onDelete: "cascade" }),
+    receiverId: text("receiver_id").references(() => users.id, { onDelete: "cascade" }),
     // Time of the newest message; null until the first one. Orders the inbox.
     lastMessageAt: timestamp("last_message_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (t) => [
+    uniqueIndex("chats_direct_pair_idx").on(
+        sql`least(${t.initiatorId}, ${t.receiverId})`,
+        sql`greatest(${t.initiatorId}, ${t.receiverId})`,
+    ),
+    check("chats_direct_not_self", sql`${t.initiatorId} <> ${t.receiverId}`),
+    // Both set (1:1) or both null (group).
+    check("chats_direct_pair_complete", sql`(${t.initiatorId} is null) = (${t.receiverId} is null)`),
+]);
 
 export const chatMembers = pgTable("chat_members", {
     chatId: text("chat_id")

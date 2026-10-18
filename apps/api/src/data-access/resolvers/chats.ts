@@ -5,27 +5,32 @@ import { schema, type Database } from "../db";
 import { IdConflictError } from "../errors";
 import { authorFields } from "./shared";
 
-/** The key that makes a 1:1 chat unique for a pair of users. */
-const directKeyOf = (userId: string, otherUserId: string) => [userId, otherUserId].sort().join(":");
+/** Matches the 1:1 chat between two users, in either direction (uses chats_direct_pair_idx). */
+const isDirectChatBetween = (userId: string, otherUserId: string) =>
+    and(
+        sql`least(${schema.chats.initiatorId}, ${schema.chats.receiverId}) = least(${userId}::text, ${otherUserId}::text)`,
+        sql`greatest(${schema.chats.initiatorId}, ${schema.chats.receiverId}) = greatest(${userId}::text, ${otherUserId}::text)`,
+    );
 
 /**
  * The 1:1 chat between two users, created (with both members) if it doesn't
- * exist yet. Returns its id.
+ * exist yet, with `initiatorId` as the one who started it. If the other user
+ * already started one, that chat is returned. Returns its id.
  */
-export async function getOrCreateDirectChat(db: Database, userId: string, otherUserId: string) {
-    if (userId === otherUserId) throw new Error("Cannot chat with yourself");
-    const directKey = directKeyOf(userId, otherUserId);
+export async function getOrCreateDirectChat(db: Database, initiatorId: string, receiverId: string) {
+    if (initiatorId === receiverId) throw new Error("Cannot chat with yourself");
 
     return db.transaction(async (tx) => {
+        // The only unique constraint a new chat can hit is chats_direct_pair_idx.
         const [created] = await tx
             .insert(schema.chats)
-            .values({ directKey })
-            .onConflictDoNothing({ target: schema.chats.directKey })
+            .values({ initiatorId, receiverId })
+            .onConflictDoNothing()
             .returning({ id: schema.chats.id });
         if (created) {
             await tx.insert(schema.chatMembers).values([
-                { chatId: created.id, userId },
-                { chatId: created.id, userId: otherUserId },
+                { chatId: created.id, userId: initiatorId },
+                { chatId: created.id, userId: receiverId },
             ]);
             return created.id;
         }
@@ -33,7 +38,7 @@ export async function getOrCreateDirectChat(db: Database, userId: string, otherU
         const [existing] = await tx
             .select({ id: schema.chats.id })
             .from(schema.chats)
-            .where(eq(schema.chats.directKey, directKey));
+            .where(isDirectChatBetween(initiatorId, receiverId));
         return existing!.id;
     });
 }
@@ -51,8 +56,9 @@ const cursorChat = alias(schema.chats, "cursor_chat");
 
 /**
  * The user's inbox: chats with at least one message, most recent message
- * first. Each has the other member (`otherMember`), the latest message and
- * `unreadCount` (messages from others after the user last read the chat).
+ * first. Each has the other member (`otherMember`), who started the chat
+ * (`initiatorId`), the latest message and `unreadCount` (messages from
+ * others after the user last read the chat).
  * Pass the previous page's `nextCursor` as `cursor` to get the next page.
  */
 export async function getChats(
@@ -87,6 +93,7 @@ export async function getChats(
     const rows = await db
         .select({
             id: schema.chats.id,
+            initiatorId: schema.chats.initiatorId,
             lastMessageAt: schema.chats.lastMessageAt,
             otherMember: authorFields,
             lastMessage,
