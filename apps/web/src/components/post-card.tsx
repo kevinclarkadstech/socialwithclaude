@@ -6,9 +6,10 @@ import {
   IconShare3,
 } from "@tabler/icons-react"
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { UserAvatar } from "@/components/user-avatar"
+import { displayName } from "@/lib/people"
 import { api } from "@/lib/api"
 import { fullDateTime, timeAgo } from "@/lib/time"
 
@@ -18,23 +19,6 @@ export type Post = Awaited<
 type Media = Post["media"][number]
 
 const compact = new Intl.NumberFormat(undefined, { notation: "compact" })
-
-function displayName(author: Post["author"]) {
-  return (
-    [author.firstName, author.lastName].filter(Boolean).join(" ") ||
-    author.username
-  )
-}
-
-function initials(author: Post["author"]) {
-  const name = displayName(author)
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase()
-}
 
 /** Where a post can be shared from. There's no post page yet. */
 function postUrl(postId: string) {
@@ -91,10 +75,7 @@ export function PostCard({
   return (
     <Card size="sm" className={className}>
       <CardHeader className="flex flex-row items-center gap-3">
-        <Avatar>
-          {author.avatarUrl && <AvatarImage src={author.avatarUrl} alt="" />}
-          <AvatarFallback>{initials(author)}</AvatarFallback>
-        </Avatar>
+        <UserAvatar person={author} />
         <div className="flex min-w-0 flex-col text-sm leading-tight">
           <span className="truncate font-medium">{displayName(author)}</span>
           <span className="truncate text-muted-foreground">
