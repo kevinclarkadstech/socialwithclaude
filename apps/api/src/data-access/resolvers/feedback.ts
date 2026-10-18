@@ -11,7 +11,7 @@ import { IdConflictError } from "../errors";
  */
 export async function submitFeedback(
     db: Database,
-    values: {
+    { userId, ...values }: {
         id?: string;
         userId: string;
         category: (typeof schema.feedbackCategories)[number];
@@ -22,14 +22,14 @@ export async function submitFeedback(
 ) {
     const [feedback] = await db
         .insert(schema.userFeedback)
-        .values(values)
+        .values({ ...values, createdBy: userId, updatedBy: userId })
         .onConflictDoNothing({ target: schema.userFeedback.id })
         .returning({ id: schema.userFeedback.id });
     if (feedback) return;
 
     const [existing] = await db
-        .select({ userId: schema.userFeedback.userId })
+        .select({ userId: schema.userFeedback.createdBy })
         .from(schema.userFeedback)
         .where(eq(schema.userFeedback.id, values.id!));
-    if (!existing || existing.userId !== values.userId) throw new IdConflictError(values.id!);
+    if (!existing || existing.userId !== userId) throw new IdConflictError(values.id!);
 }

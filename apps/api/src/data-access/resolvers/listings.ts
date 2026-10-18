@@ -55,7 +55,7 @@ export async function createListing(
     return db.transaction(async (tx) => {
         const [post] = await tx
             .insert(schema.posts)
-            .values({ id, authorId, body, kind: "listing" })
+            .values({ id, body, kind: "listing", createdBy: authorId, updatedBy: authorId })
             .onConflictDoNothing({ target: schema.posts.id })
             .returning({ id: schema.posts.id, createdAt: schema.posts.createdAt });
         if (!post) throw new IdConflictError(id!);
@@ -85,11 +85,11 @@ export async function updateListing(
         const now = new Date();
         const [post] = await tx
             .update(schema.posts)
-            .set({ body, updatedAt: now })
+            .set({ body, updatedBy: userId, updatedAt: now })
             .where(
                 and(
                     eq(schema.posts.id, postId),
-                    eq(schema.posts.authorId, userId),
+                    eq(schema.posts.createdBy, userId),
                     isListingPost,
                     postNotDeleted,
                 ),
@@ -131,7 +131,7 @@ export async function setListingStatus(
                         .where(
                             and(
                                 eq(schema.posts.id, schema.postListingDetails.postId),
-                                eq(schema.posts.authorId, userId),
+                                eq(schema.posts.createdBy, userId),
                                 postNotDeleted,
                             ),
                         ),
@@ -163,7 +163,7 @@ export async function getListings(
         })
         .from(schema.postListingDetails)
         .innerJoin(schema.posts, eq(schema.posts.id, schema.postListingDetails.postId))
-        .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.authorId))
+        .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.createdBy))
         .leftJoin(
             schema.postSaves,
             viewerId
