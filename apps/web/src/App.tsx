@@ -1,3 +1,4 @@
+import { Feed } from "@/components/feed"
 import { Button } from "@/components/ui/button"
 import { useMe } from "@/hooks/use-me"
 import { signOut, useSession } from "@/lib/auth"
@@ -37,14 +38,19 @@ function SignedIn({ userId, email }: { userId: string; email: string }) {
   }
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center gap-4 p-6 text-sm">
-      <p>
-        Signed in as{" "}
-        <span className="font-medium">@{me.me.profile.username}</span>
-      </p>
-      <Button variant="outline" onClick={() => signOut()}>
-        Sign out
-      </Button>
+    <div className="min-h-svh bg-muted">
+      <div className="mx-auto flex w-full max-w-xl flex-col gap-4 p-4 md:py-8">
+        <div className="flex items-center justify-between text-sm">
+          <span>
+            Signed in as{" "}
+            <span className="font-medium">@{me.me.profile.username}</span>
+          </span>
+          <Button variant="ghost" size="sm" onClick={() => signOut()}>
+            Sign out
+          </Button>
+        </div>
+        <Feed />
+      </div>
     </div>
   )
 }
