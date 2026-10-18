@@ -1,20 +1,9 @@
-import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { signUpInput } from "@myapp/shared/types/users";
 
 import { signUp } from "../../data-access";
 import { requireUser } from "../context";
 import { procedure, router } from "../trpc";
-
-const signUpInput = z.object({
-    username: z
-        .string()
-        .min(3)
-        .max(30)
-        .regex(/^[a-zA-Z0-9_]+$/, "Only letters, numbers and underscores"),
-    firstName: z.string().trim().max(50).optional(),
-    lastName: z.string().trim().max(50).optional(),
-    bio: z.string().trim().max(500).optional(),
-});
 
 export const authRouter = router({
     /**
