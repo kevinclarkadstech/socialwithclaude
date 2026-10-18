@@ -354,26 +354,41 @@ export const userFeedback = pgTable("user_feedback", {
 ]);
 
 /**
- * A private conversation. Only 1:1 chats for now: `initiator_id` started it
+ * Who created and last changed a user-created record, and when. Every
+ * user-created table spreads this in; on insert set `updatedBy` to the
+ * creator, and on each change set both `updatedBy` and `updatedAt`.
+ * Deleting a user deletes what they created; their edits on other people's
+ * records stay, with `updatedBy` cleared.
+ */
+const auditFields = () => ({
+    createdBy: text("created_by")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    updatedBy: text("updated_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+/**
+ * A private conversation. Only 1:1 chats for now: `created_by` started it
  * and `receiver_id` is the other member. Each pair has one chat, whichever of
- * them started it (the unique index ignores order). Both are null for future
- * group chats.
+ * them started it (the unique index ignores order). `receiver_id` is null for
+ * future group chats.
  */
 export const chats = pgTable("chats", {
     id: ulidId(),
-    initiatorId: text("initiator_id").references(() => users.id, { onDelete: "cascade" }),
     receiverId: text("receiver_id").references(() => users.id, { onDelete: "cascade" }),
     // Time of the newest message; null until the first one. Orders the inbox.
+    // Not a change to the chat, so it doesn't touch updated_by/updated_at.
     lastMessageAt: timestamp("last_message_at"),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+    ...auditFields(),
 }, (t) => [
-    uniqueIndex("chats_direct_pair_idx").on(
-        sql`least(${t.initiatorId}, ${t.receiverId})`,
-        sql`greatest(${t.initiatorId}, ${t.receiverId})`,
-    ),
-    check("chats_direct_not_self", sql`${t.initiatorId} <> ${t.receiverId}`),
-    // Both set (1:1) or both null (group).
-    check("chats_direct_pair_complete", sql`(${t.initiatorId} is null) = (${t.receiverId} is null)`),
+    // Partial: least/greatest skip nulls, so group chats (no receiver) would
+    // otherwise collide on their creator.
+    uniqueIndex("chats_direct_pair_idx")
+        .on(sql`least(${t.createdBy}, ${t.receiverId})`, sql`greatest(${t.createdBy}, ${t.receiverId})`)
+        .where(sql`${t.receiverId} is not null`),
+    check("chats_direct_not_self", sql`${t.createdBy} <> ${t.receiverId}`),
 ]);
 
 export const chatMembers = pgTable("chat_members", {
@@ -385,6 +400,10 @@ export const chatMembers = pgTable("chat_members", {
         .references(() => users.id, { onDelete: "cascade" }),
     // Messages after this are unread for this member; null when nothing is read.
     lastReadAt: timestamp("last_read_at"),
+    // Set when the member deletes the chat (for themselves only): messages up
+    // to this time are hidden for them, and the chat leaves their inbox until
+    // a newer message arrives. Null when never deleted.
+    clearedAt: timestamp("cleared_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [
     primaryKey({ columns: [t.chatId, t.userId] }),
@@ -397,11 +416,9 @@ export const chatMessages = pgTable("chat_messages", {
     chatId: text("chat_id")
         .notNull()
         .references(() => chats.id, { onDelete: "cascade" }),
-    senderId: text("sender_id")
-        .notNull()
-        .references(() => users.id, { onDelete: "cascade" }),
+    // created_by is the sender.
     body: text("body").notNull(),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+    ...auditFields(),
 }, (t) => [
     // A chat's messages by server time (id breaks ties); also the latest
     // message and unread counts.

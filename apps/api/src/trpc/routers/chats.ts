@@ -2,6 +2,8 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
 import {
+    ChatMessageNotFoundError,
+    clearChatForMember,
     getChatMemberIds,
     getChatMessages,
     getChats,
@@ -85,13 +87,16 @@ export const chatsRouter = router({
             .reduce((total, c) => total + c.count, 0);
     }),
 
-    /** A chat's messages, newest first. Pass `nextCursor` as `cursor` for older ones. */
+    /**
+     * A chat's messages, newest first, minus any from before the caller
+     * deleted the chat. Pass `nextCursor` as `cursor` for older ones.
+     */
     getMessages: procedure.input(chatIdInput.extend(pageInput.shape)).query(async ({ ctx, input }) => {
         const { user } = await requireUserAndProfile(ctx);
         await assertCanUseChat(ctx, user.id, input.chatId);
 
         const { chatId, ...page } = input;
-        return getChatMessages(ctx.db, chatId, page);
+        return getChatMessages(ctx.db, chatId, user.id, page);
     }),
 
     /**
@@ -117,4 +122,30 @@ export const chatsRouter = router({
         await assertCanUseChat(ctx, user.id, input.chatId);
         await markChatRead(ctx.db, input.chatId, user.id);
     }),
+
+    /**
+     * Deletes the chat for the caller only: its messages are hidden for them
+     * and it leaves their inbox until someone sends a new message. The other
+     * member keeps the whole chat. Pass `upToMessageId` (the newest message
+     * the caller has seen) so a delete resent later, e.g. from an offline
+     * queue, doesn't also hide messages that arrived since; otherwise it
+     * deletes up to now. Works on chats with blocked users too. Returns
+     * nothing.
+     */
+    deleteChat: procedure
+        .input(chatIdInput.extend({ upToMessageId: z.string().min(1).optional() }))
+        .mutation(async ({ ctx, input }) => {
+            const { user } = await requireUserAndProfile(ctx);
+            const memberIds = await getChatMemberIds(ctx.db, input.chatId);
+            if (!memberIds.includes(user.id)) throw chatNotFound();
+
+            try {
+                await clearChatForMember(ctx.db, input.chatId, user.id, input.upToMessageId);
+            } catch (err) {
+                if (err instanceof ChatMessageNotFoundError) {
+                    throw new TRPCError({ code: "NOT_FOUND", message: "MESSAGE_NOT_FOUND" });
+                }
+                throw err;
+            }
+        }),
 });
