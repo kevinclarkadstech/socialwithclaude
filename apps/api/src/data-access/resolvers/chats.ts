@@ -1,35 +1,36 @@
-import { and, desc, eq, gt, isNotNull, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNotNull, ne, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import { schema, type Database } from "../db";
-import { IdConflictError } from "../errors";
+import { ChatMessageNotFoundError, IdConflictError } from "../errors";
 import { authorFields } from "./shared";
 
 /** Matches the 1:1 chat between two users, in either direction (uses chats_direct_pair_idx). */
 const isDirectChatBetween = (userId: string, otherUserId: string) =>
     and(
-        sql`least(${schema.chats.initiatorId}, ${schema.chats.receiverId}) = least(${userId}::text, ${otherUserId}::text)`,
-        sql`greatest(${schema.chats.initiatorId}, ${schema.chats.receiverId}) = greatest(${userId}::text, ${otherUserId}::text)`,
+        isNotNull(schema.chats.receiverId),
+        sql`least(${schema.chats.createdBy}, ${schema.chats.receiverId}) = least(${userId}::text, ${otherUserId}::text)`,
+        sql`greatest(${schema.chats.createdBy}, ${schema.chats.receiverId}) = greatest(${userId}::text, ${otherUserId}::text)`,
     );
 
 /**
  * The 1:1 chat between two users, created (with both members) if it doesn't
- * exist yet, with `initiatorId` as the one who started it. If the other user
+ * exist yet, with `userId` as the one who started it. If the other user
  * already started one, that chat is returned. Returns its id.
  */
-export async function getOrCreateDirectChat(db: Database, initiatorId: string, receiverId: string) {
-    if (initiatorId === receiverId) throw new Error("Cannot chat with yourself");
+export async function getOrCreateDirectChat(db: Database, userId: string, receiverId: string) {
+    if (userId === receiverId) throw new Error("Cannot chat with yourself");
 
     return db.transaction(async (tx) => {
         // The only unique constraint a new chat can hit is chats_direct_pair_idx.
         const [created] = await tx
             .insert(schema.chats)
-            .values({ initiatorId, receiverId })
+            .values({ receiverId, createdBy: userId, updatedBy: userId })
             .onConflictDoNothing()
             .returning({ id: schema.chats.id });
         if (created) {
             await tx.insert(schema.chatMembers).values([
-                { chatId: created.id, userId: initiatorId },
+                { chatId: created.id, userId },
                 { chatId: created.id, userId: receiverId },
             ]);
             return created.id;
@@ -38,7 +39,7 @@ export async function getOrCreateDirectChat(db: Database, initiatorId: string, r
         const [existing] = await tx
             .select({ id: schema.chats.id })
             .from(schema.chats)
-            .where(isDirectChatBetween(initiatorId, receiverId));
+            .where(isDirectChatBetween(userId, receiverId));
         return existing!.id;
     });
 }
@@ -55,9 +56,9 @@ export async function getChatMemberIds(db: Database, chatId: string) {
 const cursorChat = alias(schema.chats, "cursor_chat");
 
 /**
- * The user's inbox: chats with at least one message, most recent message
- * first. Each has the other member (`otherMember`), who started the chat
- * (`initiatorId`), the latest message and `unreadCount` (messages from
+ * The user's inbox: chats with a message the user hasn't deleted (see
+ * clearChatForMember), most recent message first. Each has the other member (`otherMember`), who started the chat
+ * (`createdBy`), the latest message and `unreadCount` (messages from
  * others after the user last read the chat).
  * Pass the previous page's `nextCursor` as `cursor` to get the next page.
  */
@@ -71,7 +72,7 @@ export async function getChats(
 
     const lastMessage = sql<{ id: string; senderId: string; body: string; createdAt: string }>`(
         select json_build_object(
-            'id', m.id, 'senderId', m.sender_id, 'body', m.body, 'createdAt', m.created_at
+            'id', m.id, 'senderId', m.created_by, 'body', m.body, 'createdAt', m.created_at
         )
         from ${schema.chatMessages} m
         where m.chat_id = ${schema.chats.id}
@@ -82,7 +83,7 @@ export async function getChats(
         select count(*)::int
         from ${schema.chatMessages} m
         where m.chat_id = ${schema.chats.id}
-            and m.sender_id <> ${userId}
+            and m.created_by <> ${userId}
             and m.created_at > coalesce(${me.lastReadAt}, '-infinity'::timestamp)
     )`;
     const chatsBefore = (cursor: string) => sql`(${schema.chats.lastMessageAt}, ${schema.chats.id}) < (${db
@@ -93,7 +94,7 @@ export async function getChats(
     const rows = await db
         .select({
             id: schema.chats.id,
-            initiatorId: schema.chats.initiatorId,
+            createdBy: schema.chats.createdBy,
             lastMessageAt: schema.chats.lastMessageAt,
             otherMember: authorFields,
             lastMessage,
@@ -106,7 +107,8 @@ export async function getChats(
         .where(
             and(
                 eq(me.userId, userId),
-                isNotNull(schema.chats.lastMessageAt),
+                // Has a message the user hasn't deleted (null until the first message).
+                gt(schema.chats.lastMessageAt, sql`coalesce(${me.clearedAt}, '-infinity'::timestamp)`),
                 cursor ? chatsBefore(cursor) : undefined,
             ),
         )
@@ -129,14 +131,21 @@ export async function getChats(
 const cursorMessage = alias(schema.chatMessages, "cursor_message");
 
 /**
- * A chat's messages, newest first (by server time). Pass the previous page's
- * `nextCursor` as `cursor` to get older messages.
+ * A chat's messages as `userId` sees them, newest first (by server time):
+ * messages from before they deleted the chat are left out. Pass the previous
+ * page's `nextCursor` as `cursor` to get older messages.
  */
 export async function getChatMessages(
     db: Database,
     chatId: string,
+    userId: string,
     { cursor, limit }: { cursor?: string | null; limit: number },
 ) {
+    const clearedAt = db
+        .select({ clearedAt: schema.chatMembers.clearedAt })
+        .from(schema.chatMembers)
+        .where(and(eq(schema.chatMembers.chatId, chatId), eq(schema.chatMembers.userId, userId)));
+
     const messagesBefore = (cursor: string) => sql`(${schema.chatMessages.createdAt}, ${schema.chatMessages.id}) < (${db
         .select({ createdAt: cursorMessage.createdAt, id: cursorMessage.id })
         .from(cursorMessage)
@@ -145,12 +154,18 @@ export async function getChatMessages(
     const rows = await db
         .select({
             id: schema.chatMessages.id,
-            senderId: schema.chatMessages.senderId,
+            senderId: schema.chatMessages.createdBy,
             body: schema.chatMessages.body,
             createdAt: schema.chatMessages.createdAt,
         })
         .from(schema.chatMessages)
-        .where(and(eq(schema.chatMessages.chatId, chatId), cursor ? messagesBefore(cursor) : undefined))
+        .where(
+            and(
+                eq(schema.chatMessages.chatId, chatId),
+                gt(schema.chatMessages.createdAt, sql`coalesce((${clearedAt}), '-infinity'::timestamp)`),
+                cursor ? messagesBefore(cursor) : undefined,
+            ),
+        )
         .orderBy(desc(schema.chatMessages.createdAt), desc(schema.chatMessages.id))
         .limit(limit + 1);
 
@@ -167,12 +182,12 @@ export async function getChatMessages(
  */
 export async function sendChatMessage(
     db: Database,
-    values: { id?: string; chatId: string; senderId: string; body: string },
+    { senderId, ...values }: { id?: string; chatId: string; senderId: string; body: string },
 ) {
     await db.transaction(async (tx) => {
         const [message] = await tx
             .insert(schema.chatMessages)
-            .values(values)
+            .values({ ...values, createdBy: senderId, updatedBy: senderId })
             .onConflictDoNothing({ target: schema.chatMessages.id })
             .returning({ createdAt: schema.chatMessages.createdAt });
         if (!message) throw new IdConflictError(values.id!);
@@ -184,7 +199,7 @@ export async function sendChatMessage(
         await tx
             .update(schema.chatMembers)
             .set({ lastReadAt: message.createdAt })
-            .where(and(eq(schema.chatMembers.chatId, values.chatId), eq(schema.chatMembers.userId, values.senderId)));
+            .where(and(eq(schema.chatMembers.chatId, values.chatId), eq(schema.chatMembers.userId, senderId)));
     });
 }
 
@@ -195,7 +210,7 @@ export async function sendChatMessage(
  */
 export async function isOwnChatMessageId(db: Database, id: string, senderId: string, chatId: string) {
     const [message] = await db
-        .select({ senderId: schema.chatMessages.senderId, chatId: schema.chatMessages.chatId })
+        .select({ senderId: schema.chatMessages.createdBy, chatId: schema.chatMessages.chatId })
         .from(schema.chatMessages)
         .where(eq(schema.chatMessages.id, id));
     if (!message) return false;
@@ -208,6 +223,41 @@ export async function markChatRead(db: Database, chatId: string, userId: string)
     await db
         .update(schema.chatMembers)
         .set({ lastReadAt: sql`greatest(${schema.chatMembers.lastReadAt}, now())` })
+        .where(and(eq(schema.chatMembers.chatId, chatId), eq(schema.chatMembers.userId, userId)));
+}
+
+/**
+ * Deletes the chat for this member only. Messages up to `upToMessageId` (or
+ * up to now when omitted) are hidden for them and count as read, and the
+ * chat leaves their inbox until a newer message arrives. Other members keep
+ * everything. Never moves backwards, so resending a delete is harmless.
+ *
+ * @throws ChatMessageNotFoundError if `upToMessageId` isn't in this chat.
+ */
+export async function clearChatForMember(
+    db: Database,
+    chatId: string,
+    userId: string,
+    upToMessageId?: string,
+) {
+    let upTo: SQL = sql`now()`;
+    if (upToMessageId) {
+        const message = db
+            .select({ createdAt: schema.chatMessages.createdAt })
+            .from(schema.chatMessages)
+            .where(and(eq(schema.chatMessages.id, upToMessageId), eq(schema.chatMessages.chatId, chatId)));
+        if ((await message).length === 0) throw new ChatMessageNotFoundError(upToMessageId);
+        // Read in SQL: a JS Date would drop the microseconds and leave the
+        // message itself just after the cutoff.
+        upTo = sql`(${message})`;
+    }
+
+    await db
+        .update(schema.chatMembers)
+        .set({
+            clearedAt: sql`greatest(${schema.chatMembers.clearedAt}, ${upTo})`,
+            lastReadAt: sql`greatest(${schema.chatMembers.lastReadAt}, ${upTo})`,
+        })
         .where(and(eq(schema.chatMembers.chatId, chatId), eq(schema.chatMembers.userId, userId)));
 }
 
@@ -229,7 +279,7 @@ export async function getUnreadChatCounts(db: Database, userId: string) {
             schema.chatMessages,
             and(
                 eq(schema.chatMessages.chatId, schema.chatMembers.chatId),
-                ne(schema.chatMessages.senderId, userId),
+                ne(schema.chatMessages.createdBy, userId),
                 gt(schema.chatMessages.createdAt, sql`coalesce(${schema.chatMembers.lastReadAt}, '-infinity'::timestamp)`),
             ),
         )
