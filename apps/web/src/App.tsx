@@ -1,31 +1,23 @@
 import { Button } from "@/components/ui/button"
-import { logger } from "./lib/observability"
-import { analytics } from "./lib/analytics"
+import { signOut, useSession } from "@/lib/auth"
+import { LoginPage } from "@/pages/login-page"
 
 export function App() {
-  logger.debug("App component rendered", {
-    token: "abc",
-    hello: {
-      world: {
-        is: "standard"
-      }
-    }
-  })
+  const { data: session, isPending } = useSession()
+
+  // Checking for an existing session; render nothing to avoid a login flash.
+  if (isPending) return null
+
+  if (!session) return <LoginPage />
+
   return (
-    <div className="flex min-h-svh p-6">
-      <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-        <div>
-          <h1 className="font-medium">Project ready!</h1>
-          <p>You may now add components and start building.</p>
-          <p>We&apos;ve already added the button component for you.</p>
-          <Button className="mt-2" onClick={() => {
-            analytics.track({ type: "post_favorited", postId: "abc", userId: "cde" })
-          }}>Button</Button>
-        </div>
-        <div className="font-mono text-xs text-muted-foreground">
-          (Press <kbd>d</kbd> to toggle dark mode)
-        </div>
-      </div>
+    <div className="flex min-h-svh flex-col items-center justify-center gap-4 p-6 text-sm">
+      <p>
+        Signed in as <span className="font-medium">{session.user.email}</span>
+      </p>
+      <Button variant="outline" onClick={() => signOut()}>
+        Sign out
+      </Button>
     </div>
   )
 }
