@@ -67,7 +67,7 @@ const app = new Hono<AppHonoEnv>()
     .use(
         "/*",
         cors({
-            origin: serverConfig.BETTER_AUTH_URL,
+            origin: serverConfig.WEB_APP_URL,
             allowMethods: ["GET", "POST", "OPTIONS"],
             allowHeaders: ["Content-Type", "Authorization"],
             credentials: true,

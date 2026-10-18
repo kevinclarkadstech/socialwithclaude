@@ -5,7 +5,10 @@ import dotenv from 'dotenv';
 export const ServerConfigSchema = z.object({
     DATABASE_URL: z.string(),
     BETTER_AUTH_SECRET: z.string(),
+    // The API's own public URL (better-auth builds its callback URLs from it).
     BETTER_AUTH_URL: z.string(),
+    // The web app's origin: allowed by CORS and trusted by better-auth.
+    WEB_APP_URL: z.url(),
     // Public base URL of the media bucket (or a CDN in front of it); keys are appended.
     MEDIA_PUBLIC_URL: z.string().default("http://localhost:9000/media-bucket"),
 });
