@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button"
+import { useMe } from "@/hooks/use-me"
 import { signOut, useSession } from "@/lib/auth"
 import { LoginPage } from "@/pages/login-page"
+import { OnboardingPage } from "@/pages/onboarding-page"
 
 export function App() {
   const { data: session, isPending } = useSession()
@@ -10,10 +12,35 @@ export function App() {
 
   if (!session) return <LoginPage />
 
+  return <SignedIn userId={session.user.id} email={session.user.email} />
+}
+
+/** Signed in: onboarding until the user has a profile, then the app. */
+function SignedIn({ userId, email }: { userId: string; email: string }) {
+  const me = useMe(userId)
+
+  if (me.status === "loading") return null
+
+  if (me.status === "error") {
+    return (
+      <div className="flex min-h-svh flex-col items-center justify-center gap-4 p-6 text-sm">
+        <p>Couldn&apos;t load your account.</p>
+        <Button variant="outline" onClick={me.reload}>
+          Try again
+        </Button>
+      </div>
+    )
+  }
+
+  if (!me.me?.profile) {
+    return <OnboardingPage email={email} onComplete={me.reload} />
+  }
+
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-4 p-6 text-sm">
       <p>
-        Signed in as <span className="font-medium">{session.user.email}</span>
+        Signed in as{" "}
+        <span className="font-medium">@{me.me.profile.username}</span>
       </p>
       <Button variant="outline" onClick={() => signOut()}>
         Sign out
