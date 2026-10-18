@@ -352,3 +352,58 @@ export const userFeedback = pgTable("user_feedback", {
     check("user_feedback_category_valid", isOneOf(t.category, feedbackCategories)),
     check("user_feedback_status_valid", isOneOf(t.status, feedbackStatuses)),
 ]);
+
+/**
+ * A private conversation. Only 1:1 chats for now: `initiator_id` started it
+ * and `receiver_id` is the other member. Each pair has one chat, whichever of
+ * them started it (the unique index ignores order). Both are null for future
+ * group chats.
+ */
+export const chats = pgTable("chats", {
+    id: ulidId(),
+    initiatorId: text("initiator_id").references(() => users.id, { onDelete: "cascade" }),
+    receiverId: text("receiver_id").references(() => users.id, { onDelete: "cascade" }),
+    // Time of the newest message; null until the first one. Orders the inbox.
+    lastMessageAt: timestamp("last_message_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+    uniqueIndex("chats_direct_pair_idx").on(
+        sql`least(${t.initiatorId}, ${t.receiverId})`,
+        sql`greatest(${t.initiatorId}, ${t.receiverId})`,
+    ),
+    check("chats_direct_not_self", sql`${t.initiatorId} <> ${t.receiverId}`),
+    // Both set (1:1) or both null (group).
+    check("chats_direct_pair_complete", sql`(${t.initiatorId} is null) = (${t.receiverId} is null)`),
+]);
+
+export const chatMembers = pgTable("chat_members", {
+    chatId: text("chat_id")
+        .notNull()
+        .references(() => chats.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    // Messages after this are unread for this member; null when nothing is read.
+    lastReadAt: timestamp("last_read_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+    primaryKey({ columns: [t.chatId, t.userId] }),
+    // "My chats" (the inbox).
+    index("chat_members_user_id_idx").on(t.userId),
+]);
+
+export const chatMessages = pgTable("chat_messages", {
+    id: ulidId(),
+    chatId: text("chat_id")
+        .notNull()
+        .references(() => chats.id, { onDelete: "cascade" }),
+    senderId: text("sender_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+    // A chat's messages by server time (id breaks ties); also the latest
+    // message and unread counts.
+    index("chat_messages_chat_id_created_at_id_idx").on(t.chatId, t.createdAt, t.id),
+]);
