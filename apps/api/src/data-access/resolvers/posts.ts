@@ -64,7 +64,7 @@ function commentPostIsLive(db: Database, postAuthorId?: string) {
                 and(
                     eq(schema.posts.id, schema.postComments.postId),
                     notDeleted,
-                    postAuthorId ? eq(schema.posts.authorId, postAuthorId) : undefined,
+                    postAuthorId ? eq(schema.posts.createdBy, postAuthorId) : undefined,
                 ),
             ),
     );
@@ -86,7 +86,7 @@ export async function getPostById(db: Database, postId: string, viewerId: string
             isSaved: sql<boolean>`${schema.postSaves.postId} is not null`,
         })
         .from(schema.posts)
-        .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.authorId))
+        .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.createdBy))
         .leftJoin(schema.postListingDetails, eq(schema.postListingDetails.postId, schema.posts.id))
         .leftJoin(
             schema.postSaves,
@@ -121,7 +121,7 @@ export async function getFeed(
             isSaved: sql<boolean>`${schema.postSaves.postId} is not null`,
         })
         .from(schema.posts)
-        .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.authorId))
+        .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.createdBy))
         .leftJoin(
             schema.postSaves,
             viewerId
@@ -164,7 +164,7 @@ export async function searchPosts(
             thumbnail: postThumbnailSql,
         })
         .from(schema.posts)
-        .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.authorId))
+        .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.createdBy))
         .leftJoin(schema.postListingDetails, eq(schema.postListingDetails.postId, schema.posts.id))
         .where(
             and(
@@ -210,7 +210,7 @@ type ReportInput = { reason: (typeof schema.reportReasons)[number]; details: str
 /** The author of a live (not deleted) post, or null. */
 export async function getPostAuthorId(db: Database, postId: string) {
     const [post] = await db
-        .select({ authorId: schema.posts.authorId })
+        .select({ authorId: schema.posts.createdBy })
         .from(schema.posts)
         .where(and(eq(schema.posts.id, postId), notDeleted))
         .limit(1);
@@ -221,7 +221,7 @@ export async function getPostAuthorId(db: Database, postId: string) {
 /** The authors of a live comment and of its (live) post, or null. */
 export async function getPostCommentAuthorIds(db: Database, commentId: string) {
     const [row] = await db
-        .select({ authorId: schema.postComments.authorId, postAuthorId: schema.posts.authorId })
+        .select({ authorId: schema.postComments.createdBy, postAuthorId: schema.posts.createdBy })
         .from(schema.postComments)
         .innerJoin(schema.posts, eq(schema.posts.id, schema.postComments.postId))
         .where(and(eq(schema.postComments.id, commentId), commentNotDeleted, notDeleted))
@@ -244,7 +244,7 @@ export async function reportPost(
     { reason, details }: ReportInput,
 ) {
     const [post] = await db
-        .select({ authorId: schema.posts.authorId })
+        .select({ authorId: schema.posts.createdBy })
         .from(schema.posts)
         .where(and(eq(schema.posts.id, postId), notDeleted))
         .limit(1);
@@ -253,10 +253,10 @@ export async function reportPost(
 
     await db
         .insert(schema.postReports)
-        .values({ postId, reporterId, reason, details })
+        .values({ postId, reason, details, createdBy: reporterId, updatedBy: reporterId })
         .onConflictDoUpdate({
-            target: [schema.postReports.reporterId, schema.postReports.postId],
-            set: { reason, details, updatedAt: new Date() },
+            target: [schema.postReports.createdBy, schema.postReports.postId],
+            set: { reason, details, updatedBy: reporterId, updatedAt: new Date() },
         });
 }
 
@@ -288,7 +288,7 @@ export async function getSavedPosts(
         })
         .from(schema.postSaves)
         .innerJoin(schema.posts, eq(schema.posts.id, schema.postSaves.postId))
-        .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.authorId))
+        .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.createdBy))
         .leftJoin(schema.postListingDetails, eq(schema.postListingDetails.postId, schema.posts.id))
         .where(
             and(
@@ -374,7 +374,7 @@ export async function getPostComments(
             myVote: sql<number>`coalesce(${schema.postCommentVotes.value}, 0)`.mapWith(Number),
         })
         .from(schema.postComments)
-        .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.postComments.authorId))
+        .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.postComments.createdBy))
         .leftJoin(
             schema.postCommentVotes,
             viewerId
@@ -489,7 +489,7 @@ export async function createPostComment(
 
             const [comment] = await tx
                 .insert(schema.postComments)
-                .values({ id, postId, authorId, body })
+                .values({ id, postId, body, createdBy: authorId, updatedBy: authorId })
                 .onConflictDoNothing({ target: schema.postComments.id })
                 .returning({ id: schema.postComments.id });
             // Roll back the count bump; a retry is checked below.
@@ -499,7 +499,7 @@ export async function createPostComment(
         if (!(err instanceof AlreadyExists)) throw err;
 
         const [existing] = await db
-            .select({ authorId: schema.postComments.authorId, postId: schema.postComments.postId })
+            .select({ authorId: schema.postComments.createdBy, postId: schema.postComments.postId })
             .from(schema.postComments)
             .where(eq(schema.postComments.id, id!));
         if (!existing || existing.authorId !== authorId || existing.postId !== postId) {
@@ -522,7 +522,7 @@ export async function reportPostComment(
     { reason, details }: ReportInput,
 ) {
     const [comment] = await db
-        .select({ authorId: schema.postComments.authorId })
+        .select({ authorId: schema.postComments.createdBy })
         .from(schema.postComments)
         .where(
             and(eq(schema.postComments.id, commentId), commentNotDeleted, commentPostIsLive(db)),
@@ -533,10 +533,10 @@ export async function reportPostComment(
 
     await db
         .insert(schema.postCommentReports)
-        .values({ commentId, reporterId, reason, details })
+        .values({ commentId, reason, details, createdBy: reporterId, updatedBy: reporterId })
         .onConflictDoUpdate({
-            target: [schema.postCommentReports.reporterId, schema.postCommentReports.commentId],
-            set: { reason, details, updatedAt: new Date() },
+            target: [schema.postCommentReports.createdBy, schema.postCommentReports.commentId],
+            set: { reason, details, updatedBy: reporterId, updatedAt: new Date() },
         });
 }
 
@@ -549,11 +549,11 @@ export async function reportPostComment(
 export async function updatePostComment(db: Database, userId: string, commentId: string, body: string) {
     const [comment] = await db
         .update(schema.postComments)
-        .set({ body, updatedAt: new Date() })
+        .set({ body, updatedBy: userId, updatedAt: new Date() })
         .where(
             and(
                 eq(schema.postComments.id, commentId),
-                eq(schema.postComments.authorId, userId),
+                eq(schema.postComments.createdBy, userId),
                 commentNotDeleted,
                 commentPostIsLive(db),
             ),
@@ -576,13 +576,13 @@ export async function deletePostComment(db: Database, userId: string, commentId:
     const deleted = await db.transaction(async (tx) => {
         const [comment] = await tx
             .update(schema.postComments)
-            .set({ deletedAt: new Date() })
+            .set({ deletedAt: new Date(), updatedBy: userId, updatedAt: new Date() })
             .where(
                 and(
                     eq(schema.postComments.id, commentId),
                     commentNotDeleted,
                     commentPostIsLive(db),
-                    or(eq(schema.postComments.authorId, userId), commentPostIsLive(db, userId)),
+                    or(eq(schema.postComments.createdBy, userId), commentPostIsLive(db, userId)),
                 ),
             )
             .returning({ postId: schema.postComments.postId });
@@ -600,9 +600,9 @@ export async function deletePostComment(db: Database, userId: string, commentId:
     // Already deleted (or its post was) by someone allowed to delete it: done.
     const [gone] = await db
         .select({
-            authorId: schema.postComments.authorId,
+            authorId: schema.postComments.createdBy,
             deletedAt: schema.postComments.deletedAt,
-            postAuthorId: schema.posts.authorId,
+            postAuthorId: schema.posts.createdBy,
             postDeletedAt: schema.posts.deletedAt,
         })
         .from(schema.postComments)
@@ -647,7 +647,7 @@ export async function createPost(
     return db.transaction(async (tx) => {
         const [post] = await tx
             .insert(schema.posts)
-            .values({ id, authorId, body })
+            .values({ id, body, createdBy: authorId, updatedBy: authorId })
             .onConflictDoNothing({ target: schema.posts.id })
             .returning({ id: schema.posts.id });
         if (!post) throw new IdConflictError(id!);
@@ -669,7 +669,7 @@ export async function isOwnPostId(
     kind: "post" | "listing",
 ) {
     const [post] = await db
-        .select({ authorId: schema.posts.authorId, kind: schema.posts.kind })
+        .select({ authorId: schema.posts.createdBy, kind: schema.posts.kind })
         .from(schema.posts)
         .where(eq(schema.posts.id, id));
     if (!post) return false;
@@ -693,8 +693,8 @@ export async function updatePost(
     const updated = await db.transaction(async (tx) => {
         const [post] = await tx
             .update(schema.posts)
-            .set({ body, updatedAt: new Date() })
-            .where(and(eq(schema.posts.id, postId), eq(schema.posts.authorId, userId), notDeleted))
+            .set({ body, updatedBy: userId, updatedAt: new Date() })
+            .where(and(eq(schema.posts.id, postId), eq(schema.posts.createdBy, userId), notDeleted))
             .returning({ id: schema.posts.id });
         if (!post) return false;
 
@@ -714,13 +714,13 @@ export async function updatePost(
 export async function deletePost(db: Database, userId: string, postId: string) {
     const [post] = await db
         .update(schema.posts)
-        .set({ deletedAt: new Date() })
-        .where(and(eq(schema.posts.id, postId), eq(schema.posts.authorId, userId), notDeleted))
+        .set({ deletedAt: new Date(), updatedBy: userId, updatedAt: new Date() })
+        .where(and(eq(schema.posts.id, postId), eq(schema.posts.createdBy, userId), notDeleted))
         .returning({ id: schema.posts.id });
     if (post) return;
 
     const [gone] = await db
-        .select({ authorId: schema.posts.authorId, deletedAt: schema.posts.deletedAt })
+        .select({ authorId: schema.posts.createdBy, deletedAt: schema.posts.deletedAt })
         .from(schema.posts)
         .where(eq(schema.posts.id, postId));
     if (gone?.deletedAt && gone.authorId === userId) return;
@@ -731,7 +731,7 @@ export async function deletePost(db: Database, userId: string, postId: string) {
 /** Called after a guarded write matched no rows, to report the right reason. */
 async function throwWhyPostNotWritable(db: Database, userId: string, postId: string): Promise<never> {
     const [post] = await db
-        .select({ authorId: schema.posts.authorId })
+        .select({ authorId: schema.posts.createdBy })
         .from(schema.posts)
         .where(and(eq(schema.posts.id, postId), notDeleted))
         .limit(1);
