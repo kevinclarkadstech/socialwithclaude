@@ -4,6 +4,7 @@ import { cn } from "cn"
 import { ChatList, type OpenChat } from "@/components/chat/chat-list"
 import { ChatView } from "@/components/chat/chat-view"
 import { Feed } from "@/components/feed"
+import { NewPostForm } from "@/components/new-post-form"
 import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
 import { signOut } from "@/lib/auth"
@@ -24,6 +25,9 @@ export function HomePage({
   const [tab, setTab] = React.useState<Tab>("feed")
   const [openChat, setOpenChat] = React.useState<OpenChat | null>(null)
   const { count: unread, refresh: refreshUnread } = useUnreadCount()
+  // Bumped after posting so the feed reloads with the new post.
+  const [feedVersion, setFeedVersion] = React.useState(0)
+  const [listed, setListed] = React.useState(false)
 
   return (
     <div className="min-h-svh bg-muted">
@@ -51,7 +55,23 @@ export function HomePage({
           </Button>
         </div>
 
-        {tab === "feed" && <Feed />}
+        {tab === "feed" && (
+          <>
+            <NewPostForm
+              onCreated={(kind) => {
+                setListed(kind === "listing")
+                if (kind === "post") setFeedVersion((v) => v + 1)
+              }}
+            />
+            {listed && (
+              <p className="text-center text-sm text-muted-foreground">
+                Your listing is up. Listings show in the marketplace, not the
+                feed.
+              </p>
+            )}
+            <Feed key={feedVersion} />
+          </>
+        )}
         {tab === "messages" &&
           (openChat ? (
             <ChatView
