@@ -15,6 +15,7 @@ export type ListingSummary = {
     location: string | null;
     imageUrl: string | null;
     createdAt: string;
+    isSaved: boolean;
     seller: { username: string; avatarUrl: string | null };
 };
 
@@ -30,6 +31,7 @@ export function fromNewestListing(item: NewestListing): ListingSummary | null {
         location: item.listing.location,
         imageUrl: item.thumbnail?.url ?? null,
         createdAt: item.createdAt,
+        isSaved: item.isSaved,
         seller: { username: item.author.username, avatarUrl: item.author.avatarUrl },
     };
 }
@@ -45,6 +47,7 @@ export function fromSearchedListing(item: SearchedListing): ListingSummary {
         location: item.location,
         imageUrl: item.imageUrl,
         createdAt: item.createdAt,
+        isSaved: item.isSaved,
         seller: { username: item.author.username, avatarUrl: item.author.avatarUrl },
     };
 }

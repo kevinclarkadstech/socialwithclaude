@@ -85,8 +85,10 @@ type Results =
  * list view.
  */
 export function ListingsPage({
+  onOpenListing,
   onOpenProfile,
 }: {
+  onOpenListing: (listingId: string) => void
   onOpenProfile: (username: string) => void
 }) {
   const [view, setView] = useStoredView()
@@ -190,9 +192,13 @@ export function ListingsPage({
             {current.items.map((listing) => (
               <li key={listing.id} className="min-w-0">
                 {view === "grid" ? (
-                  <ListingCard listing={listing} />
+                  <ListingCard listing={listing} onOpen={onOpenListing} />
                 ) : (
-                  <ListingRow listing={listing} onOpenProfile={onOpenProfile} />
+                  <ListingRow
+                    listing={listing}
+                    onOpen={onOpenListing}
+                    onOpenProfile={onOpenProfile}
+                  />
                 )}
               </li>
             ))}

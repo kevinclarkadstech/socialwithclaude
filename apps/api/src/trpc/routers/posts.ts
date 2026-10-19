@@ -75,7 +75,8 @@ export async function searchVisiblePosts(
 ) {
     const blockList = await getUserBlockList(ctx);
     return fillVisiblePage(
-        (cursor, limit) => searchPosts(ctx.db, query, { kind, cursor, limit }),
+        (cursor, limit) =>
+            searchPosts(ctx.db, query, { kind, cursor, limit, viewerId: ctx.user?.id ?? null }),
         page,
         (p) => !isBlocked(blockList, p.author.userId),
         (p) => p.id,

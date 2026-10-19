@@ -50,6 +50,8 @@ export type ListingSearchResult = {
     priceCents: number | null;
     status: NonNullable<PostRow["listing"]>["status"];
     location: string | null;
+    /** Whether the caller saved it (false when signed out). */
+    isSaved: boolean;
     createdAt: Date;
 };
 
@@ -94,6 +96,7 @@ function toPostSearchResult(post: PostRow): PostSearchResult | ListingSearchResu
             priceCents: post.listing.priceCents,
             status: post.listing.status,
             location: post.listing.location,
+            isSaved: post.isSaved,
             createdAt: post.createdAt,
         };
     }

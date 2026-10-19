@@ -9,22 +9,19 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { MediaCarousel } from "@/components/media-carousel"
 import { UserAvatar } from "@/components/user-avatar"
+import { useSavePost } from "@/hooks/use-save-post"
 import { displayName } from "@/lib/people"
-import { api } from "@/lib/api"
+import type { api } from "@/lib/api"
+import { sharePost } from "@/lib/share"
 import { fullDateTime, timeAgo } from "@/lib/time"
 
 export type Post = Awaited<
   ReturnType<typeof api.posts.getFeed.query>
 >["items"][number]
-type Media = Post["media"][number]
 
 const compact = new Intl.NumberFormat(undefined, { notation: "compact" })
-
-/** Where a post can be shared from. There's no post page yet. */
-function postUrl(postId: string) {
-  return `${window.location.origin}/posts/${postId}`
-}
 
 /**
  * A post in a feed: author, time, text, photos, and save / comment / share
@@ -43,35 +40,20 @@ export function PostCard({
   onOpenProfile?: (username: string) => void
   className?: string
 }) {
-  const [saved, setSaved] = React.useState(post.isSaved)
-  const [numSaves, setNumSaves] = React.useState(post.numSaves)
+  const {
+    saved,
+    count: numSaves,
+    toggle: toggleSave,
+  } = useSavePost(post.id, post.isSaved, post.numSaves)
   const [shareStatus, setShareStatus] = React.useState<"idle" | "copied">(
     "idle"
   )
 
-  async function toggleSave() {
-    const next = !saved
-    setSaved(next)
-    setNumSaves((n) => n + (next ? 1 : -1))
-    try {
-      if (next) await api.posts.savePost.mutate({ id: post.id })
-      else await api.posts.unsavePost.mutate({ id: post.id })
-    } catch {
-      setSaved(!next)
-      setNumSaves((n) => n + (next ? -1 : 1))
-    }
-  }
-
   async function share() {
-    const url = postUrl(post.id)
-    if (navigator.share) {
-      // Cancelling the share sheet rejects; nothing to do.
-      await navigator.share({ url }).catch(() => {})
-      return
+    if ((await sharePost(post.id)) === "copied") {
+      setShareStatus("copied")
+      setTimeout(() => setShareStatus("idle"), 2000)
     }
-    await navigator.clipboard.writeText(url)
-    setShareStatus("copied")
-    setTimeout(() => setShareStatus("idle"), 2000)
   }
 
   const { author } = post
@@ -110,7 +92,7 @@ export function PostCard({
         </CardContent>
       )}
 
-      {post.media.length > 0 && <PostMedia media={post.media} />}
+      {post.media.length > 0 && <MediaCarousel media={post.media} />}
 
       <CardFooter className="gap-1">
         <Button
@@ -168,46 +150,5 @@ function AuthorLink({
     >
       {children}
     </button>
-  )
-}
-
-/** The photo's own shape, kept between 4:5 (tall) and 1.91:1 (wide). */
-function aspectRatio(media: Media) {
-  if (!media.width || !media.height) return 1
-  return Math.min(Math.max(media.width / media.height, 4 / 5), 1.91)
-}
-
-/** One photo, or a swipeable row of photos sized by the first one. */
-function PostMedia({ media }: { media: Media[] }) {
-  const [index, setIndex] = React.useState(0)
-
-  function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    const el = event.currentTarget
-    setIndex(Math.round(el.scrollLeft / el.clientWidth))
-  }
-
-  return (
-    <div className="relative">
-      <div
-        className="flex snap-x snap-mandatory [scrollbar-width:none] overflow-x-auto"
-        style={{ aspectRatio: aspectRatio(media[0]!) }}
-        onScroll={media.length > 1 ? handleScroll : undefined}
-      >
-        {media.map((item) => (
-          <img
-            key={item.id}
-            src={item.url}
-            alt={item.altText ?? ""}
-            loading="lazy"
-            className="h-full w-full shrink-0 snap-center bg-muted object-cover"
-          />
-        ))}
-      </div>
-      {media.length > 1 && (
-        <span className="absolute top-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-xs text-white">
-          {index + 1}/{media.length}
-        </span>
-      )}
-    </div>
   )
 }

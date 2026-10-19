@@ -154,14 +154,25 @@ export async function getFeed(
 
 /**
  * Posts whose body (or, for listings, title) contains `query`
- * (case-insensitive), newest first, with authors, listing details and first
- * photo (`thumbnail`). `kind` limits it to posts or listings. Pass the
- * previous page's `nextCursor` as `cursor` to get the next page.
+ * (case-insensitive), newest first, with authors, listing details, first
+ * photo (`thumbnail`) and `isSaved` for `viewerId`. `kind` limits it to posts
+ * or listings. Pass the previous page's `nextCursor` as `cursor` to get the
+ * next page.
  */
 export async function searchPosts(
     db: Database,
     query: string,
-    { kind, cursor, limit }: { kind?: (typeof schema.postKinds)[number] | null; cursor?: string | null; limit: number },
+    {
+        kind,
+        cursor,
+        limit,
+        viewerId = null,
+    }: {
+        kind?: (typeof schema.postKinds)[number] | null;
+        cursor?: string | null;
+        limit: number;
+        viewerId?: string | null;
+    },
 ) {
     const pattern = containsPattern(query);
     const rows = await db
@@ -170,10 +181,20 @@ export async function searchPosts(
             author: authorFields,
             listing: listingFields,
             thumbnail: postThumbnailSql,
+            isSaved: sql<boolean>`${schema.postSaves.postId} is not null`,
         })
         .from(schema.posts)
         .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.createdBy))
         .leftJoin(schema.postListingDetails, eq(schema.postListingDetails.postId, schema.posts.id))
+        .leftJoin(
+            schema.postSaves,
+            viewerId
+                ? and(
+                    eq(schema.postSaves.userId, viewerId),
+                    eq(schema.postSaves.postId, schema.posts.id),
+                )
+                : sql`false`,
+        )
         .where(
             and(
                 notDeleted,
