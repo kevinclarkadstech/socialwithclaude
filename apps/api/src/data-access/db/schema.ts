@@ -1,6 +1,7 @@
 import { boolean, check, index, integer, pgTable, primaryKey, smallint, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { sql, type AnyColumn } from "drizzle-orm";
 import { monotonicFactory } from "ulid";
+import { listingConditions, listingPriceTypes, listingStatuses } from "@myapp/shared/types/posts";
 
 const commonFields = {
     id: text("id").primaryKey(),
@@ -217,9 +218,8 @@ export const postSaves = pgTable("post_saves", {
     index("post_saves_post_id_idx").on(t.postId),
 ]);
 
-export const listingPriceTypes = ["fixed", "negotiable", "free", "multiple"] as const;
-export const listingConditions = ["new", "used"] as const;
-export const listingStatuses = ["available", "pending", "sold"] as const;
+// Shared with the web app's forms; the CHECKs below must list the same values.
+export { listingConditions, listingPriceTypes, listingStatuses };
 
 /**
  * Extra details for posts with kind 'listing' (1:1 with posts). The post body
