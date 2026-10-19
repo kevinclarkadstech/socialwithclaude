@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1050" viewBox="0 0 1440 1050" role="img" aria-labelledby="title desc">
+<title id="title">Socialwithclaude Marketplace</title>
+<desc id="desc">Preview of the Marketplace page with search, grid and list view controls, and newest listings.</desc>
+<defs>
+  <linearGradient id="camera" x2="1" y2="1"><stop stop-color="#d8b9a8"/><stop offset="1" stop-color="#a98571"/></linearGradient>
+  <linearGradient id="ceramic" x2="1" y2="1"><stop stop-color="#e8d5bf"/><stop offset="1" stop-color="#b4c1ab"/></linearGradient>
+  <linearGradient id="bike" x2="1" y2="1"><stop stop-color="#d4e1e7"/><stop offset="1" stop-color="#879ba4"/></linearGradient>
+  <linearGradient id="table" x2="1" y2="1"><stop stop-color="#d7c9b5"/><stop offset="1" stop-color="#a68b70"/></linearGradient>
+  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#302c29" flood-opacity=".08"/></filter>
+  <style>
+    text{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#282624}.muted{fill:#77736e}.tiny{font-size:13px}.small{font-size:15px}.body{font-size:16px}.title{font-size:30px;font-weight:650}.price{font-size:18px;font-weight:650}.cardtitle{font-size:18px;font-weight:600}
+  </style>
+</defs>
+<rect width="1440" height="1050" fill="#f5f4f1"/>
+<rect x="0" y="0" width="1440" height="76" fill="#fff"/>
+<path d="M0 75.5H1440" stroke="#e7e5e1"/>
+<g font-size="15" font-weight="550">
+  <text x="64" y="46">Feed</text>
+  <rect x="119" y="17" width="126" height="42" rx="21" fill="#fff" stroke="#d9d6d1"/>
+  <text x="138" y="44">Marketplace</text>
+  <text x="271" y="46">Messages</text>
+  <text x="371" y="46">Profile</text>
+  <text x="1293" y="46" class="muted" font-weight="450">Sign out</text>
+</g>
+<g transform="translate(64 122)">
+  <text class="title" y="30">Marketplace</text>
+  <text class="small muted" y="59">Find something new from the community.</text>
+  <rect x="0" y="83" width="1312" height="48" rx="24" fill="#fff" stroke="#e1dfda"/>
+  <circle cx="23" cy="106" r="7" fill="none" stroke="#77736e" stroke-width="2"/><path d="m28 111 6 6" stroke="#77736e" stroke-width="2" stroke-linecap="round"/>
+  <text x="48" y="112" class="small muted">Search listings</text>
+  <rect x="1194" y="88" width="108" height="38" rx="19" fill="#292724"/><text x="1222" y="113" fill="#fff" class="small" font-weight="600">Search</text>
+  <text x="0" y="171" class="small muted">Newest listings</text>
+  <rect x="1252" y="146" width="42" height="38" rx="19" fill="#fff" stroke="#d9d6d1"/><rect x="1264" y="157" width="7" height="7" rx="1" fill="#34312e"/><rect x="1275" y="157" width="7" height="7" rx="1" fill="#34312e"/><rect x="1264" y="168" width="7" height="7" rx="1" fill="#34312e"/><rect x="1275" y="168" width="7" height="7" rx="1" fill="#34312e"/>
+  <rect x="1301" y="146" width="42" height="38" rx="19" fill="none"/><path d="M1313 158h17M1313 164h17M1313 170h17" stroke="#77736e" stroke-width="2" stroke-linecap="round"/>
+</g>
+<g transform="translate(64 322)" filter="url(#shadow)">
+  <g transform="translate(0)">
+    <rect width="312" height="650" rx="22" fill="#fff"/>
+    <path d="M22 0h268a22 22 0 0 1 22 22v268H0V22A22 22 0 0 1 22 0" fill="url(#camera)"/>
+    <circle cx="156" cy="140" r="82" fill="#fff" fill-opacity=".34"/><rect x="94" y="113" width="124" height="65" rx="12" fill="#302d2a"/><circle cx="157" cy="146" r="25" fill="#eee7d9"/><circle cx="157" cy="146" r="17" fill="#55504b"/><rect x="108" y="100" width="36" height="12" rx="4" fill="#302d2a"/>
+    <text x="22" y="329" class="cardtitle">Vintage film camera</text><text x="22" y="360" class="price">$78.00</text>
+    <text x="22" y="398" class="small muted">Beautifully cared for and ready for</text><text x="22" y="420" class="small muted">a new home.</text>
+    <text x="22" y="464" class="tiny muted">Available</text><text x="92" y="464" class="tiny muted">New</text><text x="142" y="464" class="tiny muted">⌖ Brooklyn, NY</text>
+    <circle cx="37" cy="510" r="15" fill="#ead8ca"/><text x="32" y="515" class="tiny">M</text><text x="61" y="515" class="tiny" font-weight="600">Mariah</text><text x="244" y="515" class="tiny muted">now</text><path d="M20 488h272" stroke="#eeece8"/>
+  </g>
+  <g transform="translate(334)">
+    <rect width="312" height="650" rx="22" fill="#fff"/>
+    <path d="M22 0h268a22 22 0 0 1 22 22v268H0V22A22 22 0 0 1 22 0" fill="url(#ceramic)"/>
+    <ellipse cx="157" cy="211" rx="105" ry="28" fill="#fff" fill-opacity=".35"/><path d="M87 140h53v64q0 31-27 31t-26-31zM155 130h63v74q0 31-31 31t-32-31z" fill="#f4eee4"/><path d="M140 153h14M218 150q28-5 27 20t-27 18" fill="none" stroke="#f4eee4" stroke-width="10"/><path d="M98 166h31M169 158h35" stroke="#c8b89f" stroke-width="4"/>
+    <text x="22" y="329" class="cardtitle">Ceramic coffee set</text><text x="22" y="360" class="price">$34.00</text>
+    <text x="22" y="398" class="small muted">Gently used, clean, and in excellent</text><text x="22" y="420" class="small muted">condition.</text>
+    <text x="22" y="464" class="tiny muted">Available</text><text x="92" y="464" class="tiny muted">Used</text><text x="142" y="464" class="tiny muted">⌖ Queens, NY</text>
+    <circle cx="37" cy="510" r="15" fill="#dbe0e4"/><text x="32" y="515" class="tiny">A</text><text x="61" y="515" class="tiny" font-weight="600">Alex</text><text x="223" y="515" class="tiny muted">1h ago</text><path d="M20 488h272" stroke="#eeece8"/>
+  </g>
+  <g transform="translate(668)">
+    <rect width="312" height="650" rx="22" fill="#fff"/>
+    <path d="M22 0h268a22 22 0 0 1 22 22v268H0V22A22 22 0 0 1 22 0" fill="url(#bike)"/>
+    <circle cx="104" cy="201" r="48" fill="none" stroke="#343b3e" stroke-width="7"/><circle cx="210" cy="201" r="48" fill="none" stroke="#343b3e" stroke-width="7"/><path d="m104 201 40-76 35 76h-75l43-55 30 55m-33-75h27m-21 0h30" fill="none" stroke="#a34c3a" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/><path d="M129 115h-22m61-1h25" stroke="#343b3e" stroke-width="7" stroke-linecap="round"/>
+    <text x="22" y="329" class="cardtitle">Road bike, excellent</text><text x="22" y="352" class="cardtitle">condition</text><text x="22" y="382" class="price">$425.00</text>
+    <text x="22" y="418" class="small muted">A lovely local find. Message me with</text><text x="22" y="440" class="small muted">any questions.</text>
+    <text x="22" y="478" class="tiny muted">Available</text><text x="92" y="478" class="tiny muted">Used</text><text x="142" y="478" class="tiny muted">⌖ Manhattan, NY</text>
+    <circle cx="37" cy="522" r="15" fill="#d9d1e2"/><text x="32" y="527" class="tiny">J</text><text x="61" y="527" class="tiny" font-weight="600">Jules</text><text x="218" y="527" class="tiny muted">2h ago</text><path d="M20 500h272" stroke="#eeece8"/>
+  </g>
+  <g transform="translate(1002)">
+    <rect width="312" height="650" rx="22" fill="#fff"/>
+    <path d="M22 0h268a22 22 0 0 1 22 22v268H0V22A22 22 0 0 1 22 0" fill="url(#table)"/>
+    <path d="M90 106h132v101H90z" fill="#876849"/><path d="M100 116h112v79H100z" fill="#c7a77f"/><path d="M106 207h11v44h-11zm89 0h11v44h-11z" fill="#70573e"/><path d="M76 252h160" stroke="#70573e" stroke-width="8" stroke-linecap="round"/><path d="M114 127h84" stroke="#dfc9a9" stroke-width="3"/>
+    <text x="22" y="329" class="cardtitle">Mid-century side table</text><text x="22" y="360" class="price">$185.00</text>
+    <text x="22" y="398" class="small muted">Beautifully cared for and ready for</text><text x="22" y="420" class="small muted">a new home.</text>
+    <text x="22" y="464" class="tiny muted">Available</text><text x="92" y="464" class="tiny muted">New</text><text x="142" y="464" class="tiny muted">⌖ Brooklyn, NY</text>
+    <circle cx="37" cy="510" r="15" fill="#e4d8d0"/><text x="32" y="515" class="tiny">S</text><text x="61" y="515" class="tiny" font-weight="600">Samira</text><text x="220" y="515" class="tiny muted">3h ago</text><path d="M20 488h272" stroke="#eeece8"/>
+  </g>
+</g>
+</svg>

@@ -8,9 +8,10 @@ import { NewPostForm } from "@/components/new-post-form"
 import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
 import { signOut } from "@/lib/auth"
+import { ListingsPage } from "@/pages/listings-page"
 import { ProfilePage, type Profile } from "@/pages/profile-page"
 
-type Tab = "feed" | "messages" | "profile"
+type Tab = "feed" | "listings" | "messages" | "profile"
 
 /** The unread badge is refreshed this often. */
 const UNREAD_POLL_MS = 15_000
@@ -54,10 +55,16 @@ export function HomePage({
 
   return (
     <div className="min-h-svh bg-muted">
-      <div className="mx-auto flex w-full max-w-xl flex-col gap-4 p-4 md:py-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 p-4 md:py-8">
         <div className="flex items-center gap-1 text-sm">
           <TabButton active={tab === "feed"} onClick={() => showTab("feed")}>
             Feed
+          </TabButton>
+          <TabButton
+            active={tab === "listings"}
+            onClick={() => showTab("listings")}
+          >
+            Marketplace
           </TabButton>
           <TabButton
             active={tab === "messages"}
@@ -86,55 +93,65 @@ export function HomePage({
           </Button>
         </div>
 
-        {viewingProfile ? (
-          <ProfilePage
-            key={viewingProfile}
-            username={viewingProfile}
-            myUserId={userId}
-            onBack={() => setViewingProfile(null)}
-            onMessage={message}
-            onOpenProfile={openProfile}
-          />
-        ) : tab === "feed" ? (
-          <>
-            <NewPostForm
-              onCreated={(kind) => {
-                setListed(kind === "listing")
-                if (kind === "post") setFeedVersion((v) => v + 1)
-              }}
-            />
-            {listed && (
-              <p className="text-center text-sm text-muted-foreground">
-                Your listing is up. Listings show in the marketplace, not the
-                feed.
-              </p>
-            )}
-            <Feed key={feedVersion} onOpenProfile={openProfile} />
-          </>
-        ) : tab === "messages" ? (
-          openChat ? (
-            <ChatView
-              key={openChat.id}
-              className="h-[calc(100svh-6rem)] md:h-[calc(100svh-8rem)]"
-              chatId={openChat.id}
-              otherMember={openChat.otherMember}
+        <div
+          className={
+            tab === "listings" && !viewingProfile
+              ? "w-full"
+              : "mx-auto w-full max-w-xl"
+          }
+        >
+          {viewingProfile ? (
+            <ProfilePage
+              key={viewingProfile}
+              username={viewingProfile}
               myUserId={userId}
-              onBack={() => setOpenChat(null)}
-              onRead={refreshUnread}
+              onBack={() => setViewingProfile(null)}
+              onMessage={message}
               onOpenProfile={openProfile}
             />
+          ) : tab === "feed" ? (
+            <>
+              <NewPostForm
+                onCreated={(kind) => {
+                  setListed(kind === "listing")
+                  if (kind === "post") setFeedVersion((v) => v + 1)
+                }}
+              />
+              {listed && (
+                <p className="text-center text-sm text-muted-foreground">
+                  Your listing is up. Listings show in the marketplace, not the
+                  feed.
+                </p>
+              )}
+              <Feed key={feedVersion} onOpenProfile={openProfile} />
+            </>
+          ) : tab === "listings" ? (
+            <ListingsPage onOpenProfile={openProfile} />
+          ) : tab === "messages" ? (
+            openChat ? (
+              <ChatView
+                key={openChat.id}
+                className="h-[calc(100svh-6rem)] md:h-[calc(100svh-8rem)]"
+                chatId={openChat.id}
+                otherMember={openChat.otherMember}
+                myUserId={userId}
+                onBack={() => setOpenChat(null)}
+                onRead={refreshUnread}
+                onOpenProfile={openProfile}
+              />
+            ) : (
+              <ChatList myUserId={userId} onOpen={setOpenChat} />
+            )
           ) : (
-            <ChatList myUserId={userId} onOpen={setOpenChat} />
-          )
-        ) : (
-          <ProfilePage
-            key={username}
-            username={username}
-            myUserId={userId}
-            onMessage={message}
-            onOpenProfile={openProfile}
-          />
-        )}
+            <ProfilePage
+              key={username}
+              username={username}
+              myUserId={userId}
+              onMessage={message}
+              onOpenProfile={openProfile}
+            />
+          )}
+        </div>
       </div>
     </div>
   )
