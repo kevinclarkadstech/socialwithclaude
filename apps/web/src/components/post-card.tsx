@@ -1,4 +1,5 @@
 import * as React from "react"
+import { cn } from "cn"
 import {
   IconBookmark,
   IconBookmarkFilled,
@@ -32,11 +33,14 @@ function postUrl(postId: string) {
 export function PostCard({
   post,
   onComment,
+  onOpenProfile,
   className,
 }: {
   post: Post
   /** Open the comments (there's no comments view yet). */
   onComment?: (post: Post) => void
+  /** Open the author's profile from their name or avatar. */
+  onOpenProfile?: (username: string) => void
   className?: string
 }) {
   const [saved, setSaved] = React.useState(post.isSaved)
@@ -75,9 +79,17 @@ export function PostCard({
   return (
     <Card size="sm" className={className}>
       <CardHeader className="flex flex-row items-center gap-3">
-        <UserAvatar person={author} />
+        <AuthorLink username={author.username} onOpen={onOpenProfile}>
+          <UserAvatar person={author} />
+        </AuthorLink>
         <div className="flex min-w-0 flex-col text-sm leading-tight">
-          <span className="truncate font-medium">{displayName(author)}</span>
+          <AuthorLink
+            username={author.username}
+            onOpen={onOpenProfile}
+            className="truncate font-medium"
+          >
+            {displayName(author)}
+          </AuthorLink>
           <span className="truncate text-muted-foreground">
             @{author.username} ·{" "}
             <time
@@ -132,6 +144,30 @@ export function PostCard({
         </Button>
       </CardFooter>
     </Card>
+  )
+}
+
+/** The author's avatar or name: a button to their profile when it can open. */
+function AuthorLink({
+  username,
+  onOpen,
+  className,
+  children,
+}: {
+  username: string
+  onOpen?: (username: string) => void
+  className?: string
+  children: React.ReactNode
+}) {
+  if (!onOpen) return <span className={className}>{children}</span>
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(username)}
+      className={cn("text-left hover:underline", className)}
+    >
+      {children}
+    </button>
   )
 }
 

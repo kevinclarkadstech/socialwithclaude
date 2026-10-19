@@ -105,13 +105,14 @@ export async function getPostById(db: Database, postId: string, viewerId: string
 
 /**
  * The Feed tab: regular posts (not listings), newest first by server time, with authors,
- * photos and `isSaved` for the viewer. Pass the previous page's `nextCursor`
- * as `cursor` to get the next page.
+ * photos and `isSaved` for the viewer. `authorId` limits it to one user's posts
+ * (their profile). Pass the previous page's `nextCursor` as `cursor` to get the
+ * next page.
  */
 export async function getFeed(
     db: Database,
     viewerId: string | null,
-    { cursor, limit }: { cursor?: string | null; limit: number },
+    { cursor, limit, authorId }: { cursor?: string | null; limit: number; authorId?: string },
 ) {
     const rows = await db
         .select({
@@ -131,7 +132,14 @@ export async function getFeed(
                 )
                 : sql`false`,
         )
-        .where(and(eq(schema.posts.kind, "post"), notDeleted, cursor ? postsBefore(db, cursor) : undefined))
+        .where(
+            and(
+                eq(schema.posts.kind, "post"),
+                notDeleted,
+                authorId ? eq(schema.posts.createdBy, authorId) : undefined,
+                cursor ? postsBefore(db, cursor) : undefined,
+            ),
+        )
         .orderBy(desc(schema.posts.createdAt), desc(schema.posts.id))
         .limit(limit + 1);
 

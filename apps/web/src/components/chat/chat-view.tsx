@@ -15,6 +15,7 @@ export function ChatView({
   myUserId,
   onBack,
   onRead,
+  onOpenProfile,
   className,
 }: {
   chatId: string
@@ -23,6 +24,8 @@ export function ChatView({
   onBack: () => void
   /** Called after the chat is marked read (to refresh unread counts). */
   onRead?: () => void
+  /** Open the other member's profile from the header. */
+  onOpenProfile?: (username: string) => void
   className?: string
 }) {
   const { state, loadingOlder, loadOlder, send, retry } = useChatMessages(
@@ -47,15 +50,23 @@ export function ChatView({
         >
           <IconArrowLeft />
         </Button>
-        <UserAvatar person={otherMember} />
-        <div className="flex min-w-0 flex-col text-sm leading-tight">
-          <span className="truncate font-medium">
-            {displayName(otherMember)}
+        <button
+          type="button"
+          className="flex min-w-0 items-center gap-3 text-left disabled:cursor-default"
+          onClick={() => onOpenProfile?.(otherMember.username)}
+          disabled={!onOpenProfile}
+          aria-label={`View @${otherMember.username}'s profile`}
+        >
+          <UserAvatar person={otherMember} />
+          <span className="flex min-w-0 flex-col text-sm leading-tight">
+            <span className="truncate font-medium">
+              {displayName(otherMember)}
+            </span>
+            <span className="truncate text-muted-foreground">
+              @{otherMember.username}
+            </span>
           </span>
-          <span className="truncate text-muted-foreground">
-            @{otherMember.username}
-          </span>
-        </div>
+        </button>
       </header>
 
       {state.status === "ready" ? (
