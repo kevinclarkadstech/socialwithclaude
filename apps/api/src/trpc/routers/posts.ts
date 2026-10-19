@@ -8,6 +8,8 @@ import {
     deletePost,
     deletePostComment,
     getFeed,
+    getProfileByUsername,
+    getUserSettings,
     getPostAuthorId,
     getPostById,
     getPostCommentAuthorIds,
@@ -98,6 +100,34 @@ export const postsRouter = router({
             (p) => p.id,
         );
     }),
+
+    /**
+     * A user's posts (their profile), newest first. NOT_FOUND if the user
+     * doesn't exist or either has blocked the other; FORBIDDEN
+     * "POSTS_FOLLOWERS_ONLY" if their profile visibility is "followers" and
+     * the caller isn't them or a follower. Pass `nextCursor` as `cursor`.
+     */
+    getUserPosts: procedure
+        .input(pageInput.extend({ username: z.string().min(1) }))
+        .query(async ({ ctx, input }) => {
+            const viewerId = ctx.user?.id ?? null;
+            const profile = await getProfileByUsername(ctx.db, input.username, viewerId);
+            if (!profile || isBlocked(await getUserBlockList(ctx), profile.userId)) {
+                throw new TRPCError({ code: "NOT_FOUND" });
+            }
+            if (profile.userId !== viewerId && !profile.isFollowing) {
+                const settings = await getUserSettings(ctx.db, profile.userId);
+                if (settings.privacy.profileVisibility === "followers") {
+                    throw new TRPCError({ code: "FORBIDDEN", message: "POSTS_FOLLOWERS_ONLY" });
+                }
+            }
+
+            return getFeed(ctx.db, viewerId, {
+                cursor: input.cursor,
+                limit: input.limit,
+                authorId: profile.userId,
+            });
+        }),
 
     /** Idempotent: saving an already-saved post succeeds. */
     savePost: procedure.input(postIdInput).mutation(async ({ ctx, input }) => {

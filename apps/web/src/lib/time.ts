@@ -44,3 +44,8 @@ export function shortTimeAgo(date: string | Date) {
     if (days < 7) return `${days}d`;
     return d.format(d.isSame(dayjs(), "year") ? "MMM D" : "MMM D, YYYY");
 }
+
+/** "October 2026", e.g. for "Joined October 2026". */
+export function monthYear(date: string | Date) {
+    return dayjs(date).format("MMMM YYYY");
+}
