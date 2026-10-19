@@ -7,15 +7,15 @@ import { Feed } from "@/components/post-list"
 import { NewPostForm } from "@/components/new-post-form"
 import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
-import { signOut } from "@/lib/auth"
+import { ListingsPage } from "@/pages/listings-page"
 import { ProfilePage, type Profile } from "@/pages/profile-page"
 
-type Tab = "feed" | "messages" | "profile"
+type Tab = "feed" | "listings" | "messages" | "profile"
 
 /** The unread badge is refreshed this often. */
 const UNREAD_POLL_MS = 15_000
 
-/** Signed in with a profile: Feed, Messages and your Profile. */
+/** Signed in with a profile: Feed, Listings, Messages and your Profile. */
 export function HomePage({
   userId,
   username,
@@ -54,10 +54,22 @@ export function HomePage({
 
   return (
     <div className="min-h-svh bg-muted">
-      <div className="mx-auto flex w-full max-w-xl flex-col gap-4 p-4 md:py-8">
+      <div
+        className={cn(
+          "mx-auto flex w-full flex-col gap-4 p-4 md:py-8",
+          // The listings grid gets more room; everything else is one column.
+          tab === "listings" && !viewingProfile ? "max-w-5xl" : "max-w-xl"
+        )}
+      >
         <div className="flex items-center gap-1 text-sm">
           <TabButton active={tab === "feed"} onClick={() => showTab("feed")}>
             Feed
+          </TabButton>
+          <TabButton
+            active={tab === "listings"}
+            onClick={() => showTab("listings")}
+          >
+            Listings
           </TabButton>
           <TabButton
             active={tab === "messages"}
@@ -76,14 +88,6 @@ export function HomePage({
           >
             Profile
           </TabButton>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="ml-auto"
-            onClick={() => signOut()}
-          >
-            Sign out
-          </Button>
         </div>
 
         {viewingProfile ? (
@@ -105,12 +109,13 @@ export function HomePage({
             />
             {listed && (
               <p className="text-center text-sm text-muted-foreground">
-                Your listing is up. Listings show in the marketplace, not the
-                feed.
+                Your listing is up. Find it in Listings.
               </p>
             )}
             <Feed key={feedVersion} onOpenProfile={openProfile} />
           </>
+        ) : tab === "listings" ? (
+          <ListingsPage onOpenProfile={openProfile} />
         ) : tab === "messages" ? (
           openChat ? (
             <ChatView
