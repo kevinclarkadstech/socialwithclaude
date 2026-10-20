@@ -2,9 +2,13 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
 import {
+    acceptFollowRequest,
     blockUser,
+    denyFollowRequest,
     followUser,
     getBlockedUsers,
+    getFollowRequestCount,
+    getFollowRequests,
     getProfileByUserId,
     getProfileByUsername,
     getUserIdByUsername,
@@ -20,6 +24,12 @@ import { requireUserAndProfile, type TRPCContext } from "../context";
 import { procedure, router } from "../trpc";
 
 const usernameInput = z.object({ username: z.string().min(1) });
+const pageInput = z.object({
+    cursor: z.string().nullish(),
+    limit: z.number().int().min(1).max(100).default(20),
+});
+
+const requestNotFound = () => new TRPCError({ code: "NOT_FOUND", message: "REQUEST_NOT_FOUND" });
 
 /** Same groups as the settings returned by getMySettings; every field optional. */
 const updateSettingsInput = z.object({
@@ -70,6 +80,12 @@ export const usersRouter = router({
         return profile;
     }),
 
+    /**
+     * Follows a user: right away if their profile is public, otherwise as a
+     * request they accept or deny. Returns `followStatus` as the caller now
+     * sees it: "following" or "requested". A denied request still shows as
+     * "requested" (denial is silent). Following again is a no-op.
+     */
     follow: procedure.input(usernameInput).mutation(async ({ ctx, input }) => {
         const { user } = await requireUserAndProfile(ctx);
 
@@ -81,9 +97,10 @@ export const usersRouter = router({
             throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot follow yourself" });
         }
 
-        await followUser(ctx.db, user.id, targetUserId);
+        return { followStatus: await followUser(ctx.db, user.id, targetUserId) };
     }),
 
+    /** Unfollows a user, or cancels a follow request. A no-op if neither. */
     unfollow: procedure.input(usernameInput).mutation(async ({ ctx, input }) => {
         const { user } = await requireUserAndProfile(ctx);
 
@@ -91,6 +108,48 @@ export const usersRouter = router({
         if (!targetUserId) throw new TRPCError({ code: "NOT_FOUND" });
 
         await unfollowUser(ctx.db, user.id, targetUserId);
+    }),
+
+    /**
+     * The caller's pending follow requests, newest first, with each
+     * requester's profile. (Blocking removes requests, so none are from
+     * blocked users.) Pass `nextCursor` as `cursor`.
+     */
+    getMyFollowRequests: procedure.input(pageInput).query(async ({ ctx, input }) => {
+        const { user } = await requireUserAndProfile(ctx);
+        return getFollowRequests(ctx.db, user.id, input);
+    }),
+
+    /** How many pending follow requests the caller has, for a badge. */
+    getMyFollowRequestCount: procedure.query(async ({ ctx }) => {
+        const { user } = await requireUserAndProfile(ctx);
+        return getFollowRequestCount(ctx.db, user.id);
+    }),
+
+    /**
+     * Accepts a follow request from `username`: they become a follower.
+     * NOT_FOUND "REQUEST_NOT_FOUND" if there's no pending request from them.
+     * Accepting again succeeds.
+     */
+    acceptFollowRequest: procedure.input(usernameInput).mutation(async ({ ctx, input }) => {
+        const { user } = await requireUserAndProfile(ctx);
+        const followerId = await getUserIdByUsername(ctx.db, input.username);
+        if (!followerId || !(await acceptFollowRequest(ctx.db, user.id, followerId))) {
+            throw requestNotFound();
+        }
+    }),
+
+    /**
+     * Denies a follow request from `username`. They aren't told: they keep
+     * seeing "Requested" and can't ask again. NOT_FOUND "REQUEST_NOT_FOUND"
+     * if there's no pending request from them. Denying again succeeds.
+     */
+    denyFollowRequest: procedure.input(usernameInput).mutation(async ({ ctx, input }) => {
+        const { user } = await requireUserAndProfile(ctx);
+        const followerId = await getUserIdByUsername(ctx.db, input.username);
+        if (!followerId || !(await denyFollowRequest(ctx.db, user.id, followerId))) {
+            throw requestNotFound();
+        }
     }),
 
     /**

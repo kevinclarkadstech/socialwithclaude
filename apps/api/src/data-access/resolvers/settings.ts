@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 
 import { schema, type Database } from "../db";
+import { acceptAllFollowRequests } from "./follows";
 
 type UserSettingsRow = typeof schema.userSettings.$inferSelect;
 
@@ -45,15 +46,22 @@ export async function getUserSettings(db: Database, userId: string) {
     return toUserSettingsDto(created!);
 }
 
-/** Changes only the given settings (creating the row if it's missing). */
+/**
+ * Changes only the given settings (creating the row if it's missing).
+ * Making the profile public accepts its pending follow requests.
+ */
 export async function updateUserSettings(db: Database, userId: string, values: Partial<UserSettingsValues>) {
     if (Object.keys(values).length === 0) return;
 
-    await db
-        .insert(schema.userSettings)
-        .values({ userId, ...values })
-        .onConflictDoUpdate({
-            target: schema.userSettings.userId,
-            set: { ...values, updatedAt: new Date() },
-        });
+    await db.transaction(async (tx) => {
+        // Locks the row, so follows in progress finish first (see followUser).
+        await tx
+            .insert(schema.userSettings)
+            .values({ userId, ...values })
+            .onConflictDoUpdate({
+                target: schema.userSettings.userId,
+                set: { ...values, updatedAt: new Date() },
+            });
+        if (values.profileVisibility === "public") await acceptAllFollowRequests(tx, userId);
+    });
 }

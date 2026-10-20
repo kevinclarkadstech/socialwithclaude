@@ -1,7 +1,8 @@
 import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
 
-import { schema, type Database, type Transaction } from "../db";
+import { schema, type Database } from "../db";
 import { getUniqueViolationConstraint, ProfileAlreadyExistsError, UsernameTakenError } from "../errors";
+import { followStatusSql } from "./follows";
 import { authorFields, startsWithPattern } from "./shared";
 
 export async function getUserIdByUsername(db: Database, username: string) {
@@ -67,8 +68,11 @@ export async function signUp(
 }
 
 /**
- * Looks up a profile by username. When `viewerId` is given, `isFollowing`
- * reports whether the viewer follows this profile (in the same query).
+ * Looks up a profile by username. When `viewerId` is given, `followStatus`
+ * is how the viewer's follow looks to them ("following", "requested" or
+ * "none"), and `isFollowing` whether they're an accepted follower (in the
+ * same query). `requiresApproval` is true when the profile is followers-only,
+ * so following it sends a request.
  */
 export async function getProfileByUsername(db: Database, username: string, viewerId: string | null) {
     const [profile] = await db
@@ -82,9 +86,12 @@ export async function getProfileByUsername(db: Database, username: string, viewe
             numFollowers: schema.profiles.numFollowers,
             numFollowing: schema.profiles.numFollowing,
             createdAt: schema.profiles.createdAt,
-            isFollowing: sql<boolean>`${schema.userFollows.followerId} is not null`,
+            isFollowing: sql<boolean>`coalesce(${schema.userFollows.status} = 'accepted', false)`,
+            followStatus: followStatusSql(schema.userFollows),
+            requiresApproval: sql<boolean>`coalesce(${schema.userSettings.profileVisibility} = 'followers', false)`,
         })
         .from(schema.profiles)
+        .leftJoin(schema.userSettings, eq(schema.userSettings.userId, schema.profiles.userId))
         .leftJoin(
             schema.userFollows,
             viewerId
@@ -126,63 +133,7 @@ export async function searchProfiles(db: Database, query: string, { limit }: { l
         .limit(limit);
 }
 
-export async function followUser(db: Database, followerId: string, followingId: string) {
-    if (followerId === followingId) {
-        throw new Error("Cannot follow yourself");
-    }
-
-    await db.transaction(async (tx) => {
-        const [inserted] = await tx
-            .insert(schema.userFollows)
-            .values({ followerId, followingId })
-            .onConflictDoNothing()
-            .returning();
-
-        // Already following; leave counts untouched.
-        if (!inserted) return;
-
-        await tx
-            .update(schema.profiles)
-            .set({ numFollowing: sql`${schema.profiles.numFollowing} + 1` })
-            .where(eq(schema.profiles.userId, followerId));
-
-        await tx
-            .update(schema.profiles)
-            .set({ numFollowers: sql`${schema.profiles.numFollowers} + 1` })
-            .where(eq(schema.profiles.userId, followingId));
-    });
-}
-
-export async function unfollowUser(db: Database, followerId: string, followingId: string) {
-    await db.transaction((tx) => removeFollow(tx, followerId, followingId));
-}
-
-/** Deletes a follow and adjusts both counts; a no-op if it doesn't exist. */
-export async function removeFollow(tx: Transaction, followerId: string, followingId: string) {
-    const deleted = await tx
-        .delete(schema.userFollows)
-        .where(
-            and(
-                eq(schema.userFollows.followerId, followerId),
-                eq(schema.userFollows.followingId, followingId),
-            ),
-        )
-        .returning();
-
-    // Wasn't following; leave counts untouched.
-    if (deleted.length === 0) return;
-
-    await tx
-        .update(schema.profiles)
-        .set({ numFollowing: sql`${schema.profiles.numFollowing} - 1` })
-        .where(eq(schema.profiles.userId, followerId));
-
-    await tx
-        .update(schema.profiles)
-        .set({ numFollowers: sql`${schema.profiles.numFollowers} - 1` })
-        .where(eq(schema.profiles.userId, followingId));
-}
-
+export * from './follows';
 export * from './posts';
 export * from './listings';
 export * from './media';

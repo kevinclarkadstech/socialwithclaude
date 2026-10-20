@@ -1,6 +1,7 @@
 import * as React from "react"
 import { IconArrowLeft, IconMessageCircle } from "@tabler/icons-react"
 
+import { FollowRequests } from "@/components/follow-requests"
 import { PostList } from "@/components/post-list"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -12,6 +13,8 @@ import { monthYear } from "@/lib/time"
 
 export type Profile = Awaited<ReturnType<typeof api.users.getUserProfile.query>>
 
+type FollowStatus = Profile["followStatus"]
+
 type ProfileState =
   | { status: "loading" }
   | { status: "not-found" }
@@ -22,7 +25,8 @@ const compact = new Intl.NumberFormat(undefined, { notation: "compact" })
 
 /**
  * A user's profile: who they are, follower counts, Follow and Message (when
- * it isn't you), and their posts.
+ * it isn't you), and their posts. On your own profile, your pending follow
+ * requests too.
  */
 export function ProfilePage({
   username,
@@ -31,6 +35,7 @@ export function ProfilePage({
   onMessage,
   onOpenProfile,
   onOpenPost,
+  onFollowRequestsChanged,
 }: {
   username: string
   myUserId: string
@@ -40,8 +45,12 @@ export function ProfilePage({
   onMessage: (profile: Profile) => Promise<void>
   onOpenProfile: (username: string) => void
   onOpenPost: (postId: string) => void
+  /** Called after you accept or deny a follow request. */
+  onFollowRequestsChanged?: () => void
 }) {
   const [state, setState] = React.useState<ProfileState>({ status: "loading" })
+  // Followers gained by accepting requests here (shown in the count).
+  const [accepted, setAccepted] = React.useState(0)
 
   React.useEffect(() => {
     let cancelled = false
@@ -80,8 +89,16 @@ export function ProfilePage({
           <ProfileHeader
             profile={state.profile}
             isMe={state.profile.userId === myUserId}
+            acceptedFollowers={accepted}
             onMessage={onMessage}
           />
+          {state.profile.userId === myUserId && (
+            <FollowRequests
+              onOpenProfile={onOpenProfile}
+              onAccepted={() => setAccepted((n) => n + 1)}
+              onChanged={onFollowRequestsChanged}
+            />
+          )}
           <PostList
             key={state.profile.userId}
             loadPage={(cursor) =>
@@ -108,32 +125,61 @@ export function ProfilePage({
   )
 }
 
+const FOLLOW_LABELS: Record<FollowStatus, string> = {
+  none: "Follow",
+  requested: "Requested",
+  following: "Following",
+}
+
 function ProfileHeader({
   profile,
   isMe,
+  acceptedFollowers,
   onMessage,
 }: {
   profile: Profile
   isMe: boolean
+  /** Followers added since the profile loaded (accepted requests). */
+  acceptedFollowers: number
   onMessage: (profile: Profile) => Promise<void>
 }) {
-  const [following, setFollowing] = React.useState(profile.isFollowing)
+  const [followStatus, setFollowStatus] = React.useState(profile.followStatus)
   const [messaging, setMessaging] = React.useState(false)
   const [messageFailed, setMessageFailed] = React.useState(false)
-  const [numFollowers, setNumFollowers] = React.useState(profile.numFollowers)
   const [pending, setPending] = React.useState(false)
+  // Only an accepted follow counts as a follower.
+  const numFollowers =
+    profile.numFollowers +
+    acceptedFollowers +
+    Number(followStatus === "following") -
+    Number(profile.followStatus === "following")
 
+  /**
+   * Follow ("Following", or "Requested" on a followers-only profile), or
+   * undo: unfollow, or cancel the request.
+   */
   async function toggleFollow() {
-    const next = !following
-    setFollowing(next)
-    setNumFollowers((n) => n + (next ? 1 : -1))
+    const previous = followStatus
+    const following = previous === "none"
+    setFollowStatus(
+      following
+        ? profile.requiresApproval
+          ? "requested"
+          : "following"
+        : "none"
+    )
     setPending(true)
     try {
-      if (next) await api.users.follow.mutate({ username: profile.username })
-      else await api.users.unfollow.mutate({ username: profile.username })
+      if (following) {
+        const result = await api.users.follow.mutate({
+          username: profile.username,
+        })
+        setFollowStatus(result.followStatus)
+      } else {
+        await api.users.unfollow.mutate({ username: profile.username })
+      }
     } catch {
-      setFollowing(!next)
-      setNumFollowers((n) => n + (next ? -1 : 1))
+      setFollowStatus(previous)
     } finally {
       setPending(false)
     }
@@ -201,12 +247,17 @@ function ProfileHeader({
           <div className="flex gap-2">
             <Button
               className="flex-1"
-              variant={following ? "outline" : "default"}
+              variant={followStatus === "none" ? "default" : "outline"}
               onClick={toggleFollow}
               disabled={pending}
-              aria-pressed={following}
+              aria-pressed={followStatus !== "none"}
+              title={
+                followStatus === "requested"
+                  ? "Cancel your follow request"
+                  : undefined
+              }
             >
-              {following ? "Following" : "Follow"}
+              {FOLLOW_LABELS[followStatus]}
             </Button>
             <Button
               className="flex-1"

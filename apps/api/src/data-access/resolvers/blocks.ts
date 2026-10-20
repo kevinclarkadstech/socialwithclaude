@@ -1,7 +1,7 @@
 import { desc, eq, and, sql } from "drizzle-orm";
 
 import { schema, type Database } from "../db";
-import { removeFollow } from "./index";
+import { removeFollow } from "./follows";
 import { authorFields } from "./shared";
 
 /**

@@ -21,8 +21,8 @@ type Overlay =
   | { kind: "listing"; id: string }
   | { kind: "post"; id: string }
 
-/** The unread badge is refreshed this often. */
-const UNREAD_POLL_MS = 15_000
+/** The tab badges (unread messages, follow requests) refresh this often. */
+const BADGE_POLL_MS = 15_000
 
 /** Signed in with a profile: Feed, Listings, Messages and your Profile. */
 export function HomePage({ me }: { me: PersonSummary & { userId: string } }) {
@@ -31,7 +31,11 @@ export function HomePage({ me }: { me: PersonSummary & { userId: string } }) {
   const [openChat, setOpenChat] = React.useState<OpenChat | null>(null)
   const [overlays, setOverlays] = React.useState<Overlay[]>([])
   const overlay = overlays.at(-1)
-  const { count: unread, refresh: refreshUnread } = useUnreadCount()
+  const { count: unread, refresh: refreshUnread } = usePolledCount(
+    api.chats.getMyUnreadCount.query
+  )
+  const { count: followRequests, refresh: refreshFollowRequests } =
+    usePolledCount(api.users.getMyFollowRequestCount.query)
   // Bumped after posting so the feed reloads with the new post.
   const [feedVersion, setFeedVersion] = React.useState(0)
   const [listed, setListed] = React.useState(false)
@@ -94,17 +98,14 @@ export function HomePage({ me }: { me: PersonSummary & { userId: string } }) {
             onClick={() => showTab("messages")}
           >
             Messages
-            {unread > 0 && (
-              <span className="rounded-full bg-primary px-1.5 text-xs leading-5 text-primary-foreground">
-                {unread > 99 ? "99+" : unread}
-              </span>
-            )}
+            <CountBadge count={unread} label="unread messages" />
           </TabButton>
           <TabButton
             active={tab === "profile"}
             onClick={() => showTab("profile")}
           >
             Profile
+            <CountBadge count={followRequests} label="follow requests" />
           </TabButton>
         </div>
 
@@ -188,6 +189,7 @@ export function HomePage({ me }: { me: PersonSummary & { userId: string } }) {
               onMessage={message}
               onOpenProfile={openProfile}
               onOpenPost={openPost}
+              onFollowRequestsChanged={refreshFollowRequests}
             />
           )}
         </div>
@@ -212,25 +214,39 @@ function TabButton({
   )
 }
 
+function CountBadge({ count, label }: { count: number; label: string }) {
+  if (count <= 0) return null
+  return (
+    <span
+      className="rounded-full bg-primary px-1.5 text-xs leading-5 text-primary-foreground"
+      aria-label={`${count} ${label}`}
+    >
+      {count > 99 ? "99+" : count}
+    </span>
+  )
+}
+
 /**
- * Unread messages across chats, for the Messages badge. Refreshed on a timer,
- * and by `refresh` when a chat is read.
+ * A count for a tab badge (unread messages, follow requests). Refreshed on a
+ * timer, and by `refresh` when something changes it here.
  */
-function useUnreadCount() {
+function usePolledCount(query: () => Promise<number>) {
   const [count, setCount] = React.useState(0)
   const [version, setVersion] = React.useState(0)
+  // The first query is kept; callers pass a stable API method anyway.
+  const queryRef = React.useRef(query)
 
   React.useEffect(() => {
     let cancelled = false
     const load = () =>
-      api.chats.getMyUnreadCount
-        .query()
+      queryRef
+        .current()
         .then((n) => !cancelled && setCount(n))
         .catch(() => {})
     load()
     const timer = setInterval(() => {
       if (!document.hidden) load()
-    }, UNREAD_POLL_MS)
+    }, BADGE_POLL_MS)
     return () => {
       cancelled = true
       clearInterval(timer)
