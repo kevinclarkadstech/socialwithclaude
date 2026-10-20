@@ -406,11 +406,32 @@ export const chatMessages = pgTable("chat_messages", {
     chatId: text("chat_id")
         .notNull()
         .references(() => chats.id, { onDelete: "cascade" }),
-    // created_by is the sender.
+    // created_by is the sender. The current text; earlier versions are in
+    // chat_message_edits. updated_at > created_at means it was edited.
     body: text("body").notNull(),
     ...auditFields(),
+    // Set when the sender deletes it (for everyone). The row and body are kept
+    // for a while so a report can still see what it said, but the API never
+    // returns a deleted message's body: members see a "deleted" placeholder.
+    deletedAt: timestamp("deleted_at"),
 }, (t) => [
     // A chat's messages by server time (id breaks ties); also the latest
     // message and unread counts.
     index("chat_messages_chat_id_created_at_id_idx").on(t.chatId, t.createdAt, t.id),
+]);
+
+/**
+ * A chat message's earlier text: one row per edit, holding the body as it
+ * was before that edit (created_by is the editor, created_at the edit time).
+ * Never shown to members; kept so moderation can see what was said.
+ */
+export const chatMessageEdits = pgTable("chat_message_edits", {
+    id: ulidId(),
+    messageId: text("message_id")
+        .notNull()
+        .references(() => chatMessages.id, { onDelete: "cascade" }),
+    previousBody: text("previous_body").notNull(),
+    ...auditFields(),
+}, (t) => [
+    index("chat_message_edits_message_id_created_at_idx").on(t.messageId, t.createdAt),
 ]);

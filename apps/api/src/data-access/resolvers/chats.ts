@@ -1,9 +1,20 @@
-import { and, desc, eq, gt, isNotNull, ne, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, gt, isNotNull, isNull, ne, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import { schema, type Database } from "../db";
-import { ChatMessageNotFoundError, IdConflictError } from "../errors";
+import { ChatMessageNotFoundError, IdConflictError, NotChatMessageSenderError } from "../errors";
 import { authorFields } from "./shared";
+
+const messageNotDeleted = isNull(schema.chatMessages.deletedAt);
+
+/** The body, or null once deleted: a deleted message's text is never returned. */
+const visibleBody = sql<string | null>`case when ${schema.chatMessages.deletedAt} is null then ${schema.chatMessages.body} end`;
+
+/** When the message was last edited, or null if never (or deleted). */
+const editedAt = sql<Date | null>`case
+    when ${schema.chatMessages.deletedAt} is null and ${schema.chatMessages.updatedAt} > ${schema.chatMessages.createdAt}
+    then ${schema.chatMessages.updatedAt}
+end`.mapWith(schema.chatMessages.updatedAt);
 
 /** Matches the 1:1 chat between two users, in either direction (uses chats_direct_pair_idx). */
 const isDirectChatBetween = (userId: string, otherUserId: string) =>
@@ -58,8 +69,9 @@ const cursorChat = alias(schema.chats, "cursor_chat");
 /**
  * The user's inbox: chats with a message the user hasn't deleted (see
  * clearChatForMember), most recent message first. Each has the other member (`otherMember`), who started the chat
- * (`createdBy`), the latest message and `unreadCount` (messages from
- * others after the user last read the chat).
+ * (`createdBy`), the latest message (`body` null and `deleted` true if its
+ * sender deleted it) and `unreadCount` (messages from others after the user
+ * last read the chat, not counting deleted ones).
  * Pass the previous page's `nextCursor` as `cursor` to get the next page.
  */
 export async function getChats(
@@ -70,9 +82,18 @@ export async function getChats(
     const me = alias(schema.chatMembers, "me");
     const other = alias(schema.chatMembers, "other");
 
-    const lastMessage = sql<{ id: string; senderId: string; body: string; createdAt: string }>`(
+    const lastMessage = sql<{
+        id: string;
+        senderId: string;
+        body: string | null;
+        deleted: boolean;
+        createdAt: string;
+    }>`(
         select json_build_object(
-            'id', m.id, 'senderId', m.created_by, 'body', m.body, 'createdAt', m.created_at
+            'id', m.id, 'senderId', m.created_by,
+            'body', case when m.deleted_at is null then m.body end,
+            'deleted', m.deleted_at is not null,
+            'createdAt', m.created_at
         )
         from ${schema.chatMessages} m
         where m.chat_id = ${schema.chats.id}
@@ -84,6 +105,7 @@ export async function getChats(
         from ${schema.chatMessages} m
         where m.chat_id = ${schema.chats.id}
             and m.created_by <> ${userId}
+            and m.deleted_at is null
             and m.created_at > coalesce(${me.lastReadAt}, '-infinity'::timestamp)
     )`;
     const chatsBefore = (cursor: string) => sql`(${schema.chats.lastMessageAt}, ${schema.chats.id}) < (${db
@@ -132,8 +154,10 @@ const cursorMessage = alias(schema.chatMessages, "cursor_message");
 
 /**
  * A chat's messages as `userId` sees them, newest first (by server time):
- * messages from before they deleted the chat are left out. Pass the previous
- * page's `nextCursor` as `cursor` to get older messages.
+ * messages from before they deleted the chat are left out. Messages their
+ * sender deleted stay in place with `body` null and `deleted` true.
+ * `editedAt` is set when the text was edited. Pass the previous page's
+ * `nextCursor` as `cursor` to get older messages.
  */
 export async function getChatMessages(
     db: Database,
@@ -155,7 +179,9 @@ export async function getChatMessages(
         .select({
             id: schema.chatMessages.id,
             senderId: schema.chatMessages.createdBy,
-            body: schema.chatMessages.body,
+            body: visibleBody,
+            deleted: sql<boolean>`${schema.chatMessages.deletedAt} is not null`,
+            editedAt,
             createdAt: schema.chatMessages.createdAt,
         })
         .from(schema.chatMessages)
@@ -280,9 +306,88 @@ export async function getUnreadChatCounts(db: Database, userId: string) {
             and(
                 eq(schema.chatMessages.chatId, schema.chatMembers.chatId),
                 ne(schema.chatMessages.createdBy, userId),
+                messageNotDeleted,
                 gt(schema.chatMessages.createdAt, sql`coalesce(${schema.chatMembers.lastReadAt}, '-infinity'::timestamp)`),
             ),
         )
         .where(eq(schema.chatMembers.userId, userId))
         .groupBy(schema.chatMembers.chatId, other.userId);
+}
+
+/**
+ * Changes the text of a message. Only its sender may, and not once deleted.
+ * The text it replaces is kept in chat_message_edits. Saving the same text
+ * again is a no-op, so retries are safe. Returns the message's chat id.
+ *
+ * @throws ChatMessageNotFoundError if the message doesn't exist or was deleted.
+ * @throws NotChatMessageSenderError if `userId` didn't send it.
+ */
+export async function editChatMessage(db: Database, userId: string, messageId: string, body: string) {
+    return db.transaction(async (tx) => {
+        // Lock it so concurrent edits each record the text they replaced.
+        const [message] = await tx
+            .select({
+                chatId: schema.chatMessages.chatId,
+                senderId: schema.chatMessages.createdBy,
+                body: schema.chatMessages.body,
+            })
+            .from(schema.chatMessages)
+            .where(and(eq(schema.chatMessages.id, messageId), messageNotDeleted))
+            .for("update");
+        if (!message) throw new ChatMessageNotFoundError(messageId);
+        if (message.senderId !== userId) throw new NotChatMessageSenderError(messageId, userId);
+        if (message.body === body) return message.chatId;
+
+        await tx.insert(schema.chatMessageEdits).values({
+            messageId,
+            previousBody: message.body,
+            createdBy: userId,
+            updatedBy: userId,
+        });
+        await tx
+            .update(schema.chatMessages)
+            .set({ body, updatedBy: userId, updatedAt: sql`now()` })
+            .where(eq(schema.chatMessages.id, messageId));
+        return message.chatId;
+    });
+}
+
+/**
+ * Deletes a message for everyone. Only its sender may. The row (and its
+ * text) stays for moderation, but members see it as deleted. Deleting it
+ * again is a no-op.
+ *
+ * @throws ChatMessageNotFoundError if the message doesn't exist.
+ * @throws NotChatMessageSenderError if `userId` didn't send it.
+ */
+export async function deleteChatMessage(db: Database, userId: string, messageId: string) {
+    const [deleted] = await db
+        .update(schema.chatMessages)
+        .set({ deletedAt: sql`now()`, updatedBy: userId, updatedAt: sql`now()` })
+        .where(
+            and(
+                eq(schema.chatMessages.id, messageId),
+                eq(schema.chatMessages.createdBy, userId),
+                messageNotDeleted,
+            ),
+        )
+        .returning({ id: schema.chatMessages.id });
+    if (deleted) return;
+
+    const [message] = await db
+        .select({ senderId: schema.chatMessages.createdBy })
+        .from(schema.chatMessages)
+        .where(eq(schema.chatMessages.id, messageId));
+    if (!message) throw new ChatMessageNotFoundError(messageId);
+    if (message.senderId !== userId) throw new NotChatMessageSenderError(messageId, userId);
+    // Already deleted by its sender: done.
+}
+
+/** The chat a message belongs to, or null if there's no such message. */
+export async function getChatMessageChatId(db: Database, messageId: string) {
+    const [message] = await db
+        .select({ chatId: schema.chatMessages.chatId })
+        .from(schema.chatMessages)
+        .where(eq(schema.chatMessages.id, messageId));
+    return message?.chatId ?? null;
 }

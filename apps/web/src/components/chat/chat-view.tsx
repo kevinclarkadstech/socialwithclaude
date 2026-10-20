@@ -1,3 +1,4 @@
+import * as React from "react"
 import { IconArrowLeft } from "@tabler/icons-react"
 import { cn } from "cn"
 
@@ -6,7 +7,7 @@ import { ChatMessagesList } from "@/components/chat/chat-messages-list"
 import { Button } from "@/components/ui/button"
 import { UserAvatar } from "@/components/user-avatar"
 import { displayName, type PersonSummary } from "@/lib/people"
-import { useChatMessages } from "@/hooks/use-chat-messages"
+import { useChatMessages, type ChatMessage } from "@/hooks/use-chat-messages"
 
 /** One open chat: header, messages and the message box. */
 export function ChatView({
@@ -28,11 +29,30 @@ export function ChatView({
   onOpenProfile?: (username: string) => void
   className?: string
 }) {
-  const { state, loadingOlder, loadOlder, send, retry } = useChatMessages(
-    chatId,
-    myUserId,
-    onRead
-  )
+  const { state, loadingOlder, loadOlder, send, retry, edit, remove } =
+    useChatMessages(chatId, myUserId, onRead)
+  const [editing, setEditing] = React.useState<ChatMessage | null>(null)
+  const [error, setError] = React.useState<string | null>(null)
+
+  function startEdit(message: ChatMessage) {
+    setError(null)
+    setEditing(message)
+  }
+
+  function saveEdit(message: ChatMessage, body: string) {
+    setEditing(null)
+    edit(message, body).catch(() =>
+      setError("Couldn't edit your message. Please try again.")
+    )
+  }
+
+  function deleteMessage(message: ChatMessage) {
+    setError(null)
+    if (editing?.id === message.id) setEditing(null)
+    remove(message).catch(() =>
+      setError("Couldn't delete your message. Please try again.")
+    )
+  }
 
   return (
     <div
@@ -79,6 +99,8 @@ export function ChatView({
           loadingOlder={loadingOlder}
           onLoadOlder={loadOlder}
           onRetry={retry}
+          onEdit={startEdit}
+          onDelete={deleteMessage}
         />
       ) : (
         <p className="m-auto p-6 text-center text-sm text-muted-foreground">
@@ -90,8 +112,28 @@ export function ChatView({
         </p>
       )}
 
-      <div className="border-t bg-card p-3">
-        <ChatComposer onSend={send} disabled={state.status !== "ready"} />
+      <div className="flex flex-col gap-2 border-t bg-card p-3">
+        {error && <p className="text-xs text-destructive">{error}</p>}
+        {editing ? (
+          <ChatComposer
+            key={`edit:${editing.id}`}
+            editing={{
+              body: editing.body ?? "",
+              onCancel: () => setEditing(null),
+            }}
+            onSend={(body) => saveEdit(editing, body)}
+            disabled={state.status !== "ready"}
+          />
+        ) : (
+          <ChatComposer
+            key="send"
+            onSend={(body) => {
+              setError(null)
+              send(body)
+            }}
+            disabled={state.status !== "ready"}
+          />
+        )}
       </div>
     </div>
   )

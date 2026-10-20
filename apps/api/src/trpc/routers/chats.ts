@@ -4,7 +4,10 @@ import { TRPCError } from "@trpc/server";
 import {
     ChatMessageNotFoundError,
     clearChatForMember,
+    deleteChatMessage,
+    editChatMessage,
     getChatMemberIds,
+    getChatMessageChatId,
     getChatMessages,
     getChats,
     getOrCreateDirectChat,
@@ -20,12 +23,15 @@ import { requireUserAndProfile, type TRPCContext } from "../context";
 import { procedure, router } from "../trpc";
 
 const chatIdInput = z.object({ chatId: z.string().min(1) });
+const messageIdInput = z.object({ id: z.string().min(1) });
+const messageBody = z.string().trim().min(1).max(2000);
 const pageInput = z.object({
     cursor: z.string().nullish(),
     limit: z.number().int().min(1).max(100).default(30),
 });
 
 const chatNotFound = () => new TRPCError({ code: "NOT_FOUND", message: "CHAT_NOT_FOUND" });
+const messageNotFound = () => new TRPCError({ code: "NOT_FOUND", message: "MESSAGE_NOT_FOUND" });
 
 /**
  * CHAT_NOT_FOUND unless the caller is a member of the chat and hasn't blocked
@@ -37,6 +43,28 @@ async function assertCanUseChat(ctx: TRPCContext, userId: string, chatId: string
 
     const blockList = await getUserBlockList(ctx);
     if (memberIds.some((id) => id !== userId && isBlocked(blockList, id))) throw chatNotFound();
+}
+
+/**
+ * MESSAGE_NOT_FOUND unless the message exists and the caller is a member of
+ * its chat. With `allowBlocked` false, also unless neither member blocked
+ * the other.
+ */
+async function assertCanUseMessage(
+    ctx: TRPCContext,
+    userId: string,
+    messageId: string,
+    { allowBlocked }: { allowBlocked: boolean },
+) {
+    const chatId = await getChatMessageChatId(ctx.db, messageId);
+    if (!chatId) throw messageNotFound();
+
+    const memberIds = await getChatMemberIds(ctx.db, chatId);
+    if (!memberIds.includes(userId)) throw messageNotFound();
+    if (allowBlocked) return;
+
+    const blockList = await getUserBlockList(ctx);
+    if (memberIds.some((id) => id !== userId && isBlocked(blockList, id))) throw messageNotFound();
 }
 
 export const chatsRouter = router({
@@ -104,7 +132,7 @@ export const chatsRouter = router({
      * it succeeds without sending twice. Returns nothing.
      */
     sendMessage: procedure
-        .input(chatIdInput.extend({ id: clientId.optional(), body: z.string().trim().min(1).max(2000) }))
+        .input(chatIdInput.extend({ id: clientId.optional(), body: messageBody }))
         .mutation(async ({ ctx, input }) => {
             const { user } = await requireUserAndProfile(ctx);
             await assertCanUseChat(ctx, user.id, input.chatId);
@@ -115,6 +143,33 @@ export const chatsRouter = router({
                 () => sendChatMessage(ctx.db, { ...input, senderId: user.id }),
             );
         }),
+
+    /**
+     * Changes the text of one of the caller's messages; it shows as edited.
+     * The previous text is kept for moderation (never shown to members).
+     * FORBIDDEN "NOT_MESSAGE_SENDER" for someone else's message;
+     * MESSAGE_NOT_FOUND if it was deleted, or either member blocked the
+     * other. Returns nothing; resending the same edit is harmless.
+     */
+    editMessage: procedure
+        .input(messageIdInput.extend({ body: messageBody }))
+        .mutation(async ({ ctx, input }) => {
+            const { user } = await requireUserAndProfile(ctx);
+            await assertCanUseMessage(ctx, user.id, input.id, { allowBlocked: false });
+            await editChatMessage(ctx.db, user.id, input.id, input.body);
+        }),
+
+    /**
+     * Deletes one of the caller's messages for everyone: members see a
+     * "deleted" placeholder instead. FORBIDDEN "NOT_MESSAGE_SENDER" for
+     * someone else's message. Works in chats with blocked users too.
+     * Returns nothing; deleting again is harmless.
+     */
+    deleteMessage: procedure.input(messageIdInput).mutation(async ({ ctx, input }) => {
+        const { user } = await requireUserAndProfile(ctx);
+        await assertCanUseMessage(ctx, user.id, input.id, { allowBlocked: true });
+        await deleteChatMessage(ctx.db, user.id, input.id);
+    }),
 
     /** Marks the chat read up to now for the caller. */
     markRead: procedure.input(chatIdInput).mutation(async ({ ctx, input }) => {

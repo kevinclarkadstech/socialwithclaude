@@ -17,6 +17,9 @@ const POLL_MS = 4000
 
 const ulid = monotonicFactory()
 
+/** A change to one of our messages that the server may not show yet. */
+type PendingChange = Pick<ChatMessage, "body" | "deleted" | "editedAt">
+
 type State =
   | { status: "loading" }
   | { status: "not-found" }
@@ -52,6 +55,9 @@ export function useChatMessages(
 
   const [state, setState] = React.useState<State>({ status: "loading" })
   const [loadingOlder, setLoadingOlder] = React.useState(false)
+  // Edits and deletes in flight, kept over polled pages until they settle so
+  // a poll that started earlier can't briefly undo them.
+  const pending = React.useRef(new Map<string, PendingChange>())
 
   React.useEffect(() => {
     let cancelled = false
@@ -62,7 +68,12 @@ export function useChatMessages(
       try {
         const page = await api.chats.getMessages.query({ chatId })
         if (cancelled) return
-        setState((prev) => mergeLatest(prev, page.items, page.nextCursor))
+        setState((prev) =>
+          withPending(
+            mergeLatest(prev, page.items, page.nextCursor),
+            pending.current
+          )
+        )
 
         const newestFromOthers =
           page.items.find((m) => m.senderId !== myUserId)?.id ?? null
@@ -129,6 +140,8 @@ export function useChatMessages(
               }
             : prev
         )
+      // Only unsent messages are delivered, and those always have a body.
+      if (message.body === null) return
       setStatus("sending")
       try {
         await api.chats.sendMessage.mutate({
@@ -150,6 +163,8 @@ export function useChatMessages(
         id: ulid(),
         senderId: myUserId,
         body,
+        deleted: false,
+        editedAt: null,
         createdAt: new Date().toISOString(),
         status: "sending",
       }
@@ -163,7 +178,77 @@ export function useChatMessages(
     [myUserId, deliver]
   )
 
-  return { state, loadingOlder, loadOlder, send, retry: deliver }
+  /** Shows `change` now; rejects (and undoes it) if `request` fails. */
+  const applyChange = React.useCallback(
+    async (
+      message: ChatMessage,
+      change: PendingChange,
+      request: () => Promise<unknown>
+    ) => {
+      const patch = (values: PendingChange) =>
+        setState((prev) =>
+          prev.status === "ready"
+            ? {
+                ...prev,
+                messages: prev.messages.map((m) =>
+                  m.id === message.id ? { ...m, ...values } : m
+                ),
+              }
+            : prev
+        )
+      pending.current.set(message.id, change)
+      patch(change)
+      try {
+        await request()
+      } catch (err) {
+        patch({
+          body: message.body,
+          deleted: message.deleted,
+          editedAt: message.editedAt,
+        })
+        throw err
+      } finally {
+        if (pending.current.get(message.id) === change) {
+          pending.current.delete(message.id)
+        }
+      }
+    },
+    []
+  )
+
+  /** Changes the text of one of our messages; rejects if it fails. */
+  const edit = React.useCallback(
+    (message: ChatMessage, body: string) =>
+      applyChange(
+        message,
+        { body, deleted: false, editedAt: new Date().toISOString() },
+        () => api.chats.editMessage.mutate({ id: message.id, body })
+      ),
+    [applyChange]
+  )
+
+  /** Deletes one of our messages for everyone; rejects if it fails. */
+  const remove = React.useCallback(
+    (message: ChatMessage) =>
+      applyChange(message, { body: null, deleted: true, editedAt: null }, () =>
+        api.chats.deleteMessage.mutate({ id: message.id })
+      ),
+    [applyChange]
+  )
+
+  return { state, loadingOlder, loadOlder, send, retry: deliver, edit, remove }
+}
+
+/** Puts changes still in flight over what the server returned. */
+function withPending(state: State, changes: Map<string, PendingChange>): State {
+  if (state.status !== "ready" || changes.size === 0) return state
+  return {
+    ...state,
+    messages: state.messages.map((m) => {
+      const change = changes.get(m.id)
+      return change ? { ...m, ...change } : m
+    }),
+  }
 }
 
 /**

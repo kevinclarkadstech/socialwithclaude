@@ -123,7 +123,11 @@ function ChatRow({
             )}
           >
             {mine && "You: "}
-            {chat.lastMessage.body}
+            {chat.lastMessage.deleted ? (
+              <span className="italic">Message deleted</span>
+            ) : (
+              chat.lastMessage.body
+            )}
           </span>
           {unread && (
             <span

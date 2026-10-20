@@ -81,6 +81,13 @@ export class ChatMessageNotFoundError extends Error {
     }
 }
 
+export class NotChatMessageSenderError extends Error {
+    constructor(messageId: string, userId: string) {
+        super(`User ${userId} did not send chat message ${messageId}`);
+        this.name = "NotChatMessageSenderError";
+    }
+}
+
 /** Returns the constraint name if `err` is a Postgres unique violation (23505). */
 export function getUniqueViolationConstraint(err: unknown): string | null {
     const cause = err instanceof DrizzleQueryError ? err.cause : err;
