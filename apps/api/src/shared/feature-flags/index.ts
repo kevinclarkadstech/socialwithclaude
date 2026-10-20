@@ -23,7 +23,7 @@ export function createFeatureFlagStore<Keys extends string>({ flagsOrLoader }: {
 
     return store;
 }
-export type AppFeatureFlags = 'userSignup' | 'usersCanPost';
+export type AppFeatureFlags = 'usersCanPost';
 
 export type AppFeatureFlagStore = FeatureFlagStore<AppFeatureFlags>;
 
