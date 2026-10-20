@@ -41,7 +41,6 @@ const app = new Hono<AppHonoEnv>()
         const featureFlagStore = createAppFeatureFlagStore({
             flagsOrLoader: {
                 usersCanPost: true,
-                userSignup: false,
             }
         });
         await featureFlagStore.initialize();
@@ -95,7 +94,6 @@ const app = new Hono<AppHonoEnv>()
     )
     .get("/api2/ok", (c) => {
         withSpan('/api2/ok', async () => {
-            c.get('logger').info(`Is user signup enabled? ${c.get('featureFlagStore').isEnabled('userSignup')}`)
             c.get('logger').info("returning OK ")
             if (serverConfig.DATABASE_URL) {
                 c.get('logger').error("Error with config", { why: "serverConfig has a db url", fix: "remove db url from config" })

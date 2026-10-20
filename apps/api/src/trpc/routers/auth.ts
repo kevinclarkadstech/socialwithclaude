@@ -1,4 +1,3 @@
-import { TRPCError } from "@trpc/server";
 import { signUpInput } from "@myapp/shared/types/users";
 
 import { signUp } from "../../data-access";
@@ -13,11 +12,6 @@ export const authRouter = router({
      */
     signUp: procedure.input(signUpInput).mutation(async ({ ctx, input }) => {
         const user = requireUser(ctx);
-
-        if (!ctx.featureFlagStore.isEnabled("userSignup")) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "SIGNUP_DISABLED" });
-        }
-
         return signUp(ctx.db, { userId: user.id, ...input });
     }),
 

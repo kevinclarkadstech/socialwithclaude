@@ -81,9 +81,6 @@ export function OnboardingForm({
           // Finished in another tab; carry on.
           onComplete()
           break
-        case "SIGNUP_DISABLED":
-          setFormError("Sign-ups aren't open yet.")
-          break
         default:
           setFormError("Something went wrong. Please try again.")
       }
