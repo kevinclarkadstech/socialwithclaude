@@ -93,6 +93,18 @@ export const userSettings = pgTable("user_settings", {
     check("user_settings_profile_visibility_valid", sql`${t.profileVisibility} in ('public', 'followers')`),
 ]);
 
+export const followStatuses = ["pending", "accepted", "denied"] as const;
+
+/**
+ * `follower_id` follows (or asked to follow) `following_id`. Following a
+ * public profile is accepted right away; following a followers-only profile
+ * is a pending request until they accept or deny it. Only accepted follows
+ * count (profiles.num_followers / num_following) or grant access.
+ *
+ * Denial is silent: the follower keeps seeing "Requested" and can't send a
+ * new request. If they cancel a denied request, `withdrawn` is set (they
+ * see "Follow" again) and the row stays, so asking again is still denied.
+ */
 export const userFollows = pgTable("user_follows", {
     followerId: text("follower_id")
         .notNull()
@@ -100,11 +112,22 @@ export const userFollows = pgTable("user_follows", {
     followingId: text("following_id")
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
+    status: text("status", { enum: followStatuses }).notNull().default("accepted"),
+    withdrawn: boolean("withdrawn").notNull().default(false),
+    // When requested (or followed, if accepted right away).
     createdAt: timestamp("created_at").notNull().defaultNow(),
+    // When the status (or withdrawn) last changed.
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (t) => [
     primaryKey({ columns: [t.followerId, t.followingId] }),
     index("user_follows_following_id_idx").on(t.followingId),
+    // A user's pending requests, newest first.
+    index("user_follows_pending_requests_idx")
+        .on(t.followingId, t.createdAt, t.followerId)
+        .where(sql`${t.status} = 'pending'`),
     check("user_follows_no_self_follow", sql`${t.followerId} <> ${t.followingId}`),
+    check("user_follows_status_valid", sql`${t.status} in ('pending', 'accepted', 'denied')`),
+    check("user_follows_withdrawn_only_denied", sql`not ${t.withdrawn} or ${t.status} = 'denied'`),
 ]);
 
 /** `user_id` has blocked `blocked_user_id`. Blocking hides content both ways. */
