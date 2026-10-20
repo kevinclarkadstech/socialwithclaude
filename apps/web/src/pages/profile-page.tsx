@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { UserAvatar } from "@/components/user-avatar"
 import { api, apiErrorMessage } from "@/lib/api"
+import { signOut } from "@/lib/auth"
 import { displayName } from "@/lib/people"
 import { monthYear } from "@/lib/time"
 
@@ -182,6 +183,16 @@ function ProfileHeader({
           </span>
           <span>Joined {monthYear(profile.createdAt)}</span>
         </div>
+
+        {isMe && (
+          <Button
+            variant="outline"
+            className="self-start"
+            onClick={() => signOut()}
+          >
+            Sign out
+          </Button>
+        )}
 
         {!isMe && (
           <div className="flex gap-2">

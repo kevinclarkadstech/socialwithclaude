@@ -50,6 +50,8 @@ export type ListingSearchResult = {
     priceCents: number | null;
     status: NonNullable<PostRow["listing"]>["status"];
     location: string | null;
+    /** Whether the caller saved it (false when signed out). */
+    isSaved: boolean;
     createdAt: Date;
 };
 
@@ -94,6 +96,7 @@ function toPostSearchResult(post: PostRow): PostSearchResult | ListingSearchResu
             priceCents: post.listing.priceCents,
             status: post.listing.status,
             location: post.listing.location,
+            isSaved: post.isSaved,
             createdAt: post.createdAt,
         };
     }
@@ -143,6 +146,29 @@ export const searchRouter = router({
         .query(async ({ ctx, input }) => {
             const users = await searchVisibleProfiles(ctx, input.query, input);
             return users.map(toUserSearchResult);
+        }),
+
+    /**
+     * Listings whose title or description contains `query`, newest first
+     * (the Listings page's search). Pass `nextCursor` as `cursor`.
+     */
+    listings: procedure
+        .input(
+            z.object({
+                query,
+                cursor: z.string().nullish(),
+                limit: z.number().int().min(1).max(100).default(20),
+            }),
+        )
+        .query(async ({ ctx, input }) => {
+            const { query, ...page } = input;
+            const results = await searchVisiblePosts(ctx, query, { kind: "listing", ...page });
+            return {
+                items: results.items
+                    .map(toPostSearchResult)
+                    .filter((r): r is ListingSearchResult => r.type === "listing"),
+                nextCursor: results.nextCursor,
+            };
         }),
 
     /** Posts or listings containing `query`, newest first. Pass `nextCursor` as `cursor`. */
