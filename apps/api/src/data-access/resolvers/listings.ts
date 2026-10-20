@@ -70,6 +70,8 @@ export async function createListing(
 /**
  * Replaces a listing's description (the post body) and details, and its photos
  * when `media` is given. Status is changed separately with setListingStatus.
+ * The text and details it replaces are kept in post_edits. Saving the same
+ * values (and no photos) again is a no-op, so retries are safe.
  *
  * @throws ListingNotFoundError if the listing doesn't exist or was deleted.
  * @throws NotPostAuthorError if `userId` didn't create the listing.
@@ -82,10 +84,20 @@ export async function updateListing(
     media?: MediaRowInput[],
 ) {
     const updated = await db.transaction(async (tx) => {
-        const now = new Date();
-        const [post] = await tx
-            .update(schema.posts)
-            .set({ body, updatedBy: userId, updatedAt: now })
+        // Lock it so concurrent edits each record the values they replaced.
+        const [current] = await tx
+            .select({
+                body: schema.posts.body,
+                listing: {
+                    title: schema.postListingDetails.title,
+                    priceType: schema.postListingDetails.priceType,
+                    priceCents: schema.postListingDetails.priceCents,
+                    condition: schema.postListingDetails.condition,
+                    location: schema.postListingDetails.location,
+                },
+            })
+            .from(schema.posts)
+            .innerJoin(schema.postListingDetails, eq(schema.postListingDetails.postId, schema.posts.id))
             .where(
                 and(
                     eq(schema.posts.id, postId),
@@ -94,9 +106,31 @@ export async function updateListing(
                     postNotDeleted,
                 ),
             )
-            .returning({ id: schema.posts.id });
-        if (!post) return false;
+            .for("update");
+        if (!current) return false;
 
+        const textChanged =
+            current.body !== body ||
+            (Object.keys(details) as (keyof ListingDetails)[]).some(
+                (key) => current.listing[key] !== details[key],
+            );
+        // Nothing to change (e.g. a retry): leave it, so it isn't marked edited.
+        if (!textChanged && !media) return true;
+
+        if (textChanged) {
+            await tx.insert(schema.postEdits).values({
+                postId,
+                previousBody: current.body,
+                previousListing: current.listing,
+                createdBy: userId,
+                updatedBy: userId,
+            });
+        }
+        const now = new Date();
+        await tx
+            .update(schema.posts)
+            .set({ body, updatedBy: userId, updatedAt: now })
+            .where(eq(schema.posts.id, postId));
         await tx
             .update(schema.postListingDetails)
             .set({ ...details, updatedAt: now })

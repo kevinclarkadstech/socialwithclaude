@@ -754,9 +754,12 @@ export async function isOwnPostId(
 }
 
 /**
- * Updates the body and, when `media` is given, replaces the photos.
+ * Updates a post's body and, when `media` is given, replaces the photos.
+ * Regular posts only; listings are edited with updateListing. The text it
+ * replaces is kept in post_edits. Saving the same text (and no photos)
+ * again is a no-op, so retries are safe.
  *
- * @throws PostNotFoundError if the post doesn't exist or was deleted.
+ * @throws PostNotFoundError if the post doesn't exist, was deleted or is a listing.
  * @throws NotPostAuthorError if `userId` didn't write the post.
  */
 export async function updatePost(
@@ -767,17 +770,42 @@ export async function updatePost(
     media?: MediaRowInput[],
 ) {
     const updated = await db.transaction(async (tx) => {
+        // Lock it so concurrent edits each record the text they replaced.
         const [post] = await tx
+            .select({ body: schema.posts.body })
+            .from(schema.posts)
+            .where(
+                and(
+                    eq(schema.posts.id, postId),
+                    eq(schema.posts.createdBy, userId),
+                    eq(schema.posts.kind, "post"),
+                    notDeleted,
+                ),
+            )
+            .for("update");
+        if (!post) return false;
+
+        const bodyChanged = post.body !== body;
+        // Nothing to change (e.g. a retry): leave it, so it isn't marked edited.
+        if (!bodyChanged && !media) return true;
+
+        if (bodyChanged) {
+            await tx.insert(schema.postEdits).values({
+                postId,
+                previousBody: post.body,
+                createdBy: userId,
+                updatedBy: userId,
+            });
+        }
+        await tx
             .update(schema.posts)
             .set({ body, updatedBy: userId, updatedAt: new Date() })
-            .where(and(eq(schema.posts.id, postId), eq(schema.posts.createdBy, userId), notDeleted))
-            .returning({ id: schema.posts.id });
-        if (!post) return false;
+            .where(eq(schema.posts.id, postId));
 
         if (media) await replacePostMedia(tx, postId, media);
         return true;
     });
-    if (!updated) await throwWhyPostNotWritable(db, userId, postId);
+    if (!updated) await throwWhyPostNotWritable(db, userId, postId, { postsOnly: true });
 }
 
 /**
@@ -804,12 +832,27 @@ export async function deletePost(db: Database, userId: string, postId: string) {
     await throwWhyPostNotWritable(db, userId, postId);
 }
 
-/** Called after a guarded write matched no rows, to report the right reason. */
-async function throwWhyPostNotWritable(db: Database, userId: string, postId: string): Promise<never> {
+/**
+ * Called after a guarded post write matched no rows, to report the right
+ * reason. With `postsOnly`, a listing counts as not found (listings are
+ * written through the listings resolvers).
+ */
+async function throwWhyPostNotWritable(
+    db: Database,
+    userId: string,
+    postId: string,
+    { postsOnly = false } = {},
+): Promise<never> {
     const [post] = await db
         .select({ authorId: schema.posts.createdBy })
         .from(schema.posts)
-        .where(and(eq(schema.posts.id, postId), notDeleted))
+        .where(
+            and(
+                eq(schema.posts.id, postId),
+                notDeleted,
+                postsOnly ? eq(schema.posts.kind, "post") : undefined,
+            ),
+        )
         .limit(1);
 
     if (!post) throw new PostNotFoundError(postId);

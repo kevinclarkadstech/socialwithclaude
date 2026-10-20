@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "61f8883a-9ac0-4584-9108-c8d015c48f65",
+  "id": "47f39291-a757-4dca-a514-f36bc44e7bc1",
   "prevIds": [
     "4d340746-7bc5-443c-a278-5cd30be283b3"
   ],
@@ -57,6 +57,12 @@
     {
       "isRlsEnabled": false,
       "name": "post_comments",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "post_edits",
       "entityType": "tables",
       "schema": "public"
     },
@@ -1076,6 +1082,110 @@
       "entityType": "columns",
       "schema": "public",
       "table": "post_comments"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "post_edits"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "post_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "post_edits"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "previous_body",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "post_edits"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "previous_listing",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "post_edits"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "created_by",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "post_edits"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "updated_by",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "post_edits"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "post_edits"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "post_edits"
     },
     {
       "type": "text",
@@ -2602,6 +2712,34 @@
       "nameExplicit": true,
       "columns": [
         {
+          "value": "post_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "created_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "post_edits_post_id_created_at_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "post_edits"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
           "value": "status",
           "isExpression": false,
           "asc": true,
@@ -3365,6 +3503,57 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
+      "name": "post_edits_post_id_posts_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "post_edits"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "created_by"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "post_edits_created_by_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "post_edits"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "updated_by"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "name": "post_edits_updated_by_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "post_edits"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "post_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "posts",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
       "name": "post_listing_details_post_id_posts_id_fkey",
       "entityType": "fks",
       "schema": "public",
@@ -3782,6 +3971,16 @@
       "name": "post_comments_pkey",
       "schema": "public",
       "table": "post_comments",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "post_edits_pkey",
+      "schema": "public",
+      "table": "post_edits",
       "entityType": "pks"
     },
     {

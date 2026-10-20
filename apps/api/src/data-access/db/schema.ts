@@ -1,4 +1,4 @@
-import { boolean, check, index, integer, pgTable, primaryKey, smallint, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, check, index, integer, jsonb, pgTable, primaryKey, smallint, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { sql, type AnyColumn } from "drizzle-orm";
 import { monotonicFactory } from "ulid";
 import { listingConditions, listingPriceTypes, listingStatuses } from "@myapp/shared/types/posts";
@@ -268,6 +268,35 @@ export const postListingDetails = pgTable("post_listing_details", {
         "post_listing_details_price_matches_type",
         sql`(${t.priceType} in ('fixed', 'negotiable')) = (${t.priceCents} is not null)`,
     ),
+]);
+
+/** A listing's details as they were before an edit (see postEdits). */
+export type ListingDetailsSnapshot = {
+    title: string;
+    priceType: (typeof listingPriceTypes)[number];
+    priceCents: number | null;
+    condition: (typeof listingConditions)[number] | null;
+    location: string | null;
+};
+
+/**
+ * A post's (or listing's) earlier text: one row per edit, holding the body
+ * as it was before that edit and, for listings, the details (title, price,
+ * condition, location). created_by is the editor, created_at the edit time.
+ * Never shown to users; kept so moderation can see what was said. Photos
+ * aren't kept: replaced photos are deleted from storage.
+ */
+export const postEdits = pgTable("post_edits", {
+    id: ulidId(),
+    postId: text("post_id")
+        .notNull()
+        .references(() => posts.id, { onDelete: "cascade" }),
+    previousBody: text("previous_body").notNull(),
+    // Listings only; null for regular posts.
+    previousListing: jsonb("previous_listing").$type<ListingDetailsSnapshot>(),
+    ...auditFields(),
+}, (t) => [
+    index("post_edits_post_id_created_at_idx").on(t.postId, t.createdAt),
 ]);
 
 /**
