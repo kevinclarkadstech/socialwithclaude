@@ -165,14 +165,14 @@ export const postsRouter = router({
     }),
 
     /**
-     * `sort`: "oldest" (default) or "top" (highest score first). Pass the
+     * `sort`: "oldest" (default), "newest" or "top" (highest score first). Pass the
      * previous page's `nextCursor` as `cursor`, keeping the same `sort`.
      */
     getPostComments: procedure
         .input(
             pageInput.extend({
                 postId: z.string().min(1),
-                sort: z.enum(["oldest", "top"]).default("oldest"),
+                sort: z.enum(["oldest", "newest", "top"]).default("oldest"),
             }),
         )
         .query(async ({ ctx, input }) => {

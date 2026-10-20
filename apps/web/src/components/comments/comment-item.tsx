@@ -1,19 +1,28 @@
 import * as React from "react"
+import {
+  IconArrowBigDown,
+  IconArrowBigDownFilled,
+  IconArrowBigUp,
+  IconArrowBigUpFilled,
+} from "@tabler/icons-react"
 import { cn } from "cn"
 
 import { CommentComposer } from "@/components/comments/comment-composer"
 import { Button } from "@/components/ui/button"
 import { UserAvatar } from "@/components/user-avatar"
-import type { PostComment } from "@/hooks/use-post-comments"
+import type { PostComment, Vote } from "@/hooks/use-post-comments"
 import { displayName } from "@/lib/people"
 import { fullDateTime, shortTimeAgo } from "@/lib/time"
 
 type Mode = "view" | "editing" | "confirm-delete"
 
+const compact = new Intl.NumberFormat(undefined, { notation: "compact" })
+
 /**
- * One comment: author, age, text, and Edit / Delete when allowed. Edits
- * happen in place; Delete asks first. While sending, actions are hidden;
- * if sending failed, Retry and Discard are offered.
+ * One comment: author, age, text, up/down votes with the score, and Edit /
+ * Delete when allowed. Edits happen in place; Delete asks first. While
+ * sending, actions are hidden; if sending failed, Retry and Discard are
+ * offered.
  */
 export function CommentItem({
   comment,
@@ -23,6 +32,7 @@ export function CommentItem({
   onUpdate,
   onDelete,
   onRetry,
+  onVote,
 }: {
   comment: PostComment
   canEdit: boolean
@@ -31,6 +41,7 @@ export function CommentItem({
   onUpdate: (comment: PostComment, body: string) => Promise<void>
   onDelete: (comment: PostComment) => Promise<void>
   onRetry: (comment: PostComment) => void
+  onVote: (comment: PostComment, value: Vote) => void
 }) {
   const [mode, setMode] = React.useState<Mode>("view")
   const [error, setError] = React.useState<string | null>(null)
@@ -129,9 +140,9 @@ export function CommentItem({
           </p>
         ) : (
           mode === "view" &&
-          comment.status === "sent" &&
-          (canEdit || canDelete) && (
-            <div className="-ml-2.5 flex gap-1">
+          comment.status === "sent" && (
+            <div className="-ml-2 flex items-center gap-1">
+              <VoteButtons comment={comment} onVote={onVote} />
               {canEdit && (
                 <Button
                   variant="ghost"
@@ -158,6 +169,49 @@ export function CommentItem({
         {error && <p className="text-xs text-destructive">{error}</p>}
       </div>
     </li>
+  )
+}
+
+/** Upvote, score, downvote. Pressing your current vote again removes it. */
+function VoteButtons({
+  comment,
+  onVote,
+}: {
+  comment: PostComment
+  onVote: (comment: PostComment, value: Vote) => void
+}) {
+  const up = comment.myVote === 1
+  const down = comment.myVote === -1
+  return (
+    <div className="mr-1 flex items-center" role="group" aria-label="Vote">
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        className={cn(up ? "text-primary" : "text-muted-foreground")}
+        aria-label="Upvote"
+        aria-pressed={up}
+        onClick={() => onVote(comment, up ? 0 : 1)}
+      >
+        {up ? <IconArrowBigUpFilled /> : <IconArrowBigUp />}
+      </Button>
+      <span
+        className="min-w-5 text-center text-xs font-medium tabular-nums"
+        aria-label={`Score ${comment.score}`}
+        title={`${comment.numUpvotes} up · ${comment.numDownvotes} down`}
+      >
+        {compact.format(comment.score)}
+      </span>
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        className={cn(down ? "text-destructive" : "text-muted-foreground")}
+        aria-label="Downvote"
+        aria-pressed={down}
+        onClick={() => onVote(comment, down ? 0 : -1)}
+      >
+        {down ? <IconArrowBigDownFilled /> : <IconArrowBigDown />}
+      </Button>
+    </div>
   )
 }
 

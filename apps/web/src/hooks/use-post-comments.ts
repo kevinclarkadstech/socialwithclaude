@@ -12,48 +12,72 @@ type ServerComment = Awaited<
 /** A comment as shown: from the server, or one of ours still sending/failed. */
 export type PostComment = ServerComment & {
   status: "sent" | "sending" | "failed"
-  /** Added here this session (may not be in the loaded pages yet). */
-  local?: boolean
 }
 
 export type CommentAuthor = ServerComment["author"]
 
-type State =
-  | { status: "loading" }
+/** "top" is shown as Best: highest score (upvotes minus downvotes) first. */
+export type CommentSort = "top" | "newest" | "oldest"
+export type Vote = -1 | 0 | 1
+
+type Loaded = { sort: CommentSort } & (
   | { status: "not-found" }
   | { status: "error" }
   | {
       status: "ready"
-      /** Oldest first; our new comments at the end. */
+      /** In `sort` order, after our new comments (newest of ours first). */
       comments: PostComment[]
       nextCursor: string | null
     }
+)
+type State = { status: "loading" } | Loaded
 
 const ulid = monotonicFactory()
 
 const sent = (c: ServerComment): PostComment => ({ ...c, status: "sent" })
 
+/** The comment's counts after the viewer's vote changes to `value`. */
+function withVote(comment: PostComment, value: Vote): PostComment {
+  const previous = comment.myVote
+  const numUpvotes =
+    comment.numUpvotes + Number(value === 1) - Number(previous === 1)
+  const numDownvotes =
+    comment.numDownvotes + Number(value === -1) - Number(previous === -1)
+  return {
+    ...comment,
+    myVote: value,
+    numUpvotes,
+    numDownvotes,
+    score: numUpvotes - numDownvotes,
+  }
+}
+
 /**
- * A post's comments, oldest first, a page at a time, with optimistic
- * create / edit / delete. Creates use a client id, so retrying a failed one
- * never doubles it. Comment counts elsewhere are kept in step, starting
- * from `numComments` (the post's count when it was fetched).
+ * A post's comments in `sort` order, a page at a time, with optimistic
+ * create / edit / delete / vote. Your new comments show at the top whatever
+ * the order. Creates use a client id, so retrying a failed one never doubles
+ * it. Comment counts elsewhere are kept in step, starting from
+ * `numComments` (the post's count when it was fetched).
  */
 export function usePostComments(
   postId: string,
+  sort: CommentSort,
   numComments: number,
   me: PersonSummary & { userId: string }
 ) {
-  const [state, setState] = React.useState<State>({ status: "loading" })
+  const [loaded, setState] = React.useState<Loaded | null>(null)
   const [loadingMore, setLoadingMore] = React.useState(false)
+  // Votes on a comment are sent one at a time, in order.
+  const voteQueues = React.useRef(new Map<string, Promise<unknown>>())
 
   React.useEffect(() => {
     let cancelled = false
     api.posts.getPostComments
-      .query({ postId })
+      .query({ postId, sort })
       .then((page) => {
         if (cancelled) return
         setState({
+          sort,
           status: "ready",
           comments: page.items.map(sent),
           nextCursor: page.nextCursor,
@@ -62,6 +86,7 @@ export function usePostComments(
       .catch((err) => {
         if (cancelled) return
         setState({
+          sort,
           status:
             apiErrorMessage(err) === "POST_NOT_FOUND" ? "not-found" : "error",
         })
@@ -69,12 +94,15 @@ export function usePostComments(
     return () => {
       cancelled = true
     }
-  }, [postId])
+  }, [postId, sort])
+
+  // Comments for another order are stale until the new ones arrive.
+  const state: State = loaded?.sort === sort ? loaded : { status: "loading" }
 
   const patch = React.useCallback(
     (id: string, change: (c: PostComment) => PostComment | null) =>
       setState((prev) => {
-        if (prev.status !== "ready") return prev
+        if (prev?.status !== "ready") return prev
         return {
           ...prev,
           comments: prev.comments.flatMap((c) =>
@@ -91,19 +119,19 @@ export function usePostComments(
     try {
       const page = await api.posts.getPostComments.query({
         postId,
+        sort,
         cursor: state.nextCursor,
       })
       setState((prev) => {
-        if (prev.status !== "ready") return prev
-        const loaded = new Set(prev.comments.map((c) => c.id))
-        const fetched = new Set(page.items.map((c) => c.id))
+        if (prev?.status !== "ready" || prev.sort !== sort) return prev
+        // Skip ones already shown: our new comments, or (for Best) ones
+        // whose score moved them across pages.
+        const shown = new Set(prev.comments.map((c) => c.id))
         return {
-          status: "ready",
-          // Our new comments stay last until their page arrives.
+          ...prev,
           comments: [
-            ...prev.comments.filter((c) => !c.local),
-            ...page.items.filter((c) => !loaded.has(c.id)).map(sent),
-            ...prev.comments.filter((c) => c.local && !fetched.has(c.id)),
+            ...prev.comments,
+            ...page.items.filter((c) => !shown.has(c.id)).map(sent),
           ],
           nextCursor: page.nextCursor,
         }
@@ -145,9 +173,8 @@ export function usePostComments(
       score: 0,
       myVote: 0,
       status: "sending",
-      local: true,
     }
-    setState({ ...state, comments: [...state.comments, comment] })
+    setState({ ...state, comments: [comment, ...state.comments] })
     void send(id, body)
   }
 
@@ -192,7 +219,7 @@ export function usePostComments(
       adjustCommentCount(postId, numComments, -1)
     } catch (err) {
       setState((prev) => {
-        if (prev.status !== "ready") return prev
+        if (prev?.status !== "ready") return prev
         const comments = [...prev.comments]
         comments.splice(
           index < 0 ? comments.length : Math.min(index, comments.length),
@@ -205,5 +232,28 @@ export function usePostComments(
     }
   }
 
-  return { state, loadingMore, loadMore, create, retry, update, remove }
+  /**
+   * Sets your vote: 1 (up), -1 (down) or 0 (none). Shows right away; if the
+   * request fails, the vote goes back unless you've voted again since.
+   */
+  function vote(comment: PostComment, value: Vote) {
+    const previous = comment.myVote as Vote
+    if (value === previous) return
+    patch(comment.id, (c) => withVote(c, value))
+    const queues = voteQueues.current
+    const request = (queues.get(comment.id) ?? Promise.resolve())
+      .catch(() => {})
+      .then(() => api.posts.voteOnPostComment.mutate({ id: comment.id, value }))
+      .catch(() =>
+        patch(comment.id, (c) =>
+          c.myVote === value ? withVote(c, previous) : c
+        )
+      )
+      .finally(() => {
+        if (queues.get(comment.id) === request) queues.delete(comment.id)
+      })
+    queues.set(comment.id, request)
+  }
+
+  return { state, loadingMore, loadMore, create, retry, update, remove, vote }
 }
