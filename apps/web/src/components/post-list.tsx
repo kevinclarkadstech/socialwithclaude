@@ -18,11 +18,14 @@ type ListState =
 export function PostList({
   loadPage,
   onOpenProfile,
+  onOpenPost,
   emptyMessage = "No posts yet.",
   errorMessage = () => "Couldn't load posts.",
 }: {
   loadPage: (cursor: string | null) => Promise<Page>
   onOpenProfile?: (username: string) => void
+  /** Open a post and its comments. */
+  onOpenPost?: (postId: string) => void
   emptyMessage?: string
   /** What to show when the first page fails, from the error. */
   errorMessage?: (err: unknown) => string
@@ -82,7 +85,12 @@ export function PostList({
   return (
     <div className="flex flex-col gap-4">
       {state.posts.map((post) => (
-        <PostCard key={post.id} post={post} onOpenProfile={onOpenProfile} />
+        <PostCard
+          key={post.id}
+          post={post}
+          onOpenProfile={onOpenProfile}
+          onComment={onOpenPost && ((p) => onOpenPost(p.id))}
+        />
       ))}
       {state.nextCursor && (
         <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
@@ -96,13 +104,16 @@ export function PostList({
 /** The Feed tab: everyone's posts, newest first. */
 export function Feed({
   onOpenProfile,
+  onOpenPost,
 }: {
   onOpenProfile?: (username: string) => void
+  onOpenPost?: (postId: string) => void
 }) {
   return (
     <PostList
       loadPage={(cursor) => api.posts.getFeed.query({ cursor })}
       onOpenProfile={onOpenProfile}
+      onOpenPost={onOpenPost}
       errorMessage={() => "Couldn't load the feed."}
     />
   )

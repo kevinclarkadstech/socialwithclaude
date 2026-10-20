@@ -37,7 +37,8 @@ function SignedIn({ userId, email }: { userId: string; email: string }) {
     return <OnboardingPage email={email} onComplete={me.reload} />
   }
 
-  return <HomePage userId={userId} username={me.me.profile.username} />
+  const { username, firstName, lastName, avatarUrl } = me.me.profile
+  return <HomePage me={{ userId, username, firstName, lastName, avatarUrl }} />
 }
 
 export default App

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { MediaCarousel } from "@/components/media-carousel"
 import { UserAvatar } from "@/components/user-avatar"
+import { useCommentCount } from "@/hooks/use-comment-count"
 import { useSavePost } from "@/hooks/use-save-post"
 import { displayName } from "@/lib/people"
 import type { api } from "@/lib/api"
@@ -34,7 +35,7 @@ export function PostCard({
   className,
 }: {
   post: Post
-  /** Open the comments (there's no comments view yet). */
+  /** Open the post's comments. */
   onComment?: (post: Post) => void
   /** Open the author's profile from their name or avatar. */
   onOpenProfile?: (username: string) => void
@@ -45,6 +46,7 @@ export function PostCard({
     count: numSaves,
     toggle: toggleSave,
   } = useSavePost(post.id, post.isSaved, post.numSaves)
+  const numComments = useCommentCount(post.id, post.numComments)
   const [shareStatus, setShareStatus] = React.useState<"idle" | "copied">(
     "idle"
   )
@@ -99,10 +101,10 @@ export function PostCard({
           variant="ghost"
           size="sm"
           onClick={() => onComment?.(post)}
-          aria-label={`Comments (${post.numComments})`}
+          aria-label={`Comments (${numComments})`}
         >
           <IconMessageCircle />
-          {compact.format(post.numComments)}
+          {compact.format(numComments)}
         </Button>
         <Button
           variant="ghost"

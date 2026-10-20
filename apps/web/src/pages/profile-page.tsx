@@ -30,6 +30,7 @@ export function ProfilePage({
   onBack,
   onMessage,
   onOpenProfile,
+  onOpenPost,
 }: {
   username: string
   myUserId: string
@@ -38,6 +39,7 @@ export function ProfilePage({
   /** Open (or start) a chat with them; rejects if that fails. */
   onMessage: (profile: Profile) => Promise<void>
   onOpenProfile: (username: string) => void
+  onOpenPost: (postId: string) => void
 }) {
   const [state, setState] = React.useState<ProfileState>({ status: "loading" })
 
@@ -86,6 +88,7 @@ export function ProfilePage({
               api.posts.getUserPosts.query({ username, cursor })
             }
             onOpenProfile={onOpenProfile}
+            onOpenPost={onOpenPost}
             emptyMessage={`@${state.profile.username} hasn't posted yet.`}
             errorMessage={(err) =>
               apiErrorMessage(err) === "POSTS_FOLLOWERS_ONLY"
