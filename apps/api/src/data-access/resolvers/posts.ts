@@ -598,26 +598,45 @@ export async function reportPostComment(
 }
 
 /**
- * Edits a comment. Only the comment's author may edit it.
+ * Edits a comment. Only the comment's author may edit it. The text it
+ * replaces is kept in post_comment_edits. Saving the same text again is a
+ * no-op (it isn't marked edited), so retries are safe.
  *
  * @throws CommentNotFoundError if the comment or its post doesn't exist or was deleted.
  * @throws NotCommentAuthorError if `userId` didn't write the comment.
  */
 export async function updatePostComment(db: Database, userId: string, commentId: string, body: string) {
-    const [comment] = await db
-        .update(schema.postComments)
-        .set({ body, updatedBy: userId, updatedAt: new Date() })
-        .where(
-            and(
-                eq(schema.postComments.id, commentId),
-                eq(schema.postComments.createdBy, userId),
-                commentNotDeleted,
-                commentPostIsLive(db),
-            ),
-        )
-        .returning({ id: schema.postComments.id });
+    const writable = await db.transaction(async (tx) => {
+        // Lock it so concurrent edits each record the text they replaced.
+        const [comment] = await tx
+            .select({ body: schema.postComments.body })
+            .from(schema.postComments)
+            .where(
+                and(
+                    eq(schema.postComments.id, commentId),
+                    eq(schema.postComments.createdBy, userId),
+                    commentNotDeleted,
+                    commentPostIsLive(db),
+                ),
+            )
+            .for("update");
+        if (!comment) return false;
+        if (comment.body === body) return true;
 
-    if (!comment) await throwWhyCommentNotWritable(db, userId, commentId);
+        await tx.insert(schema.postCommentEdits).values({
+            commentId,
+            previousBody: comment.body,
+            createdBy: userId,
+            updatedBy: userId,
+        });
+        await tx
+            .update(schema.postComments)
+            .set({ body, updatedBy: userId, updatedAt: new Date() })
+            .where(eq(schema.postComments.id, commentId));
+        return true;
+    });
+
+    if (!writable) await throwWhyCommentNotWritable(db, userId, commentId);
 }
 
 /**

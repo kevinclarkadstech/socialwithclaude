@@ -169,7 +169,8 @@ export const postComments = pgTable("post_comments", {
     postId: text("post_id")
         .notNull()
         .references(() => posts.id, { onDelete: "cascade" }),
-    // created_by is the author.
+    // created_by is the author. The current text; earlier versions are in
+    // post_comment_edits. updated_at > created_at means it was edited.
     body: text("body").notNull(),
     numUpvotes: integer("num_upvotes").notNull().default(0),
     numDownvotes: integer("num_downvotes").notNull().default(0),
@@ -183,6 +184,22 @@ export const postComments = pgTable("post_comments", {
     index("post_comments_post_id_created_at_id_idx").on(t.postId, t.createdAt, t.id),
     check("post_comments_num_upvotes_non_negative", sql`${t.numUpvotes} >= 0`),
     check("post_comments_num_downvotes_non_negative", sql`${t.numDownvotes} >= 0`),
+]);
+
+/**
+ * A comment's earlier text: one row per edit, holding the body as it was
+ * before that edit (created_by is the editor, created_at the edit time).
+ * Never shown to users; kept so moderation can see what was said.
+ */
+export const postCommentEdits = pgTable("post_comment_edits", {
+    id: ulidId(),
+    commentId: text("comment_id")
+        .notNull()
+        .references(() => postComments.id, { onDelete: "cascade" }),
+    previousBody: text("previous_body").notNull(),
+    ...auditFields(),
+}, (t) => [
+    index("post_comment_edits_comment_id_created_at_idx").on(t.commentId, t.createdAt),
 ]);
 
 /** One vote per user per comment: 1 = upvote, -1 = downvote. */
