@@ -73,7 +73,10 @@ export const listingsRouter = router({
             await setListingStatus(ctx.db, user.id, input.id, input.status);
         }),
 
-    /** Newest first, optionally filtered by status. Pass `nextCursor` as `cursor`. */
+    /**
+     * Listings the caller can see, newest first, optionally filtered by
+     * status. Pass `nextCursor` as `cursor`.
+     */
     getListings: procedure
         .input(
             z.object({

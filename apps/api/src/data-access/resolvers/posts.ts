@@ -21,6 +21,7 @@ import {
     postMediaSql,
     postNotDeleted,
     postThumbnailSql,
+    postVisibleTo,
     toMediaDto,
 } from "./shared";
 
@@ -53,9 +54,13 @@ function postsBefore(db: Database, cursor: string) {
 
 /**
  * True when the comment's post exists and isn't deleted (comments on deleted
- * posts are hidden). Pass `postAuthorId` to also require that post author.
+ * posts are hidden). Pass `postAuthorId` to also require that post author,
+ * and `viewerId` to also require that they can see the post (postVisibleTo).
  */
-function commentPostIsLive(db: Database, postAuthorId?: string) {
+function commentPostIsLive(
+    db: Database,
+    { postAuthorId, viewerId }: { postAuthorId?: string; viewerId?: string } = {},
+) {
     return exists(
         db
             .select({ one: sql`1` })
@@ -65,13 +70,15 @@ function commentPostIsLive(db: Database, postAuthorId?: string) {
                     eq(schema.posts.id, schema.postComments.postId),
                     notDeleted,
                     postAuthorId ? eq(schema.posts.createdBy, postAuthorId) : undefined,
+                    viewerId ? postVisibleTo(viewerId) : undefined,
                 ),
             ),
     );
 }
 
 /**
- * Returns the post with its author, or null if it doesn't exist or was deleted.
+ * Returns the post with its author, or null if it doesn't exist, was deleted
+ * or `viewerId` can't see it (postVisibleTo).
  * `listing` holds the listing details when `kind` is "listing", else null.
  * `media` is the post's photos in order.
  * When `viewerId` is given, `isSaved` reports whether the viewer saved it.
@@ -97,7 +104,7 @@ export async function getPostById(db: Database, postId: string, viewerId: string
                 )
                 : sql`false`,
         )
-        .where(and(eq(schema.posts.id, postId), notDeleted))
+        .where(and(eq(schema.posts.id, postId), notDeleted, postVisibleTo(viewerId)))
         .limit(1);
 
     return post ? { ...post, media: post.media.map(toMediaDto) } : null;
@@ -106,8 +113,8 @@ export async function getPostById(db: Database, postId: string, viewerId: string
 /**
  * The Feed tab: regular posts (not listings), newest first by server time, with authors,
  * photos and `isSaved` for the viewer. `authorId` limits it to one user's posts
- * (their profile). Pass the previous page's `nextCursor` as `cursor` to get the
- * next page.
+ * (their profile). Only posts `viewerId` can see (postVisibleTo). Pass the
+ * previous page's `nextCursor` as `cursor` to get the next page.
  */
 export async function getFeed(
     db: Database,
@@ -136,6 +143,7 @@ export async function getFeed(
             and(
                 eq(schema.posts.kind, "post"),
                 notDeleted,
+                postVisibleTo(viewerId),
                 authorId ? eq(schema.posts.createdBy, authorId) : undefined,
                 cursor ? postsBefore(db, cursor) : undefined,
             ),
@@ -156,8 +164,8 @@ export async function getFeed(
  * Posts whose body (or, for listings, title) contains `query`
  * (case-insensitive), newest first, with authors, listing details, first
  * photo (`thumbnail`) and `isSaved` for `viewerId`. `kind` limits it to posts
- * or listings. Pass the previous page's `nextCursor` as `cursor` to get the
- * next page.
+ * or listings. Only posts `viewerId` can see (postVisibleTo). Pass the
+ * previous page's `nextCursor` as `cursor` to get the next page.
  */
 export async function searchPosts(
     db: Database,
@@ -198,6 +206,7 @@ export async function searchPosts(
         .where(
             and(
                 notDeleted,
+                postVisibleTo(viewerId),
                 kind ? eq(schema.posts.kind, kind) : undefined,
                 or(ilike(schema.posts.body, pattern), ilike(schema.postListingDetails.title, pattern)),
                 cursor ? postsBefore(db, cursor) : undefined,
@@ -227,7 +236,7 @@ export async function savePost(db: Database, userId: string, postId: string) {
     const [post] = await db
         .select({ id: schema.posts.id })
         .from(schema.posts)
-        .where(and(eq(schema.posts.id, postId), notDeleted))
+        .where(and(eq(schema.posts.id, postId), notDeleted, postVisibleTo(userId)))
         .limit(1);
     if (!post) throw new PostNotFoundError(postId);
 
@@ -288,7 +297,7 @@ export async function reportPost(
     const [post] = await db
         .select({ authorId: schema.posts.createdBy })
         .from(schema.posts)
-        .where(and(eq(schema.posts.id, postId), notDeleted))
+        .where(and(eq(schema.posts.id, postId), notDeleted, postVisibleTo(reporterId)))
         .limit(1);
     if (!post) throw new PostNotFoundError(postId);
     if (post.authorId === reporterId) throw new CannotReportOwnPostError(postId);
@@ -346,6 +355,8 @@ export async function getSavedPosts(
             and(
                 eq(schema.postSaves.userId, userId),
                 notDeleted,
+                // Saved before the author went followers-only (or unfollowed): hidden.
+                postVisibleTo(userId),
                 cursor ? lt(schema.postSaves.id, cursor) : undefined,
             ),
         )
@@ -392,7 +403,7 @@ export async function getPostComments(
     const [post] = await db
         .select({ id: schema.posts.id })
         .from(schema.posts)
-        .where(and(eq(schema.posts.id, postId), notDeleted))
+        .where(and(eq(schema.posts.id, postId), notDeleted, postVisibleTo(viewerId)))
         .limit(1);
     if (!post) throw new PostNotFoundError(postId);
 
@@ -475,7 +486,13 @@ export async function voteOnPostComment(
         const [comment] = await tx
             .select({ id: schema.postComments.id })
             .from(schema.postComments)
-            .where(and(eq(schema.postComments.id, commentId), commentNotDeleted, commentPostIsLive(db)))
+            .where(
+                and(
+                    eq(schema.postComments.id, commentId),
+                    commentNotDeleted,
+                    commentPostIsLive(db, { viewerId: userId }),
+                ),
+            )
             .limit(1)
             .for("update");
         if (!comment) throw new CommentNotFoundError(commentId);
@@ -540,7 +557,7 @@ export async function createPostComment(
             const [post] = await tx
                 .update(schema.posts)
                 .set({ numComments: sql`${schema.posts.numComments} + 1` })
-                .where(and(eq(schema.posts.id, postId), notDeleted))
+                .where(and(eq(schema.posts.id, postId), notDeleted, postVisibleTo(authorId)))
                 .returning({ id: schema.posts.id });
             if (!post) throw new PostNotFoundError(postId);
 
@@ -582,7 +599,11 @@ export async function reportPostComment(
         .select({ authorId: schema.postComments.createdBy })
         .from(schema.postComments)
         .where(
-            and(eq(schema.postComments.id, commentId), commentNotDeleted, commentPostIsLive(db)),
+            and(
+                eq(schema.postComments.id, commentId),
+                commentNotDeleted,
+                commentPostIsLive(db, { viewerId: reporterId }),
+            ),
         )
         .limit(1);
     if (!comment) throw new CommentNotFoundError(commentId);
@@ -658,7 +679,7 @@ export async function deletePostComment(db: Database, userId: string, commentId:
                     eq(schema.postComments.id, commentId),
                     commentNotDeleted,
                     commentPostIsLive(db),
-                    or(eq(schema.postComments.createdBy, userId), commentPostIsLive(db, userId)),
+                    or(eq(schema.postComments.createdBy, userId), commentPostIsLive(db, { postAuthorId: userId })),
                 ),
             )
             .returning({ postId: schema.postComments.postId });

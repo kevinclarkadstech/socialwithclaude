@@ -82,7 +82,15 @@ export async function searchVisiblePosts(
     );
 }
 
+/*
+ * Followers-only profiles: their posts and listings are only returned to the
+ * author and accepted followers (the data-access resolvers filter with
+ * postVisibleTo). Anyone else gets POST_NOT_FOUND / COMMENT_NOT_FOUND, or
+ * doesn't see them in lists, as if they didn't exist. Blocks are filtered
+ * here, in the API layer.
+ */
 export const postsRouter = router({
+    /** POST_NOT_FOUND if it doesn't exist, or the caller can't see it. */
     getPostById: procedure.input(postIdInput).query(async ({ ctx, input }) => {
         const post = await getPostById(ctx.db, input.id, ctx.user?.id ?? null);
         if (!post || isBlocked(await getUserBlockList(ctx), post.author.userId)) throw postNotFound();
@@ -90,7 +98,10 @@ export const postsRouter = router({
         return post;
     }),
 
-    /** The Feed tab: regular posts (not listings), newest first. Pass `nextCursor` as `cursor`. */
+    /**
+     * The Feed tab: regular posts (not listings) the caller can see, newest
+     * first. Pass `nextCursor` as `cursor`.
+     */
     getFeed: procedure.input(pageInput).query(async ({ ctx, input }) => {
         const blockList = await getUserBlockList(ctx);
         return fillVisiblePage(
@@ -151,7 +162,10 @@ export const postsRouter = router({
         await unsavePost(ctx.db, user.id, input.id);
     }),
 
-    /** The caller's saved posts, most recently saved first. Pass `nextCursor` as `cursor`. */
+    /**
+     * The caller's saved posts, most recently saved first, minus ones they can
+     * no longer see. Pass `nextCursor` as `cursor`.
+     */
     getMySavedPosts: procedure.input(pageInput).query(async ({ ctx, input }) => {
         const { user } = await requireUserAndProfile(ctx);
         const blockList = await getUserBlockList(ctx);

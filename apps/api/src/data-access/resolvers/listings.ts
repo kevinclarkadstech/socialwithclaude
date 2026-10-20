@@ -11,6 +11,7 @@ import {
     postFields,
     postNotDeleted,
     postThumbnailSql,
+    postVisibleTo,
     toMediaDto,
 } from "./shared";
 
@@ -179,8 +180,9 @@ export async function setListingStatus(
 
 /**
  * Marketplace feed: listings newest first, optionally filtered by status, with
- * authors, first photo (`thumbnail`) and `isSaved` for the viewer. Deleted listings are skipped. Pass the
- * previous page's `nextCursor` as `cursor` to get the next page.
+ * authors, first photo (`thumbnail`) and `isSaved` for the viewer. Deleted listings, and
+ * ones `viewerId` can't see (postVisibleTo), are skipped. Pass the previous
+ * page's `nextCursor` as `cursor` to get the next page.
  */
 export async function getListings(
     db: Database,
@@ -210,6 +212,7 @@ export async function getListings(
         .where(
             and(
                 postNotDeleted,
+                postVisibleTo(viewerId),
                 status ? eq(schema.postListingDetails.status, status) : undefined,
                 cursor ? listingsBefore(db, cursor) : undefined,
             ),

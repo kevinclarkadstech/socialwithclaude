@@ -1,4 +1,4 @@
-import { isNull, sql } from "drizzle-orm";
+import { isNull, sql, type SQL } from "drizzle-orm";
 
 import { mediaUrl } from "../../media";
 import { schema } from "../db";
@@ -35,6 +35,30 @@ export const listingFields = {
 };
 
 export const postNotDeleted = isNull(schema.posts.deletedAt);
+
+/**
+ * True when `viewerId` may see the post: it's theirs, its author's profile is
+ * public, or they're an accepted follower of its author. Signed out (null),
+ * only posts by public profiles. Applies to listings too (they're posts).
+ *
+ * Correlated on "posts" by name (see postMediaSql for why), so it also works
+ * inside subqueries over posts.
+ */
+export function postVisibleTo(viewerId: string | null): SQL {
+    // A missing settings row means the defaults, which are public.
+    const authorIsPublic = sql`not exists (
+        select 1 from "user_settings"
+        where "user_settings"."user_id" = "posts"."created_by"
+            and "user_settings"."profile_visibility" = 'followers'
+    )`;
+    if (!viewerId) return authorIsPublic;
+    return sql`("posts"."created_by" = ${viewerId} or ${authorIsPublic} or exists (
+        select 1 from "user_follows"
+        where "user_follows"."follower_id" = ${viewerId}
+            and "user_follows"."following_id" = "posts"."created_by"
+            and "user_follows"."status" = 'accepted'
+    ))`;
+}
 
 /** Escapes LIKE wildcards so user input matches literally. */
 const escapeLike = (text: string) => text.replace(/[\\%_]/g, (c) => `\\${c}`);
