@@ -270,8 +270,10 @@ export const postsRouter = router({
         }),
 
     /**
-     * Omit `media` to leave photos unchanged; send it to replace them (existing
-     * keys keep their photo, new upload keys are added, missing ones removed).
+     * Regular posts only (POST_NOT_FOUND for a listing; use
+     * listings.updateListing). Omit `media` to leave photos unchanged; send it
+     * to replace them (existing keys keep their photo, new upload keys are
+     * added, missing ones removed).
      */
     updatePost: procedure
         .input(postIdInput.extend({ body: postBody, media: mediaInput.optional() }))
