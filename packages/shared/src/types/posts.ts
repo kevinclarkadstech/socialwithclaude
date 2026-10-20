@@ -8,6 +8,7 @@ export type ListingPriceType = (typeof listingPriceTypes)[number];
 export type ListingCondition = (typeof listingConditions)[number];
 
 export const POST_BODY_MAX = 1000;
+export const COMMENT_BODY_MAX = 1000;
 export const LISTING_BODY_MAX = 5000;
 export const LISTING_TITLE_MAX = 100;
 export const LISTING_LOCATION_MAX = 100;
@@ -23,6 +24,12 @@ export const postBody = z
     .trim()
     .min(1, "Write something")
     .max(POST_BODY_MAX, `At most ${POST_BODY_MAX} characters`);
+
+export const commentBody = z
+    .string()
+    .trim()
+    .min(1, "Write something")
+    .max(COMMENT_BODY_MAX, `At most ${COMMENT_BODY_MAX} characters`);
 
 export const priceCents = z
     .number("Enter a price")

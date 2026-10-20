@@ -365,7 +365,7 @@ export async function getSavedPosts(
     };
 }
 
-export type CommentSort = "oldest" | "top";
+export type CommentSort = "oldest" | "newest" | "top";
 
 const cursorComment = alias(schema.postComments, "cursor_comment");
 
@@ -374,6 +374,7 @@ const cursorComment = alias(schema.postComments, "cursor_comment");
  * vote (`myVote`: 1, -1, or 0 when not voted or signed out).
  *
  * - "oldest": oldest first.
+ * - "newest": newest first.
  * - "top": highest score first, oldest first among ties. Scores can change
  *   between pages, so a comment may occasionally repeat or be skipped.
  *
@@ -411,12 +412,14 @@ export async function getPostComments(
             or(lt(score, sql`(${cursorScore})`), gt(id, cursor)),
         );
     } else if (cursor) {
-        // Oldest first by server time; the cursor's created_at is looked up.
+        // By server time; the cursor's created_at is looked up.
         const cursorRow = db
             .select({ createdAt: cursorComment.createdAt, id: cursorComment.id })
             .from(cursorComment)
             .where(eq(cursorComment.id, cursor));
-        after = sql`(${schema.postComments.createdAt}, ${id}) > (${cursorRow})`;
+        after = sort === "newest"
+            ? sql`(${schema.postComments.createdAt}, ${id}) < (${cursorRow})`
+            : sql`(${schema.postComments.createdAt}, ${id}) > (${cursorRow})`;
     }
 
     const rows = await db
@@ -440,7 +443,9 @@ export async function getPostComments(
         .orderBy(
             ...(sort === "top"
                 ? [desc(score), asc(id)]
-                : [asc(schema.postComments.createdAt), asc(id)]),
+                : sort === "newest"
+                  ? [desc(schema.postComments.createdAt), desc(id)]
+                  : [asc(schema.postComments.createdAt), asc(id)]),
         )
         .limit(limit + 1);
 

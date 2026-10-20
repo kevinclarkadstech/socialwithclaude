@@ -8,6 +8,7 @@ import {
   IconShare3,
 } from "@tabler/icons-react"
 
+import { PostComments } from "@/components/comments/post-comments"
 import { MediaCarousel } from "@/components/media-carousel"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -41,18 +42,18 @@ const STATUS_LABELS: Record<ListingStatus, string> = {
 
 /**
  * One listing: all its photos, price, details and description, the seller,
- * and Save / Share / Message seller. On your own listing, Message is replaced
- * by a status picker (available, pending, sold).
+ * Save / Share / Message seller, and comments. On your own listing, Message
+ * is replaced by a status picker (available, pending, sold).
  */
 export function ListingDetailPage({
   listingId,
-  myUserId,
+  me,
   onBack,
   onOpenProfile,
   onMessage,
 }: {
   listingId: string
-  myUserId: string
+  me: PersonSummary & { userId: string }
   onBack: () => void
   onOpenProfile: (username: string) => void
   /** Open (or start) a chat with the seller; rejects if that fails. */
@@ -91,12 +92,25 @@ export function ListingDetailPage({
         Back
       </Button>
       {state.status === "ready" ? (
-        <ListingDetail
-          listing={state.listing}
-          isMine={state.listing.author.userId === myUserId}
-          onOpenProfile={onOpenProfile}
-          onMessage={onMessage}
-        />
+        <>
+          <ListingDetail
+            listing={state.listing}
+            isMine={state.listing.author.userId === me.userId}
+            onOpenProfile={onOpenProfile}
+            onMessage={onMessage}
+          />
+          <Card size="sm">
+            <CardContent>
+              <PostComments
+                postId={state.listing.id}
+                postAuthorId={state.listing.author.userId}
+                numComments={state.listing.numComments}
+                me={me}
+                onOpenProfile={onOpenProfile}
+              />
+            </CardContent>
+          </Card>
+        </>
       ) : state.status === "loading" ? null : (
         <p className="text-center text-sm text-muted-foreground">
           {state.status === "not-found"

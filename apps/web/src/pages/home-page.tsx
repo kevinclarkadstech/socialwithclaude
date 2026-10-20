@@ -10,6 +10,7 @@ import { api } from "@/lib/api"
 import { ListingsPage } from "@/pages/listings-page"
 import { type PersonSummary } from "@/lib/people"
 import { ListingDetailPage } from "@/pages/listing-detail-page"
+import { PostPage } from "@/pages/post-page"
 import { ProfilePage } from "@/pages/profile-page"
 
 type Tab = "feed" | "listings" | "messages" | "profile"
@@ -18,18 +19,14 @@ type Tab = "feed" | "listings" | "messages" | "profile"
 type Overlay =
   | { kind: "profile"; username: string }
   | { kind: "listing"; id: string }
+  | { kind: "post"; id: string }
 
 /** The unread badge is refreshed this often. */
 const UNREAD_POLL_MS = 15_000
 
 /** Signed in with a profile: Feed, Listings, Messages and your Profile. */
-export function HomePage({
-  userId,
-  username,
-}: {
-  userId: string
-  username: string
-}) {
+export function HomePage({ me }: { me: PersonSummary & { userId: string } }) {
+  const { userId, username } = me
   const [tab, setTab] = React.useState<Tab>("feed")
   const [openChat, setOpenChat] = React.useState<OpenChat | null>(null)
   const [overlays, setOverlays] = React.useState<Overlay[]>([])
@@ -52,6 +49,10 @@ export function HomePage({
 
   function openListing(id: string) {
     setOverlays((o) => [...o, { kind: "listing", id }])
+  }
+
+  function openPost(id: string) {
+    setOverlays((o) => [...o, { kind: "post", id }])
   }
 
   const back = () => setOverlays((o) => o.slice(0, -1))
@@ -115,16 +116,26 @@ export function HomePage({
             onBack={back}
             onMessage={message}
             onOpenProfile={openProfile}
+            onOpenPost={openPost}
           />
         )}
         {overlay?.kind === "listing" && (
           <ListingDetailPage
             key={`listing:${overlays.length}:${overlay.id}`}
             listingId={overlay.id}
-            myUserId={userId}
+            me={me}
             onBack={back}
             onOpenProfile={openProfile}
             onMessage={message}
+          />
+        )}
+        {overlay?.kind === "post" && (
+          <PostPage
+            key={`post:${overlays.length}:${overlay.id}`}
+            postId={overlay.id}
+            me={me}
+            onBack={back}
+            onOpenProfile={openProfile}
           />
         )}
 
@@ -143,7 +154,11 @@ export function HomePage({
                   Your listing is up. Find it in Listings.
                 </p>
               )}
-              <Feed key={feedVersion} onOpenProfile={openProfile} />
+              <Feed
+                key={feedVersion}
+                onOpenProfile={openProfile}
+                onOpenPost={openPost}
+              />
             </>
           ) : tab === "listings" ? (
             <ListingsPage
@@ -172,6 +187,7 @@ export function HomePage({
               myUserId={userId}
               onMessage={message}
               onOpenProfile={openProfile}
+              onOpenPost={openPost}
             />
           )}
         </div>
