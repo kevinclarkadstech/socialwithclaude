@@ -1,0 +1,33 @@
+/* Mirrors the layout IonTabs gives its inner router outlet. */
+.tabs-layout-panes {
+  position: relative;
+  flex: 1;
+  contain: layout size style;
+}
+
+.tab-pane {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* The wrapper adds no box; the page's .ion-page fills the pane. */
+.tab-stack-page {
+  display: contents;
+}
+
+/* Hidden panes and pages stay mounted so state and scroll position survive.
+   Compound selectors so these always beat the display rules above. */
+.tab-pane.tab-pane-hidden,
+.tab-stack-page.tab-stack-page-hidden {
+  display: none;
+}
+
+/* ion-back-button hides itself unless Ionic's own router says it can go back. */
+ion-back-button.tab-back-button {
+  display: block;
+}
+
+.tab-back-button-wrapper {
+  display: contents;
+}
