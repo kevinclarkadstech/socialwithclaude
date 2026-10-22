@@ -6,19 +6,10 @@ import { Card } from "@/components/ui/card"
 import { Field, FieldError } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { UserAvatar } from "@/components/user-avatar"
-import { displayName, type PersonSummary } from "@/lib/people"
-import { api, apiErrorMessage } from "@/lib/api"
+import type { ChatSummary } from "@/hooks/types"
+import { useChatInbox, useStartChat, type OpenChat } from "@/hooks/use-chats"
+import { displayName } from "@/lib/people"
 import { shortTimeAgo } from "@/lib/time"
-
-type Chat = Awaited<
-  ReturnType<typeof api.chats.getMyChats.query>
->["items"][number]
-
-/** What opening a chat needs. */
-export type OpenChat = { id: string; otherMember: PersonSummary }
-
-/** The inbox is refreshed this often while it's shown. */
-const POLL_MS = 10_000
 
 /** The inbox: chats with the newest message first, and starting a new one. */
 export function ChatList({
@@ -30,32 +21,7 @@ export function ChatList({
   onOpen: (chat: OpenChat) => void
   className?: string
 }) {
-  const [chats, setChats] = React.useState<Chat[] | null>(null)
-  const [error, setError] = React.useState(false)
-
-  React.useEffect(() => {
-    let cancelled = false
-    async function load() {
-      try {
-        // The first page is plenty for now; older chats come with paging.
-        const page = await api.chats.getMyChats.query({ limit: 50 })
-        if (!cancelled) {
-          setChats(page.items)
-          setError(false)
-        }
-      } catch {
-        if (!cancelled) setError(true)
-      }
-    }
-    load()
-    const timer = setInterval(() => {
-      if (!document.hidden) load()
-    }, POLL_MS)
-    return () => {
-      cancelled = true
-      clearInterval(timer)
-    }
-  }, [])
+  const { chats, error } = useChatInbox()
 
   return (
     <div className={cn("flex flex-col gap-4", className)}>
@@ -94,7 +60,7 @@ function ChatRow({
   mine,
   onOpen,
 }: {
-  chat: Chat
+  chat: ChatSummary
   mine: boolean
   onOpen: (chat: OpenChat) => void
 }) {
@@ -145,6 +111,7 @@ function ChatRow({
 
 /** Start (or reopen) a chat by username. */
 function NewChat({ onOpen }: { onOpen: (chat: OpenChat) => void }) {
+  const startChat = useStartChat()
   const [error, setError] = React.useState<string | null>(null)
   const [pending, setPending] = React.useState(false)
 
@@ -158,24 +125,19 @@ function NewChat({ onOpen }: { onOpen: (chat: OpenChat) => void }) {
 
     setError(null)
     setPending(true)
-    try {
-      const [chat, profile] = await Promise.all([
-        api.chats.getOrCreateDirectChat.mutate({ username }),
-        api.users.getUserProfile.query({ username }),
-      ])
+    const result = await startChat(username)
+    setPending(false)
+    if (result.ok) {
       form.reset()
-      onOpen({ id: chat.id, otherMember: profile })
-    } catch (err) {
-      const message = apiErrorMessage(err)
+      onOpen(result.chat)
+    } else {
       setError(
-        message === "CANNOT_CHAT_WITH_SELF"
+        result.error === "self"
           ? "That's you."
-          : message === "NOT_FOUND"
+          : result.error === "not-found"
             ? `No one goes by @${username}.`
             : "Something went wrong. Please try again."
       )
-    } finally {
-      setPending(false)
     }
   }
 

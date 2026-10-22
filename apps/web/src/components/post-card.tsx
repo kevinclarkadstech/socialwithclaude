@@ -11,16 +11,12 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { MediaCarousel } from "@/components/media-carousel"
 import { UserAvatar } from "@/components/user-avatar"
+import type { Post } from "@/hooks/types"
 import { useCommentCount } from "@/hooks/use-comment-count"
 import { useSavePost } from "@/hooks/use-save-post"
 import { displayName } from "@/lib/people"
-import type { api } from "@/lib/api"
 import { sharePost } from "@/lib/share"
 import { fullDateTime, timeAgo } from "@/lib/time"
-
-export type Post = Awaited<
-  ReturnType<typeof api.posts.getFeed.query>
->["items"][number]
 
 const compact = new Intl.NumberFormat(undefined, { notation: "compact" })
 

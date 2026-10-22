@@ -15,22 +15,13 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { UserAvatar } from "@/components/user-avatar"
+import type { Listing, ListingStatus } from "@/hooks/types"
+import { useListing, useListingStatus } from "@/hooks/use-listings"
 import { useSavePost } from "@/hooks/use-save-post"
-import { api, apiErrorMessage } from "@/lib/api"
 import { formatPrice } from "@/lib/listings"
 import { displayName, type PersonSummary } from "@/lib/people"
 import { sharePost } from "@/lib/share"
 import { fullDateTime, timeAgo } from "@/lib/time"
-
-type Post = NonNullable<Awaited<ReturnType<typeof api.posts.getPostById.query>>>
-type Listing = Post & { listing: NonNullable<Post["listing"]> }
-type ListingStatus = Listing["listing"]["status"]
-
-type State =
-  | { status: "loading" }
-  | { status: "not-found" }
-  | { status: "error" }
-  | { status: "ready"; listing: Listing }
 
 const compact = new Intl.NumberFormat(undefined, { notation: "compact" })
 
@@ -59,31 +50,7 @@ export function ListingDetailPage({
   /** Open (or start) a chat with the seller; rejects if that fails. */
   onMessage: (seller: PersonSummary) => Promise<void>
 }) {
-  const [state, setState] = React.useState<State>({ status: "loading" })
-
-  React.useEffect(() => {
-    let cancelled = false
-    api.posts.getPostById
-      .query({ id: listingId })
-      .then((post) => {
-        if (cancelled) return
-        setState(
-          post.listing
-            ? { status: "ready", listing: post as Listing }
-            : { status: "not-found" }
-        )
-      })
-      .catch((err) => {
-        if (cancelled) return
-        setState({
-          status:
-            apiErrorMessage(err) === "POST_NOT_FOUND" ? "not-found" : "error",
-        })
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [listingId])
+  const state = useListing(listingId)
 
   return (
     <div className="flex flex-col gap-4">
@@ -94,17 +61,17 @@ export function ListingDetailPage({
       {state.status === "ready" ? (
         <>
           <ListingDetail
-            listing={state.listing}
-            isMine={state.listing.author.userId === me.userId}
+            listing={state.data}
+            isMine={state.data.author.userId === me.userId}
             onOpenProfile={onOpenProfile}
             onMessage={onMessage}
           />
           <Card size="sm">
             <CardContent>
               <PostComments
-                postId={state.listing.id}
-                postAuthorId={state.listing.author.userId}
-                numComments={state.listing.numComments}
+                postId={state.data.id}
+                postAuthorId={state.data.author.userId}
+                numComments={state.data.numComments}
                 me={me}
                 onOpenProfile={onOpenProfile}
               />
@@ -113,7 +80,7 @@ export function ListingDetailPage({
         </>
       ) : state.status === "loading" ? null : (
         <p className="text-center text-sm text-muted-foreground">
-          {state.status === "not-found"
+          {state.status === "failed" && state.reason === "not-found"
             ? "This listing isn't available."
             : "Couldn't load this listing."}
         </p>
@@ -134,7 +101,7 @@ function ListingDetail({
   onMessage: (seller: PersonSummary) => Promise<void>
 }) {
   const details = listing.listing
-  const [status, setStatus] = React.useState<ListingStatus>(details.status)
+  const { status, setStatus } = useListingStatus(listing.id, details.status)
   const { saved, count, toggle } = useSavePost(
     listing.id,
     listing.isSaved,
@@ -165,16 +132,8 @@ function ListingDetail({
   }
 
   async function changeStatus(next: ListingStatus) {
-    const previous = status
-    setStatus(next)
     setError(null)
-    try {
-      await api.listings.setListingStatus.mutate({
-        id: listing.id,
-        status: next,
-      })
-    } catch {
-      setStatus(previous)
+    if (!(await setStatus(next))) {
       setError("Couldn't update the status. Please try again.")
     }
   }

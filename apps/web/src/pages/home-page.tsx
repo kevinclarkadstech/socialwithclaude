@@ -1,14 +1,19 @@
 import * as React from "react"
 import { cn } from "cn"
 
-import { ChatList, type OpenChat } from "@/components/chat/chat-list"
+import { ChatList } from "@/components/chat/chat-list"
 import { ChatView } from "@/components/chat/chat-view"
 import { Feed } from "@/components/post-list"
 import { NewPostForm } from "@/components/new-post-form"
 import { Button } from "@/components/ui/button"
-import { api } from "@/lib/api"
-import { ListingsPage } from "@/pages/listings-page"
+import {
+  useStartChat,
+  useUnreadMessageCount,
+  type OpenChat,
+} from "@/hooks/use-chats"
+import { useFollowRequestCount } from "@/hooks/use-follow-requests"
 import { type PersonSummary } from "@/lib/people"
+import { ListingsPage } from "@/pages/listings-page"
 import { ListingDetailPage } from "@/pages/listing-detail-page"
 import { PostPage } from "@/pages/post-page"
 import { ProfilePage } from "@/pages/profile-page"
@@ -21,9 +26,6 @@ type Overlay =
   | { kind: "listing"; id: string }
   | { kind: "post"; id: string }
 
-/** The tab badges (unread messages, follow requests) refresh this often. */
-const BADGE_POLL_MS = 15_000
-
 /** Signed in with a profile: Feed, Listings, Messages and your Profile. */
 export function HomePage({ me }: { me: PersonSummary & { userId: string } }) {
   const { userId, username } = me
@@ -31,11 +33,10 @@ export function HomePage({ me }: { me: PersonSummary & { userId: string } }) {
   const [openChat, setOpenChat] = React.useState<OpenChat | null>(null)
   const [overlays, setOverlays] = React.useState<Overlay[]>([])
   const overlay = overlays.at(-1)
-  const { count: unread, refresh: refreshUnread } = usePolledCount(
-    api.chats.getMyUnreadCount.query
-  )
+  const { count: unread, refresh: refreshUnread } = useUnreadMessageCount()
   const { count: followRequests, refresh: refreshFollowRequests } =
-    usePolledCount(api.users.getMyFollowRequestCount.query)
+    useFollowRequestCount()
+  const startChat = useStartChat()
   // Bumped after posting so the feed reloads with the new post.
   const [feedVersion, setFeedVersion] = React.useState(0)
   const [listed, setListed] = React.useState(false)
@@ -61,11 +62,11 @@ export function HomePage({ me }: { me: PersonSummary & { userId: string } }) {
 
   const back = () => setOverlays((o) => o.slice(0, -1))
 
+  /** Opens the chat with `person`; rejects if it can't be opened. */
   async function message(person: PersonSummary) {
-    const chat = await api.chats.getOrCreateDirectChat.mutate({
-      username: person.username,
-    })
-    setOpenChat({ id: chat.id, otherMember: person })
+    const result = await startChat(person.username, person)
+    if (!result.ok) throw new Error(`Couldn't open the chat: ${result.error}`)
+    setOpenChat(result.chat)
     showTab("messages")
   }
 
@@ -224,35 +225,4 @@ function CountBadge({ count, label }: { count: number; label: string }) {
       {count > 99 ? "99+" : count}
     </span>
   )
-}
-
-/**
- * A count for a tab badge (unread messages, follow requests). Refreshed on a
- * timer, and by `refresh` when something changes it here.
- */
-function usePolledCount(query: () => Promise<number>) {
-  const [count, setCount] = React.useState(0)
-  const [version, setVersion] = React.useState(0)
-  // The first query is kept; callers pass a stable API method anyway.
-  const queryRef = React.useRef(query)
-
-  React.useEffect(() => {
-    let cancelled = false
-    const load = () =>
-      queryRef
-        .current()
-        .then((n) => !cancelled && setCount(n))
-        .catch(() => {})
-    load()
-    const timer = setInterval(() => {
-      if (!document.hidden) load()
-    }, BADGE_POLL_MS)
-    return () => {
-      cancelled = true
-      clearInterval(timer)
-    }
-  }, [version])
-
-  const refresh = React.useCallback(() => setVersion((v) => v + 1), [])
-  return { count, refresh }
 }

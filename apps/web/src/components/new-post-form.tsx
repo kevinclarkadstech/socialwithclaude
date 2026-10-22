@@ -8,7 +8,6 @@ import {
   postBody,
   type ListingPriceType,
 } from "@myapp/shared/types/posts"
-import { monotonicFactory } from "ulid"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -22,9 +21,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Textarea } from "@/components/ui/textarea"
-import { api, apiErrorMessage } from "@/lib/api"
-
-const ulid = monotonicFactory()
+import { useCreatePost, type NewPost } from "@/hooks/use-create-post"
 
 type FieldName = "body" | "title" | "priceCents" | "condition" | "location"
 type FieldErrors = Partial<Record<FieldName, string>>
@@ -55,13 +52,12 @@ export function NewPostForm({
 }: {
   onCreated: (kind: "post" | "listing") => void
 }) {
+  const createPost = useCreatePost()
   const [isListing, setIsListing] = React.useState(false)
   const [priceType, setPriceType] = React.useState<ListingPriceType>("fixed")
   const [fieldErrors, setFieldErrors] = React.useState<FieldErrors>({})
   const [formError, setFormError] = React.useState<string | null>(null)
   const [pending, setPending] = React.useState(false)
-  // One id per submission, reused if it's retried, so it's never created twice.
-  const idRef = React.useRef<string | null>(null)
 
   const needsPrice = priceType === "fixed" || priceType === "negotiable"
 
@@ -81,7 +77,7 @@ export function NewPostForm({
     const data = new FormData(form)
 
     setFormError(null)
-    let create: (id: string) => Promise<unknown>
+    let post: NewPost
     if (isListing) {
       const parsed = listingInput.safeParse({
         body: data.get("body"),
@@ -92,31 +88,28 @@ export function NewPostForm({
         location: data.get("location"),
       })
       if (!parsed.success) return showErrors(parsed.error.issues)
-      create = (id) => api.listings.createListing.mutate({ id, ...parsed.data })
+      post = { kind: "listing", listing: parsed.data }
     } else {
       const parsed = postBody.safeParse(data.get("body"))
       if (!parsed.success) return showErrors(parsed.error.issues)
-      create = (id) => api.posts.createPost.mutate({ id, body: parsed.data })
+      post = { kind: "post", body: parsed.data }
     }
     setFieldErrors({})
 
-    idRef.current ??= ulid()
     setPending(true)
-    try {
-      await create(idRef.current)
-      idRef.current = null
+    const result = await createPost(post)
+    setPending(false)
+    if (result === "ok") {
       form.reset()
       setIsListing(false)
       setPriceType("fixed")
-      onCreated(isListing ? "listing" : "post")
-    } catch (err) {
+      onCreated(post.kind)
+    } else {
       setFormError(
-        apiErrorMessage(err) === "POSTING_DISABLED"
+        result === "posting-disabled"
           ? "Posting is turned off right now."
           : "Couldn't post. Please try again."
       )
-    } finally {
-      setPending(false)
     }
   }
 
@@ -152,8 +145,6 @@ export function NewPostForm({
                 onCheckedChange={(checked) => {
                   setIsListing(checked)
                   setFieldErrors({})
-                  // A retry id belongs to one kind; switching starts fresh.
-                  idRef.current = null
                 }}
               />
               <FieldLabel htmlFor="post-is-listing" className="font-normal">

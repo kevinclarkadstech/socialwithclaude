@@ -19,8 +19,8 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { api, apiErrorMessage } from "@/lib/api"
-import { signOut } from "@/lib/auth"
+import { useAuth } from "@/hooks/use-auth"
+import { useCompleteProfile } from "@/hooks/use-complete-profile"
 
 type FieldErrors = Partial<
   Record<"username" | "firstName" | "lastName" | "bio", string>
@@ -42,6 +42,8 @@ export function OnboardingForm({
   className,
   ...props
 }: React.ComponentProps<"div"> & { email: string; onComplete: () => void }) {
+  const completeProfile = useCompleteProfile()
+  const { signOut } = useAuth()
   const [fieldErrors, setFieldErrors] = React.useState<FieldErrors>({})
   const [formError, setFormError] = React.useState<string | null>(null)
   const [pending, setPending] = React.useState(false)
@@ -69,24 +71,12 @@ export function OnboardingForm({
     setFieldErrors({})
     setFormError(null)
     setPending(true)
-    try {
-      await api.auth.signUp.mutate(parsed.data)
-      onComplete()
-    } catch (err) {
-      switch (apiErrorMessage(err)) {
-        case "USERNAME_TAKEN":
-          setFieldErrors({ username: "That username is taken." })
-          break
-        case "PROFILE_ALREADY_EXISTS":
-          // Finished in another tab; carry on.
-          onComplete()
-          break
-        default:
-          setFormError("Something went wrong. Please try again.")
-      }
-    } finally {
-      setPending(false)
-    }
+    const result = await completeProfile(parsed.data)
+    setPending(false)
+    if (result === "ok") onComplete()
+    else if (result === "username-taken") {
+      setFieldErrors({ username: "That username is taken." })
+    } else setFormError("Something went wrong. Please try again.")
   }
 
   const invalid = (name: keyof FieldErrors) =>

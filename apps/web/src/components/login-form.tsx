@@ -17,14 +17,13 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { signIn, signUp } from "@/lib/auth"
+import { useAuth, type AuthError } from "@/hooks/use-auth"
 
 type Mode = "login" | "signup"
 
 /** better-auth's default minimum password length. */
 const MIN_PASSWORD_LENGTH = 8
 
-type AuthError = { status: number; code?: string }
 type FieldName = "email" | "password" | "confirmPassword"
 /** What to show, and which fields it's about (all of them when omitted). */
 type FormError = { message: string; fields?: FieldName[] }
@@ -96,6 +95,7 @@ export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+  const auth = useAuth()
   const [mode, setMode] = React.useState<Mode>("login")
   const [error, setError] = React.useState<FormError | null>(null)
   const [pending, setPending] = React.useState(false)
@@ -127,12 +127,10 @@ export function LoginForm({
     try {
       // On success the session updates and the app leaves this page.
       if (mode === "login") {
-        const { error } = await signIn.email({ email, password })
+        const error = await auth.signIn(email, password)
         if (error) setError({ message: signInErrorMessage(error) })
       } else {
-        // better-auth requires a name; the real one is set in onboarding.
-        const name = email.split("@")[0]
-        const { error } = await signUp.email({ email, password, name })
+        const error = await auth.signUp(email, password)
         if (error) setError(signUpError(error))
       }
     } catch {

@@ -6,20 +6,12 @@ import { PostList } from "@/components/post-list"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { UserAvatar } from "@/components/user-avatar"
-import { api, apiErrorMessage } from "@/lib/api"
-import { signOut } from "@/lib/auth"
+import type { FollowStatus, Profile } from "@/hooks/types"
+import { useAuth } from "@/hooks/use-auth"
+import { useUserPosts } from "@/hooks/use-posts"
+import { useFollow, useProfile } from "@/hooks/use-profile"
 import { displayName } from "@/lib/people"
 import { monthYear } from "@/lib/time"
-
-export type Profile = Awaited<ReturnType<typeof api.users.getUserProfile.query>>
-
-type FollowStatus = Profile["followStatus"]
-
-type ProfileState =
-  | { status: "loading" }
-  | { status: "not-found" }
-  | { status: "error" }
-  | { status: "ready"; profile: Profile }
 
 const compact = new Intl.NumberFormat(undefined, { notation: "compact" })
 
@@ -48,27 +40,9 @@ export function ProfilePage({
   /** Called after you accept or deny a follow request. */
   onFollowRequestsChanged?: () => void
 }) {
-  const [state, setState] = React.useState<ProfileState>({ status: "loading" })
+  const state = useProfile(username)
   // Followers gained by accepting requests here (shown in the count).
   const [accepted, setAccepted] = React.useState(0)
-
-  React.useEffect(() => {
-    let cancelled = false
-    api.users.getUserProfile
-      .query({ username })
-      .then((profile) => !cancelled && setState({ status: "ready", profile }))
-      .catch(
-        (err) =>
-          !cancelled &&
-          setState({
-            status:
-              apiErrorMessage(err) === "NOT_FOUND" ? "not-found" : "error",
-          })
-      )
-    return () => {
-      cancelled = true
-    }
-  }, [username])
 
   return (
     <div className="flex flex-col gap-4">
@@ -87,36 +61,27 @@ export function ProfilePage({
       {state.status === "ready" ? (
         <>
           <ProfileHeader
-            profile={state.profile}
-            isMe={state.profile.userId === myUserId}
+            profile={state.data}
+            isMe={state.data.userId === myUserId}
             acceptedFollowers={accepted}
             onMessage={onMessage}
           />
-          {state.profile.userId === myUserId && (
+          {state.data.userId === myUserId && (
             <FollowRequests
               onOpenProfile={onOpenProfile}
               onAccepted={() => setAccepted((n) => n + 1)}
               onChanged={onFollowRequestsChanged}
             />
           )}
-          <PostList
-            key={state.profile.userId}
-            loadPage={(cursor) =>
-              api.posts.getUserPosts.query({ username, cursor })
-            }
+          <UserPosts
+            username={state.data.username}
             onOpenProfile={onOpenProfile}
             onOpenPost={onOpenPost}
-            emptyMessage={`@${state.profile.username} hasn't posted yet.`}
-            errorMessage={(err) =>
-              apiErrorMessage(err) === "POSTS_FOLLOWERS_ONLY"
-                ? `Only followers can see @${state.profile.username}'s posts.`
-                : "Couldn't load posts."
-            }
           />
         </>
       ) : state.status === "loading" ? null : (
         <p className="text-center text-sm text-muted-foreground">
-          {state.status === "not-found"
+          {state.status === "failed" && state.reason === "not-found"
             ? "This account isn't available."
             : "Couldn't load this profile."}
         </p>
@@ -143,47 +108,16 @@ function ProfileHeader({
   acceptedFollowers: number
   onMessage: (profile: Profile) => Promise<void>
 }) {
-  const [followStatus, setFollowStatus] = React.useState(profile.followStatus)
+  const { signOut } = useAuth()
+  const {
+    followStatus,
+    pending,
+    toggle: toggleFollow,
+    followerDelta,
+  } = useFollow(profile)
   const [messaging, setMessaging] = React.useState(false)
   const [messageFailed, setMessageFailed] = React.useState(false)
-  const [pending, setPending] = React.useState(false)
-  // Only an accepted follow counts as a follower.
-  const numFollowers =
-    profile.numFollowers +
-    acceptedFollowers +
-    Number(followStatus === "following") -
-    Number(profile.followStatus === "following")
-
-  /**
-   * Follow ("Following", or "Requested" on a followers-only profile), or
-   * undo: unfollow, or cancel the request.
-   */
-  async function toggleFollow() {
-    const previous = followStatus
-    const following = previous === "none"
-    setFollowStatus(
-      following
-        ? profile.requiresApproval
-          ? "requested"
-          : "following"
-        : "none"
-    )
-    setPending(true)
-    try {
-      if (following) {
-        const result = await api.users.follow.mutate({
-          username: profile.username,
-        })
-        setFollowStatus(result.followStatus)
-      } else {
-        await api.users.unfollow.mutate({ username: profile.username })
-      }
-    } catch {
-      setFollowStatus(previous)
-    } finally {
-      setPending(false)
-    }
-  }
+  const numFollowers = profile.numFollowers + acceptedFollowers + followerDelta
 
   async function message() {
     setMessaging(true)
@@ -277,5 +211,31 @@ function ProfileHeader({
         )}
       </CardContent>
     </Card>
+  )
+}
+
+/** A user's posts, or why you can't see them. */
+function UserPosts({
+  username,
+  onOpenProfile,
+  onOpenPost,
+}: {
+  username: string
+  onOpenProfile: (username: string) => void
+  onOpenPost: (postId: string) => void
+}) {
+  const list = useUserPosts(username)
+  return (
+    <PostList
+      list={list}
+      onOpenProfile={onOpenProfile}
+      onOpenPost={onOpenPost}
+      emptyMessage={`@${username} hasn't posted yet.`}
+      errorMessage={(failure) =>
+        failure === "followers-only"
+          ? `Only followers can see @${username}'s posts.`
+          : "Couldn't load posts."
+      }
+    />
   )
 }
