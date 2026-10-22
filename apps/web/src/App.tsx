@@ -1,19 +1,19 @@
 import { Button } from "@/components/ui/button"
+import { useSession } from "@/hooks/use-auth"
 import { useMe } from "@/hooks/use-me"
-import { useSession } from "@/lib/auth"
 import { HomePage } from "@/pages/home-page"
 import { LoginPage } from "@/pages/login-page"
 import { OnboardingPage } from "@/pages/onboarding-page"
 
 export function App() {
-  const { data: session, isPending } = useSession()
+  const { pending, user } = useSession()
 
   // Checking for an existing session; render nothing to avoid a login flash.
-  if (isPending) return null
+  if (pending) return null
 
-  if (!session) return <LoginPage />
+  if (!user) return <LoginPage />
 
-  return <SignedIn userId={session.user.id} email={session.user.email} />
+  return <SignedIn userId={user.id} email={user.email} />
 }
 
 /** Signed in: onboarding until the user has a profile, then the app. */
