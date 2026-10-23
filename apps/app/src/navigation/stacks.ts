@@ -61,7 +61,7 @@ export function hrefOf({ pathname, search, hash }: Path): string {
   return pathname + search + hash;
 }
 
-function normalize(pathname: string): string {
+export function normalize(pathname: string): string {
   return pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
 }
 

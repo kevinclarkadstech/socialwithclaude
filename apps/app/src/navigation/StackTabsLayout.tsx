@@ -1,32 +1,26 @@
 import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useLocation, useRoutes, type Location, type RouteObject } from 'react-router';
-import { IonIcon, IonLabel, IonTabBar, IonTabButton, getIonPageElement } from '@ionic/react';
+import { getIonPageElement } from '@ionic/react';
 import { useTabNavigation } from './TabNavigationContext';
 import { PageContext } from './PageContext';
+import { TabBar } from './TabBar';
+import { tabRoutes } from './tabRoutes';
 import { tabIdForPath, type StackEntry, type TabDefinition } from './stacks';
 import { animationsEnabled, runPageTransition, type TransitionDirection } from './transition';
 import { useSwipeBack, type SwipeBackOptions } from './useSwipeBack';
 import './TabsLayout.css';
 
-export function TabsLayout() {
-  const { tabs, sharedRoutes, activeTab, stacks, visitedTabs, switchTab } = useTabNavigation();
+/**
+ * Native tab layout: each tab's stack stays mounted with only its top page
+ * shown, with page transitions and swipe-back. Browsers use WebTabsLayout.
+ */
+export function StackTabsLayout() {
+  const { tabs, sharedRoutes, activeTab, stacks, visitedTabs } = useTabNavigation();
   const location = useLocation();
 
   if (!tabIdForPath(tabs, location.pathname)) {
     return <Navigate to={tabs[0].path} replace />;
   }
-
-  const onTabClick = (tabId: string) => {
-    if (tabId === activeTab && stacks[tabId].length === 1) {
-      // Native behavior: tapping the active tab at its root scrolls to the top.
-      document
-        .querySelector<HTMLIonContentElement>(
-          `[data-tab-pane="${tabId}"] > .tab-stack-page:not(.tab-stack-page-hidden) ion-content`,
-        )
-        ?.scrollToTop(300);
-    }
-    switchTab(tabId);
-  };
 
   return (
     <div className="ion-page tabs-layout">
@@ -43,14 +37,7 @@ export function TabsLayout() {
             />
           ))}
       </div>
-      <IonTabBar slot="bottom" selectedTab={activeTab}>
-        {tabs.map((tab) => (
-          <IonTabButton key={tab.id} tab={tab.id} href={tab.path} onClick={() => onTabClick(tab.id)}>
-            <IonIcon aria-hidden="true" icon={tab.icon} />
-            <IonLabel>{tab.label}</IonLabel>
-          </IonTabButton>
-        ))}
-      </IonTabBar>
+      <TabBar />
     </div>
   );
 }
@@ -92,20 +79,7 @@ function planTransition(
 
 /** One tab's stack. Every page in the stack stays mounted; only the top one is shown. */
 const TabPane = memo(function TabPane({ tab, sharedRoutes, active, entries }: TabPaneProps) {
-  const routes = useMemo<RouteObject[]>(
-    () => [
-      {
-        path: tab.path.replace(/^\/+/, ''),
-        children: [
-          { index: true, element: tab.element },
-          ...(tab.routes ?? []),
-          ...sharedRoutes,
-          { path: '*', element: <Navigate to={tab.path} replace /> },
-        ],
-      },
-    ],
-    [tab, sharedRoutes],
-  );
+  const routes = useMemo(() => tabRoutes(tab, sharedRoutes), [tab, sharedRoutes]);
 
   const { goBack } = useTabNavigation();
   const paneRef = useRef<HTMLDivElement>(null);

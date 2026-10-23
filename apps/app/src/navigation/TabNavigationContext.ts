@@ -1,11 +1,22 @@
-import { createContext, useContext } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import type { RouteObject } from 'react-router';
 import type { StackEntry, TabDefinition } from './stacks';
+
+export interface TabNavigationProviderProps {
+  tabs: TabDefinition[];
+  /** Routes (relative paths) that can be opened in any tab, e.g. "items/:id". */
+  sharedRoutes?: RouteObject[];
+  children: ReactNode;
+}
 
 export interface TabNavigationContextValue {
   tabs: TabDefinition[];
   sharedRoutes: RouteObject[];
   activeTab: string;
+  /**
+   * Each tab's pages that stay mounted, the shown one last. Natively this is
+   * the tab's back stack; on the web, recently shown pages of the tab.
+   */
   stacks: Record<string, StackEntry[]>;
   visitedTabs: string[];
   /** True when the active tab has a page to go back to. */
