@@ -11,8 +11,8 @@ import {
 const NO_ROUTES: RouteObject[] = [];
 
 /**
- * Native tab navigation: each tab keeps a stack of pages, like a native app.
- * Used on iOS and Android (see index.ts); browsers use WebTabNavigationProvider.
+ * Tab navigation where each tab keeps a stack of pages, like a native app,
+ * in the native app and in browsers alike.
  */
 export function StackTabNavigationProvider({ tabs, sharedRoutes = NO_ROUTES, children }: Props) {
   const location = useLocation();

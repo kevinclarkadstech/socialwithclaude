@@ -6,6 +6,7 @@ import {
   type Animation,
   type TransitionOptions,
 } from '@ionic/react';
+import { isNativePlatform } from './platform';
 
 export type TransitionDirection = 'forward' | 'back';
 
@@ -16,8 +17,9 @@ export interface PageTransition {
   cleanUp: () => void;
 }
 
+/** Page transitions only run in the native app; in a browser pages switch instantly. */
 export function animationsEnabled(): boolean {
-  return getConfig()?.getBoolean('animated', true) ?? true;
+  return isNativePlatform && (getConfig()?.getBoolean('animated', true) ?? true);
 }
 
 function currentMode(): 'ios' | 'md' {
@@ -131,7 +133,12 @@ export interface SwipeBackTransition {
   cleanUp: () => void;
 }
 
+/**
+ * Edge swipe to go back, in the native app only: browsers have their own
+ * back gestures (e.g. iOS Safari's edge swipe), which this would fight.
+ */
 export function swipeBackEnabled(): boolean {
+  if (!isNativePlatform) return false;
   return getConfig()?.getBoolean('swipeBackEnabled', currentMode() === 'ios') ?? currentMode() === 'ios';
 }
 

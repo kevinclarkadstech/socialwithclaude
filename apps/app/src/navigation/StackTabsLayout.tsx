@@ -11,8 +11,9 @@ import { useSwipeBack, type SwipeBackOptions } from './useSwipeBack';
 import './TabsLayout.css';
 
 /**
- * Native tab layout: each tab's stack stays mounted with only its top page
- * shown, with page transitions and swipe-back. Browsers use WebTabsLayout.
+ * Each tab's stack stays mounted with only its top page shown. In the native
+ * app pages animate and support swipe-back; in a browser they switch
+ * instantly (see transition.ts).
  */
 export function StackTabsLayout() {
   const { tabs, sharedRoutes, activeTab, stacks, visitedTabs } = useTabNavigation();
