@@ -1,25 +1,20 @@
-import { useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useNavigationType, NavigationType, type RouteObject } from 'react-router';
 import { NavContext, type BackButtonEvent, type NavContextState, type RouterDirection } from '@ionic/react';
+import { applyLocation, createInitialState, hrefOf, withIntent } from './stacks';
 import {
-  applyLocation,
-  createInitialState,
-  hrefOf,
-  withIntent,
-  type TabDefinition,
-} from './stacks';
-import { TabNavigationContext, type TabNavigationContextValue } from './TabNavigationContext';
-
-interface Props {
-  tabs: TabDefinition[];
-  /** Routes (relative paths) that can be pushed onto any tab's stack, e.g. "items/:id". */
-  sharedRoutes?: RouteObject[];
-  children: ReactNode;
-}
+  TabNavigationContext,
+  type TabNavigationContextValue,
+  type TabNavigationProviderProps as Props,
+} from './TabNavigationContext';
 
 const NO_ROUTES: RouteObject[] = [];
 
-export function TabNavigationProvider({ tabs, sharedRoutes = NO_ROUTES, children }: Props) {
+/**
+ * Native tab navigation: each tab keeps a stack of pages, like a native app.
+ * Used on iOS and Android (see index.ts); browsers use WebTabNavigationProvider.
+ */
+export function StackTabNavigationProvider({ tabs, sharedRoutes = NO_ROUTES, children }: Props) {
   const location = useLocation();
   const navigationType = useNavigationType();
   const navigate = useNavigate();
