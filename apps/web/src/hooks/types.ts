@@ -35,3 +35,8 @@ export type FollowRequest = Page<
 export type ChatSummary = Page<
   Awaited<ReturnType<typeof api.chats.getMyChats.query>>
 >
+
+/** A device or browser you're signed in on. */
+export type SignedInSession = Awaited<
+  ReturnType<typeof api.auth.getMySessions.query>
+>[number]
