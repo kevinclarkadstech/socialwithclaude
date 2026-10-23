@@ -3,6 +3,7 @@ import { IconArrowLeft, IconMessageCircle } from "@tabler/icons-react"
 
 import { FollowRequests } from "@/components/follow-requests"
 import { PostList } from "@/components/post-list"
+import { SignedInDevices } from "@/components/signed-in-devices"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { UserAvatar } from "@/components/user-avatar"
@@ -73,6 +74,7 @@ export function ProfilePage({
               onChanged={onFollowRequestsChanged}
             />
           )}
+          {state.data.userId === myUserId && <SignedInDevices />}
           <UserPosts
             username={state.data.username}
             onOpenProfile={onOpenProfile}
