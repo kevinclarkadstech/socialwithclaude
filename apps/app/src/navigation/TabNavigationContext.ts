@@ -13,10 +13,7 @@ export interface TabNavigationContextValue {
   tabs: TabDefinition[];
   sharedRoutes: RouteObject[];
   activeTab: string;
-  /**
-   * Each tab's pages that stay mounted, the shown one last. Natively this is
-   * the tab's back stack; on the web, recently shown pages of the tab.
-   */
+  /** Each tab's back stack: its pages, all mounted, the shown one last. */
   stacks: Record<string, StackEntry[]>;
   visitedTabs: string[];
   /** True when the active tab has a page to go back to. */
