@@ -7,16 +7,16 @@ import {
     getPostByIdQuery,
     getPostCommentsQuery,
     getUserPostsQuery,
+    getFeedInput,
+    getMySavedPostsInput,
+    getPostByIdInput,
+    getPostCommentsInput,
+    getUserPostsInput,
     type GetFeedDependencies,
-    type GetFeedInput,
     type GetMySavedPostsDependencies,
-    type GetMySavedPostsInput,
     type GetPostByIdDependencies,
-    type GetPostByIdInput,
     type GetPostCommentsDependencies,
-    type GetPostCommentsInput,
     type GetUserPostsDependencies,
-    type GetUserPostsInput,
 } from "@myapp/shared/domains/posts";
 
 import {
@@ -96,15 +96,6 @@ export async function searchVisiblePosts(
     );
 }
 
-/**
- * Lets tRPC pass the raw input through untouched: the shared queries validate
- * it themselves and return a "validation" error instead of throwing.
- */
-const unvalidated =
-    <T>() =>
-    (input: unknown) =>
-        input as T;
-
 type PostQueryDependencies = GetPostByIdDependencies &
     GetFeedDependencies &
     GetUserPostsDependencies &
@@ -172,17 +163,18 @@ function postQueryDependencies(ctx: TRPCContext): PostQueryDependencies {
  */
 export const postsRouter = router({
     /*
-     * Reads return the shared query's Result as-is ({ value, error }), with
-     * no tRPC errors: see the queries in @myapp/shared/domains/posts.
+     * Reads: tRPC validates the input with the shared schemas, then the
+     * shared query's Result ({ value, error }) is returned as-is: see the
+     * queries in @myapp/shared/domains/posts.
      */
 
     /** One post or listing. Fails with "entity-not-found" if it doesn't exist or the caller can't see it. */
-    getPostById: procedure.input(unvalidated<GetPostByIdInput>()).query(({ ctx, input }) =>
+    getPostById: procedure.input(getPostByIdInput).query(({ ctx, input }) =>
         getPostByIdQuery({ input, context: queryContext(ctx), dependencies: postQueryDependencies(ctx) }),
     ),
 
     /** The Feed tab: regular posts the caller can see, newest first. Pass `nextCursor` as `cursor`. */
-    getFeed: procedure.input(unvalidated<GetFeedInput>()).query(({ ctx, input }) =>
+    getFeed: procedure.input(getFeedInput).query(({ ctx, input }) =>
         getFeedQuery({ input, context: queryContext(ctx), dependencies: postQueryDependencies(ctx) }),
     ),
 
@@ -191,7 +183,7 @@ export const postsRouter = router({
      * "entity-not-found" (no such user, or blocked) or "authorization" (their
      * profile is followers-only). Pass `nextCursor` as `cursor`.
      */
-    getUserPosts: procedure.input(unvalidated<GetUserPostsInput>()).query(({ ctx, input }) =>
+    getUserPosts: procedure.input(getUserPostsInput).query(({ ctx, input }) =>
         getUserPostsQuery({ input, context: queryContext(ctx), dependencies: postQueryDependencies(ctx) }),
     ),
 
@@ -222,7 +214,7 @@ export const postsRouter = router({
      * no longer see. Fails with "authentication" when signed out. Pass
      * `nextCursor` as `cursor`.
      */
-    getMySavedPosts: procedure.input(unvalidated<GetMySavedPostsInput>()).query(({ ctx, input }) =>
+    getMySavedPosts: procedure.input(getMySavedPostsInput).query(({ ctx, input }) =>
         getMySavedPostsQuery({ input, context: queryContext(ctx), dependencies: postQueryDependencies(ctx) }),
     ),
 
@@ -231,7 +223,7 @@ export const postsRouter = router({
      * "entity-not-found" if the caller can't see the post. Pass `nextCursor` as
      * `cursor`, keeping the same `sort`.
      */
-    getPostComments: procedure.input(unvalidated<GetPostCommentsInput>()).query(({ ctx, input }) =>
+    getPostComments: procedure.input(getPostCommentsInput).query(({ ctx, input }) =>
         getPostCommentsQuery({ input, context: queryContext(ctx), dependencies: postQueryDependencies(ctx) }),
     ),
 

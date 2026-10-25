@@ -4,12 +4,12 @@ import type { Query } from "../../../types/query";
 import { UnexpectedError } from "../../../types/app-error";
 import { fillVisiblePage, pageInput, type Page } from "../../../types/page";
 import { fail, succeed } from "../../../types/result";
-import { validate } from "../../../types/validate";
 import { isBlocked, type BlockList } from "../../users/blocking";
 import type { Post } from "../types";
 
 export const getFeedInput = pageInput;
-export type GetFeedInput = z.input<typeof getFeedInput>;
+/** Validated by tRPC with `getFeedInput` before the query runs (defaults applied). */
+export type GetFeedInput = z.output<typeof getFeedInput>;
 
 export type GetFeedDependencies = {
     /** A page of regular posts (not listings) the viewer may see, newest first. */
@@ -27,14 +27,11 @@ export const getFeedQuery: Query<{ input: GetFeedInput; output: Page<Post> }, Ge
     context,
     dependencies,
 }) => {
-    const valid = validate(getFeedInput, input);
-    if (valid.error) return valid;
-
     try {
         const blockList = await dependencies.fetchBlockList();
         const page = await fillVisiblePage(
             dependencies.fetchFeedPage,
-            valid.value,
+            input,
             (post) => !isBlocked(blockList, post.author.userId),
             (post) => post.id,
         );

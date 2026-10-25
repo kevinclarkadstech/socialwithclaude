@@ -4,7 +4,6 @@ import type { Query } from "../../../types/query";
 import { EntityNotFoundError, UnexpectedError } from "../../../types/app-error";
 import { fillVisiblePage, pageInput, type Page } from "../../../types/page";
 import { fail, succeed } from "../../../types/result";
-import { validate } from "../../../types/validate";
 import { isBlocked, type BlockList } from "../../users/blocking";
 import { commentSorts, type CommentSort, type PostComment } from "../types";
 
@@ -12,7 +11,8 @@ export const getPostCommentsInput = pageInput.extend({
     postId: z.string().min(1),
     sort: z.enum(commentSorts).default("oldest"),
 });
-export type GetPostCommentsInput = z.input<typeof getPostCommentsInput>;
+/** Validated by tRPC with `getPostCommentsInput` before the query runs (defaults applied). */
+export type GetPostCommentsInput = z.output<typeof getPostCommentsInput>;
 
 export type GetPostCommentsDependencies = {
     /** The post's author, or null if the post doesn't exist or the viewer can't see it. */
@@ -38,9 +38,7 @@ export const getPostCommentsQuery: Query<
     { input: GetPostCommentsInput; output: Page<PostComment> },
     GetPostCommentsDependencies
 > = async ({ input, context, dependencies }) => {
-    const valid = validate(getPostCommentsInput, input);
-    if (valid.error) return valid;
-    const { postId, sort, cursor, limit } = valid.value;
+    const { postId, sort, cursor, limit } = input;
     const notFound = () => fail(EntityNotFoundError("Post not found"));
 
     try {

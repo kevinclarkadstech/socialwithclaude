@@ -4,12 +4,12 @@ import type { Query } from "../../../types/query";
 import { AuthenticationError, UnexpectedError } from "../../../types/app-error";
 import { fillVisiblePage, pageInput, type Page } from "../../../types/page";
 import { fail, succeed } from "../../../types/result";
-import { validate } from "../../../types/validate";
 import { isBlocked, type BlockList } from "../../users/blocking";
 import type { SavedPost } from "../types";
 
 export const getMySavedPostsInput = pageInput;
-export type GetMySavedPostsInput = z.input<typeof getMySavedPostsInput>;
+/** Validated by tRPC with `getMySavedPostsInput` before the query runs (defaults applied). */
+export type GetMySavedPostsInput = z.output<typeof getMySavedPostsInput>;
 
 export type GetMySavedPostsDependencies = {
     /**
@@ -34,14 +34,11 @@ export const getMySavedPostsQuery: Query<
     GetMySavedPostsDependencies
 > = async ({ input, context, dependencies }) => {
     if (!context.user) return fail(AuthenticationError());
-    const valid = validate(getMySavedPostsInput, input);
-    if (valid.error) return valid;
-
     try {
         const blockList = await dependencies.fetchBlockList();
         const page = await fillVisiblePage(
             dependencies.fetchSavedPostsPage,
-            valid.value,
+            input,
             (saved) => !isBlocked(blockList, saved.post.author.userId),
             (saved) => saved.cursor,
         );

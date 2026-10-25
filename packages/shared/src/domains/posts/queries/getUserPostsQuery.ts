@@ -4,12 +4,12 @@ import type { Query } from "../../../types/query";
 import { AuthorizationError, EntityNotFoundError, UnexpectedError } from "../../../types/app-error";
 import { pageInput, type Page } from "../../../types/page";
 import { fail, succeed } from "../../../types/result";
-import { validate } from "../../../types/validate";
 import { isBlocked, type BlockList } from "../../users/blocking";
 import type { Post } from "../types";
 
 export const getUserPostsInput = pageInput.extend({ username: z.string().min(1) });
-export type GetUserPostsInput = z.input<typeof getUserPostsInput>;
+/** Validated by tRPC with `getUserPostsInput` before the query runs (defaults applied). */
+export type GetUserPostsInput = z.output<typeof getUserPostsInput>;
 
 /** What the query needs to know about the profile's owner. */
 export type PostsAuthor = {
@@ -39,9 +39,7 @@ export const getUserPostsQuery: Query<
     { input: GetUserPostsInput; output: Page<Post> },
     GetUserPostsDependencies
 > = async ({ input, context, dependencies }) => {
-    const valid = validate(getUserPostsInput, input);
-    if (valid.error) return valid;
-    const { username, cursor, limit } = valid.value;
+    const { username, cursor, limit } = input;
 
     try {
         const [author, blockList] = await Promise.all([
