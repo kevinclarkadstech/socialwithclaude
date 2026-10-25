@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { commentBody, postBody } from "@myapp/shared/types/posts";
 import { TRPCError } from "@trpc/server";
+import { getPostByIdQuery } from '@myapp/shared/domains'
 
 import {
     createPostComment,
@@ -92,10 +93,16 @@ export async function searchVisiblePosts(
 export const postsRouter = router({
     /** POST_NOT_FOUND if it doesn't exist, or the caller can't see it. */
     getPostById: procedure.input(postIdInput).query(async ({ ctx, input }) => {
-        const post = await getPostById(ctx.db, input.id, ctx.user?.id ?? null);
-        if (!post || isBlocked(await getUserBlockList(ctx), post.author.userId)) throw postNotFound();
-
-        return post;
+        // const post = await getPostById(ctx.db, input.id, ctx.user?.id ?? null);
+        // if (!post || isBlocked(await getUserBlockList(ctx), post.author.userId)) throw postNotFound();
+        const result = await getPostByIdQuery({
+            input: { id: input.id }, dependencies: {
+                fetchPostById: async (postId) => {
+                    return getPostById(ctx.db, input.id, ctx.user?.id ?? null)
+                }
+            }
+        })
+        return result;
     }),
 
     /**
