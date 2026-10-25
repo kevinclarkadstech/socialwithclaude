@@ -4,8 +4,8 @@
   "version": "0.0.1",
   "type": "module",
   "exports": {
-    "./logic": "./src/logic/index.ts",
-    "./logic/*": "./src/logic/*.ts",
+    "./domains": "./src/domains/index.ts",
+    "./domains/*": "./src/domains/*.ts",
     "./types": "./src/types/index.ts",
     "./types/*": "./src/types/*.ts",
     "./observability": "./src/observability/index.ts"
