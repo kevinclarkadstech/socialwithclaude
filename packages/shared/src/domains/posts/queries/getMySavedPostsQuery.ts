@@ -6,7 +6,7 @@ import { fillVisiblePage, pageInput, type Page } from "../../../types/page";
 import { fail, succeed } from "../../../types/result";
 import { validate } from "../../../types/validate";
 import { isBlocked, type BlockList } from "../../users/blocking";
-import type { SavedPost } from "../types/post";
+import type { SavedPost } from "../types";
 
 export const getMySavedPostsInput = pageInput;
 export type GetMySavedPostsInput = z.input<typeof getMySavedPostsInput>;

@@ -5,7 +5,7 @@ import { EntityNotFoundError, UnexpectedError } from "../../../types/app-error";
 import { fail, succeed } from "../../../types/result";
 import { validate } from "../../../types/validate";
 import { isBlocked, type BlockList } from "../../users/blocking";
-import type { PostDetail } from "../types/post";
+import type { PostDetail } from "../types";
 
 export const getPostByIdInput = z.object({ id: z.string().min(1) });
 export type GetPostByIdInput = z.input<typeof getPostByIdInput>;

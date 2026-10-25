@@ -6,7 +6,7 @@ import { pageInput, type Page } from "../../../types/page";
 import { fail, succeed } from "../../../types/result";
 import { validate } from "../../../types/validate";
 import { isBlocked, type BlockList } from "../../users/blocking";
-import type { Post } from "../types/post";
+import type { Post } from "../types";
 
 export const getUserPostsInput = pageInput.extend({ username: z.string().min(1) });
 export type GetUserPostsInput = z.input<typeof getUserPostsInput>;

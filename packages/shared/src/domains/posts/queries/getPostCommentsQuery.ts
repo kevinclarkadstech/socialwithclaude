@@ -6,7 +6,7 @@ import { fillVisiblePage, pageInput, type Page } from "../../../types/page";
 import { fail, succeed } from "../../../types/result";
 import { validate } from "../../../types/validate";
 import { isBlocked, type BlockList } from "../../users/blocking";
-import { commentSorts, type CommentSort, type PostComment } from "../types/post";
+import { commentSorts, type CommentSort, type PostComment } from "../types";
 
 export const getPostCommentsInput = pageInput.extend({
     postId: z.string().min(1),
