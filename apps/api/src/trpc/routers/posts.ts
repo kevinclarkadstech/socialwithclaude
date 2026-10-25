@@ -1,7 +1,23 @@
 import { z } from "zod";
 import { commentBody, postBody } from "@myapp/shared/types/posts";
 import { TRPCError } from "@trpc/server";
-import { getPostByIdQuery } from '@myapp/shared/domains'
+import {
+    getFeedQuery,
+    getMySavedPostsQuery,
+    getPostByIdQuery,
+    getPostCommentsQuery,
+    getUserPostsQuery,
+    getFeedInput,
+    getMySavedPostsInput,
+    getPostByIdInput,
+    getPostCommentsInput,
+    getUserPostsInput,
+    type GetFeedDependencies,
+    type GetMySavedPostsDependencies,
+    type GetPostByIdDependencies,
+    type GetPostCommentsDependencies,
+    type GetUserPostsDependencies,
+} from "@myapp/shared/domains/posts";
 
 import {
     createPostComment,
@@ -10,8 +26,8 @@ import {
     deletePostComment,
     getFeed,
     getProfileByUsername,
-    getUserSettings,
     getPostAuthorId,
+    PostNotFoundError,
     getPostById,
     getPostCommentAuthorIds,
     getPostComments,
@@ -29,16 +45,14 @@ import {
 } from "../../data-access";
 import { withMedia } from "../../media";
 import { fillVisiblePage, getUserBlockList, isBlocked } from "../blocking";
-import { mediaContext, requireUserAndProfile, type TRPCContext } from "../context";
+import { mediaContext, queryContext, requireUserAndProfile, type TRPCContext } from "../context";
+import { toPost, toPostComment, toPostDetail, toSavedPost } from "../mappers/posts";
+import { validateInput } from "../validate-input";
 import { clientId, createOnce } from "../client-ids";
 import { mediaInput, reportInput } from "../inputs";
 import { procedure, router } from "../trpc";
 
 const postIdInput = z.object({ id: z.string().min(1) });
-const pageInput = z.object({
-    cursor: z.string().nullish(),
-    limit: z.number().int().min(1).max(100).default(20),
-});
 
 const postNotFound = () => new TRPCError({ code: "NOT_FOUND", message: "POST_NOT_FOUND" });
 const commentNotFound = () => new TRPCError({ code: "NOT_FOUND", message: "COMMENT_NOT_FOUND" });
@@ -83,6 +97,64 @@ export async function searchVisiblePosts(
     );
 }
 
+type PostQueryDependencies = GetPostByIdDependencies &
+    GetFeedDependencies &
+    GetUserPostsDependencies &
+    GetMySavedPostsDependencies &
+    GetPostCommentsDependencies;
+
+/**
+ * Data access for the shared post queries, for this request's viewer. Rows
+ * are mapped to the shared public types here; followers-only visibility is
+ * applied by the data-access resolvers, blocks by the queries.
+ */
+function postQueryDependencies(ctx: TRPCContext): PostQueryDependencies {
+    const viewerId = ctx.user?.id ?? null;
+    const feedPage = async (authorId: string | undefined, cursor: string | null, limit: number) => {
+        const page = await getFeed(ctx.db, viewerId, { cursor, limit, authorId });
+        return { items: page.items.map(toPost), nextCursor: page.nextCursor };
+    };
+
+    return {
+        fetchBlockList: () => getUserBlockList(ctx),
+        fetchPostById: async (postId) => {
+            const post = await getPostById(ctx.db, postId, viewerId);
+            return post && toPostDetail(post);
+        },
+        fetchFeedPage: (cursor, limit) => feedPage(undefined, cursor, limit),
+        fetchUserPostsPage: (authorId, cursor, limit) => feedPage(authorId, cursor, limit),
+        fetchAuthorByUsername: async (username) => {
+            const profile = await getProfileByUsername(ctx.db, username, viewerId);
+            return (
+                profile && {
+                    userId: profile.userId,
+                    isFollowing: profile.isFollowing,
+                    requiresApproval: profile.requiresApproval,
+                }
+            );
+        },
+        fetchSavedPostsPage: async (cursor, limit) => {
+            // Saved posts are only read for the signed-in viewer (the query checks).
+            const page = await getSavedPosts(ctx.db, viewerId!, { cursor, limit });
+            return {
+                items: page.items.map((row) => ({ post: toSavedPost(row), cursor: row.saveId })),
+                nextCursor: page.nextCursor,
+            };
+        },
+        fetchPostAuthorId: (postId) => getPostAuthorId(ctx.db, postId),
+        fetchCommentsPage: async (postId, sort, cursor, limit) => {
+            try {
+                const page = await getPostComments(ctx.db, postId, viewerId, { sort, cursor, limit });
+                return { items: page.items.map(toPostComment), nextCursor: page.nextCursor };
+            } catch (err) {
+                // Missing, deleted, or not visible to the viewer.
+                if (err instanceof PostNotFoundError) return null;
+                throw err;
+            }
+        },
+    };
+}
+
 /*
  * Followers-only profiles: their posts and listings are only returned to the
  * author and accepted followers (the data-access resolvers filter with
@@ -91,61 +163,36 @@ export async function searchVisiblePosts(
  * here, in the API layer.
  */
 export const postsRouter = router({
-    /** POST_NOT_FOUND if it doesn't exist, or the caller can't see it. */
-    getPostById: procedure.input(postIdInput).query(async ({ ctx, input }) => {
-        // const post = await getPostById(ctx.db, input.id, ctx.user?.id ?? null);
-        // if (!post || isBlocked(await getUserBlockList(ctx), post.author.userId)) throw postNotFound();
-        const result = await getPostByIdQuery({
-            input: { id: input.id }, dependencies: {
-                fetchPostById: async (postId) => {
-                    return getPostById(ctx.db, input.id, ctx.user?.id ?? null)
-                }
-            }
-        })
-        return result;
-    }),
+    /*
+     * Reads return a Result ({ value, error }), never a tRPC error: invalid
+     * input is a "validation" error (validateInput), and everything else is
+     * the shared query's Result as-is (see @myapp/shared/domains/posts).
+     */
+
+    /** One post or listing. Fails with "entity-not-found" if it doesn't exist or the caller can't see it. */
+    getPostById: procedure.input(validateInput(getPostByIdInput)).query(({ ctx, input }) =>
+        input.error
+            ? input
+            : getPostByIdQuery({ input: input.value, context: queryContext(ctx), dependencies: postQueryDependencies(ctx) }),
+    ),
+
+    /** The Feed tab: regular posts the caller can see, newest first. Pass `nextCursor` as `cursor`. */
+    getFeed: procedure.input(validateInput(getFeedInput)).query(({ ctx, input }) =>
+        input.error
+            ? input
+            : getFeedQuery({ input: input.value, context: queryContext(ctx), dependencies: postQueryDependencies(ctx) }),
+    ),
 
     /**
-     * The Feed tab: regular posts (not listings) the caller can see, newest
-     * first. Pass `nextCursor` as `cursor`.
+     * A user's posts (their profile), newest first. Fails with
+     * "entity-not-found" (no such user, or blocked) or "authorization" (their
+     * profile is followers-only). Pass `nextCursor` as `cursor`.
      */
-    getFeed: procedure.input(pageInput).query(async ({ ctx, input }) => {
-        const blockList = await getUserBlockList(ctx);
-        return fillVisiblePage(
-            (cursor, limit) => getFeed(ctx.db, ctx.user?.id ?? null, { cursor, limit }),
-            input,
-            (p) => !isBlocked(blockList, p.author.userId),
-            (p) => p.id,
-        );
-    }),
-
-    /**
-     * A user's posts (their profile), newest first. NOT_FOUND if the user
-     * doesn't exist or either has blocked the other; FORBIDDEN
-     * "POSTS_FOLLOWERS_ONLY" if their profile visibility is "followers" and
-     * the caller isn't them or a follower. Pass `nextCursor` as `cursor`.
-     */
-    getUserPosts: procedure
-        .input(pageInput.extend({ username: z.string().min(1) }))
-        .query(async ({ ctx, input }) => {
-            const viewerId = ctx.user?.id ?? null;
-            const profile = await getProfileByUsername(ctx.db, input.username, viewerId);
-            if (!profile || isBlocked(await getUserBlockList(ctx), profile.userId)) {
-                throw new TRPCError({ code: "NOT_FOUND" });
-            }
-            if (profile.userId !== viewerId && !profile.isFollowing) {
-                const settings = await getUserSettings(ctx.db, profile.userId);
-                if (settings.privacy.profileVisibility === "followers") {
-                    throw new TRPCError({ code: "FORBIDDEN", message: "POSTS_FOLLOWERS_ONLY" });
-                }
-            }
-
-            return getFeed(ctx.db, viewerId, {
-                cursor: input.cursor,
-                limit: input.limit,
-                authorId: profile.userId,
-            });
-        }),
+    getUserPosts: procedure.input(validateInput(getUserPostsInput)).query(({ ctx, input }) =>
+        input.error
+            ? input
+            : getUserPostsQuery({ input: input.value, context: queryContext(ctx), dependencies: postQueryDependencies(ctx) }),
+    ),
 
     /** Idempotent: saving an already-saved post succeeds. */
     savePost: procedure.input(postIdInput).mutation(async ({ ctx, input }) => {
@@ -171,46 +218,25 @@ export const postsRouter = router({
 
     /**
      * The caller's saved posts, most recently saved first, minus ones they can
-     * no longer see. Pass `nextCursor` as `cursor`.
+     * no longer see. Fails with "authentication" when signed out. Pass
+     * `nextCursor` as `cursor`.
      */
-    getMySavedPosts: procedure.input(pageInput).query(async ({ ctx, input }) => {
-        const { user } = await requireUserAndProfile(ctx);
-        const blockList = await getUserBlockList(ctx);
-        const visible = await fillVisiblePage(
-            (cursor, limit) => getSavedPosts(ctx.db, user.id, { cursor, limit }),
-            input,
-            (p) => !isBlocked(blockList, p.author.userId),
-            (p) => p.saveId,
-        );
-        return { ...visible, items: visible.items.map(({ saveId: _, ...post }) => post) };
-    }),
+    getMySavedPosts: procedure.input(validateInput(getMySavedPostsInput)).query(({ ctx, input }) =>
+        input.error
+            ? input
+            : getMySavedPostsQuery({ input: input.value, context: queryContext(ctx), dependencies: postQueryDependencies(ctx) }),
+    ),
 
     /**
-     * `sort`: "oldest" (default), "newest" or "top" (highest score first). Pass the
-     * previous page's `nextCursor` as `cursor`, keeping the same `sort`.
+     * A post's comments: `sort` "oldest" (default), "newest" or "top". Fails with
+     * "entity-not-found" if the caller can't see the post. Pass `nextCursor` as
+     * `cursor`, keeping the same `sort`.
      */
-    getPostComments: procedure
-        .input(
-            pageInput.extend({
-                postId: z.string().min(1),
-                sort: z.enum(["oldest", "newest", "top"]).default("oldest"),
-            }),
-        )
-        .query(async ({ ctx, input }) => {
-            await assertPostNotBlocked(ctx, input.postId);
-            const blockList = await getUserBlockList(ctx);
-            return fillVisiblePage(
-                (cursor, limit) =>
-                    getPostComments(ctx.db, input.postId, ctx.user?.id ?? null, {
-                        sort: input.sort,
-                        cursor,
-                        limit,
-                    }),
-                input,
-                (c) => !isBlocked(blockList, c.author.userId),
-                (c) => c.id,
-            );
-        }),
+    getPostComments: procedure.input(validateInput(getPostCommentsInput)).query(({ ctx, input }) =>
+        input.error
+            ? input
+            : getPostCommentsQuery({ input: input.value, context: queryContext(ctx), dependencies: postQueryDependencies(ctx) }),
+    ),
 
     /**
      * Returns nothing (fire and forget). `id` is an optional client-generated

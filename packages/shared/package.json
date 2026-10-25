@@ -5,7 +5,7 @@
   "type": "module",
   "exports": {
     "./domains": "./src/domains/index.ts",
-    "./domains/*": "./src/domains/*.ts",
+    "./domains/*": "./src/domains/*/index.ts",
     "./types": "./src/types/index.ts",
     "./types/*": "./src/types/*.ts",
     "./observability": "./src/observability/index.ts"

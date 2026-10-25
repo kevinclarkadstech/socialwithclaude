@@ -1,4 +1,4 @@
-import { api, apiErrorMessage } from "@/lib/api"
+import { api, appErrorType, unwrap } from "@/lib/api"
 import type { Post, PostDetail } from "@/hooks/types"
 import { usePagedList } from "@/hooks/use-paged-list"
 import { useResource } from "@/hooks/use-resource"
@@ -12,7 +12,7 @@ const postId = (post: Post) => post.id
 export function useFeed(version = 0) {
   return usePagedList(
     `feed:${version}`,
-    (cursor) => api.posts.getFeed.query({ cursor }),
+    async (cursor) => unwrap(await api.posts.getFeed.query({ cursor })),
     { getId: postId }
   )
 }
@@ -24,13 +24,13 @@ export function useFeed(version = 0) {
 export function useUserPosts(username: string) {
   return usePagedList(
     `user-posts:${username}`,
-    (cursor) => api.posts.getUserPosts.query({ username, cursor }),
+    async (cursor) =>
+      unwrap(await api.posts.getUserPosts.query({ username, cursor })),
     {
       getId: postId,
+      // "authorization": their profile is followers-only and you don't follow them.
       classify: (err) =>
-        apiErrorMessage(err) === "POSTS_FOLLOWERS_ONLY"
-          ? "followers-only"
-          : null,
+        appErrorType(err) === "authorization" ? "followers-only" : null,
     }
   )
 }
@@ -42,7 +42,7 @@ export function useUserPosts(username: string) {
 export function usePost(id: string) {
   return useResource<PostDetail, "not-found">(
     `post:${id}`,
-    () => api.posts.getPostById.query({ id }),
-    (err) => (apiErrorMessage(err) === "POST_NOT_FOUND" ? "not-found" : null)
+    async () => unwrap(await api.posts.getPostById.query({ id })),
+    (err) => (appErrorType(err) === "entity-not-found" ? "not-found" : null)
   )
 }

@@ -1,3 +1,5 @@
-
-export { getPostByIdQuery } from './getPostByIdQuery';
-export { getFeedQuery } from './getFeedQuery'
+export * from './getPostByIdQuery';
+export * from './getFeedQuery';
+export * from './getUserPostsQuery';
+export * from './getMySavedPostsQuery';
+export * from './getPostCommentsQuery';

@@ -54,8 +54,11 @@ export function ValidationError(errors: ValidationErrorDetail[], message?: strin
 }
 
 export class ValidationException extends Error {
-    constructor(public error: ValidationError) {
+    error: ValidationError;
+
+    constructor(error: ValidationError) {
         super(error.message ?? 'There were validation errors');
+        this.error = error;
     }
 }
 

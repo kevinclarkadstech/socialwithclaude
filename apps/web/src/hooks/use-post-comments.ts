@@ -1,13 +1,11 @@
 import * as React from "react"
 import { monotonicFactory } from "ulid"
 
-import { api, apiErrorMessage } from "@/lib/api"
+import type { PostComment as ServerComment } from "@myapp/shared/domains/posts"
+
+import { api, appErrorType, unwrap } from "@/lib/api"
 import { adjustCommentCount } from "@/lib/comment-counts"
 import type { PersonSummary } from "@/lib/people"
-
-type ServerComment = Awaited<
-  ReturnType<typeof api.posts.getPostComments.query>
->["items"][number]
 
 /** A comment as shown: from the server, or one of ours still sending/failed. */
 export type PostComment = ServerComment & {
@@ -74,6 +72,7 @@ export function usePostComments(
     let cancelled = false
     api.posts.getPostComments
       .query({ postId, sort })
+      .then(unwrap)
       .then((page) => {
         if (cancelled) return
         setState({
@@ -88,7 +87,7 @@ export function usePostComments(
         setState({
           sort,
           status:
-            apiErrorMessage(err) === "POST_NOT_FOUND" ? "not-found" : "error",
+            appErrorType(err) === "entity-not-found" ? "not-found" : "error",
         })
       })
     return () => {
@@ -117,11 +116,13 @@ export function usePostComments(
     if (state.status !== "ready" || !state.nextCursor) return
     setLoadingMore(true)
     try {
-      const page = await api.posts.getPostComments.query({
-        postId,
-        sort,
-        cursor: state.nextCursor,
-      })
+      const page = unwrap(
+        await api.posts.getPostComments.query({
+          postId,
+          sort,
+          cursor: state.nextCursor,
+        })
+      )
       setState((prev) => {
         if (prev?.status !== "ready" || prev.sort !== sort) return prev
         // Skip ones already shown: our new comments, or (for Best) ones

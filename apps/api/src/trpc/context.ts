@@ -1,5 +1,6 @@
 import type { Context } from "hono";
 import { TRPCError } from "@trpc/server";
+import type { QueryContext } from "@myapp/shared/types/query";
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 
 import type { AppHonoEnv } from "../index";
@@ -46,4 +47,9 @@ export async function requireUserAndProfile(ctx: TRPCContext) {
 /** What withMedia() needs from the request. */
 export function mediaContext(ctx: TRPCContext, userId: string) {
     return { storage: ctx.storage, logger: ctx.logger, userId };
+}
+
+/** What the shared domain queries get from the request: the viewer and a logger. */
+export function queryContext(ctx: TRPCContext): QueryContext {
+    return { user: ctx.user ? { id: ctx.user.id } : null, logger: ctx.logger };
 }
