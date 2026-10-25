@@ -1,10 +1,11 @@
-import { AppLogger } from "../observability";
-import { Result } from "./result";
+import type { AppLogger } from "../observability";
+import type { Result } from "./result";
 
 export type QuerySchema<I = unknown, O = unknown> = { input: I; output: O };
 
 export type QueryContext = {
-    user: {} | null;
+    /** The signed-in user, or null when signed out. */
+    user: { id: string } | null;
     logger: AppLogger;
 };
 

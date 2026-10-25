@@ -1,17 +1,17 @@
+import type { PostDetail } from "@myapp/shared/domains/posts"
+
 import type { api } from "@/lib/api"
 
 /**
  * Shapes of the data the hooks return, for components that render it.
- * Derived from the API's responses, so components never touch the API.
+ * Post types come from @myapp/shared (the source of truth for the API's
+ * post responses); the rest are derived from the API's responses. Either
+ * way, components never touch the API.
  */
 
+export type { Post, PostComment, PostDetail } from "@myapp/shared/domains/posts"
+
 type Page<T extends { items: unknown[] }> = T["items"][number]
-
-/** A post in a feed or on a profile. */
-export type Post = Page<Awaited<ReturnType<typeof api.posts.getFeed.query>>>
-
-/** One post (or listing) opened on its own, with listing details if any. */
-export type PostDetail = Awaited<ReturnType<typeof api.posts.getPostById.query>>
 
 /** A listing opened on its own: a post with its listing details. */
 export type Listing = PostDetail & {

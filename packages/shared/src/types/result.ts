@@ -6,7 +6,7 @@ export function succeed<SuccessValue extends NonNullable<any>, FailureError exte
     return { value: value ?? undefined as SuccessValue, error: null, };
 }
 
-export function fail<FailureError extends AppError = AppError>(error: FailureError, reason?: string): Result<never, FailureError> {
+export function fail<FailureError extends AppError = AppError>(error: FailureError, _reason?: string): Result<never, FailureError> {
     return { error, value: null, };
 }
 
