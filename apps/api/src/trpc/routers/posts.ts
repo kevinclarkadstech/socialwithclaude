@@ -47,6 +47,7 @@ import { withMedia } from "../../media";
 import { fillVisiblePage, getUserBlockList, isBlocked } from "../blocking";
 import { mediaContext, queryContext, requireUserAndProfile, type TRPCContext } from "../context";
 import { toPost, toPostComment, toPostDetail, toSavedPost } from "../mappers/posts";
+import { validateInput } from "../validate-input";
 import { clientId, createOnce } from "../client-ids";
 import { mediaInput, reportInput } from "../inputs";
 import { procedure, router } from "../trpc";
@@ -163,19 +164,23 @@ function postQueryDependencies(ctx: TRPCContext): PostQueryDependencies {
  */
 export const postsRouter = router({
     /*
-     * Reads: tRPC validates the input with the shared schemas, then the
-     * shared query's Result ({ value, error }) is returned as-is: see the
-     * queries in @myapp/shared/domains/posts.
+     * Reads return a Result ({ value, error }), never a tRPC error: invalid
+     * input is a "validation" error (validateInput), and everything else is
+     * the shared query's Result as-is (see @myapp/shared/domains/posts).
      */
 
     /** One post or listing. Fails with "entity-not-found" if it doesn't exist or the caller can't see it. */
-    getPostById: procedure.input(getPostByIdInput).query(({ ctx, input }) =>
-        getPostByIdQuery({ input, context: queryContext(ctx), dependencies: postQueryDependencies(ctx) }),
+    getPostById: procedure.input(validateInput(getPostByIdInput)).query(({ ctx, input }) =>
+        input.error
+            ? input
+            : getPostByIdQuery({ input: input.value, context: queryContext(ctx), dependencies: postQueryDependencies(ctx) }),
     ),
 
     /** The Feed tab: regular posts the caller can see, newest first. Pass `nextCursor` as `cursor`. */
-    getFeed: procedure.input(getFeedInput).query(({ ctx, input }) =>
-        getFeedQuery({ input, context: queryContext(ctx), dependencies: postQueryDependencies(ctx) }),
+    getFeed: procedure.input(validateInput(getFeedInput)).query(({ ctx, input }) =>
+        input.error
+            ? input
+            : getFeedQuery({ input: input.value, context: queryContext(ctx), dependencies: postQueryDependencies(ctx) }),
     ),
 
     /**
@@ -183,8 +188,10 @@ export const postsRouter = router({
      * "entity-not-found" (no such user, or blocked) or "authorization" (their
      * profile is followers-only). Pass `nextCursor` as `cursor`.
      */
-    getUserPosts: procedure.input(getUserPostsInput).query(({ ctx, input }) =>
-        getUserPostsQuery({ input, context: queryContext(ctx), dependencies: postQueryDependencies(ctx) }),
+    getUserPosts: procedure.input(validateInput(getUserPostsInput)).query(({ ctx, input }) =>
+        input.error
+            ? input
+            : getUserPostsQuery({ input: input.value, context: queryContext(ctx), dependencies: postQueryDependencies(ctx) }),
     ),
 
     /** Idempotent: saving an already-saved post succeeds. */
@@ -214,8 +221,10 @@ export const postsRouter = router({
      * no longer see. Fails with "authentication" when signed out. Pass
      * `nextCursor` as `cursor`.
      */
-    getMySavedPosts: procedure.input(getMySavedPostsInput).query(({ ctx, input }) =>
-        getMySavedPostsQuery({ input, context: queryContext(ctx), dependencies: postQueryDependencies(ctx) }),
+    getMySavedPosts: procedure.input(validateInput(getMySavedPostsInput)).query(({ ctx, input }) =>
+        input.error
+            ? input
+            : getMySavedPostsQuery({ input: input.value, context: queryContext(ctx), dependencies: postQueryDependencies(ctx) }),
     ),
 
     /**
@@ -223,8 +232,10 @@ export const postsRouter = router({
      * "entity-not-found" if the caller can't see the post. Pass `nextCursor` as
      * `cursor`, keeping the same `sort`.
      */
-    getPostComments: procedure.input(getPostCommentsInput).query(({ ctx, input }) =>
-        getPostCommentsQuery({ input, context: queryContext(ctx), dependencies: postQueryDependencies(ctx) }),
+    getPostComments: procedure.input(validateInput(getPostCommentsInput)).query(({ ctx, input }) =>
+        input.error
+            ? input
+            : getPostCommentsQuery({ input: input.value, context: queryContext(ctx), dependencies: postQueryDependencies(ctx) }),
     ),
 
     /**
