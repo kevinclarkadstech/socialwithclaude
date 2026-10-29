@@ -16,7 +16,7 @@ import {
     isOwnChatMessageId,
     markChatRead,
     sendChatMessage,
-} from "../../data-access";
+} from "../../../data-access";
 import { fillVisiblePage, getUserBlockList, isBlocked } from "../blocking";
 import { clientId, createOnce } from "../client-ids";
 import { requireUserAndProfile, type TRPCContext } from "../context";

@@ -1,5 +1,5 @@
 import { createTRPCClient, httpBatchLink, TRPCClientError } from "@trpc/client";
-import type { AppRouter } from "../../../../api/src/trpc";
+import type { AppRouter } from "../../../../api/src/transport/trpc";
 
 import { config } from "../config";
 

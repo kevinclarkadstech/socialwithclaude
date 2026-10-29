@@ -2,7 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { signUpInput } from "@myapp/shared/types/users";
 
-import { getActiveSessions, getActiveSessionToken, signUp } from "../../data-access";
+import { getActiveSessions, getActiveSessionToken, signUp } from "../../../data-access";
 import { requireUser, type TRPCContext } from "../context";
 import { procedure, router } from "../trpc";
 

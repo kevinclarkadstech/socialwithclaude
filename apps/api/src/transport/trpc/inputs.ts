@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { schema } from "../data-access";
-import { MEDIA_MAX_PER_POST } from "../media";
+import { schema } from "../../data-access";
+import { MEDIA_MAX_PER_POST } from "../../media";
 
 /**
  * A post's photos, in display order: keys from media.createUploadUrl, or keys

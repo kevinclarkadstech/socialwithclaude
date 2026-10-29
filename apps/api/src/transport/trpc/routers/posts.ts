@@ -26,8 +26,8 @@ import {
     updatePost,
     updatePostComment,
     voteOnPostComment,
-} from "../../data-access";
-import { withMedia } from "../../media";
+} from "../../../data-access";
+import { withMedia } from "../../../media";
 import { fillVisiblePage, getUserBlockList, isBlocked } from "../blocking";
 import { mediaContext, requireUserAndProfile, type TRPCContext } from "../context";
 import { clientId, createOnce } from "../client-ids";
