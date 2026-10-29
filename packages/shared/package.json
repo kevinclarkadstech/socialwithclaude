@@ -8,7 +8,8 @@
     "./domains/*": "./src/domains/*.ts",
     "./types": "./src/types/index.ts",
     "./types/*": "./src/types/*.ts",
-    "./observability": "./src/observability/index.ts"
+    "./observability": "./src/observability/index.ts",
+    "./error-handling": "./src/error-handling/index.ts"
   },
   "devDependencies": {
     "typescript": "~6"

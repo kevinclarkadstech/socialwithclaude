@@ -1,13 +1,35 @@
-import type { AppError } from "./app-error";
+import z from "zod";
+import { AppErrorSchema, type AppError } from "../error-handling";
 
-export type Result<SuccessValue extends NonNullable<any>, FailureError extends AppError = AppError> = { value: SuccessValue, error: null } | { value: null, error: FailureError };
+// This is just to validate tRPC returns correct format
+export const ResultSchema = z.discriminatedUnion("ok", [
+    // Success Case
+    z.object({
+        ok: z.literal(true),
+        value: z.unknown(),
+    }),
+    // Failure Case
+    z.object({
+        ok: z.literal(false),
+        error: AppErrorSchema, // Validates the exact AppError union structure
+    }),
+]);
 
-export function succeed<SuccessValue extends NonNullable<any>, FailureError extends AppError = AppError>(value?: SuccessValue): Result<SuccessValue, FailureError> {
-    return { value: value ?? undefined as SuccessValue, error: null, };
+// this is used in function signatures
+export type Result<SuccessValue> = {
+    ok: true,
+    value: SuccessValue | undefined,
+} | {
+    ok: false,
+    error: AppError
+};
+
+export function succeed<SuccessValue = undefined>(value?: SuccessValue): Result<SuccessValue> {
+    return { ok: true, value: value, };
 }
 
-export function fail<FailureError extends AppError = AppError>(error: FailureError, reason?: string): Result<never, FailureError> {
-    return { error, value: null, };
+export function fail(error: AppError, reason?: string): Result<never> {
+    return { ok: false, error, };
 }
 
 // type Todo = {

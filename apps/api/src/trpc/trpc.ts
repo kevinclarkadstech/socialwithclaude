@@ -1,54 +1,87 @@
-import { initTRPC, TRPCError, type TRPC_ERROR_CODE_KEY } from "@trpc/server";
+import { initTRPC } from "@trpc/server";
 
-import {
-    CannotReportOwnCommentError,
-    CannotReportOwnPostError,
-    ChatMessageNotFoundError,
-    CommentNotFoundError,
-    IdConflictError,
-    ListingNotFoundError,
-    NotChatMessageSenderError,
-    NotCommentAuthorError,
-    NotPostAuthorError,
-    PostNotFoundError,
-    ProfileAlreadyExistsError,
-    UsernameTakenError,
-} from "../data-access";
-import { InvalidMediaError } from "../media";
 import type { TRPCContext } from "./context";
+import z, { ZodError } from "zod";
+import { ResultSchema } from "@myapp/shared/types/result";
+import { appErrorToTrpcError, AppTrpcError } from "../error-handling";
 
-const t = initTRPC.context<TRPCContext>().create();
+const t = initTRPC.context<TRPCContext>().create({
+    // errorFormatter: (opts) => {
+    //     console.log('errorFormatter')
+    //     const { shape, error } = opts;
 
-/**
- * Domain errors thrown by resolvers, mapped to the tRPC error the client sees.
- * `message` is a stable code the UI can match on.
- */
-const domainErrors: [new (...args: never[]) => Error, TRPC_ERROR_CODE_KEY, string][] = [
-    [UsernameTakenError, "CONFLICT", "USERNAME_TAKEN"],
-    [IdConflictError, "CONFLICT", "ID_CONFLICT"],
-    [ProfileAlreadyExistsError, "CONFLICT", "PROFILE_ALREADY_EXISTS"],
-    [PostNotFoundError, "NOT_FOUND", "POST_NOT_FOUND"],
-    [NotPostAuthorError, "FORBIDDEN", "NOT_POST_AUTHOR"],
-    [CannotReportOwnPostError, "BAD_REQUEST", "CANNOT_REPORT_OWN_POST"],
-    [ListingNotFoundError, "NOT_FOUND", "LISTING_NOT_FOUND"],
-    [CommentNotFoundError, "NOT_FOUND", "COMMENT_NOT_FOUND"],
-    [InvalidMediaError, "BAD_REQUEST", "INVALID_MEDIA"],
-    [NotCommentAuthorError, "FORBIDDEN", "NOT_COMMENT_AUTHOR"],
-    [CannotReportOwnCommentError, "BAD_REQUEST", "CANNOT_REPORT_OWN_COMMENT"],
-    [ChatMessageNotFoundError, "NOT_FOUND", "MESSAGE_NOT_FOUND"],
-    [NotChatMessageSenderError, "FORBIDDEN", "NOT_MESSAGE_SENDER"],
-];
+    //     return {
+    //         ...shape,
+    //         data: {
+    //             ...shape.data,
+    //             // If it's a Zod validation error, flatten the error messages
+    //             zodError:
+    //                 error.code === 'BAD_REQUEST' && error.cause instanceof ZodError
+    //                     ? error.cause.flatten()
+    //                     : null,
+    //         },
+    //     };
+    // }
+});
 
-const mapDomainErrors = t.middleware(async ({ next }) => {
+const mapAppError = t.middleware(async ({ next }) => {
     const result = await next();
-    if (!result.ok) {
-        const cause = result.error.cause;
-        for (const [ErrorClass, code, message] of domainErrors) {
-            if (cause instanceof ErrorClass) throw new TRPCError({ code, message, cause });
+    try {
+        if (!result.ok) {
+            const cause = result.error.cause;
+            if (cause instanceof ZodError) {
+                // map here to AppError 
+                throw new AppTrpcError({
+                    code: "BAD_REQUEST",
+                    message: "Invalid input",
+                }, z.treeifyError(cause));
+            }
+
+            // Return actual error result because I don't know why this threw 
+            return result;
+        } else {
+            // TODO in the rare case a query or mutation is returned without a Result<Value> wrapper, probably need to make sure this is logged
+            let validatedResult = ResultSchema.parse(result.data);
+            // returns Result<Value> without error and it's value
+            if (validatedResult.ok) {
+                return {
+                    ...result,
+                    ok: true,
+                    data: validatedResult,
+                };
+            }
+            const appTrpcError = appErrorToTrpcError(validatedResult.error);
+
+            // could also just throw appTrpcError
+            return {
+                ...result,
+                ok: false,
+                error: appTrpcError,
+            }
+
+        }
+    } catch (error) {
+        // TODO remove after testing
+        console.log(error)
+        if (error instanceof AppTrpcError) {
+            return {
+                ...result,
+                ok: false,
+                error,
+            }
+        }
+        // truly unexpected error, how best approach?
+        return {
+            ...result,
+            ok: false,
+            error: {
+                code: "INTERNAL_SERVER_ERROR",
+                message: "There was an unexpected error",
+                name: "unexpected-error"
+            }
         }
     }
-    return result;
 });
 
 export const router = t.router;
-export const procedure = t.procedure.use(mapDomainErrors);
+export const procedure = t.procedure.use(mapAppError);

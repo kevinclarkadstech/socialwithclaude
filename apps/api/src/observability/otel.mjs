@@ -13,8 +13,8 @@ import { logs } from "@opentelemetry/api-logs";
 const isProduction = process.env.NODE_ENV === 'production';
 const localUI = new Set((process.env.OTEL_LOCAL_UI || '').split(','));
 
-console.log('loicalUI', localUI);
-console.log('isProduction', isProduction)
+// console.log('loicalUI', localUI);
+// console.log('isProduction', isProduction)
 
 const traceExporter = isProduction
     ? new OTLPTraceExporter({
@@ -47,7 +47,7 @@ const otelSdk = new NodeSDK({
         [ATTR_SERVICE_NAME]: process.env.OTEL_SERVICE_NAME || "my-nitro-app",
         [ATTR_SERVICE_VERSION]: "1.0.0",
     }),
-    traceExporter,
+    // traceExporter,
     logRecordProcessors,
     instrumentations: [getNodeAutoInstrumentations(
         {
@@ -65,9 +65,3 @@ process.once('SIGTERM', () => {
 });
 
 otelSdk.start();
-
-logs.getLogger('test').emit({
-    attributes: {
-        hello: "world"
-    }
-})

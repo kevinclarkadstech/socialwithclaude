@@ -22,6 +22,7 @@ import { schema } from "../../data-access";
 import { getUserBlockList, isBlocked } from "../blocking";
 import { requireUserAndProfile, type TRPCContext } from "../context";
 import { procedure, router } from "../trpc";
+import type { Result } from "@myapp/shared/types/result";
 
 const usernameInput = z.object({ username: z.string().min(1) });
 const pageInput = z.object({
@@ -63,11 +64,16 @@ export const usersRouter = router({
      * The current viewer. null when signed out; `profile` is null until
      * sign-up (auth.signUp) is complete.
      */
-    me: procedure.query(async ({ ctx }) => {
-        if (!ctx.user) return null;
+    me: procedure.input(z.object({ id: z.string() })).query(async ({ ctx }): Promise<Result<null | { user: any, profile: any }>> => {
+        if (!ctx.user) {
+            return {
+                ok: true,
+                value: null,
+            }
+        }
 
         const profile = await getProfileByUserId(ctx.db, ctx.user.id);
-        return { user: ctx.user, profile };
+        return { ok: true, value: { user: ctx.user, profile } };
     }),
 
     /** NOT_FOUND if either user has blocked the other. */

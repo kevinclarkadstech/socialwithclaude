@@ -15,6 +15,7 @@ import { createAppFeatureFlagStore, type AppFeatureFlagStore } from "./shared/fe
 import { trpcServer } from "@hono/trpc-server";
 import { db } from "./data-access";
 import { appRouter, createContext } from "./trpc";
+import { trpcOnErrorFunction } from "./error-handling";
 
 type Auth = ReturnType<typeof createAuthInstance>;
 
@@ -86,10 +87,7 @@ const app = new Hono<AppHonoEnv>()
             endpoint: "/api/trpc",
             router: appRouter,
             createContext: (opts, c) => createContext(opts, c as Context<AppHonoEnv>),
-            onError: ({ error, path, ctx }) => {
-                if (error.code !== "INTERNAL_SERVER_ERROR") return;
-                (ctx?.logger ?? rootLogger).error(error.message, { err: error, path });
-            },
+            onError: trpcOnErrorFunction,
         }),
     )
     .get("/api2/ok", (c) => {
@@ -101,10 +99,10 @@ const app = new Hono<AppHonoEnv>()
         });
         return c.text("OK");
     })
-    .all('*', (c) => {
-        console.log('IN AALL')
-        return c.text('Custom 404 - Not Found', 404);
-    })
+    // .all('*', (c) => {
+    //     console.log('IN AALL')
+    //     return c.text('Custom 404 - Not Found', 404);
+    // })
     .notFound((c) => c.text("Custom Hono 404: Route Not Found", 404))
     .onError((err, c) => {
         c.get('logger').error(err.message, { err });

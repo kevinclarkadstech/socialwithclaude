@@ -76,7 +76,6 @@ export function createLogger({ level, destinationStream, injectAdditionalPropert
             browser: browser ? {
                 asObject: true, write: browser.overrides ? {
                     info: (o) => {
-                        console.log(o);
                         const { msg, level: _level, time: _time, restore: _restore, ...attributes } = o as { time: number, level: string, msg: string, restore: Function };
                         browser.overrides!.info(msg, attributes)
                     },
