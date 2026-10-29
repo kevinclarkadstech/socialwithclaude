@@ -1,7 +1,4 @@
 import { trace, isSpanContextValid } from '@opentelemetry/api';
-import {
-    getContext,
-} from 'hono/context-storage';
 import pinoPretty from "pino-pretty";
 import { createLogger, type AppLogger } from '@myapp/shared/observability';
 
@@ -10,8 +7,6 @@ export const rootLogger: AppLogger = createLogger({
     destinationStream: !isProduction ? pinoPretty({ colorize: true }) : undefined,
     level: isProduction ? "info" : "debug",
     injectAdditionalProperties: () => {
-        const context = getContext();
-        console.log(context.get('requestId'))
         const activeSpan = trace.getActiveSpan();
         if (!activeSpan) return {};
 
