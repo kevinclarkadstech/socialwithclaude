@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { schema, submitFeedback } from "../../data-access";
+import { schema, submitFeedback } from "../../../data-access";
 import { clientId } from "../client-ids";
 import { requireUserAndProfile } from "../context";
 import { procedure, router } from "../trpc";

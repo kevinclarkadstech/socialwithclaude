@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { IdConflictError } from "../data-access";
+import { IdConflictError } from "../../data-access";
 
 /**
  * A client-generated ULID (26 chars, Crockford base32). Lowercase is accepted

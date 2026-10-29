@@ -17,8 +17,8 @@ import {
     unblockUser,
     unfollowUser,
     updateUserSettings,
-} from "../../data-access/resolvers";
-import { schema } from "../../data-access";
+} from "../../../data-access/resolvers";
+import { schema } from "../../../data-access";
 import { getUserBlockList, isBlocked } from "../blocking";
 import { requireUserAndProfile, type TRPCContext } from "../context";
 import { procedure, router } from "../trpc";

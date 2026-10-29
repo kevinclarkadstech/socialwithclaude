@@ -2,9 +2,9 @@ import type { Context } from "hono";
 import { TRPCError } from "@trpc/server";
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 
-import type { AppHonoEnv } from "../index";
-import { db, getProfileByUserId } from "../data-access";
-import { mediaStorage } from "../media";
+import type { AppHonoEnv } from "../../index";
+import { db, getProfileByUserId } from "../../data-access";
+import { mediaStorage } from "../../media";
 
 export function createContext(opts: FetchCreateContextFnOptions, c: Context<AppHonoEnv>) {
     return {

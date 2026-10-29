@@ -3,7 +3,7 @@ import { initTRPC } from "@trpc/server";
 import type { TRPCContext } from "./context";
 import z, { ZodError } from "zod";
 import { ResultSchema } from "@myapp/shared/types/result";
-import { appErrorToTrpcError, AppTrpcError } from "../error-handling";
+import { appErrorToTrpcError, AppTrpcError } from "../../error-handling";
 
 const t = initTRPC.context<TRPCContext>().create({
     // errorFormatter: (opts) => {

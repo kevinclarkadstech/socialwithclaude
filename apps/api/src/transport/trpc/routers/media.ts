@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { createUploadKey, MEDIA_MAX_BYTES, mediaMimeTypes } from "../../media";
+import { createUploadKey, MEDIA_MAX_BYTES, mediaMimeTypes } from "../../../media";
 import { requireUserAndProfile } from "../context";
 import { procedure, router } from "../trpc";
 

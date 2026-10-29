@@ -1,4 +1,4 @@
-import { getBlockListRows } from "../data-access";
+import { getBlockListRows } from "../../data-access";
 import type { TRPCContext } from "./context";
 
 /** Who the caller blocks, and who blocks them. Blocking hides content both ways. */
