@@ -1,8 +1,16 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "lib": ["ES2023"],
-    "noEmit": true
+    "lib": [
+      "ES2023"
+    ],
+    "noEmit": true,
+    "types": [
+      "bun"
+    ],
+    "skipLibCheck": true
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }

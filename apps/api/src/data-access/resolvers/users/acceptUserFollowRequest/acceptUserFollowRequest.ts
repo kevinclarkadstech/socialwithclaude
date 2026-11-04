@@ -19,7 +19,9 @@ export async function acceptUserFollowRequest({ userId, followerId }: {
                 eq(schema.userFollows.status, "pending"),
             ))
             .returning();
-        if (!row) return null;
+        if (!row) {
+            return null;
+        }
 
         await adjustFollowCounts(tx, followerId, userId, 1);
         return toUserFollow(row);

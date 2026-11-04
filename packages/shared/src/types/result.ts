@@ -18,7 +18,7 @@ export const ResultSchema = z.discriminatedUnion("ok", [
 // this is used in function signatures
 export type Result<SuccessValue> = {
     ok: true,
-    value: SuccessValue | undefined,
+    value: SuccessValue,
 } | {
     ok: false,
     error: AppError

@@ -16,7 +16,9 @@ export async function createPostComment({ id, postId, userId, content }: {
             .set({ numComments: sql`${schema.posts.numComments} + 1` })
             .where(and(eq(schema.posts.id, postId), isNull(schema.posts.deletedAt)))
             .returning({ id: schema.posts.id });
-        if (!post) return null;
+        if (!post) {
+            return null;
+        }
 
         const [row] = await tx
             .insert(schema.postComments)

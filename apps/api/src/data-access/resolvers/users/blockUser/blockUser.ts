@@ -10,7 +10,9 @@ export async function blockUser({ userId, blockedUserId }: { userId: string; blo
         .values({ userId, blockedUserId })
         .onConflictDoNothing()
         .returning();
-    if (created) return toUserBlock(created);
+    if (created) {
+        return toUserBlock(created);
+    }
 
     const [existing] = await db
         .select()

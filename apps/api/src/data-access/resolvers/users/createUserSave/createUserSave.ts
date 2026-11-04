@@ -15,7 +15,9 @@ export async function createUserSave({ userId, type, id }: {
             .values({ userId, ...saveTargetValues(type, id) })
             .onConflictDoNothing()
             .returning({ userId: schema.userSaves.userId });
-        if (created.length === 0) return false;
+        if (created.length === 0) {
+            return false;
+        }
 
         if (type === "post") {
             await tx

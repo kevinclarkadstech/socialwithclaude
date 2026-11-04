@@ -1,27 +1,19 @@
 import { and, eq } from "drizzle-orm";
-import type { UserFollow } from "@myapp/shared/domains";
+import type { UserFollow, UserFollowStatus } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toUserFollow } from "../../../mappers/users";
 import { adjustFollowCounts } from "../../../follow-counts";
 
 /**
- * `followerId` follows `followingId`: accepted right away if their profile is
- * public, otherwise pending until they accept or deny it. If there's already
- * a follow (or request), returns it unchanged. Null if `followingId` hasn't
- * finished sign-up.
+ * `followerId` follows `followingId` with `status` (accepted, or pending a
+ * response). If there's already a follow (or request), returns it unchanged.
  */
-export async function followUser({ followerId, followingId }: {
+export async function followUser({ followerId, followingId, status }: {
     followerId: string;
     followingId: string;
-}): Promise<UserFollow | null> {
+    status: Extract<UserFollowStatus, "accepted" | "pending">;
+}): Promise<UserFollow> {
     return db.transaction(async (tx) => {
-        const [settings] = await tx
-            .select({ profileVisibility: schema.userSettings.profileVisibility })
-            .from(schema.userSettings)
-            .where(eq(schema.userSettings.userId, followingId));
-        if (!settings) return null;
-
-        const status = settings.profileVisibility === "public" ? "accepted" : "pending";
         const [created] = await tx
             .insert(schema.userFollows)
             .values({ followerId, followingId, status })
@@ -35,7 +27,11 @@ export async function followUser({ followerId, followingId }: {
             return toUserFollow(existing!);
         }
 
-        if (created.status === "accepted") await adjustFollowCounts(tx, followerId, followingId, 1);
+        if (created.status === "accepted") {
+
+            await adjustFollowCounts(tx, followerId, followingId, 1);
+
+        }
         return toUserFollow(created);
     });
 }

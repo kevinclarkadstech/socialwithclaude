@@ -4,7 +4,6 @@ import type { Result } from "./result";
 export type MutationSchema<I = unknown, O = unknown> = { input: I; output: O };
 
 export type MutationContext = {
-    user: {} | null;
     logger: AppLogger;
 };
 

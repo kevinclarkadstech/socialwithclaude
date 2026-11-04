@@ -11,7 +11,9 @@ export async function deletePostCommentVote({ userId, postCommentId }: {
             .delete(schema.postCommentVotes)
             .where(and(eq(schema.postCommentVotes.userId, userId), eq(schema.postCommentVotes.postCommentId, postCommentId)))
             .returning({ value: schema.postCommentVotes.value });
-        if (!vote) return false;
+        if (!vote) {
+            return false;
+        }
 
         await tx
             .update(schema.postComments)
