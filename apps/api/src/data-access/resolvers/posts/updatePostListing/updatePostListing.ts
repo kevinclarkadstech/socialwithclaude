@@ -14,7 +14,7 @@ export type UpdatePostListingArgs = {
     isNegotiable: boolean;
 } & ListingPrice;
 
-/** Replaces one of `userId`'s listings' content and details. Null if they have no such listing. */
+/** Replaces a listing's content and details, as `userId`. Null if it doesn't exist, was deleted or isn't a listing. */
 export async function updatePostListing({ id, userId, content, ...listing }: UpdatePostListingArgs): Promise<Post | null> {
     return db.transaction(async (tx) => {
         const now = new Date();
@@ -23,7 +23,6 @@ export async function updatePostListing({ id, userId, content, ...listing }: Upd
             .set({ content, updatedBy: userId, updatedAt: now })
             .where(and(
                 eq(schema.posts.id, id),
-                eq(schema.posts.createdBy, userId),
                 isNull(schema.posts.deletedAt),
                 sql`exists (select 1 from post_listings where post_id = ${id})`,
             ))

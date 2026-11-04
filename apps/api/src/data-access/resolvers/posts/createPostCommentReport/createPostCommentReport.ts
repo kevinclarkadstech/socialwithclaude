@@ -1,27 +1,19 @@
-import { and, eq, isNull } from "drizzle-orm";
-import type { PostCommentReport, ReportReason } from "@myapp/shared/domains";
+import type { PostComment, PostCommentReport, ReportReason } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { toPostComment, toPostCommentReport } from "../../../mappers/posts";
+import { toPostCommentReport } from "../../../mappers/posts";
 
 /**
- * Reports a comment, keeping a snapshot of it as it is now. Reporting the
- * same comment again replaces the reason, details and snapshot. Null if the
- * comment doesn't exist or was deleted.
+ * Reports a comment, keeping `snapshot` (the comment as it is now).
+ * Reporting the same comment again replaces the reason, details and snapshot.
  */
-export async function createPostCommentReport({ id, userId, postCommentId, reason, details }: {
+export async function createPostCommentReport({ id, userId, postCommentId, reason, details, snapshot }: {
     id: string;
     userId: string;
     postCommentId: string;
     reason: ReportReason;
     details: string | null;
-}): Promise<PostCommentReport | null> {
-    const [comment] = await db
-        .select()
-        .from(schema.postComments)
-        .where(and(eq(schema.postComments.id, postCommentId), isNull(schema.postComments.deletedAt)));
-    if (!comment) return null;
-
-    const snapshot = toPostComment(comment);
+    snapshot: PostComment;
+}): Promise<PostCommentReport> {
     const [row] = await db
         .insert(schema.postCommentReports)
         .values({ id, postCommentId, reason, details, snapshot, createdBy: userId, updatedBy: userId })

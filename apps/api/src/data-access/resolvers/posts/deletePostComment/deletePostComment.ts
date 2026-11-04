@@ -1,7 +1,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db, schema } from "../../../db";
 
-/** Soft deletes one of `userId`'s comments. False if they have no such comment. */
+/** Soft deletes a comment, as `userId`. False if it doesn't exist or was already deleted. */
 export async function deletePostComment({ id, userId }: { id: string; userId: string }): Promise<boolean> {
     return db.transaction(async (tx) => {
         const [comment] = await tx
@@ -9,8 +9,7 @@ export async function deletePostComment({ id, userId }: { id: string; userId: st
             .set({ deletedAt: new Date(), updatedBy: userId, updatedAt: new Date() })
             .where(and(
                 eq(schema.postComments.id, id),
-                eq(schema.postComments.createdBy, userId),
-                isNull(schema.postComments.deletedAt),
+                    isNull(schema.postComments.deletedAt),
             ))
             .returning({ postId: schema.postComments.postId });
         if (!comment) return false;

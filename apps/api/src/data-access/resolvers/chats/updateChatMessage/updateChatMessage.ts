@@ -3,7 +3,7 @@ import type { ChatMessage } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toChatMessage } from "../../../mappers/chats";
 
-/** Changes the content of a message `userId` sent. Null if they sent no such message. */
+/** Changes a message's content, as `userId`. Null if it doesn't exist or was deleted. */
 export async function updateChatMessage({ id, userId, content }: {
     id: string;
     userId: string;
@@ -14,7 +14,6 @@ export async function updateChatMessage({ id, userId, content }: {
         .set({ content, updatedBy: userId, updatedAt: new Date() })
         .where(and(
             eq(schema.chatMessages.id, id),
-            eq(schema.chatMessages.createdBy, userId),
             isNull(schema.chatMessages.deletedAt),
         ))
         .returning();
