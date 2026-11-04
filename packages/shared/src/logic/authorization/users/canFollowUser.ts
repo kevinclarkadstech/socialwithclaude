@@ -1,4 +1,3 @@
-import { authenticationError, authorizationError, validationError } from "../../../error-handling";
 import type { CallingUser, CallingUserWithProfile } from "../../../domains/users/types/calling-user";
 import type { UserProfile } from "../../../domains/users/types/user-profile";
 import { allow, disallow, type AuthorizationResult } from "../allowDisallow";
@@ -7,13 +6,13 @@ import { hasProfile, isSelf, isSignedIn } from "../conditions";
 /** Anyone who has finished sign-up can follow (or ask to follow) someone else. */
 export function canFollowUser(caller: CallingUser | null, target: UserProfile): AuthorizationResult<CallingUserWithProfile> {
     if (!isSignedIn(caller)) {
-        return disallow("not-signed-in", authenticationError());
+        return disallow("not-signed-in");
     }
     if (!hasProfile(caller)) {
-        return disallow("profile-required", authorizationError("Finish signing up first"));
+        return disallow("profile-required");
     }
     if (isSelf(caller, target.userId)) {
-        return disallow("self", validationError("You can't follow yourself"));
+        return disallow("self", "You can't follow yourself");
     }
     return allow(caller);
 }

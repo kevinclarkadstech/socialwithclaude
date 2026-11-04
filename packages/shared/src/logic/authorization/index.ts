@@ -1,6 +1,6 @@
 export * from './allowDisallow';
 export * from './conditions';
-export * from './disallowedReason';
+export * from './disallowedReasons';
 export * from './logDisallowedResult';
 export * from './requireCaller';
 export * from './posts';
