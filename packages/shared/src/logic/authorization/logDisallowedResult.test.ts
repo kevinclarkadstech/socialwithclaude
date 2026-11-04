@@ -20,7 +20,7 @@ function spyLogger() {
 function logged(result: ReturnType<typeof canUpdatePost>) {
     if (result.ok) throw new Error("expected a failure");
     const logger = spyLogger();
-    logDisallowedResult(logger, result, { action: "update-post", callerId: undefined });
+    logDisallowedResult({ logger, result, details: { action: "update-post", callerId: undefined } });
     return logger;
 }
 

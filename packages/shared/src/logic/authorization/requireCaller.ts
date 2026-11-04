@@ -1,24 +1,23 @@
+import { authenticationError, authorizationError } from "../../error-handling";
 import type { CallingUser, CallingUserWithProfile } from "../../domains/users/types/calling-user";
-import type { Result } from "../../types/result";
-import { succeed } from "../../utils/result";
-import { unauthenticated, unauthorized } from "../../utils/failures";
-import { disallowedBecause } from "./disallowedReason";
+import { allow, disallow, type AuthorizationResult } from "./allowDisallow";
+import { hasProfile, isSignedIn } from "./conditions";
 
 /** Signed in. For onboarding; almost everything else needs requireCallerWithProfile. */
-export function requireCaller(caller: CallingUser | null): Result<CallingUser> {
-    if (!caller) {
-        return unauthenticated(disallowedBecause("not-signed-in"));
+export function requireCaller(caller: CallingUser | null): AuthorizationResult<CallingUser> {
+    if (!isSignedIn(caller)) {
+        return disallow("not-signed-in", authenticationError());
     }
-    return succeed(caller);
+    return allow(caller);
 }
 
-/** Signed in and finished sign-up. */
-export function requireCallerWithProfile(caller: CallingUser | null): Result<CallingUserWithProfile> {
-    if (!caller) {
-        return unauthenticated(disallowedBecause("not-signed-in"));
+/** Signed in and finished sign-up. For actions on the caller's own things. */
+export function requireCallerWithProfile(caller: CallingUser | null): AuthorizationResult<CallingUserWithProfile> {
+    if (!isSignedIn(caller)) {
+        return disallow("not-signed-in", authenticationError());
     }
-    if (!caller.profile) {
-        return unauthorized("Finish signing up first", disallowedBecause("profile-required"));
+    if (!hasProfile(caller)) {
+        return disallow("profile-required", authorizationError("Finish signing up first"));
     }
-    return succeed({ ...caller, profile: caller.profile });
+    return allow(caller);
 }

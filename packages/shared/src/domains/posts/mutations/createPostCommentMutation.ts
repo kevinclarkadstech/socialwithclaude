@@ -1,7 +1,7 @@
 import z from "zod";
 import type { Mutation } from "../../../types/mutation";
-import { succeed } from "../../../utils/result";
-import { notFound } from "../../../utils/failures";
+import { fail, succeed } from "../../../utils/result";
+import { notFoundError } from "../../../error-handling";
 import { canCommentOnPost } from "../../../logic/authorization/posts/canCommentOnPost";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
@@ -25,20 +25,24 @@ export const createPostCommentMutation: Mutation<{ input: CreatePostCommentMutat
     const post = await dependencies.getPostById({ id: input.postId });
     if (!post) {
         logger.info("Post to comment on not found", { postId: input.postId });
-        return notFound("Post not found");
+        return fail(notFoundError("Post not found"));
     }
 
     const caller = await dependencies.getCallingUser();
     const allowed = canCommentOnPost(caller, post);
     if (!allowed.ok) {
-        logDisallowedResult(logger, allowed, { action: "create-post-comment", callerId: caller?.userId, postId: post.id });
+        logDisallowedResult({
+            logger,
+            result: allowed,
+            details: { action: "create-post-comment", callerId: caller?.userId, postId: post.id },
+        });
         return allowed;
     }
 
     const comment = await dependencies.createPostComment({ ...input, userId: allowed.value.userId });
     if (!comment) {
         logger.info("Post deleted before it could be commented on", { postId: post.id });
-        return notFound("Post not found");
+        return fail(notFoundError("Post not found"));
     }
 
     return succeed(comment);

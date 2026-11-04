@@ -1,7 +1,7 @@
 import z from "zod";
 import type { Query } from "../../../types/query";
-import { succeed } from "../../../utils/result";
-import { notFound } from "../../../utils/failures";
+import { fail, succeed } from "../../../utils/result";
+import { notFoundError } from "../../../error-handling";
 import { PageInputSchema, type Page } from "../../../common/types/page";
 import { UserProfileSchema, type UserProfile } from "../../users/types/user-profile";
 import { PostSchema, type Post } from "../types/post";
@@ -27,7 +27,7 @@ export const getUserPostsQuery: Query<{ input: GetUserPostsQueryInput, output: G
     const profile = await dependencies.getUserProfileByUsername({ username: input.username });
     if (!profile) {
         logger.info("User not found", { username: input.username });
-        return notFound("User not found");
+        return fail(notFoundError("User not found"));
     }
 
     const page = await dependencies.getPosts({ createdBy: profile.userId, cursor: input.cursor, limit: input.limit });

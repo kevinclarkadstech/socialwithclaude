@@ -1,19 +1,19 @@
-import type { ChatMember } from "../../../domains/chats/types/chat-member";
+import { authenticationError, authorizationError, notFoundError } from "../../../error-handling";
 import type { CallingUser, CallingUserWithProfile } from "../../../domains/users/types/calling-user";
-import type { Result } from "../../../types/result";
-import { notFound } from "../../../utils/failures";
-import { isChatMember } from "../conditions";
-import { requireCallerWithProfile } from "../requireCaller";
-import { disallowedBecause } from "../disallowedReason";
+import type { ChatMember } from "../../../domains/chats/types/chat-member";
+import { allow, disallow, type AuthorizationResult } from "../allowDisallow";
+import { hasProfile, isChatMember, isSignedIn } from "../conditions";
 
 /** Only a chat's members can send messages in it. Anyone else gets not-found. */
-export function canSendChatMessage(caller: CallingUser | null, members: ChatMember[]): Result<CallingUserWithProfile> {
-    const signedIn = requireCallerWithProfile(caller);
-    if (!signedIn.ok) {
-        return signedIn;
+export function canSendChatMessage(caller: CallingUser | null, members: ChatMember[]): AuthorizationResult<CallingUserWithProfile> {
+    if (!isSignedIn(caller)) {
+        return disallow("not-signed-in", authenticationError());
     }
-    if (!isChatMember(signedIn.value, members)) {
-        return notFound("Chat not found", disallowedBecause("not-member"));
+    if (!hasProfile(caller)) {
+        return disallow("profile-required", authorizationError("Finish signing up first"));
     }
-    return signedIn;
+    if (!isChatMember(caller, members)) {
+        return disallow("not-member", notFoundError("Chat not found"));
+    }
+    return allow(caller);
 }

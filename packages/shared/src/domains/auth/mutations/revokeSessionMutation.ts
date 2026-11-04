@@ -1,7 +1,7 @@
 import z from "zod";
 import type { Mutation } from "../../../types/mutation";
-import { succeed } from "../../../utils/result";
-import { invalid, notFound } from "../../../utils/failures";
+import { fail, succeed } from "../../../utils/result";
+import { notFoundError, validationError } from "../../../error-handling";
 import { requireCaller } from "../../../logic/authorization/requireCaller";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
@@ -24,14 +24,18 @@ export const revokeSessionMutation: Mutation<{ input: RevokeSessionMutationInput
     const caller = await dependencies.getCallingUser();
     const allowed = requireCaller(caller);
     if (!allowed.ok) {
-        logDisallowedResult(logger, allowed, { action: "revoke-session", callerId: caller?.userId });
+        logDisallowedResult({
+            logger,
+            result: allowed,
+            details: { action: "revoke-session", callerId: caller?.userId },
+        });
         return allowed;
     }
 
     if (input.id === allowed.value.sessionId) {
         // The UI offers signOut, not revoke, for this device.
         logger.warn("Tried to revoke the current session", { callerId: allowed.value.userId });
-        return invalid("Use signOut for this device");
+        return fail(validationError("Use signOut for this device"));
     }
 
     const sessions = await dependencies.getUserSessions({ userId: allowed.value.userId });
@@ -39,7 +43,7 @@ export const revokeSessionMutation: Mutation<{ input: RevokeSessionMutationInput
     if (!session) {
         // Already signed out or expired, or not the caller's.
         logger.info("Session to revoke not found", { callerId: allowed.value.userId, sessionId: input.id });
-        return notFound("Session not found");
+        return fail(notFoundError("Session not found"));
     }
 
     await dependencies.revokeSessionToken(session.token);

@@ -1,7 +1,7 @@
 import z from "zod";
 import type { Mutation } from "../../../types/mutation";
-import { succeed } from "../../../utils/result";
-import { notFound } from "../../../utils/failures";
+import { fail, succeed } from "../../../utils/result";
+import { notFoundError } from "../../../error-handling";
 import { canDeletePostComment } from "../../../logic/authorization/posts/canDeletePostComment";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
@@ -23,13 +23,17 @@ export const deletePostCommentMutation: Mutation<{ input: DeletePostCommentMutat
     const comment = await dependencies.getPostCommentById({ id: input.id });
     if (!comment) {
         logger.info("Comment to delete not found", { postCommentId: input.id });
-        return notFound("Comment not found");
+        return fail(notFoundError("Comment not found"));
     }
 
     const caller = await dependencies.getCallingUser();
     const allowed = canDeletePostComment(caller, comment);
     if (!allowed.ok) {
-        logDisallowedResult(logger, allowed, { action: "delete-post-comment", callerId: caller?.userId, postCommentId: comment.id });
+        logDisallowedResult({
+            logger,
+            result: allowed,
+            details: { action: "delete-post-comment", callerId: caller?.userId, postCommentId: comment.id },
+        });
         return allowed;
     }
 

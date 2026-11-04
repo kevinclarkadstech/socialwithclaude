@@ -21,7 +21,11 @@ export const revokeOtherSessionsMutation: Mutation<{ input: RevokeOtherSessionsM
     const caller = await dependencies.getCallingUser();
     const allowed = requireCaller(caller);
     if (!allowed.ok) {
-        logDisallowedResult(logger, allowed, { action: "revoke-other-sessions", callerId: caller?.userId });
+        logDisallowedResult({
+            logger,
+            result: allowed,
+            details: { action: "revoke-other-sessions", callerId: caller?.userId },
+        });
         return allowed;
     }
 

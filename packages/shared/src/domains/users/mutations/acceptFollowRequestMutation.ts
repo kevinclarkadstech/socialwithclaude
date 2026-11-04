@@ -1,7 +1,7 @@
 import z from "zod";
 import type { Mutation } from "../../../types/mutation";
-import { succeed } from "../../../utils/result";
-import { notFound } from "../../../utils/failures";
+import { fail, succeed } from "../../../utils/result";
+import { notFoundError } from "../../../error-handling";
 import { requireCallerWithProfile } from "../../../logic/authorization/requireCaller";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../types/calling-user";
@@ -25,20 +25,24 @@ export const acceptFollowRequestMutation: Mutation<{ input: AcceptFollowRequestM
     const caller = await dependencies.getCallingUser();
     const allowed = requireCallerWithProfile(caller);
     if (!allowed.ok) {
-        logDisallowedResult(logger, allowed, { action: "accept-follow-request", callerId: caller?.userId });
+        logDisallowedResult({
+            logger,
+            result: allowed,
+            details: { action: "accept-follow-request", callerId: caller?.userId },
+        });
         return allowed;
     }
 
     const target = await dependencies.getUserProfileByUsername(input);
     if (!target) {
         logger.info("Follow requester not found", { username: input.username });
-        return notFound("User not found");
+        return fail(notFoundError("User not found"));
     }
 
     const follow = await dependencies.acceptUserFollowRequest({ userId: allowed.value.userId, followerId: target.userId });
     if (!follow) {
         logger.info("Follow request to accept not found", { callerId: allowed.value.userId, followerId: target.userId });
-        return notFound("Request not found");
+        return fail(notFoundError("Request not found"));
     }
 
     return succeed(follow);

@@ -1,7 +1,7 @@
 import z from "zod";
 import type { Mutation } from "../../../types/mutation";
-import { succeed } from "../../../utils/result";
-import { notFound } from "../../../utils/failures";
+import { fail, succeed } from "../../../utils/result";
+import { notFoundError } from "../../../error-handling";
 import { canViewChat } from "../../../logic/authorization/chats/canViewChat";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
@@ -26,14 +26,18 @@ export const clearChatMutation: Mutation<{ input: ClearChatMutationInput, output
     const caller = await dependencies.getCallingUser();
     const allowed = canViewChat(caller, members);
     if (!allowed.ok) {
-        logDisallowedResult(logger, allowed, { action: "clear-chat", callerId: caller?.userId, chatId: input.chatId });
+        logDisallowedResult({
+            logger,
+            result: allowed,
+            details: { action: "clear-chat", callerId: caller?.userId, chatId: input.chatId },
+        });
         return allowed;
     }
 
     const member = await dependencies.clearChat({ chatId: input.chatId, userId: allowed.value.userId });
     if (!member) {
         logger.info("Chat member removed during clear-chat", { chatId: input.chatId, callerId: allowed.value.userId });
-        return notFound("Chat not found");
+        return fail(notFoundError("Chat not found"));
     }
 
     return succeed(member);

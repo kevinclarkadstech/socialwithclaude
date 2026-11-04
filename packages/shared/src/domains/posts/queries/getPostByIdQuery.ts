@@ -1,7 +1,7 @@
 import z from "zod";
 import type { Query } from "../../../types/query";
-import { succeed } from "../../../utils/result";
-import { notFound } from "../../../utils/failures";
+import { fail, succeed } from "../../../utils/result";
+import { notFoundError } from "../../../error-handling";
 import { PostSchema, type Post } from "../types/post";
 
 export const GetPostByIdQueryInputSchema = z.object({
@@ -23,7 +23,7 @@ export const getPostByIdQuery: Query<{ input: GetPostByIdQueryInput, output: Get
     const post = await dependencies.getPostById({ id: input.postId });
     if (!post) {
         logger.info("Post not found", { postId: input.postId });
-        return notFound("Post not found");
+        return fail(notFoundError("Post not found"));
     }
 
     return succeed({ post });

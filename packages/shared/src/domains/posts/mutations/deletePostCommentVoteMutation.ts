@@ -22,7 +22,11 @@ export const deletePostCommentVoteMutation: Mutation<{ input: DeletePostCommentV
     const caller = await dependencies.getCallingUser();
     const allowed = requireCallerWithProfile(caller);
     if (!allowed.ok) {
-        logDisallowedResult(logger, allowed, { action: "delete-post-comment-vote", callerId: caller?.userId });
+        logDisallowedResult({
+            logger,
+            result: allowed,
+            details: { action: "delete-post-comment-vote", callerId: caller?.userId },
+        });
         return allowed;
     }
 

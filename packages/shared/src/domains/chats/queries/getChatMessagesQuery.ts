@@ -38,7 +38,11 @@ export const getChatMessagesQuery: Query<{ input: GetChatMessagesQueryInput, out
     const caller = await dependencies.getCallingUser();
     const allowed = canViewChat(caller, members);
     if (!allowed.ok) {
-        logDisallowedResult(logger, allowed, { action: "get-chat-messages", callerId: caller?.userId, chatId: input.chatId });
+        logDisallowedResult({
+            logger,
+            result: allowed,
+            details: { action: "get-chat-messages", callerId: caller?.userId, chatId: input.chatId },
+        });
         return allowed;
     }
 

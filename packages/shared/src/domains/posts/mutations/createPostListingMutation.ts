@@ -33,7 +33,11 @@ export const createPostListingMutation: Mutation<{ input: CreatePostListingMutat
     const caller = await dependencies.getCallingUser();
     const allowed = requireCallerWithProfile(caller);
     if (!allowed.ok) {
-        logDisallowedResult(logger, allowed, { action: "create-post-listing", callerId: caller?.userId });
+        logDisallowedResult({
+            logger,
+            result: allowed,
+            details: { action: "create-post-listing", callerId: caller?.userId },
+        });
         return allowed;
     }
 

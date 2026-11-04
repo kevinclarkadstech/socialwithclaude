@@ -1,3 +1,4 @@
+export * from './allowDisallow';
 export * from './conditions';
 export * from './disallowedReason';
 export * from './logDisallowedResult';

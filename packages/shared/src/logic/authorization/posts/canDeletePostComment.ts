@@ -1,19 +1,19 @@
-import type { PostComment } from "../../../domains/posts/types/post-comment";
+import { authenticationError, authorizationError } from "../../../error-handling";
 import type { CallingUser, CallingUserWithProfile } from "../../../domains/users/types/calling-user";
-import type { Result } from "../../../types/result";
-import { unauthorized } from "../../../utils/failures";
-import { isCreator } from "../conditions";
-import { requireCallerWithProfile } from "../requireCaller";
-import { disallowedBecause } from "../disallowedReason";
+import type { PostComment } from "../../../domains/posts/types/post-comment";
+import { allow, disallow, type AuthorizationResult } from "../allowDisallow";
+import { hasProfile, isCreator, isSignedIn } from "../conditions";
 
 /** Only the author can delete a comment. */
-export function canDeletePostComment(caller: CallingUser | null, comment: PostComment): Result<CallingUserWithProfile> {
-    const signedIn = requireCallerWithProfile(caller);
-    if (!signedIn.ok) {
-        return signedIn;
+export function canDeletePostComment(caller: CallingUser | null, comment: PostComment): AuthorizationResult<CallingUserWithProfile> {
+    if (!isSignedIn(caller)) {
+        return disallow("not-signed-in", authenticationError());
     }
-    if (!isCreator(signedIn.value, comment)) {
-        return unauthorized("Only the author can delete this comment", disallowedBecause("not-creator"));
+    if (!hasProfile(caller)) {
+        return disallow("profile-required", authorizationError("Finish signing up first"));
     }
-    return signedIn;
+    if (!isCreator(caller, comment)) {
+        return disallow("not-creator", authorizationError("Only the author can delete this comment"));
+    }
+    return allow(caller);
 }

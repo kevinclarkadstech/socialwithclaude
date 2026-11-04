@@ -1,7 +1,7 @@
 import z from "zod";
 import type { Mutation } from "../../../types/mutation";
-import { succeed } from "../../../utils/result";
-import { notFound } from "../../../utils/failures";
+import { fail, succeed } from "../../../utils/result";
+import { notFoundError } from "../../../error-handling";
 import { requireCallerWithProfile } from "../../../logic/authorization/requireCaller";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../types/calling-user";
@@ -28,7 +28,11 @@ export const updateMySettingsMutation: Mutation<{ input: UpdateMySettingsMutatio
     const caller = await dependencies.getCallingUser();
     const allowed = requireCallerWithProfile(caller);
     if (!allowed.ok) {
-        logDisallowedResult(logger, allowed, { action: "update-my-settings", callerId: caller?.userId });
+        logDisallowedResult({
+            logger,
+            result: allowed,
+            details: { action: "update-my-settings", callerId: caller?.userId },
+        });
         return allowed;
     }
 
@@ -36,7 +40,7 @@ export const updateMySettingsMutation: Mutation<{ input: UpdateMySettingsMutatio
     if (!settings) {
         // Sign-up creates settings with the profile, so this means broken data.
         logger.error("Settings missing for a user with a profile", { callerId: allowed.value.userId });
-        return notFound("Settings not found");
+        return fail(notFoundError("Settings not found"));
     }
 
     return succeed(settings);

@@ -26,7 +26,11 @@ export const sendChatMessageMutation: Mutation<{ input: SendChatMessageMutationI
     const caller = await dependencies.getCallingUser();
     const allowed = canSendChatMessage(caller, members);
     if (!allowed.ok) {
-        logDisallowedResult(logger, allowed, { action: "send-chat-message", callerId: caller?.userId, chatId: input.chatId });
+        logDisallowedResult({
+            logger,
+            result: allowed,
+            details: { action: "send-chat-message", callerId: caller?.userId, chatId: input.chatId },
+        });
         return allowed;
     }
 

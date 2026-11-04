@@ -1,7 +1,7 @@
 import z from "zod";
 import type { Mutation } from "../../../types/mutation";
-import { succeed } from "../../../utils/result";
-import { notFound } from "../../../utils/failures";
+import { fail, succeed } from "../../../utils/result";
+import { notFoundError } from "../../../error-handling";
 import { canUpdateChatMessage } from "../../../logic/authorization/chats/canUpdateChatMessage";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
@@ -23,20 +23,24 @@ export const updateChatMessageMutation: Mutation<{ input: UpdateChatMessageMutat
     const message = await dependencies.getChatMessageById({ id: input.id });
     if (!message) {
         logger.info("Message to update not found", { chatMessageId: input.id });
-        return notFound("Message not found");
+        return fail(notFoundError("Message not found"));
     }
 
     const caller = await dependencies.getCallingUser();
     const allowed = canUpdateChatMessage(caller, message);
     if (!allowed.ok) {
-        logDisallowedResult(logger, allowed, { action: "update-chat-message", callerId: caller?.userId, chatMessageId: message.id });
+        logDisallowedResult({
+            logger,
+            result: allowed,
+            details: { action: "update-chat-message", callerId: caller?.userId, chatMessageId: message.id },
+        });
         return allowed;
     }
 
     const updatedMessage = await dependencies.updateChatMessage({ ...input, userId: allowed.value.userId });
     if (!updatedMessage) {
         logger.info("Message deleted before it could be updated", { chatMessageId: message.id });
-        return notFound("Message not found");
+        return fail(notFoundError("Message not found"));
     }
 
     return succeed(updatedMessage);

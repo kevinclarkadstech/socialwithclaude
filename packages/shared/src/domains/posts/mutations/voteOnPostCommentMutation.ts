@@ -1,7 +1,7 @@
 import z from "zod";
 import type { Mutation } from "../../../types/mutation";
-import { succeed } from "../../../utils/result";
-import { notFound } from "../../../utils/failures";
+import { fail, succeed } from "../../../utils/result";
+import { notFoundError } from "../../../error-handling";
 import { canVoteOnPostComment } from "../../../logic/authorization/posts/canVoteOnPostComment";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
@@ -25,20 +25,24 @@ export const voteOnPostCommentMutation: Mutation<{ input: VoteOnPostCommentMutat
     const comment = await dependencies.getPostCommentById({ id: input.postCommentId });
     if (!comment) {
         logger.info("Comment to vote on not found", { postCommentId: input.postCommentId });
-        return notFound("Comment not found");
+        return fail(notFoundError("Comment not found"));
     }
 
     const caller = await dependencies.getCallingUser();
     const allowed = canVoteOnPostComment(caller, comment);
     if (!allowed.ok) {
-        logDisallowedResult(logger, allowed, { action: "vote-on-post-comment", callerId: caller?.userId, postCommentId: comment.id });
+        logDisallowedResult({
+            logger,
+            result: allowed,
+            details: { action: "vote-on-post-comment", callerId: caller?.userId, postCommentId: comment.id },
+        });
         return allowed;
     }
 
     const vote = await dependencies.setPostCommentVote({ ...input, userId: allowed.value.userId });
     if (!vote) {
         logger.info("Comment deleted before it could be voted on", { postCommentId: comment.id });
-        return notFound("Comment not found");
+        return fail(notFoundError("Comment not found"));
     }
 
     return succeed(vote);

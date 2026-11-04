@@ -27,7 +27,11 @@ export const getMySessionsQuery: Query<{ input: GetMySessionsQueryInput, output:
     const caller = await dependencies.getCallingUser();
     const allowed = requireCaller(caller);
     if (!allowed.ok) {
-        logDisallowedResult(logger, allowed, { action: "get-my-sessions", callerId: caller?.userId });
+        logDisallowedResult({
+            logger,
+            result: allowed,
+            details: { action: "get-my-sessions", callerId: caller?.userId },
+        });
         return allowed;
     }
 

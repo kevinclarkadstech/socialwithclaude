@@ -1,7 +1,7 @@
 import z from "zod";
 import type { Mutation } from "../../../types/mutation";
-import { succeed } from "../../../utils/result";
-import { notFound } from "../../../utils/failures";
+import { fail, succeed } from "../../../utils/result";
+import { notFoundError } from "../../../error-handling";
 import { canUpdatePost } from "../../../logic/authorization/posts/canUpdatePost";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
@@ -42,20 +42,24 @@ export const updatePostListingMutation: Mutation<{ input: UpdatePostListingMutat
     const post = await dependencies.getPostById({ id: input.id });
     if (!post?.listing) {
         logger.info("Listing to update not found", { postId: input.id, isPost: Boolean(post) });
-        return notFound("Listing not found");
+        return fail(notFoundError("Listing not found"));
     }
 
     const caller = await dependencies.getCallingUser();
     const allowed = canUpdatePost(caller, post);
     if (!allowed.ok) {
-        logDisallowedResult(logger, allowed, { action: "update-post-listing", callerId: caller?.userId, postId: post.id });
+        logDisallowedResult({
+            logger,
+            result: allowed,
+            details: { action: "update-post-listing", callerId: caller?.userId, postId: post.id },
+        });
         return allowed;
     }
 
     const updatedPost = await dependencies.updatePostListing({ ...input, userId: allowed.value.userId });
     if (!updatedPost) {
         logger.info("Listing deleted before it could be updated", { postId: post.id });
-        return notFound("Listing not found");
+        return fail(notFoundError("Listing not found"));
     }
 
     return succeed(updatedPost);

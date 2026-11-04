@@ -1,7 +1,7 @@
 import z from "zod";
 import type { Mutation } from "../../../types/mutation";
-import { succeed } from "../../../utils/result";
-import { unauthorized } from "../../../utils/failures";
+import { fail, succeed } from "../../../utils/result";
+import { authorizationError } from "../../../error-handling";
 import { requireCallerWithProfile } from "../../../logic/authorization/requireCaller";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
@@ -24,13 +24,17 @@ export const createPostMutation: Mutation<{ input: CreatePostMutationInput, outp
     const caller = await dependencies.getCallingUser();
     const allowed = requireCallerWithProfile(caller);
     if (!allowed.ok) {
-        logDisallowedResult(logger, allowed, { action: "create-post", callerId: caller?.userId });
+        logDisallowedResult({
+            logger,
+            result: allowed,
+            details: { action: "create-post", callerId: caller?.userId },
+        });
         return allowed;
     }
 
     if (!dependencies.isPostingEnabled()) {
         logger.info("Posting is turned off", { callerId: caller?.userId });
-        return unauthorized("Posting is turned off");
+        return fail(authorizationError("Posting is turned off"));
     }
 
     const createdPost = await dependencies.createPost({ ...input, userId: allowed.value.userId });

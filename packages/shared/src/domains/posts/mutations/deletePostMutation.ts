@@ -1,7 +1,7 @@
 import z from "zod";
 import type { Mutation } from "../../../types/mutation";
-import { succeed } from "../../../utils/result";
-import { notFound } from "../../../utils/failures";
+import { fail, succeed } from "../../../utils/result";
+import { notFoundError } from "../../../error-handling";
 import { canDeletePost } from "../../../logic/authorization/posts/canDeletePost";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
@@ -24,13 +24,17 @@ export const deletePostMutation: Mutation<{ input: DeletePostMutationInput, outp
     const post = await dependencies.getPostById({ id: input.id });
     if (!post) {
         logger.info("Post to delete not found", { postId: input.id });
-        return notFound("Post not found");
+        return fail(notFoundError("Post not found"));
     }
 
     const caller = await dependencies.getCallingUser();
     const allowed = canDeletePost(caller, post);
     if (!allowed.ok) {
-        logDisallowedResult(logger, allowed, { action: "delete-post", callerId: caller?.userId, postId: post.id });
+        logDisallowedResult({
+            logger,
+            result: allowed,
+            details: { action: "delete-post", callerId: caller?.userId, postId: post.id },
+        });
         return allowed;
     }
 

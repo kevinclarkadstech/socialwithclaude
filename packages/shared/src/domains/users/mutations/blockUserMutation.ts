@@ -1,7 +1,7 @@
 import z from "zod";
 import type { Mutation } from "../../../types/mutation";
-import { succeed } from "../../../utils/result";
-import { notFound } from "../../../utils/failures";
+import { fail, succeed } from "../../../utils/result";
+import { notFoundError } from "../../../error-handling";
 import { canBlockUser } from "../../../logic/authorization/users/canBlockUser";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../types/calling-user";
@@ -25,13 +25,17 @@ export const blockUserMutation: Mutation<{ input: BlockUserMutationInput, output
     const target = await dependencies.getUserProfileByUsername(input);
     if (!target) {
         logger.info("User to block not found", { username: input.username });
-        return notFound("User not found");
+        return fail(notFoundError("User not found"));
     }
 
     const caller = await dependencies.getCallingUser();
     const allowed = canBlockUser(caller, target);
     if (!allowed.ok) {
-        logDisallowedResult(logger, allowed, { action: "block-user", callerId: caller?.userId, targetUserId: target.userId });
+        logDisallowedResult({
+            logger,
+            result: allowed,
+            details: { action: "block-user", callerId: caller?.userId, targetUserId: target.userId },
+        });
         return allowed;
     }
 

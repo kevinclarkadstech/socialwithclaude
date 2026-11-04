@@ -1,7 +1,7 @@
 import z from "zod";
 import type { Mutation } from "../../../types/mutation";
-import { succeed } from "../../../utils/result";
-import { conflict } from "../../../utils/failures";
+import { fail, succeed } from "../../../utils/result";
+import { conflictError } from "../../../error-handling";
 import { requireCaller } from "../../../logic/authorization/requireCaller";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../types/calling-user";
@@ -33,20 +33,24 @@ export const createUserProfileMutation: Mutation<{ input: CreateUserProfileMutat
     const caller = await dependencies.getCallingUser();
     const allowed = requireCaller(caller);
     if (!allowed.ok) {
-        logDisallowedResult(logger, allowed, { action: "create-user-profile", callerId: caller?.userId });
+        logDisallowedResult({
+            logger,
+            result: allowed,
+            details: { action: "create-user-profile", callerId: caller?.userId },
+        });
         return allowed;
     }
 
     if (allowed.value.profile) {
         // The UI only offers sign-up to users without a profile.
         logger.warn("User already has a profile", { callerId: allowed.value.userId });
-        return conflict("Profile already exists");
+        return fail(conflictError("Profile already exists"));
     }
 
     const existingProfile = await dependencies.getUserProfileByUsername({ username: input.username });
     if (existingProfile) {
         logger.info("Username is taken", { callerId: allowed.value.userId, username: input.username });
-        return conflict("Username is taken");
+        return fail(conflictError("Username is taken"));
     }
 
     const profile = await dependencies.createUserProfile({ ...input, userId: allowed.value.userId });

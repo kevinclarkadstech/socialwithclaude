@@ -26,7 +26,11 @@ export const getMySavesQuery: Query<{ input: GetMySavesQueryInput, output: GetMy
     const caller = await dependencies.getCallingUser();
     const allowed = requireCallerWithProfile(caller);
     if (!allowed.ok) {
-        logDisallowedResult(logger, allowed, { action: "get-my-saves", callerId: caller?.userId });
+        logDisallowedResult({
+            logger,
+            result: allowed,
+            details: { action: "get-my-saves", callerId: caller?.userId },
+        });
         return allowed;
     }
 

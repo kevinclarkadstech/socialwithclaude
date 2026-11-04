@@ -1,7 +1,7 @@
 import z from "zod";
 import type { Mutation } from "../../../types/mutation";
-import { succeed } from "../../../utils/result";
-import { notFound } from "../../../utils/failures";
+import { fail, succeed } from "../../../utils/result";
+import { notFoundError } from "../../../error-handling";
 import { canReportPost } from "../../../logic/authorization/posts/canReportPost";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
@@ -36,13 +36,17 @@ export const reportPostMutation: Mutation<{ input: ReportPostMutationInput, outp
     const post = await dependencies.getPostById({ id: input.postId });
     if (!post) {
         logger.info("Post to report not found", { postId: input.postId });
-        return notFound("Post not found");
+        return fail(notFoundError("Post not found"));
     }
 
     const caller = await dependencies.getCallingUser();
     const allowed = canReportPost(caller, post);
     if (!allowed.ok) {
-        logDisallowedResult(logger, allowed, { action: "report-post", callerId: caller?.userId, postId: post.id });
+        logDisallowedResult({
+            logger,
+            result: allowed,
+            details: { action: "report-post", callerId: caller?.userId, postId: post.id },
+        });
         return allowed;
     }
 
