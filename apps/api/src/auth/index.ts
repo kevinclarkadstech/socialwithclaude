@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 
-import { schema, type Database } from "../data-access";
+import { newId, schema, type Database } from "../data-access/db";
 import { serverConfig } from "../config";
 
 export function createAuthInstance(db: Database) {
@@ -16,6 +16,12 @@ export function createAuthInstance(db: Database) {
         }),
         emailAndPassword: {
             enabled: true,
+        },
+        advanced: {
+            database: {
+                // ULIDs, like every other id in the app.
+                generateId: () => newId(),
+            },
         },
     });
 }

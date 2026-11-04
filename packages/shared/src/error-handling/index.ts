@@ -2,7 +2,7 @@ import z from "zod";
 
 export const AppErrorSchema = z.object({
     message: z.string().optional(),
-    type: z.union([z.literal('authorization'), z.literal('authentication'), z.literal('validation')]),
+    type: z.union([z.literal('authorization'), z.literal('authentication'), z.literal('validation'), z.literal('not-found'), z.literal('conflict')]),
     metadata: z.record(z.string(), z.any()).optional(),
     severity: z.union([z.literal('info'), z.literal('warn'), z.literal('error')]).default('info')
 });

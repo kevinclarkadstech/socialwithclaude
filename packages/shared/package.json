@@ -4,10 +4,12 @@
   "version": "0.0.1",
   "type": "module",
   "exports": {
+    "./common": "./src/common/types/index.ts",
     "./domains": "./src/domains/index.ts",
-    "./domains/*": "./src/domains/*.ts",
+    "./domains/*": "./src/domains/*/index.ts",
     "./types": "./src/types/index.ts",
     "./types/*": "./src/types/*.ts",
+    "./utils": "./src/utils/index.ts",
     "./observability": "./src/observability/index.ts",
     "./error-handling": "./src/error-handling/index.ts"
   },
