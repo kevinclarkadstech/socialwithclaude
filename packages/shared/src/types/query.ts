@@ -4,7 +4,6 @@ import type { Result } from "./result";
 export type QuerySchema<I = unknown, O = unknown> = { input: I; output: O };
 
 export type QueryContext = {
-    user: {} | null;
     logger: AppLogger;
 };
 

@@ -1,0 +1,14 @@
+import type { PostComment } from "../../../domains/posts/types/post-comment";
+import type { CallingUser, CallingUserWithProfile } from "../../../domains/users/types/calling-user";
+import type { Result } from "../../../types/result";
+import { unauthorized } from "../../../utils/failures";
+import { isCreator } from "../conditions";
+import { requireCallerWithProfile } from "../requireCaller";
+
+/** Only the author can edit a comment. */
+export function canUpdatePostComment(caller: CallingUser | null, comment: PostComment): Result<CallingUserWithProfile> {
+    const signedIn = requireCallerWithProfile(caller);
+    if (!signedIn.ok) return signedIn;
+    if (!isCreator(signedIn.value, comment)) return unauthorized("Only the author can edit this comment");
+    return signedIn;
+}
