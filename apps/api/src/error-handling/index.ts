@@ -28,11 +28,20 @@ export function appErrorToTrpcError(appError: AppError): AppTrpcError {
             metadata = appError.metadata;
             break;
         }
+        case "not-found": {
+            code = "NOT_FOUND";
+            break;
+        }
+        case "conflict": {
+            code = "CONFLICT";
+            break;
+        }
     }
 
     return new AppTrpcError({
-        code: "BAD_GATEWAY"
-    }, appError.metadata)
+        code,
+        message: appError.message,
+    }, metadata)
 }
 
 type OnErrorFn = Parameters<typeof trpcServer>['0']['onError'];

@@ -14,3 +14,4 @@ export type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 export const db = createDb(serverConfig.DATABASE_URL);
 
 export * as schema from './schema';
+export { newId } from './new-id';

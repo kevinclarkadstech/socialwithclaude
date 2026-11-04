@@ -9,8 +9,6 @@ export const ServerConfigSchema = z.object({
     BETTER_AUTH_URL: z.string(),
     // The web app's origin: allowed by CORS and trusted by better-auth.
     WEB_APP_URL: z.url(),
-    // Public base URL of the media bucket (or a CDN in front of it); keys are appended.
-    MEDIA_PUBLIC_URL: z.string().default("http://localhost:9000/media-bucket"),
 });
 
 export const serverConfig = (() => {
