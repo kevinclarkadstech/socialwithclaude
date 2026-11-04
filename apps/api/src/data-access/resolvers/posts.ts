@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, exists, gt, ilike, isNull, lt, lte, or, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
-import { schema, type Database } from "../db";
+import { db, schema, type Database } from "../db";
 import {
     IdConflictError,
     CannotReportOwnCommentError,
@@ -24,6 +24,7 @@ import {
     postVisibleTo,
     toMediaDto,
 } from "./shared";
+import type { Post } from "@myapp/shared/domains/posts/types/post";
 
 const commentFields = {
     id: schema.postComments.id,
@@ -35,197 +36,48 @@ const commentFields = {
     updatedAt: schema.postComments.updatedAt,
 };
 
-const notDeleted = postNotDeleted;
-const commentNotDeleted = isNull(schema.postComments.deletedAt);
+// const notDeleted = postNotDeleted;
+// const commentNotDeleted = isNull(schema.postComments.deletedAt);
 
-const cursorPost = alias(schema.posts, "cursor_post");
+// const cursorPost = alias(schema.posts, "cursor_post");
 
 /**
  * Posts after the cursor post in newest-first order: (created_at, id) less
  * than the cursor's. The cursor stays an id; its created_at is looked up.
  */
-function postsBefore(db: Database, cursor: string) {
-    const cursorRow = db
-        .select({ createdAt: cursorPost.createdAt, id: cursorPost.id })
-        .from(cursorPost)
-        .where(eq(cursorPost.id, cursor));
-    return sql`(${schema.posts.createdAt}, ${schema.posts.id}) < (${cursorRow})`;
-}
+// function postsBefore(db: Database, cursor: string) {
+//     const cursorRow = db
+//         .select({ createdAt: cursorPost.createdAt, id: cursorPost.id })
+//         .from(cursorPost)
+//         .where(eq(cursorPost.id, cursor));
+//     return sql`(${schema.posts.createdAt}, ${schema.posts.id}) < (${cursorRow})`;
+// }
 
 /**
  * True when the comment's post exists and isn't deleted (comments on deleted
  * posts are hidden). Pass `postAuthorId` to also require that post author,
  * and `viewerId` to also require that they can see the post (postVisibleTo).
  */
-function commentPostIsLive(
-    db: Database,
-    { postAuthorId, viewerId }: { postAuthorId?: string; viewerId?: string } = {},
-) {
-    return exists(
-        db
-            .select({ one: sql`1` })
-            .from(schema.posts)
-            .where(
-                and(
-                    eq(schema.posts.id, schema.postComments.postId),
-                    notDeleted,
-                    postAuthorId ? eq(schema.posts.createdBy, postAuthorId) : undefined,
-                    viewerId ? postVisibleTo(viewerId) : undefined,
-                ),
-            ),
-    );
-}
+// function commentPostIsLive(
+//     db: Database,
+//     { postAuthorId, viewerId }: { postAuthorId?: string; viewerId?: string } = {},
+// ) {
+//     return exists(
+//         db
+//             .select({ one: sql`1` })
+//             .from(schema.posts)
+//             .where(
+//                 and(
+//                     eq(schema.posts.id, schema.postComments.postId),
+//                     notDeleted,
+//                     postAuthorId ? eq(schema.posts.createdBy, postAuthorId) : undefined,
+//                     viewerId ? postVisibleTo(viewerId) : undefined,
+//                 ),
+//             ),
+//     );
+// }
 
-/**
- * Returns the post with its author, or null if it doesn't exist, was deleted
- * or `viewerId` can't see it (postVisibleTo).
- * `listing` holds the listing details when `kind` is "listing", else null.
- * `media` is the post's photos in order.
- * When `viewerId` is given, `isSaved` reports whether the viewer saved it.
- */
-export async function getPostById(db: Database, postId: string, viewerId: string | null) {
-    const [post] = await db
-        .select({
-            ...postFields,
-            author: authorFields,
-            listing: listingFields,
-            media: postMediaSql,
-            isSaved: sql<boolean>`${schema.postSaves.postId} is not null`,
-        })
-        .from(schema.posts)
-        .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.createdBy))
-        .leftJoin(schema.postListingDetails, eq(schema.postListingDetails.postId, schema.posts.id))
-        .leftJoin(
-            schema.postSaves,
-            viewerId
-                ? and(
-                    eq(schema.postSaves.userId, viewerId),
-                    eq(schema.postSaves.postId, schema.posts.id),
-                )
-                : sql`false`,
-        )
-        .where(and(eq(schema.posts.id, postId), notDeleted, postVisibleTo(viewerId)))
-        .limit(1);
 
-    return post ? { ...post, media: post.media.map(toMediaDto) } : null;
-}
-
-/**
- * The Feed tab: regular posts (not listings), newest first by server time, with authors,
- * photos and `isSaved` for the viewer. `authorId` limits it to one user's posts
- * (their profile). Only posts `viewerId` can see (postVisibleTo). Pass the
- * previous page's `nextCursor` as `cursor` to get the next page.
- */
-export async function getFeed(
-    db: Database,
-    viewerId: string | null,
-    { cursor, limit, authorId }: { cursor?: string | null; limit: number; authorId?: string },
-) {
-    const rows = await db
-        .select({
-            ...postFields,
-            author: authorFields,
-            media: postMediaSql,
-            isSaved: sql<boolean>`${schema.postSaves.postId} is not null`,
-        })
-        .from(schema.posts)
-        .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.createdBy))
-        .leftJoin(
-            schema.postSaves,
-            viewerId
-                ? and(
-                    eq(schema.postSaves.userId, viewerId),
-                    eq(schema.postSaves.postId, schema.posts.id),
-                )
-                : sql`false`,
-        )
-        .where(
-            and(
-                eq(schema.posts.kind, "post"),
-                notDeleted,
-                postVisibleTo(viewerId),
-                authorId ? eq(schema.posts.createdBy, authorId) : undefined,
-                cursor ? postsBefore(db, cursor) : undefined,
-            ),
-        )
-        .orderBy(desc(schema.posts.createdAt), desc(schema.posts.id))
-        .limit(limit + 1);
-
-    const hasMore = rows.length > limit;
-    const items = hasMore ? rows.slice(0, limit) : rows;
-
-    return {
-        items: items.map((post) => ({ ...post, media: post.media.map(toMediaDto) })),
-        nextCursor: hasMore ? items[items.length - 1]!.id : null,
-    };
-}
-
-/**
- * Posts whose body (or, for listings, title) contains `query`
- * (case-insensitive), newest first, with authors, listing details, first
- * photo (`thumbnail`) and `isSaved` for `viewerId`. `kind` limits it to posts
- * or listings. Only posts `viewerId` can see (postVisibleTo). Pass the
- * previous page's `nextCursor` as `cursor` to get the next page.
- */
-export async function searchPosts(
-    db: Database,
-    query: string,
-    {
-        kind,
-        cursor,
-        limit,
-        viewerId = null,
-    }: {
-        kind?: (typeof schema.postKinds)[number] | null;
-        cursor?: string | null;
-        limit: number;
-        viewerId?: string | null;
-    },
-) {
-    const pattern = containsPattern(query);
-    const rows = await db
-        .select({
-            ...postFields,
-            author: authorFields,
-            listing: listingFields,
-            thumbnail: postThumbnailSql,
-            isSaved: sql<boolean>`${schema.postSaves.postId} is not null`,
-        })
-        .from(schema.posts)
-        .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.createdBy))
-        .leftJoin(schema.postListingDetails, eq(schema.postListingDetails.postId, schema.posts.id))
-        .leftJoin(
-            schema.postSaves,
-            viewerId
-                ? and(
-                    eq(schema.postSaves.userId, viewerId),
-                    eq(schema.postSaves.postId, schema.posts.id),
-                )
-                : sql`false`,
-        )
-        .where(
-            and(
-                notDeleted,
-                postVisibleTo(viewerId),
-                kind ? eq(schema.posts.kind, kind) : undefined,
-                or(ilike(schema.posts.body, pattern), ilike(schema.postListingDetails.title, pattern)),
-                cursor ? postsBefore(db, cursor) : undefined,
-            ),
-        )
-        .orderBy(desc(schema.posts.createdAt), desc(schema.posts.id))
-        .limit(limit + 1);
-
-    const hasMore = rows.length > limit;
-    const items = hasMore ? rows.slice(0, limit) : rows;
-
-    return {
-        items: items.map(({ thumbnail, ...post }) => ({
-            ...post,
-            thumbnail: thumbnail && toMediaDto(thumbnail),
-        })),
-        nextCursor: hasMore ? items[items.length - 1]!.id : null,
-    };
-}
 
 /**
  * Saves (bookmarks) a post for a user. Saving an already-saved post is a no-op.
@@ -455,8 +307,8 @@ export async function getPostComments(
             ...(sort === "top"
                 ? [desc(score), asc(id)]
                 : sort === "newest"
-                  ? [desc(schema.postComments.createdAt), desc(id)]
-                  : [asc(schema.postComments.createdAt), asc(id)]),
+                    ? [desc(schema.postComments.createdAt), desc(id)]
+                    : [asc(schema.postComments.createdAt), asc(id)]),
         )
         .limit(limit + 1);
 
@@ -550,7 +402,7 @@ export async function createPostComment(
     body: string,
     id?: string,
 ) {
-    class AlreadyExists extends Error {}
+    class AlreadyExists extends Error { }
 
     try {
         return await db.transaction(async (tx) => {

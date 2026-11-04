@@ -1,33 +1,33 @@
 import { boolean, check, index, integer, jsonb, pgTable, primaryKey, smallint, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { sql, type AnyColumn } from "drizzle-orm";
-import { monotonicFactory } from "ulid";
-import { listingConditions, listingPriceTypes, listingStatuses } from "@myapp/shared/types/posts";
+import { listingConditions, listingPriceTypes, listingStatuses } from "@myapp/shared/domains";
 
 const commonFields = {
     id: text("id").primaryKey(),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }
-
 export const users = pgTable("users", {
     ...commonFields,
     name: text("name").notNull(),
-    email: text("email").notNull().unique(),
+    email: text("email").notNull(),
     emailVerified: boolean("email_verified").notNull().default(false),
     image: text("image"),
-});
-
+}, (t) => [
+    uniqueIndex("users_email_lower_idx").on(sql`lower(${t.email})`),
+]);
 export const sessions = pgTable("sessions", {
     ...commonFields,
-    expiresAt: timestamp("expires_at").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     token: text("token").notNull().unique(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
     userId: text("user_id")
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
-});
-
+}, (t) => [
+    index("sessions_user_id_idx").on(t.userId),
+]);
 export const accounts = pgTable("accounts", {
     ...commonFields,
     accountId: text("account_id").notNull(),
@@ -38,19 +38,22 @@ export const accounts = pgTable("accounts", {
     accessToken: text("access_token"),
     refreshToken: text("refresh_token"),
     idToken: text("id_token"),
-    accessTokenExpiresAt: timestamp("access_token_expires_at"),
-    refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at", { withTimezone: true }),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at", { withTimezone: true }),
     scope: text("scope"),
     password: text("password"),
-});
-
+}, (t) => [
+    uniqueIndex("accounts_provider_account_idx").on(t.providerId, t.accountId),
+    index("accounts_user_id_idx").on(t.userId),
+]);
 export const verifications = pgTable("verifications", {
     ...commonFields,
     identifier: text("identifier").notNull(),
     value: text("value").notNull(),
-    expiresAt: timestamp("expires_at").notNull(),
-});
-
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+}, (t) => [
+    index("verifications_identifier_idx").on(t.identifier),
+]);
 export const profiles = pgTable("profiles", {
     userId: text("user_id")
         .primaryKey()
@@ -62,16 +65,14 @@ export const profiles = pgTable("profiles", {
     avatarUrl: text("avatar_url"),
     numFollowers: integer("num_followers").notNull().default(0),
     numFollowing: integer("num_following").notNull().default(0),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
     uniqueIndex("profiles_username_lower_idx").on(sql`lower(${t.username})`),
     check("profiles_num_followers_non_negative", sql`${t.numFollowers} >= 0`),
     check("profiles_num_following_non_negative", sql`${t.numFollowing} >= 0`),
 ]);
-
 export const profileVisibilities = ["public", "followers"] as const;
-
 /**
  * One row per user, created at sign-up. Kept flat (one column per setting) so
  * adding a setting is one ADD COLUMN with a default; the API groups them
@@ -87,14 +88,12 @@ export const userSettings = pgTable("user_settings", {
     followersCanTag: boolean("followers_can_tag").notNull().default(true),
     nonFollowersCanTag: boolean("non_followers_can_tag").notNull().default(false),
     profileVisibility: text("profile_visibility", { enum: profileVisibilities }).notNull().default("public"),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
     check("user_settings_profile_visibility_valid", sql`${t.profileVisibility} in ('public', 'followers')`),
 ]);
-
 export const followStatuses = ["pending", "accepted", "denied"] as const;
-
 /**
  * `follower_id` follows (or asked to follow) `following_id`. Following a
  * public profile is accepted right away; following a followers-only profile
@@ -115,9 +114,9 @@ export const userFollows = pgTable("user_follows", {
     status: text("status", { enum: followStatuses }).notNull().default("accepted"),
     withdrawn: boolean("withdrawn").notNull().default(false),
     // When requested (or followed, if accepted right away).
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     // When the status (or withdrawn) last changed.
-    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
     primaryKey({ columns: [t.followerId, t.followingId] }),
     index("user_follows_following_id_idx").on(t.followingId),
@@ -129,7 +128,6 @@ export const userFollows = pgTable("user_follows", {
     check("user_follows_status_valid", sql`${t.status} in ('pending', 'accepted', 'denied')`),
     check("user_follows_withdrawn_only_denied", sql`not ${t.withdrawn} or ${t.status} = 'denied'`),
 ]);
-
 /** `user_id` has blocked `blocked_user_id`. Blocking hides content both ways. */
 export const userBlocks = pgTable("user_blocks", {
     userId: text("user_id")
@@ -138,18 +136,13 @@ export const userBlocks = pgTable("user_blocks", {
     blockedUserId: text("blocked_user_id")
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
     primaryKey({ columns: [t.userId, t.blockedUserId] }),
     // "Who has blocked me" direction of the block list.
     index("user_blocks_blocked_user_id_idx").on(t.blockedUserId),
     check("user_blocks_no_self_block", sql`${t.userId} <> ${t.blockedUserId}`),
 ]);
-// ULIDs sort by creation time, so `id` doubles as a pagination cursor. Monotonic
-// so IDs created in the same millisecond still sort in creation order.
-const ulid = monotonicFactory();
-const ulidId = () => text("id").primaryKey().$defaultFn(() => ulid());
-
 /**
  * Who created and last changed a user-created record, and when. Every
  * user-created table spreads this in; on insert set `updatedBy` to the
@@ -162,23 +155,21 @@ const auditFields = () => ({
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
     updatedBy: text("updated_by").references(() => users.id, { onDelete: "set null" }),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
-
 export const postKinds = ["post", "listing"] as const;
-
 export const posts = pgTable("posts", {
-    id: ulidId(),
+    id: text("id").primaryKey(),
     // created_by is the author.
     kind: text("kind", { enum: postKinds }).notNull().default("post"),
     body: text("body").notNull(),
     numComments: integer("num_comments").notNull().default(0),
     numSaves: integer("num_saves").notNull().default(0),
     ...auditFields(),
-    deletedAt: timestamp("deleted_at"),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
 }, (t) => [
-    index("posts_created_by_id_idx").on(t.createdBy, t.id),
+    index("posts_created_by_created_at_id_idx").on(t.createdBy, t.createdAt, t.id),
     // Feed: one kind, newest first. Lists sort by server time, not by id:
     // ids are generated by clients, so their embedded time isn't trusted.
     index("posts_kind_created_at_id_idx").on(t.kind, t.createdAt, t.id),
@@ -186,9 +177,8 @@ export const posts = pgTable("posts", {
     check("posts_num_saves_non_negative", sql`${t.numSaves} >= 0`),
     check("posts_kind_valid", sql`${t.kind} in ('post', 'listing')`),
 ]);
-
 export const postComments = pgTable("post_comments", {
-    id: ulidId(),
+    id: text("id").primaryKey(),
     postId: text("post_id")
         .notNull()
         .references(() => posts.id, { onDelete: "cascade" }),
@@ -201,21 +191,20 @@ export const postComments = pgTable("post_comments", {
         .notNull()
         .generatedAlwaysAs(sql`"num_upvotes" - "num_downvotes"`),
     ...auditFields(),
-    deletedAt: timestamp("deleted_at"),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
 }, (t) => [
     // A post's comments in order (server time; id breaks ties).
     index("post_comments_post_id_created_at_id_idx").on(t.postId, t.createdAt, t.id),
     check("post_comments_num_upvotes_non_negative", sql`${t.numUpvotes} >= 0`),
     check("post_comments_num_downvotes_non_negative", sql`${t.numDownvotes} >= 0`),
 ]);
-
 /**
  * A comment's earlier text: one row per edit, holding the body as it was
  * before that edit (created_by is the editor, created_at the edit time).
  * Never shown to users; kept so moderation can see what was said.
  */
 export const postCommentEdits = pgTable("post_comment_edits", {
-    id: ulidId(),
+    id: text("id").primaryKey(),
     commentId: text("comment_id")
         .notNull()
         .references(() => postComments.id, { onDelete: "cascade" }),
@@ -224,7 +213,6 @@ export const postCommentEdits = pgTable("post_comment_edits", {
 }, (t) => [
     index("post_comment_edits_comment_id_created_at_idx").on(t.commentId, t.createdAt),
 ]);
-
 /** One vote per user per comment: 1 = upvote, -1 = downvote. */
 export const postCommentVotes = pgTable("post_comment_votes", {
     userId: text("user_id")
@@ -234,14 +222,13 @@ export const postCommentVotes = pgTable("post_comment_votes", {
         .notNull()
         .references(() => postComments.id, { onDelete: "cascade" }),
     value: smallint("value").notNull(),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
     primaryKey({ columns: [t.userId, t.commentId] }),
     index("post_comment_votes_comment_id_idx").on(t.commentId),
     check("post_comment_votes_value_valid", sql`${t.value} in (-1, 1)`),
 ]);
-
 export const postSaves = pgTable("post_saves", {
     userId: text("user_id")
         .notNull()
@@ -249,18 +236,14 @@ export const postSaves = pgTable("post_saves", {
     postId: text("post_id")
         .notNull()
         .references(() => posts.id, { onDelete: "cascade" }),
-    // Time-ordered, used as the cursor for "my saved posts, newest first".
-    id: text("id").notNull().unique().$defaultFn(() => ulid()),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+    // Server-time ordered, used as the cursor for "my saved posts, newest first".
+    id: text("id").notNull().unique(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
     primaryKey({ columns: [t.userId, t.postId] }),
-    index("post_saves_user_id_id_idx").on(t.userId, t.id),
+    index("post_saves_user_id_created_at_id_idx").on(t.userId, t.createdAt, t.id),
     index("post_saves_post_id_idx").on(t.postId),
 ]);
-
-// Shared with the web app's forms; the CHECKs below must list the same values.
-export { listingConditions, listingPriceTypes, listingStatuses };
-
 /**
  * Extra details for posts with kind 'listing' (1:1 with posts). The post body
  * is the listing's description. Prices are integer cents.
@@ -271,15 +254,15 @@ export const postListingDetails = pgTable("post_listing_details", {
         .references(() => posts.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     // 'free' and 'multiple' ("multiple items, see description") have no price.
-    priceType: text("price_type", { enum: listingPriceTypes }).notNull(),
+    priceType: text("price_type", { enum: [listingPriceTypes[0], ...listingPriceTypes] }).notNull(),
     priceCents: integer("price_cents"),
-    condition: text("condition", { enum: listingConditions }),
-    status: text("status", { enum: listingStatuses }).notNull().default("available"),
+    condition: text("condition", { enum: [listingConditions[0], ...listingConditions,] }),
+    status: text("status", { enum: [listingStatuses[0], ...listingStatuses] }).notNull().default("available"),
     location: text("location"),
     // Copy of posts.created_at (set once, never changes) so the marketplace
     // feed can filter by status and sort by time from one index.
-    createdAt: timestamp("created_at").notNull(),
-    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
     // Marketplace feed: filter by status, newest first.
     index("post_listing_details_status_created_at_post_id_idx").on(t.status, t.createdAt, t.postId),
@@ -292,7 +275,6 @@ export const postListingDetails = pgTable("post_listing_details", {
         sql`(${t.priceType} in ('fixed', 'negotiable')) = (${t.priceCents} is not null)`,
     ),
 ]);
-
 /** A listing's details as they were before an edit (see postEdits). */
 export type ListingDetailsSnapshot = {
     title: string;
@@ -301,7 +283,6 @@ export type ListingDetailsSnapshot = {
     condition: (typeof listingConditions)[number] | null;
     location: string | null;
 };
-
 /**
  * A post's (or listing's) earlier text: one row per edit, holding the body
  * as it was before that edit and, for listings, the details (title, price,
@@ -310,7 +291,7 @@ export type ListingDetailsSnapshot = {
  * aren't kept: replaced photos are deleted from storage.
  */
 export const postEdits = pgTable("post_edits", {
-    id: ulidId(),
+    id: text("id").primaryKey(),
     postId: text("post_id")
         .notNull()
         .references(() => posts.id, { onDelete: "cascade" }),
@@ -321,13 +302,12 @@ export const postEdits = pgTable("post_edits", {
 }, (t) => [
     index("post_edits_post_id_created_at_idx").on(t.postId, t.createdAt),
 ]);
-
 /**
  * Photos attached to a post, in display order. Rows only exist for submitted
  * posts; abandoned uploads never get a row (storage expires them).
  */
 export const postMedia = pgTable("post_media", {
-    id: ulidId(),
+    id: text("id").primaryKey(),
     postId: text("post_id")
         .notNull()
         .references(() => posts.id, { onDelete: "cascade" }),
@@ -338,15 +318,17 @@ export const postMedia = pgTable("post_media", {
     width: integer("width"),
     height: integer("height"),
     altText: text("alt_text"),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
     uniqueIndex("post_media_post_id_position_idx").on(t.postId, t.position),
     check("post_media_position_range", sql`${t.position} between 0 and 9`),
     check("post_media_mime_type_valid", sql`${t.mimeType} in ('image/jpeg', 'image/png', 'image/webp')`),
     check("post_media_size_valid", sql`${t.sizeBytes} > 0 and ${t.sizeBytes} <= 1048576`),
-    check("post_media_dimensions_positive", sql`${t.width} > 0 and ${t.height} > 0`),
+    check(
+        "post_media_dimensions_valid",
+        sql`((${t.width} is null and ${t.height} is null) or (${t.width} is not null and ${t.height} is not null and ${t.width} > 0 and ${t.height} > 0))`,
+    ),
 ]);
-
 /** Reasons and review statuses shared by all report tables. */
 export const reportReasons = [
     "spam",
@@ -359,14 +341,12 @@ export const reportReasons = [
     "other",
 ] as const;
 export const reportStatuses = ["open", "reviewed", "dismissed"] as const;
-
 /** `column in ('a', 'b', …)` for CHECK constraints built from a const list. */
 const isOneOf = (column: AnyColumn, values: readonly string[]) =>
-    sql`${column} in (${sql.raw(values.map((v) => `'${v}'`).join(", "))})`;
-
+    sql`${column} in (${sql.raw(values.map((value) => `'${value.replaceAll("'", "''")}'`).join(", "))})`;
 /** One report per user per post; reporting again updates reason/details. */
 export const postReports = pgTable("post_reports", {
-    id: ulidId(),
+    id: text("id").primaryKey(),
     postId: text("post_id")
         .notNull()
         .references(() => posts.id, { onDelete: "cascade" }),
@@ -379,15 +359,14 @@ export const postReports = pgTable("post_reports", {
 }, (t) => [
     uniqueIndex("post_reports_created_by_post_id_idx").on(t.createdBy, t.postId),
     index("post_reports_post_id_idx").on(t.postId),
-    // Moderation queue: open reports, oldest first.
-    index("post_reports_status_id_idx").on(t.status, t.id),
+    // Moderation queue: filter by status, oldest first by server time (ID breaks ties).
+    index("post_reports_status_created_at_id_idx").on(t.status, t.createdAt, t.id),
     check("post_reports_reason_valid", isOneOf(t.reason, reportReasons)),
     check("post_reports_status_valid", isOneOf(t.status, reportStatuses)),
 ]);
-
 /** One report per user per comment; reporting again updates reason/details. */
 export const postCommentReports = pgTable("post_comment_reports", {
-    id: ulidId(),
+    id: text("id").primaryKey(),
     commentId: text("comment_id")
         .notNull()
         .references(() => postComments.id, { onDelete: "cascade" }),
@@ -400,18 +379,16 @@ export const postCommentReports = pgTable("post_comment_reports", {
 }, (t) => [
     uniqueIndex("post_comment_reports_created_by_comment_id_idx").on(t.createdBy, t.commentId),
     index("post_comment_reports_comment_id_idx").on(t.commentId),
-    // Moderation queue: open reports, oldest first.
-    index("post_comment_reports_status_id_idx").on(t.status, t.id),
+    // Moderation queue: filter by status, oldest first by server time (ID breaks ties).
+    index("post_comment_reports_status_created_at_id_idx").on(t.status, t.createdAt, t.id),
     check("post_comment_reports_reason_valid", isOneOf(t.reason, reportReasons)),
     check("post_comment_reports_status_valid", isOneOf(t.status, reportStatuses)),
 ]);
-
 export const feedbackCategories = ["bug", "idea", "other"] as const;
 export const feedbackStatuses = ["new", "read", "done"] as const;
-
 /** Feedback users send from the app. */
 export const userFeedback = pgTable("user_feedback", {
-    id: ulidId(),
+    id: text("id").primaryKey(),
     // created_by sent it.
     category: text("category", { enum: feedbackCategories }).notNull(),
     message: text("message").notNull(),
@@ -421,13 +398,12 @@ export const userFeedback = pgTable("user_feedback", {
     status: text("status", { enum: feedbackStatuses }).notNull().default("new"),
     ...auditFields(),
 }, (t) => [
-    // Inbox: new feedback, oldest first.
-    index("user_feedback_status_id_idx").on(t.status, t.id),
+    // Inbox: filter by status, oldest first by server time (ID breaks ties).
+    index("user_feedback_status_created_at_id_idx").on(t.status, t.createdAt, t.id),
     index("user_feedback_created_by_idx").on(t.createdBy),
     check("user_feedback_category_valid", isOneOf(t.category, feedbackCategories)),
     check("user_feedback_status_valid", isOneOf(t.status, feedbackStatuses)),
 ]);
-
 /**
  * A private conversation. Only 1:1 chats for now: `created_by` started it
  * and `receiver_id` is the other member. Each pair has one chat, whichever of
@@ -435,11 +411,11 @@ export const userFeedback = pgTable("user_feedback", {
  * future group chats.
  */
 export const chats = pgTable("chats", {
-    id: ulidId(),
+    id: text("id").primaryKey(),
     receiverId: text("receiver_id").references(() => users.id, { onDelete: "cascade" }),
     // Time of the newest message; null until the first one. Orders the inbox.
     // Not a change to the chat, so it doesn't touch updated_by/updated_at.
-    lastMessageAt: timestamp("last_message_at"),
+    lastMessageAt: timestamp("last_message_at", { withTimezone: true }),
     ...auditFields(),
 }, (t) => [
     // Partial: least/greatest skip nulls, so group chats (no receiver) would
@@ -449,7 +425,6 @@ export const chats = pgTable("chats", {
         .where(sql`${t.receiverId} is not null`),
     check("chats_direct_not_self", sql`${t.createdBy} <> ${t.receiverId}`),
 ]);
-
 export const chatMembers = pgTable("chat_members", {
     chatId: text("chat_id")
         .notNull()
@@ -458,20 +433,19 @@ export const chatMembers = pgTable("chat_members", {
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
     // Messages after this are unread for this member; null when nothing is read.
-    lastReadAt: timestamp("last_read_at"),
+    lastReadAt: timestamp("last_read_at", { withTimezone: true }),
     // Set when the member deletes the chat (for themselves only): messages up
     // to this time are hidden for them, and the chat leaves their inbox until
     // a newer message arrives. Null when never deleted.
-    clearedAt: timestamp("cleared_at"),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+    clearedAt: timestamp("cleared_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
     primaryKey({ columns: [t.chatId, t.userId] }),
     // "My chats" (the inbox).
     index("chat_members_user_id_idx").on(t.userId),
 ]);
-
 export const chatMessages = pgTable("chat_messages", {
-    id: ulidId(),
+    id: text("id").primaryKey(),
     chatId: text("chat_id")
         .notNull()
         .references(() => chats.id, { onDelete: "cascade" }),
@@ -482,20 +456,19 @@ export const chatMessages = pgTable("chat_messages", {
     // Set when the sender deletes it (for everyone). The row and body are kept
     // for a while so a report can still see what it said, but the API never
     // returns a deleted message's body: members see a "deleted" placeholder.
-    deletedAt: timestamp("deleted_at"),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
 }, (t) => [
     // A chat's messages by server time (id breaks ties); also the latest
     // message and unread counts.
     index("chat_messages_chat_id_created_at_id_idx").on(t.chatId, t.createdAt, t.id),
 ]);
-
 /**
  * A chat message's earlier text: one row per edit, holding the body as it
  * was before that edit (created_by is the editor, created_at the edit time).
  * Never shown to members; kept so moderation can see what was said.
  */
 export const chatMessageEdits = pgTable("chat_message_edits", {
-    id: ulidId(),
+    id: text("id").primaryKey(),
     messageId: text("message_id")
         .notNull()
         .references(() => chatMessages.id, { onDelete: "cascade" }),

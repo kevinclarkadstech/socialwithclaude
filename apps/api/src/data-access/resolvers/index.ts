@@ -135,7 +135,7 @@ export async function searchProfiles(db: Database, query: string, { limit }: { l
 
 export * from './follows';
 export * from './posts';
-export * from './listings';
+export * from './post-listings';
 export * from './media';
 export * from './blocks';
 export * from './feedback';
