@@ -1,7 +1,7 @@
 import z from "zod";
 import type { Query } from "../../../types/query";
 import { succeed } from "../../../utils/result";
-import { PageInputSchema, type Page, type PageInput } from "../../../common/types/page";
+import { PageInputSchema, type Page } from "../../../common/types/page";
 import { PostSchema, type Post } from "../types/post";
 
 export const GetFeedQueryInputSchema = PageInputSchema;
@@ -15,8 +15,9 @@ export const GetFeedQueryOutputSchema = z.object({
 
 export type GetFeedQueryOutput = z.infer<typeof GetFeedQueryOutputSchema>;
 
+/** Every post and listing, newest first. */
 export const getFeedQuery: Query<{ input: GetFeedQueryInput, output: GetFeedQueryOutput }, {
-    fetchPosts: (page: PageInput) => Promise<Page<Post>>
+    getPosts: (args: { cursor?: string | null; limit: number }) => Promise<Page<Post>>;
 }> = async ({ input, dependencies }) => {
-    return succeed(await dependencies.fetchPosts(input));
+    return succeed(await dependencies.getPosts(input));
 }

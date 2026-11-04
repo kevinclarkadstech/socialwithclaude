@@ -1,0 +1,43 @@
+import z from "zod";
+import type { Query } from "../../../types/query";
+import { succeed } from "../../../utils/result";
+import { PageInputSchema, type Page } from "../../../common/types/page";
+import { canViewChat } from "../../../logic/authorization/chats/canViewChat";
+import type { GetCallingUser } from "../../users/types/calling-user";
+import { ChatSchema } from "../types/chat";
+import type { ChatMember } from "../types/chat-member";
+import { ChatMessageSchema, type ChatMessage } from "../types/chat-message";
+
+export const GetChatMessagesQueryInputSchema = PageInputSchema.extend({
+    chatId: ChatSchema.shape.id,
+});
+
+export type GetChatMessagesQueryInput = z.infer<typeof GetChatMessagesQueryInputSchema>;
+
+export const GetChatMessagesQueryOutputSchema = z.object({
+    items: z.array(ChatMessageSchema),
+    nextCursor: z.string().nullable(),
+});
+
+export type GetChatMessagesQueryOutput = z.infer<typeof GetChatMessagesQueryOutputSchema>;
+
+/** A chat's messages, newest first, minus any from before the caller deleted the chat. */
+export const getChatMessagesQuery: Query<{ input: GetChatMessagesQueryInput, output: GetChatMessagesQueryOutput }, {
+    getCallingUser: GetCallingUser;
+    getChatMembers: (args: { chatId: string }) => Promise<ChatMember[]>;
+    getChatMessages: (args: {
+        chatId: string;
+        after?: string | null;
+        cursor?: string | null;
+        limit: number;
+    }) => Promise<Page<ChatMessage>>;
+}> = async ({ input, dependencies }) => {
+    const members = await dependencies.getChatMembers({ chatId: input.chatId });
+
+    const allowed = canViewChat(await dependencies.getCallingUser(), members);
+    if (!allowed.ok) return allowed;
+
+    // canViewChat checked the caller is a member.
+    const member = members.find((m) => m.userId === allowed.value.userId)!;
+    return succeed(await dependencies.getChatMessages({ ...input, after: member.clearedAt }));
+}
