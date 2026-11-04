@@ -3,6 +3,7 @@ import type { Mutation } from "../../../types/mutation";
 import { succeed } from "../../../utils/result";
 import { notFound } from "../../../utils/failures";
 import { canDeleteChatMessage } from "../../../logic/authorization/chats/canDeleteChatMessage";
+import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { ChatMessageSchema, type ChatMessage } from "../types/chat-message";
 
@@ -19,13 +20,20 @@ export const deleteChatMessageMutation: Mutation<{ input: DeleteChatMessageMutat
     getCallingUser: GetCallingUser;
     getChatMessageById: (args: { id: string }) => Promise<ChatMessage | null>;
     deleteChatMessage: (args: { id: string; userId: string }) => Promise<boolean>;
-}> = async ({ input, dependencies }) => {
+}> = async ({ input, context: { logger }, dependencies }) => {
     const message = await dependencies.getChatMessageById({ id: input.id });
-    if (!message) return notFound("Message not found");
+    if (!message) {
+        logger.info("Message to delete not found", { chatMessageId: input.id });
+        return notFound("Message not found");
+    }
 
-    const allowed = canDeleteChatMessage(await dependencies.getCallingUser(), message);
-    if (!allowed.ok) return allowed;
+    const caller = await dependencies.getCallingUser();
+    const allowed = canDeleteChatMessage(caller, message);
+    if (!allowed.ok) {
+        logDisallowedResult(logger, allowed, { action: "delete-chat-message", callerId: caller?.userId, chatMessageId: message.id });
+        return allowed;
+    }
 
-    await dependencies.deleteChatMessage({ id: input.id, userId: allowed.value.userId });
+    await dependencies.deleteChatMessage({ id: message.id, userId: allowed.value.userId });
     return succeed();
 }

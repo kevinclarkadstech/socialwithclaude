@@ -3,6 +3,7 @@ import type { Mutation } from "../../../types/mutation";
 import { succeed } from "../../../utils/result";
 import { notFound } from "../../../utils/failures";
 import { canVoteOnPostComment } from "../../../logic/authorization/posts/canVoteOnPostComment";
+import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import type { PostComment } from "../types/post-comment";
 import { PostCommentVoteSchema, type PostCommentVote, type PostCommentVoteValue } from "../types/post-comment-vote";
@@ -20,14 +21,25 @@ export const voteOnPostCommentMutation: Mutation<{ input: VoteOnPostCommentMutat
     getCallingUser: GetCallingUser;
     getPostCommentById: (args: { id: string }) => Promise<PostComment | null>;
     setPostCommentVote: (args: { userId: string; postCommentId: string; value: PostCommentVoteValue }) => Promise<PostCommentVote | null>;
-}> = async ({ input, dependencies }) => {
+}> = async ({ input, context: { logger }, dependencies }) => {
     const comment = await dependencies.getPostCommentById({ id: input.postCommentId });
-    if (!comment) return notFound("Comment not found");
+    if (!comment) {
+        logger.info("Comment to vote on not found", { postCommentId: input.postCommentId });
+        return notFound("Comment not found");
+    }
 
-    const allowed = canVoteOnPostComment(await dependencies.getCallingUser(), comment);
-    if (!allowed.ok) return allowed;
+    const caller = await dependencies.getCallingUser();
+    const allowed = canVoteOnPostComment(caller, comment);
+    if (!allowed.ok) {
+        logDisallowedResult(logger, allowed, { action: "vote-on-post-comment", callerId: caller?.userId, postCommentId: comment.id });
+        return allowed;
+    }
 
     const vote = await dependencies.setPostCommentVote({ ...input, userId: allowed.value.userId });
-    if (!vote) return notFound("Comment not found");
+    if (!vote) {
+        logger.info("Comment deleted before it could be voted on", { postCommentId: comment.id });
+        return notFound("Comment not found");
+    }
+
     return succeed(vote);
 }

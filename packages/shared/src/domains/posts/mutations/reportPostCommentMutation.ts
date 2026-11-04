@@ -3,6 +3,7 @@ import type { Mutation } from "../../../types/mutation";
 import { succeed } from "../../../utils/result";
 import { notFound } from "../../../utils/failures";
 import { canReportPostComment } from "../../../logic/authorization/posts/canReportPostComment";
+import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import type { PostComment } from "../types/post-comment";
 import { PostCommentReportSchema, type PostCommentReport } from "../types/post-comment-report";
@@ -36,12 +37,20 @@ export const reportPostCommentMutation: Mutation<{ input: ReportPostCommentMutat
         details: string | null;
         snapshot: PostComment;
     }) => Promise<PostCommentReport>;
-}> = async ({ input, dependencies }) => {
+}> = async ({ input, context: { logger }, dependencies }) => {
     const comment = await dependencies.getPostCommentById({ id: input.postCommentId });
-    if (!comment) return notFound("Comment not found");
+    if (!comment) {
+        logger.info("Comment to report not found", { postCommentId: input.postCommentId });
+        return notFound("Comment not found");
+    }
 
-    const allowed = canReportPostComment(await dependencies.getCallingUser(), comment);
-    if (!allowed.ok) return allowed;
+    const caller = await dependencies.getCallingUser();
+    const allowed = canReportPostComment(caller, comment);
+    if (!allowed.ok) {
+        logDisallowedResult(logger, allowed, { action: "report-post-comment", callerId: caller?.userId, postCommentId: comment.id });
+        return allowed;
+    }
 
-    return succeed(await dependencies.createPostCommentReport({ ...input, userId: allowed.value.userId, snapshot: comment }));
+    const report = await dependencies.createPostCommentReport({ ...input, userId: allowed.value.userId, snapshot: comment });
+    return succeed(report);
 }

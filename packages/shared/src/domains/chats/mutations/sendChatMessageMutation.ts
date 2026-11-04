@@ -2,6 +2,7 @@ import z from "zod";
 import type { Mutation } from "../../../types/mutation";
 import { succeed } from "../../../utils/result";
 import { canSendChatMessage } from "../../../logic/authorization/chats/canSendChatMessage";
+import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import type { ChatMember } from "../types/chat-member";
 import { ChatMessageSchema, type ChatMessage } from "../types/chat-message";
@@ -19,11 +20,16 @@ export const sendChatMessageMutation: Mutation<{ input: SendChatMessageMutationI
     getCallingUser: GetCallingUser;
     getChatMembers: (args: { chatId: string }) => Promise<ChatMember[]>;
     createChatMessage: (args: { id: string; chatId: string; userId: string; content: string }) => Promise<ChatMessage>;
-}> = async ({ input, dependencies }) => {
+}> = async ({ input, context: { logger }, dependencies }) => {
     const members = await dependencies.getChatMembers({ chatId: input.chatId });
 
-    const allowed = canSendChatMessage(await dependencies.getCallingUser(), members);
-    if (!allowed.ok) return allowed;
+    const caller = await dependencies.getCallingUser();
+    const allowed = canSendChatMessage(caller, members);
+    if (!allowed.ok) {
+        logDisallowedResult(logger, allowed, { action: "send-chat-message", callerId: caller?.userId, chatId: input.chatId });
+        return allowed;
+    }
 
-    return succeed(await dependencies.createChatMessage({ ...input, userId: allowed.value.userId }));
+    const message = await dependencies.createChatMessage({ ...input, userId: allowed.value.userId });
+    return succeed(message);
 }

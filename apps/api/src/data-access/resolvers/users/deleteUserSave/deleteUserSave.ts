@@ -14,7 +14,9 @@ export async function deleteUserSave({ userId, type, id }: {
             .delete(schema.userSaves)
             .where(and(eq(schema.userSaves.userId, userId), eq(saveTargetColumns[type], id)))
             .returning({ userId: schema.userSaves.userId });
-        if (deleted.length === 0) return false;
+        if (deleted.length === 0) {
+            return false;
+        }
 
         if (type === "post") {
             await tx

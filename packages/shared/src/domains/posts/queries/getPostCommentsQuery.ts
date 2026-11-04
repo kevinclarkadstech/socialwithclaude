@@ -27,5 +27,6 @@ export const getPostCommentsQuery: Query<{ input: GetPostCommentsQueryInput, out
         limit: number;
     }) => Promise<Page<PostComment>>;
 }> = async ({ input, dependencies }) => {
-    return succeed(await dependencies.getPostComments(input));
+    const page = await dependencies.getPostComments(input);
+    return succeed(page);
 }

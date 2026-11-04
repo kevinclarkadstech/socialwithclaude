@@ -2,6 +2,7 @@ import z from "zod";
 import type { Mutation } from "../../../types/mutation";
 import { succeed } from "../../../utils/result";
 import { requireCallerWithProfile } from "../../../logic/authorization/requireCaller";
+import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { PostSchema, type Post } from "../types/post";
 import { ListingPriceSchema, PostListingFieldsSchema, type ListingCondition, type ListingPrice } from "../types/post-listing";
@@ -28,9 +29,14 @@ export const createPostListingMutation: Mutation<{ input: CreatePostListingMutat
         condition: ListingCondition;
         isNegotiable: boolean;
     } & ListingPrice) => Promise<Post>;
-}> = async ({ input, dependencies }) => {
-    const allowed = requireCallerWithProfile(await dependencies.getCallingUser());
-    if (!allowed.ok) return allowed;
+}> = async ({ input, context: { logger }, dependencies }) => {
+    const caller = await dependencies.getCallingUser();
+    const allowed = requireCallerWithProfile(caller);
+    if (!allowed.ok) {
+        logDisallowedResult(logger, allowed, { action: "create-post-listing", callerId: caller?.userId });
+        return allowed;
+    }
 
-    return succeed(await dependencies.createPostListing({ ...input, userId: allowed.value.userId }));
+    const createdPost = await dependencies.createPostListing({ ...input, userId: allowed.value.userId });
+    return succeed(createdPost);
 }

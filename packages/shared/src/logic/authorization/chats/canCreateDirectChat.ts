@@ -4,11 +4,16 @@ import type { Result } from "../../../types/result";
 import { invalid } from "../../../utils/failures";
 import { isSelf } from "../conditions";
 import { requireCallerWithProfile } from "../requireCaller";
+import { disallowedBecause } from "../disallowedReason";
 
 /** Anyone who has finished sign-up can start a chat with someone else. */
 export function canCreateDirectChat(caller: CallingUser | null, receiver: UserProfile): Result<CallingUserWithProfile> {
     const signedIn = requireCallerWithProfile(caller);
-    if (!signedIn.ok) return signedIn;
-    if (isSelf(signedIn.value, receiver.userId)) return invalid("You can't chat with yourself");
+    if (!signedIn.ok) {
+        return signedIn;
+    }
+    if (isSelf(signedIn.value, receiver.userId)) {
+        return invalid("You can't chat with yourself", disallowedBecause("self"));
+    }
     return signedIn;
 }

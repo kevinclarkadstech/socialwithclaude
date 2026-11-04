@@ -2,6 +2,7 @@ import z from "zod";
 import type { Query } from "../../../types/query";
 import { succeed } from "../../../utils/result";
 import { requireCaller } from "../../../logic/authorization/requireCaller";
+import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { UserSessionSchema, type UserSession } from "../../users/types/user-session";
 
@@ -22,12 +23,16 @@ export type GetMySessionsQueryOutput = z.infer<typeof GetMySessionsQueryOutputSc
 export const getMySessionsQuery: Query<{ input: GetMySessionsQueryInput, output: GetMySessionsQueryOutput }, {
     getCallingUser: GetCallingUser;
     getUserSessions: (args: { userId: string }) => Promise<UserSession[]>;
-}> = async ({ dependencies }) => {
-    const allowed = requireCaller(await dependencies.getCallingUser());
-    if (!allowed.ok) return allowed;
+}> = async ({ context: { logger }, dependencies }) => {
+    const caller = await dependencies.getCallingUser();
+    const allowed = requireCaller(caller);
+    if (!allowed.ok) {
+        logDisallowedResult(logger, allowed, { action: "get-my-sessions", callerId: caller?.userId });
+        return allowed;
+    }
 
     const sessions = await dependencies.getUserSessions({ userId: allowed.value.userId });
-    return succeed(sessions.map((session) => ({
+    const sessionsWithoutTokens = sessions.map((session) => ({
         id: session.id,
         ipAddress: session.ipAddress,
         userAgent: session.userAgent,
@@ -35,5 +40,6 @@ export const getMySessionsQuery: Query<{ input: GetMySessionsQueryInput, output:
         createdAt: session.createdAt,
         updatedAt: session.updatedAt,
         current: session.id === allowed.value.sessionId,
-    })));
+    }));
+    return succeed(sessionsWithoutTokens);
 }

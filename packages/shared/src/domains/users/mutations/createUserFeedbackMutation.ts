@@ -2,6 +2,7 @@ import z from "zod";
 import type { Mutation } from "../../../types/mutation";
 import { succeed } from "../../../utils/result";
 import { requireCallerWithProfile } from "../../../logic/authorization/requireCaller";
+import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../types/calling-user";
 import { UserFeedbackSchema, type UserFeedback } from "../types/user-feedback";
 
@@ -26,13 +27,15 @@ export const createUserFeedbackMutation: Mutation<{ input: CreateUserFeedbackMut
     getCallingUser: GetCallingUser;
     getUserAgent: () => string | null;
     createUserFeedback: (args: Pick<UserFeedback, "id" | "userId" | "category" | "message" | "pageUrl" | "userAgent">) => Promise<UserFeedback>;
-}> = async ({ input, dependencies }) => {
-    const allowed = requireCallerWithProfile(await dependencies.getCallingUser());
-    if (!allowed.ok) return allowed;
+}> = async ({ input, context: { logger }, dependencies }) => {
+    const caller = await dependencies.getCallingUser();
+    const allowed = requireCallerWithProfile(caller);
+    if (!allowed.ok) {
+        logDisallowedResult(logger, allowed, { action: "create-user-feedback", callerId: caller?.userId });
+        return allowed;
+    }
 
-    return succeed(await dependencies.createUserFeedback({
-        ...input,
-        userId: allowed.value.userId,
-        userAgent: dependencies.getUserAgent()?.slice(0, 500) ?? null,
-    }));
+    const userAgent = dependencies.getUserAgent()?.slice(0, 500) ?? null;
+    const feedback = await dependencies.createUserFeedback({ ...input, userId: allowed.value.userId, userAgent });
+    return succeed(feedback);
 }

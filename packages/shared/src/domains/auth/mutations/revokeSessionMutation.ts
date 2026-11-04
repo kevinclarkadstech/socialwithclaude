@@ -3,6 +3,7 @@ import type { Mutation } from "../../../types/mutation";
 import { succeed } from "../../../utils/result";
 import { invalid, notFound } from "../../../utils/failures";
 import { requireCaller } from "../../../logic/authorization/requireCaller";
+import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { UserSessionSchema, type UserSession } from "../../users/types/user-session";
 
@@ -19,14 +20,27 @@ export const revokeSessionMutation: Mutation<{ input: RevokeSessionMutationInput
     getCallingUser: GetCallingUser;
     getUserSessions: (args: { userId: string }) => Promise<UserSession[]>;
     revokeSessionToken: (token: string) => Promise<void>;
-}> = async ({ input, dependencies }) => {
-    const allowed = requireCaller(await dependencies.getCallingUser());
-    if (!allowed.ok) return allowed;
-    if (input.id === allowed.value.sessionId) return invalid("Use signOut for this device");
+}> = async ({ input, context: { logger }, dependencies }) => {
+    const caller = await dependencies.getCallingUser();
+    const allowed = requireCaller(caller);
+    if (!allowed.ok) {
+        logDisallowedResult(logger, allowed, { action: "revoke-session", callerId: caller?.userId });
+        return allowed;
+    }
+
+    if (input.id === allowed.value.sessionId) {
+        // The UI offers signOut, not revoke, for this device.
+        logger.warn("Tried to revoke the current session", { callerId: allowed.value.userId });
+        return invalid("Use signOut for this device");
+    }
 
     const sessions = await dependencies.getUserSessions({ userId: allowed.value.userId });
     const session = sessions.find((s) => s.id === input.id);
-    if (!session) return notFound("Session not found");
+    if (!session) {
+        // Already signed out or expired, or not the caller's.
+        logger.info("Session to revoke not found", { callerId: allowed.value.userId, sessionId: input.id });
+        return notFound("Session not found");
+    }
 
     await dependencies.revokeSessionToken(session.token);
     return succeed();

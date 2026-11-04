@@ -10,7 +10,9 @@ export async function updatePost({ id, userId, content }: { id: string; userId: 
         .set({ content, updatedBy: userId, updatedAt: new Date() })
         .where(and(eq(schema.posts.id, id), isNull(schema.posts.deletedAt)))
         .returning();
-    if (!row) return null;
+    if (!row) {
+        return null;
+    }
 
     const [listing] = await db.select().from(schema.postListings).where(eq(schema.postListings.postId, id));
     return toPost(row, listing ?? null);

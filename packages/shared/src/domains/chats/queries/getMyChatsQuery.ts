@@ -3,6 +3,7 @@ import type { Query } from "../../../types/query";
 import { succeed } from "../../../utils/result";
 import { PageInputSchema, type Page } from "../../../common/types/page";
 import { requireCallerWithProfile } from "../../../logic/authorization/requireCaller";
+import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { ChatSchema, type Chat } from "../types/chat";
 
@@ -21,9 +22,14 @@ export type GetMyChatsQueryOutput = z.infer<typeof GetMyChatsQueryOutputSchema>;
 export const getMyChatsQuery: Query<{ input: GetMyChatsQueryInput, output: GetMyChatsQueryOutput }, {
     getCallingUser: GetCallingUser;
     getUserChats: (args: { userId: string; cursor?: string | null; limit: number }) => Promise<Page<Chat>>;
-}> = async ({ input, dependencies }) => {
-    const allowed = requireCallerWithProfile(await dependencies.getCallingUser());
-    if (!allowed.ok) return allowed;
+}> = async ({ input, context: { logger }, dependencies }) => {
+    const caller = await dependencies.getCallingUser();
+    const allowed = requireCallerWithProfile(caller);
+    if (!allowed.ok) {
+        logDisallowedResult(logger, allowed, { action: "get-my-chats", callerId: caller?.userId });
+        return allowed;
+    }
 
-    return succeed(await dependencies.getUserChats({ ...input, userId: allowed.value.userId }));
+    const page = await dependencies.getUserChats({ ...input, userId: allowed.value.userId });
+    return succeed(page);
 }

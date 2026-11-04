@@ -16,6 +16,9 @@ export const getMeQuery: Query<{ input: GetMeQueryInput, output: GetMeQueryOutpu
     getCallingUser: GetCallingUser;
 }> = async ({ dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    if (!caller) return succeed(null);
+    if (!caller) {
+        return succeed(null);
+    }
+
     return succeed({ userId: caller.userId, email: caller.email, profile: caller.profile });
 }

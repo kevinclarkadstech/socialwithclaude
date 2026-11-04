@@ -18,7 +18,9 @@ export async function setPostCommentVote({ userId, postCommentId, value }: {
             .from(schema.postComments)
             .where(and(eq(schema.postComments.id, postCommentId), isNull(schema.postComments.deletedAt)))
             .for("update");
-        if (!comment) return null;
+        if (!comment) {
+            return null;
+        }
 
         const [previous] = await tx
             .select({ value: schema.postCommentVotes.value })

@@ -19,5 +19,6 @@ export type GetFeedQueryOutput = z.infer<typeof GetFeedQueryOutputSchema>;
 export const getFeedQuery: Query<{ input: GetFeedQueryInput, output: GetFeedQueryOutput }, {
     getPosts: (args: { cursor?: string | null; limit: number }) => Promise<Page<Post>>;
 }> = async ({ input, dependencies }) => {
-    return succeed(await dependencies.getPosts(input));
+    const page = await dependencies.getPosts(input);
+    return succeed(page);
 }

@@ -18,5 +18,6 @@ export type SearchUserProfilesQueryOutput = z.infer<typeof SearchUserProfilesQue
 export const searchUserProfilesQuery: Query<{ input: SearchUserProfilesQueryInput, output: SearchUserProfilesQueryOutput }, {
     searchUserProfiles: (args: { query: string; limit: number }) => Promise<UserProfile[]>;
 }> = async ({ input, dependencies }) => {
-    return succeed(await dependencies.searchUserProfiles(input));
+    const profiles = await dependencies.searchUserProfiles(input);
+    return succeed(profiles);
 }

@@ -21,5 +21,6 @@ export type SearchPostsQueryOutput = z.infer<typeof SearchPostsQueryOutputSchema
 export const searchPostsQuery: Query<{ input: SearchPostsQueryInput, output: SearchPostsQueryOutput }, {
     searchPosts: (args: { query: string; cursor?: string | null; limit: number }) => Promise<Page<Post>>;
 }> = async ({ input, dependencies }) => {
-    return succeed(await dependencies.searchPosts(input));
+    const page = await dependencies.searchPosts(input);
+    return succeed(page);
 }

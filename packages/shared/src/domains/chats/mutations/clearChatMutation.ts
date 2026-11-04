@@ -3,6 +3,7 @@ import type { Mutation } from "../../../types/mutation";
 import { succeed } from "../../../utils/result";
 import { notFound } from "../../../utils/failures";
 import { canViewChat } from "../../../logic/authorization/chats/canViewChat";
+import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { ChatMemberSchema, type ChatMember } from "../types/chat-member";
 
@@ -19,13 +20,21 @@ export const clearChatMutation: Mutation<{ input: ClearChatMutationInput, output
     getCallingUser: GetCallingUser;
     getChatMembers: (args: { chatId: string }) => Promise<ChatMember[]>;
     clearChat: (args: { chatId: string; userId: string }) => Promise<ChatMember | null>;
-}> = async ({ input, dependencies }) => {
+}> = async ({ input, context: { logger }, dependencies }) => {
     const members = await dependencies.getChatMembers({ chatId: input.chatId });
 
-    const allowed = canViewChat(await dependencies.getCallingUser(), members);
-    if (!allowed.ok) return allowed;
+    const caller = await dependencies.getCallingUser();
+    const allowed = canViewChat(caller, members);
+    if (!allowed.ok) {
+        logDisallowedResult(logger, allowed, { action: "clear-chat", callerId: caller?.userId, chatId: input.chatId });
+        return allowed;
+    }
 
     const member = await dependencies.clearChat({ chatId: input.chatId, userId: allowed.value.userId });
-    if (!member) return notFound("Chat not found");
+    if (!member) {
+        logger.info("Chat member removed during clear-chat", { chatId: input.chatId, callerId: allowed.value.userId });
+        return notFound("Chat not found");
+    }
+
     return succeed(member);
 }

@@ -3,6 +3,7 @@ import type { Mutation } from "../../../types/mutation";
 import { succeed } from "../../../utils/result";
 import { notFound } from "../../../utils/failures";
 import { requireCallerWithProfile } from "../../../logic/authorization/requireCaller";
+import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../types/calling-user";
 import { UserProfileSchema, type UserProfile } from "../types/user-profile";
 import { UserFollowSchema, type UserFollow } from "../types/user-follow";
@@ -20,14 +21,25 @@ export const denyFollowRequestMutation: Mutation<{ input: DenyFollowRequestMutat
     getCallingUser: GetCallingUser;
     getUserProfileByUsername: (args: { username: string }) => Promise<UserProfile | null>;
     denyUserFollowRequest: (args: { userId: string; followerId: string }) => Promise<UserFollow | null>;
-}> = async ({ input, dependencies }) => {
-    const allowed = requireCallerWithProfile(await dependencies.getCallingUser());
-    if (!allowed.ok) return allowed;
+}> = async ({ input, context: { logger }, dependencies }) => {
+    const caller = await dependencies.getCallingUser();
+    const allowed = requireCallerWithProfile(caller);
+    if (!allowed.ok) {
+        logDisallowedResult(logger, allowed, { action: "deny-follow-request", callerId: caller?.userId });
+        return allowed;
+    }
 
     const target = await dependencies.getUserProfileByUsername(input);
-    if (!target) return notFound("User not found");
+    if (!target) {
+        logger.info("Follow requester not found", { username: input.username });
+        return notFound("User not found");
+    }
 
     const follow = await dependencies.denyUserFollowRequest({ userId: allowed.value.userId, followerId: target.userId });
-    if (!follow) return notFound("Request not found");
+    if (!follow) {
+        logger.info("Follow request to deny not found", { callerId: allowed.value.userId, followerId: target.userId });
+        return notFound("Request not found");
+    }
+
     return succeed(follow);
 }

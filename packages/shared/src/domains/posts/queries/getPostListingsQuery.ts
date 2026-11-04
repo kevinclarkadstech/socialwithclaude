@@ -22,5 +22,6 @@ export type GetPostListingsQueryOutput = z.infer<typeof GetPostListingsQueryOutp
 export const getPostListingsQuery: Query<{ input: GetPostListingsQueryInput, output: GetPostListingsQueryOutput }, {
     getPostListings: (args: { status?: ListingStatus; cursor?: string | null; limit: number }) => Promise<Page<Post>>;
 }> = async ({ input, dependencies }) => {
-    return succeed(await dependencies.getPostListings(input));
+    const page = await dependencies.getPostListings(input);
+    return succeed(page);
 }

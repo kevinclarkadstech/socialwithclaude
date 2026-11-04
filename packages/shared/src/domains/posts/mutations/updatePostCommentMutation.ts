@@ -3,6 +3,7 @@ import type { Mutation } from "../../../types/mutation";
 import { succeed } from "../../../utils/result";
 import { notFound } from "../../../utils/failures";
 import { canUpdatePostComment } from "../../../logic/authorization/posts/canUpdatePostComment";
+import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { PostCommentSchema, type PostComment } from "../types/post-comment";
 
@@ -19,14 +20,25 @@ export const updatePostCommentMutation: Mutation<{ input: UpdatePostCommentMutat
     getCallingUser: GetCallingUser;
     getPostCommentById: (args: { id: string }) => Promise<PostComment | null>;
     updatePostComment: (args: { id: string; userId: string; content: string }) => Promise<PostComment | null>;
-}> = async ({ input, dependencies }) => {
+}> = async ({ input, context: { logger }, dependencies }) => {
     const comment = await dependencies.getPostCommentById({ id: input.id });
-    if (!comment) return notFound("Comment not found");
+    if (!comment) {
+        logger.info("Comment to update not found", { postCommentId: input.id });
+        return notFound("Comment not found");
+    }
 
-    const allowed = canUpdatePostComment(await dependencies.getCallingUser(), comment);
-    if (!allowed.ok) return allowed;
+    const caller = await dependencies.getCallingUser();
+    const allowed = canUpdatePostComment(caller, comment);
+    if (!allowed.ok) {
+        logDisallowedResult(logger, allowed, { action: "update-post-comment", callerId: caller?.userId, postCommentId: comment.id });
+        return allowed;
+    }
 
-    const updated = await dependencies.updatePostComment({ ...input, userId: allowed.value.userId });
-    if (!updated) return notFound("Comment not found");
-    return succeed(updated);
+    const updatedComment = await dependencies.updatePostComment({ ...input, userId: allowed.value.userId });
+    if (!updatedComment) {
+        logger.info("Comment deleted before it could be updated", { postCommentId: comment.id });
+        return notFound("Comment not found");
+    }
+
+    return succeed(updatedComment);
 }

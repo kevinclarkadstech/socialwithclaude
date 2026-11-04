@@ -12,7 +12,9 @@ export async function deletePostComment({ id, userId }: { id: string; userId: st
                     isNull(schema.postComments.deletedAt),
             ))
             .returning({ postId: schema.postComments.postId });
-        if (!comment) return false;
+        if (!comment) {
+            return false;
+        }
 
         await tx
             .update(schema.posts)

@@ -3,6 +3,7 @@ import type { Query } from "../../../types/query";
 import { succeed } from "../../../utils/result";
 import { PageInputSchema, type Page } from "../../../common/types/page";
 import { canViewChat } from "../../../logic/authorization/chats/canViewChat";
+import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { ChatSchema } from "../types/chat";
 import type { ChatMember } from "../types/chat-member";
@@ -31,13 +32,18 @@ export const getChatMessagesQuery: Query<{ input: GetChatMessagesQueryInput, out
         cursor?: string | null;
         limit: number;
     }) => Promise<Page<ChatMessage>>;
-}> = async ({ input, dependencies }) => {
+}> = async ({ input, context: { logger }, dependencies }) => {
     const members = await dependencies.getChatMembers({ chatId: input.chatId });
 
-    const allowed = canViewChat(await dependencies.getCallingUser(), members);
-    if (!allowed.ok) return allowed;
+    const caller = await dependencies.getCallingUser();
+    const allowed = canViewChat(caller, members);
+    if (!allowed.ok) {
+        logDisallowedResult(logger, allowed, { action: "get-chat-messages", callerId: caller?.userId, chatId: input.chatId });
+        return allowed;
+    }
 
     // canViewChat checked the caller is a member.
     const member = members.find((m) => m.userId === allowed.value.userId)!;
-    return succeed(await dependencies.getChatMessages({ ...input, after: member.clearedAt }));
+    const page = await dependencies.getChatMessages({ ...input, after: member.clearedAt });
+    return succeed(page);
 }

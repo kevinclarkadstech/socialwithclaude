@@ -3,6 +3,7 @@ import type { Mutation } from "../../../types/mutation";
 import { succeed } from "../../../utils/result";
 import { notFound } from "../../../utils/failures";
 import { canReportPost } from "../../../logic/authorization/posts/canReportPost";
+import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { type Post } from "../types/post";
 import { PostReportSchema, type PostReport } from "../types/post-report";
@@ -31,12 +32,20 @@ export const reportPostMutation: Mutation<{ input: ReportPostMutationInput, outp
         details: string | null;
         snapshot: Post;
     }) => Promise<PostReport>;
-}> = async ({ input, dependencies }) => {
+}> = async ({ input, context: { logger }, dependencies }) => {
     const post = await dependencies.getPostById({ id: input.postId });
-    if (!post) return notFound("Post not found");
+    if (!post) {
+        logger.info("Post to report not found", { postId: input.postId });
+        return notFound("Post not found");
+    }
 
-    const allowed = canReportPost(await dependencies.getCallingUser(), post);
-    if (!allowed.ok) return allowed;
+    const caller = await dependencies.getCallingUser();
+    const allowed = canReportPost(caller, post);
+    if (!allowed.ok) {
+        logDisallowedResult(logger, allowed, { action: "report-post", callerId: caller?.userId, postId: post.id });
+        return allowed;
+    }
 
-    return succeed(await dependencies.createPostReport({ ...input, userId: allowed.value.userId, snapshot: post }));
+    const report = await dependencies.createPostReport({ ...input, userId: allowed.value.userId, snapshot: post });
+    return succeed(report);
 }

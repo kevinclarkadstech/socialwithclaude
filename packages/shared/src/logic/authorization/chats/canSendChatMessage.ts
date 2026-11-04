@@ -4,11 +4,16 @@ import type { Result } from "../../../types/result";
 import { notFound } from "../../../utils/failures";
 import { isChatMember } from "../conditions";
 import { requireCallerWithProfile } from "../requireCaller";
+import { disallowedBecause } from "../disallowedReason";
 
 /** Only a chat's members can send messages in it. Anyone else gets not-found. */
 export function canSendChatMessage(caller: CallingUser | null, members: ChatMember[]): Result<CallingUserWithProfile> {
     const signedIn = requireCallerWithProfile(caller);
-    if (!signedIn.ok) return signedIn;
-    if (!isChatMember(signedIn.value, members)) return notFound("Chat not found");
+    if (!signedIn.ok) {
+        return signedIn;
+    }
+    if (!isChatMember(signedIn.value, members)) {
+        return notFound("Chat not found", disallowedBecause("not-member"));
+    }
     return signedIn;
 }

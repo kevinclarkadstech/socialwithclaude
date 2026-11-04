@@ -14,8 +14,12 @@ export type GetUserProfileQueryOutput = z.infer<typeof GetUserProfileQueryOutput
 
 export const getUserProfileQuery: Query<{ input: GetUserProfileQueryInput, output: GetUserProfileQueryOutput }, {
     getUserProfileByUsername: (args: { username: string }) => Promise<UserProfile | null>;
-}> = async ({ input, dependencies }) => {
+}> = async ({ input, context: { logger }, dependencies }) => {
     const profile = await dependencies.getUserProfileByUsername(input);
-    if (!profile) return notFound("User not found");
+    if (!profile) {
+        logger.info("User not found", { username: input.username });
+        return notFound("User not found");
+    }
+
     return succeed(profile);
 }

@@ -48,8 +48,12 @@ export async function getUserSaves({ userId, cursor, limit }: {
         nextCursor: page.nextCursor,
         items: page.items.map((row): UserSave => {
             const fields = { userId: row.save.userId, createdAt: row.save.createdAt.toISOString() };
-            if (row.post) return { ...fields, type: "post", post: toPost(row.post, row.listing) };
-            if (row.postComment) return { ...fields, type: "postComment", postComment: toPostComment(row.postComment) };
+            if (row.post) {
+                return { ...fields, type: "post", post: toPost(row.post, row.listing) };
+            }
+            if (row.postComment) {
+                return { ...fields, type: "postComment", postComment: toPostComment(row.postComment) };
+            }
             return { ...fields, type: "chatMessage", chatMessage: toChatMessage(row.chatMessage!) };
         }),
     };

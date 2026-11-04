@@ -3,6 +3,7 @@ import type { Mutation } from "../../../types/mutation";
 import { succeed } from "../../../utils/result";
 import { notFound } from "../../../utils/failures";
 import { canUpdateChatMessage } from "../../../logic/authorization/chats/canUpdateChatMessage";
+import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { ChatMessageSchema, type ChatMessage } from "../types/chat-message";
 
@@ -18,14 +19,25 @@ export const updateChatMessageMutation: Mutation<{ input: UpdateChatMessageMutat
     getCallingUser: GetCallingUser;
     getChatMessageById: (args: { id: string }) => Promise<ChatMessage | null>;
     updateChatMessage: (args: { id: string; userId: string; content: string }) => Promise<ChatMessage | null>;
-}> = async ({ input, dependencies }) => {
+}> = async ({ input, context: { logger }, dependencies }) => {
     const message = await dependencies.getChatMessageById({ id: input.id });
-    if (!message) return notFound("Message not found");
+    if (!message) {
+        logger.info("Message to update not found", { chatMessageId: input.id });
+        return notFound("Message not found");
+    }
 
-    const allowed = canUpdateChatMessage(await dependencies.getCallingUser(), message);
-    if (!allowed.ok) return allowed;
+    const caller = await dependencies.getCallingUser();
+    const allowed = canUpdateChatMessage(caller, message);
+    if (!allowed.ok) {
+        logDisallowedResult(logger, allowed, { action: "update-chat-message", callerId: caller?.userId, chatMessageId: message.id });
+        return allowed;
+    }
 
-    const updated = await dependencies.updateChatMessage({ ...input, userId: allowed.value.userId });
-    if (!updated) return notFound("Message not found");
-    return succeed(updated);
+    const updatedMessage = await dependencies.updateChatMessage({ ...input, userId: allowed.value.userId });
+    if (!updatedMessage) {
+        logger.info("Message deleted before it could be updated", { chatMessageId: message.id });
+        return notFound("Message not found");
+    }
+
+    return succeed(updatedMessage);
 }

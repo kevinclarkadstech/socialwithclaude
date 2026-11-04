@@ -23,8 +23,13 @@ export type GetUserPostsQueryOutput = z.infer<typeof GetUserPostsQueryOutputSche
 export const getUserPostsQuery: Query<{ input: GetUserPostsQueryInput, output: GetUserPostsQueryOutput }, {
     getUserProfileByUsername: (args: { username: string }) => Promise<UserProfile | null>;
     getPosts: (args: { createdBy?: string; cursor?: string | null; limit: number }) => Promise<Page<Post>>;
-}> = async ({ input, dependencies }) => {
+}> = async ({ input, context: { logger }, dependencies }) => {
     const profile = await dependencies.getUserProfileByUsername({ username: input.username });
-    if (!profile) return notFound("User not found");
-    return succeed(await dependencies.getPosts({ createdBy: profile.userId, cursor: input.cursor, limit: input.limit }));
+    if (!profile) {
+        logger.info("User not found", { username: input.username });
+        return notFound("User not found");
+    }
+
+    const page = await dependencies.getPosts({ createdBy: profile.userId, cursor: input.cursor, limit: input.limit });
+    return succeed(page);
 }

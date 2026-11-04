@@ -27,7 +27,11 @@ export async function followUser({ followerId, followingId, status }: {
             return toUserFollow(existing!);
         }
 
-        if (created.status === "accepted") await adjustFollowCounts(tx, followerId, followingId, 1);
+        if (created.status === "accepted") {
+
+            await adjustFollowCounts(tx, followerId, followingId, 1);
+
+        }
         return toUserFollow(created);
     });
 }

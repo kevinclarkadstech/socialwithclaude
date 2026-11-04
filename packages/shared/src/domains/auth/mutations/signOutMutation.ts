@@ -16,7 +16,10 @@ export const signOutMutation: Mutation<{ input: SignOutMutationInput, output: Si
     getCallingUser: GetCallingUser;
     signOut: () => Promise<void>;
 }> = async ({ dependencies }) => {
-    if (!(await dependencies.getCallingUser())) return succeed();
+    const caller = await dependencies.getCallingUser();
+    if (!caller) {
+        return succeed();
+    }
 
     await dependencies.signOut();
     return succeed();

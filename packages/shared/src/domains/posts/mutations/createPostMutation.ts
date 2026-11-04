@@ -3,6 +3,7 @@ import type { Mutation } from "../../../types/mutation";
 import { succeed } from "../../../utils/result";
 import { unauthorized } from "../../../utils/failures";
 import { requireCallerWithProfile } from "../../../logic/authorization/requireCaller";
+import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { PostSchema, type Post } from "../types/post";
 
@@ -19,10 +20,19 @@ export const createPostMutation: Mutation<{ input: CreatePostMutationInput, outp
     getCallingUser: GetCallingUser;
     isPostingEnabled: () => boolean;
     createPost: (args: { id: string; userId: string; content: string }) => Promise<Post>;
-}> = async ({ input, dependencies }) => {
-    const allowed = requireCallerWithProfile(await dependencies.getCallingUser());
-    if (!allowed.ok) return allowed;
-    if (!dependencies.isPostingEnabled()) return unauthorized("Posting is turned off");
+}> = async ({ input, context: { logger }, dependencies }) => {
+    const caller = await dependencies.getCallingUser();
+    const allowed = requireCallerWithProfile(caller);
+    if (!allowed.ok) {
+        logDisallowedResult(logger, allowed, { action: "create-post", callerId: caller?.userId });
+        return allowed;
+    }
 
-    return succeed(await dependencies.createPost({ ...input, userId: allowed.value.userId }));
+    if (!dependencies.isPostingEnabled()) {
+        logger.info("Posting is turned off", { callerId: caller?.userId });
+        return unauthorized("Posting is turned off");
+    }
+
+    const createdPost = await dependencies.createPost({ ...input, userId: allowed.value.userId });
+    return succeed(createdPost);
 }

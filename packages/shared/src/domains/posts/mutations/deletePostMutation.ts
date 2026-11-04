@@ -3,6 +3,7 @@ import type { Mutation } from "../../../types/mutation";
 import { succeed } from "../../../utils/result";
 import { notFound } from "../../../utils/failures";
 import { canDeletePost } from "../../../logic/authorization/posts/canDeletePost";
+import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { PostSchema, type Post } from "../types/post";
 
@@ -19,13 +20,20 @@ export const deletePostMutation: Mutation<{ input: DeletePostMutationInput, outp
     getCallingUser: GetCallingUser;
     getPostById: (args: { id: string }) => Promise<Post | null>;
     deletePost: (args: { id: string; userId: string }) => Promise<boolean>;
-}> = async ({ input, dependencies }) => {
+}> = async ({ input, context: { logger }, dependencies }) => {
     const post = await dependencies.getPostById({ id: input.id });
-    if (!post) return notFound("Post not found");
+    if (!post) {
+        logger.info("Post to delete not found", { postId: input.id });
+        return notFound("Post not found");
+    }
 
-    const allowed = canDeletePost(await dependencies.getCallingUser(), post);
-    if (!allowed.ok) return allowed;
+    const caller = await dependencies.getCallingUser();
+    const allowed = canDeletePost(caller, post);
+    if (!allowed.ok) {
+        logDisallowedResult(logger, allowed, { action: "delete-post", callerId: caller?.userId, postId: post.id });
+        return allowed;
+    }
 
-    await dependencies.deletePost({ id: input.id, userId: allowed.value.userId });
+    await dependencies.deletePost({ id: post.id, userId: allowed.value.userId });
     return succeed();
 }

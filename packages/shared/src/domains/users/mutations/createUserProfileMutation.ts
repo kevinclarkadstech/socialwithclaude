@@ -3,6 +3,7 @@ import type { Mutation } from "../../../types/mutation";
 import { succeed } from "../../../utils/result";
 import { conflict } from "../../../utils/failures";
 import { requireCaller } from "../../../logic/authorization/requireCaller";
+import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../types/calling-user";
 import { UserProfileSchema, type UserProfile } from "../types/user-profile";
 
@@ -28,11 +29,26 @@ export const createUserProfileMutation: Mutation<{ input: CreateUserProfileMutat
     getCallingUser: GetCallingUser;
     getUserProfileByUsername: (args: { username: string }) => Promise<UserProfile | null>;
     createUserProfile: (args: Pick<UserProfile, "userId" | "username" | "firstName" | "lastName" | "about">) => Promise<UserProfile>;
-}> = async ({ input, dependencies }) => {
-    const allowed = requireCaller(await dependencies.getCallingUser());
-    if (!allowed.ok) return allowed;
-    if (allowed.value.profile) return conflict("Profile already exists");
-    if (await dependencies.getUserProfileByUsername({ username: input.username })) return conflict("Username is taken");
+}> = async ({ input, context: { logger }, dependencies }) => {
+    const caller = await dependencies.getCallingUser();
+    const allowed = requireCaller(caller);
+    if (!allowed.ok) {
+        logDisallowedResult(logger, allowed, { action: "create-user-profile", callerId: caller?.userId });
+        return allowed;
+    }
 
-    return succeed(await dependencies.createUserProfile({ ...input, userId: allowed.value.userId }));
+    if (allowed.value.profile) {
+        // The UI only offers sign-up to users without a profile.
+        logger.warn("User already has a profile", { callerId: allowed.value.userId });
+        return conflict("Profile already exists");
+    }
+
+    const existingProfile = await dependencies.getUserProfileByUsername({ username: input.username });
+    if (existingProfile) {
+        logger.info("Username is taken", { callerId: allowed.value.userId, username: input.username });
+        return conflict("Username is taken");
+    }
+
+    const profile = await dependencies.createUserProfile({ ...input, userId: allowed.value.userId });
+    return succeed(profile);
 }

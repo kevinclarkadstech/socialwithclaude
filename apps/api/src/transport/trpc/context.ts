@@ -11,7 +11,9 @@ export function createContext(opts: FetchCreateContextFnOptions, c: Context<AppH
 
     /** Who's calling: null when signed out. Queries and mutations decide whether they need it. */
     const getCallingUser: GetCallingUser = async () => {
-        if (!user || !session) return null;
+        if (!user || !session) {
+            return null;
+        }
         const [profile, blockList] = await Promise.all([
             getUserProfileByUserId({ userId: user.id }),
             getUserBlockList({ userId: user.id }),

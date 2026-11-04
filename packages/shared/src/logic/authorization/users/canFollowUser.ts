@@ -4,11 +4,16 @@ import type { Result } from "../../../types/result";
 import { invalid } from "../../../utils/failures";
 import { isSelf } from "../conditions";
 import { requireCallerWithProfile } from "../requireCaller";
+import { disallowedBecause } from "../disallowedReason";
 
 /** Anyone who has finished sign-up can follow (or ask to follow) someone else. */
 export function canFollowUser(caller: CallingUser | null, target: UserProfile): Result<CallingUserWithProfile> {
     const signedIn = requireCallerWithProfile(caller);
-    if (!signedIn.ok) return signedIn;
-    if (isSelf(signedIn.value, target.userId)) return invalid("You can't follow yourself");
+    if (!signedIn.ok) {
+        return signedIn;
+    }
+    if (isSelf(signedIn.value, target.userId)) {
+        return invalid("You can't follow yourself", disallowedBecause("self"));
+    }
     return signedIn;
 }

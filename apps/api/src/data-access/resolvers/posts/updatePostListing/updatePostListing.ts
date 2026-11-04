@@ -27,7 +27,9 @@ export async function updatePostListing({ id, userId, content, ...listing }: Upd
                 sql`exists (select 1 from post_listings where post_id = ${id})`,
             ))
             .returning();
-        if (!post) return null;
+        if (!post) {
+            return null;
+        }
 
         const [listingRow] = await tx
             .update(schema.postListings)

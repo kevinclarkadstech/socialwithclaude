@@ -2,6 +2,7 @@ import z from "zod";
 import type { Mutation } from "../../../types/mutation";
 import { succeed } from "../../../utils/result";
 import { requireCallerWithProfile } from "../../../logic/authorization/requireCaller";
+import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../types/calling-user";
 import { UserSaveTypeSchema, type UserSaveType } from "../types/user-save";
 
@@ -20,9 +21,13 @@ export type DeleteUserSaveMutationOutput = z.infer<typeof DeleteUserSaveMutation
 export const deleteUserSaveMutation: Mutation<{ input: DeleteUserSaveMutationInput, output: DeleteUserSaveMutationOutput }, {
     getCallingUser: GetCallingUser;
     deleteUserSave: (args: { userId: string; type: UserSaveType; id: string }) => Promise<boolean>;
-}> = async ({ input, dependencies }) => {
-    const allowed = requireCallerWithProfile(await dependencies.getCallingUser());
-    if (!allowed.ok) return allowed;
+}> = async ({ input, context: { logger }, dependencies }) => {
+    const caller = await dependencies.getCallingUser();
+    const allowed = requireCallerWithProfile(caller);
+    if (!allowed.ok) {
+        logDisallowedResult(logger, allowed, { action: "delete-user-save", callerId: caller?.userId });
+        return allowed;
+    }
 
     await dependencies.deleteUserSave({ ...input, userId: allowed.value.userId });
     return succeed();

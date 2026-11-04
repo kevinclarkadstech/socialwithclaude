@@ -12,9 +12,15 @@ export async function unfollowUser({ followerId, followingId }: {
             .delete(schema.userFollows)
             .where(and(eq(schema.userFollows.followerId, followerId), eq(schema.userFollows.followingId, followingId)))
             .returning({ status: schema.userFollows.status });
-        if (!deleted) return false;
+        if (!deleted) {
+            return false;
+        }
 
-        if (deleted.status === "accepted") await adjustFollowCounts(tx, followerId, followingId, -1);
+        if (deleted.status === "accepted") {
+
+            await adjustFollowCounts(tx, followerId, followingId, -1);
+
+        }
         return true;
     });
 }
