@@ -1,65 +1,29 @@
-/**
- * Posts whose body (or, for listings, title) contains `query`
- * (case-insensitive), newest first, with authors, listing details, first
- * photo (`thumbnail`) and `isSaved` for `viewerId`. `kind` limits it to posts
- * or listings. Only posts `viewerId` can see (postVisibleTo). Pass the
- * previous page's `nextCursor` as `cursor` to get the next page.
- */
-export async function searchPosts(
-    query: string,
-    {
-        kind,
-        cursor,
-        limit,
-        viewerId = null,
-    }: {
-        kind?: (typeof schema.postKinds)[number] | null;
-        cursor?: string | null;
-        limit: number;
-        viewerId?: string | null;
-    },
-) {
-    const pattern = containsPattern(query);
+import { and, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
+import type { Page } from "@myapp/shared/common";
+import type { Post } from "@myapp/shared/domains";
+import { db, schema } from "../../../db";
+import { toPost } from "../../../mappers/posts";
+import { toPage } from "../../../paging";
+
+/** Posts whose content (or listing title) contains `query`, case-insensitive, newest first. */
+export async function searchPosts({ query, cursor, limit }: {
+    query: string;
+    cursor?: string | null;
+    limit: number;
+}): Promise<Page<Post>> {
+    const pattern = `%${query.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
     const rows = await db
-        .select({
-            ...postFields,
-            author: authorFields,
-            listing: listingFields,
-            thumbnail: postThumbnailSql,
-            isSaved: sql<boolean>`${schema.postSaves.postId} is not null`,
-        })
+        .select({ post: schema.posts, listing: schema.postListings })
         .from(schema.posts)
-        .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.createdBy))
-        .leftJoin(schema.postListingDetails, eq(schema.postListingDetails.postId, schema.posts.id))
-        .leftJoin(
-            schema.postSaves,
-            viewerId
-                ? and(
-                    eq(schema.postSaves.userId, viewerId),
-                    eq(schema.postSaves.postId, schema.posts.id),
-                )
-                : sql`false`,
-        )
-        .where(
-            and(
-                notDeleted,
-                postVisibleTo(viewerId),
-                kind ? eq(schema.posts.kind, kind) : undefined,
-                or(ilike(schema.posts.body, pattern), ilike(schema.postListingDetails.title, pattern)),
-                cursor ? postsBefore(db, cursor) : undefined,
-            ),
-        )
+        .leftJoin(schema.postListings, eq(schema.postListings.postId, schema.posts.id))
+        .where(and(
+            isNull(schema.posts.deletedAt),
+            or(ilike(schema.posts.content, pattern), ilike(schema.postListings.title, pattern)),
+            cursor
+                ? sql`(${schema.posts.createdAt}, ${schema.posts.id}) < (select created_at, id from posts where id = ${cursor})`
+                : undefined,
+        ))
         .orderBy(desc(schema.posts.createdAt), desc(schema.posts.id))
         .limit(limit + 1);
-
-    const hasMore = rows.length > limit;
-    const items = hasMore ? rows.slice(0, limit) : rows;
-
-    return {
-        items: items.map(({ thumbnail, ...post }) => ({
-            ...post,
-            thumbnail: thumbnail && toMediaDto(thumbnail),
-        })),
-        nextCursor: hasMore ? items[items.length - 1]!.id : null,
-    };
+    return toPage(rows.map((row) => toPost(row.post, row.listing)), limit, (post) => post.id);
 }

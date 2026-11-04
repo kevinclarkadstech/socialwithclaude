@@ -1,62 +1,36 @@
 import { z } from "zod";
-import { TRPCError } from "@trpc/server";
+import { UserProfileSchema, UserSaveTypeSchema, UserSettingsSchema } from "@myapp/shared/domains";
+import { PageInputSchema } from "@myapp/shared/common";
+import { succeed } from "@myapp/shared/utils";
 
 import {
-    acceptFollowRequest,
+    acceptUserFollowRequest,
     blockUser,
-    denyFollowRequest,
+    createUserSave,
+    deleteUserSave,
+    denyUserFollowRequest,
     followUser,
-    getBlockedUsers,
-    getFollowRequestCount,
-    getFollowRequests,
-    getProfileByUserId,
-    getProfileByUsername,
-    getUserIdByUsername,
+    getUserBlocks,
+    getUserFollowRequests,
+    getUserProfileByUserId,
+    getUserProfileByUsername,
+    getUserSaves,
     getUserSettings,
-    searchProfiles,
     unblockUser,
     unfollowUser,
     updateUserSettings,
-} from "../../../data-access/resolvers";
-import { schema } from "../../../data-access";
-import { getUserBlockList, isBlocked } from "../blocking";
+} from "../../../data-access";
 import { requireUserAndProfile, type TRPCContext } from "../context";
+import { invalid, notFound } from "../errors";
 import { procedure, router } from "../trpc";
-import type { Result } from "@myapp/shared/types/result";
 
-const usernameInput = z.object({ username: z.string().min(1) });
-const pageInput = z.object({
-    cursor: z.string().nullish(),
-    limit: z.number().int().min(1).max(100).default(20),
-});
+const usernameInput = UserProfileSchema.pick({ username: true });
+const saveInput = z.object({ type: UserSaveTypeSchema, id: z.ulid() });
 
-const requestNotFound = () => new TRPCError({ code: "NOT_FOUND", message: "REQUEST_NOT_FOUND" });
-
-/** Same groups as the settings returned by getMySettings; every field optional. */
-const updateSettingsInput = z.object({
-    display: z
-        .object({
-            darkModeEnabled: z.boolean(),
-        })
-        .partial()
-        .optional(),
-    privacy: z
-        .object({
-            followersCanTag: z.boolean(),
-            nonFollowersCanTag: z.boolean(),
-            profileVisibility: z.enum(schema.profileVisibilities),
-        })
-        .partial()
-        .optional(),
-});
-
-/** Profiles matching `query` that the caller can see: users blocked either way are left out. */
-export async function searchVisibleProfiles(ctx: TRPCContext, query: string, { limit }: { limit: number }) {
-    const [profiles, blockList] = await Promise.all([
-        searchProfiles(ctx.db, query, { limit }),
-        getUserBlockList(ctx),
-    ]);
-    return profiles.filter((p) => !isBlocked(blockList, p.userId));
+/** The signed-in user (with their profile) and the user `username` names. */
+async function requireTarget(ctx: TRPCContext, username: string) {
+    const { user } = await requireUserAndProfile(ctx);
+    return { user, target: await getUserProfileByUsername({ username }) };
 }
 
 export const usersRouter = router({
@@ -64,144 +38,113 @@ export const usersRouter = router({
      * The current viewer. null when signed out; `profile` is null until
      * sign-up (auth.signUp) is complete.
      */
-    me: procedure.input(z.object({ id: z.string() })).query(async ({ ctx }): Promise<Result<null | { user: any, profile: any }>> => {
-        if (!ctx.user) {
-            return {
-                ok: true,
-                value: null,
-            }
-        }
-
-        const profile = await getProfileByUserId(ctx.db, ctx.user.id);
-        return { ok: true, value: { user: ctx.user, profile } };
+    me: procedure.query(async ({ ctx }) => {
+        if (!ctx.user) return succeed(null);
+        const profile = await getUserProfileByUserId({ userId: ctx.user.id });
+        return succeed({ user: ctx.user, profile });
     }),
 
-    /** NOT_FOUND if either user has blocked the other. */
-    getUserProfile: procedure.input(usernameInput).query(async ({ ctx, input }) => {
-        const profile = await getProfileByUsername(ctx.db, input.username, ctx.user?.id ?? null);
-        if (!profile || isBlocked(await getUserBlockList(ctx), profile.userId)) {
-            throw new TRPCError({ code: "NOT_FOUND" });
-        }
-
-        return profile;
+    getUserProfile: procedure.input(usernameInput).query(async ({ input }) => {
+        const profile = await getUserProfileByUsername(input);
+        return profile ? succeed(profile) : notFound("User not found");
     }),
 
-    /**
-     * Follows a user: right away if their profile is public, otherwise as a
-     * request they accept or deny. Returns `followStatus` as the caller now
-     * sees it: "following" or "requested". A denied request still shows as
-     * "requested" (denial is silent). Following again is a no-op.
-     */
+    /** Follows a user, or asks to if their profile is followers-only. Following again is a no-op. */
     follow: procedure.input(usernameInput).mutation(async ({ ctx, input }) => {
-        const { user } = await requireUserAndProfile(ctx);
+        const { user, target } = await requireTarget(ctx, input.username);
+        if (!target) return notFound("User not found");
+        if (target.userId === user.id) return invalid("Cannot follow yourself");
 
-        const targetUserId = await getUserIdByUsername(ctx.db, input.username);
-        if (!targetUserId || isBlocked(await getUserBlockList(ctx), targetUserId)) {
-            throw new TRPCError({ code: "NOT_FOUND" });
-        }
-        if (targetUserId === user.id) {
-            throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot follow yourself" });
-        }
-
-        return { followStatus: await followUser(ctx.db, user.id, targetUserId) };
+        const follow = await followUser({ followerId: user.id, followingId: target.userId });
+        return follow ? succeed(follow) : notFound("User not found");
     }),
 
-    /** Unfollows a user, or cancels a follow request. A no-op if neither. */
+    /** Unfollows a user, or cancels a follow request. Succeeds if neither. */
     unfollow: procedure.input(usernameInput).mutation(async ({ ctx, input }) => {
-        const { user } = await requireUserAndProfile(ctx);
-
-        const targetUserId = await getUserIdByUsername(ctx.db, input.username);
-        if (!targetUserId) throw new TRPCError({ code: "NOT_FOUND" });
-
-        await unfollowUser(ctx.db, user.id, targetUserId);
+        const { user, target } = await requireTarget(ctx, input.username);
+        if (!target) return notFound("User not found");
+        await unfollowUser({ followerId: user.id, followingId: target.userId });
+        return succeed();
     }),
 
-    /**
-     * The caller's pending follow requests, newest first, with each
-     * requester's profile. (Blocking removes requests, so none are from
-     * blocked users.) Pass `nextCursor` as `cursor`.
-     */
-    getMyFollowRequests: procedure.input(pageInput).query(async ({ ctx, input }) => {
+    /** Pending requests to follow the caller, newest first. */
+    getMyFollowRequests: procedure.input(PageInputSchema).query(async ({ ctx, input }) => {
         const { user } = await requireUserAndProfile(ctx);
-        return getFollowRequests(ctx.db, user.id, input);
+        return succeed(await getUserFollowRequests({ userId: user.id, ...input }));
     }),
 
-    /** How many pending follow requests the caller has, for a badge. */
-    getMyFollowRequestCount: procedure.query(async ({ ctx }) => {
-        const { user } = await requireUserAndProfile(ctx);
-        return getFollowRequestCount(ctx.db, user.id);
-    }),
-
-    /**
-     * Accepts a follow request from `username`: they become a follower.
-     * NOT_FOUND "REQUEST_NOT_FOUND" if there's no pending request from them.
-     * Accepting again succeeds.
-     */
     acceptFollowRequest: procedure.input(usernameInput).mutation(async ({ ctx, input }) => {
-        const { user } = await requireUserAndProfile(ctx);
-        const followerId = await getUserIdByUsername(ctx.db, input.username);
-        if (!followerId || !(await acceptFollowRequest(ctx.db, user.id, followerId))) {
-            throw requestNotFound();
-        }
+        const { user, target } = await requireTarget(ctx, input.username);
+        const follow = target && (await acceptUserFollowRequest({ userId: user.id, followerId: target.userId }));
+        return follow ? succeed(follow) : notFound("Request not found");
     }),
 
-    /**
-     * Denies a follow request from `username`. They aren't told: they keep
-     * seeing "Requested" and can't ask again. NOT_FOUND "REQUEST_NOT_FOUND"
-     * if there's no pending request from them. Denying again succeeds.
-     */
+    /** The requester isn't told: they keep seeing their request as pending. */
     denyFollowRequest: procedure.input(usernameInput).mutation(async ({ ctx, input }) => {
-        const { user } = await requireUserAndProfile(ctx);
-        const followerId = await getUserIdByUsername(ctx.db, input.username);
-        if (!followerId || !(await denyFollowRequest(ctx.db, user.id, followerId))) {
-            throw requestNotFound();
-        }
+        const { user, target } = await requireTarget(ctx, input.username);
+        const follow = target && (await denyUserFollowRequest({ userId: user.id, followerId: target.userId }));
+        return follow ? succeed(follow) : notFound("Request not found");
     }),
 
-    /**
-     * Blocks a user: hides each other's content both ways and removes follows
-     * in both directions. Blocking an already-blocked user succeeds.
-     */
+    /** Blocking an already-blocked user succeeds. */
     blockUser: procedure.input(usernameInput).mutation(async ({ ctx, input }) => {
-        const { user } = await requireUserAndProfile(ctx);
-
-        const targetUserId = await getUserIdByUsername(ctx.db, input.username);
-        if (!targetUserId) throw new TRPCError({ code: "NOT_FOUND" });
-        if (targetUserId === user.id) {
-            throw new TRPCError({ code: "BAD_REQUEST", message: "CANNOT_BLOCK_SELF" });
-        }
-
-        await blockUser(ctx.db, user.id, targetUserId);
+        const { user, target } = await requireTarget(ctx, input.username);
+        if (!target) return notFound("User not found");
+        if (target.userId === user.id) return invalid("Cannot block yourself");
+        return succeed(await blockUser({ userId: user.id, blockedUserId: target.userId }));
     }),
 
     /** Unblocking a user who isn't blocked succeeds. */
     unblockUser: procedure.input(usernameInput).mutation(async ({ ctx, input }) => {
-        const { user } = await requireUserAndProfile(ctx);
-
-        const targetUserId = await getUserIdByUsername(ctx.db, input.username);
-        if (!targetUserId) throw new TRPCError({ code: "NOT_FOUND" });
-
-        await unblockUser(ctx.db, user.id, targetUserId);
+        const { user, target } = await requireTarget(ctx, input.username);
+        if (!target) return notFound("User not found");
+        await unblockUser({ userId: user.id, blockedUserId: target.userId });
+        return succeed();
     }),
 
     /** Users the caller has blocked, most recent first. */
-    getMyBlockedUsers: procedure.query(async ({ ctx }) => {
+    getMyBlockedUsers: procedure.input(PageInputSchema).query(async ({ ctx, input }) => {
         const { user } = await requireUserAndProfile(ctx);
-        return getBlockedUsers(ctx.db, user.id);
+        return succeed(await getUserBlocks({ userId: user.id, ...input }));
     }),
 
-    /** The caller's settings, grouped as `display` and `privacy`. */
     getMySettings: procedure.query(async ({ ctx }) => {
         const { user } = await requireUserAndProfile(ctx);
-        return getUserSettings(ctx.db, user.id);
+        const settings = await getUserSettings({ userId: user.id });
+        return settings ? succeed(settings) : notFound("Settings not found");
     }),
 
-    /**
-     * Changes only the settings given; omitted groups and fields are left
-     * as they are. Returns nothing.
-     */
-    updateMySettings: procedure.input(updateSettingsInput).mutation(async ({ ctx, input }) => {
+    /** Changes only the settings given. */
+    updateMySettings: procedure
+        .input(UserSettingsSchema.pick({
+            darkModeEnabled: true,
+            followersCanTag: true,
+            nonFollowersCanTag: true,
+            profileVisibility: true,
+        }).partial())
+        .mutation(async ({ ctx, input }) => {
+            const { user } = await requireUserAndProfile(ctx);
+            const settings = await updateUserSettings({ userId: user.id, ...input });
+            return settings ? succeed(settings) : notFound("Settings not found");
+        }),
+
+    /** Saves a post, comment or chat message. Saving again succeeds. */
+    save: procedure.input(saveInput).mutation(async ({ ctx, input }) => {
         const { user } = await requireUserAndProfile(ctx);
-        await updateUserSettings(ctx.db, user.id, { ...input.display, ...input.privacy });
+        await createUserSave({ userId: user.id, ...input });
+        return succeed();
+    }),
+
+    /** Unsaving something that isn't saved succeeds. */
+    unsave: procedure.input(saveInput).mutation(async ({ ctx, input }) => {
+        const { user } = await requireUserAndProfile(ctx);
+        await deleteUserSave({ userId: user.id, ...input });
+        return succeed();
+    }),
+
+    /** What the caller saved, most recent first. */
+    getMySaves: procedure.input(PageInputSchema).query(async ({ ctx, input }) => {
+        const { user } = await requireUserAndProfile(ctx);
+        return succeed(await getUserSaves({ userId: user.id, ...input }));
     }),
 });

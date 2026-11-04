@@ -12,6 +12,6 @@ export const UserAccountSchema = z.object({
     refreshTokenExpiresAt: z.iso.datetime().nullable(),
     scope: z.string().nullable(),
     password: z.string().nullable(),
-}).and(BaseEntityFieldsSchema);
+}).extend(BaseEntityFieldsSchema.shape);
 
 export type UserAccount = z.infer<typeof UserAccountSchema>;

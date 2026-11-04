@@ -13,7 +13,7 @@ import { createAuthInstance } from "./auth";
 import { serverConfig } from "./config";
 import { createAppFeatureFlagStore, type AppFeatureFlagStore } from "./shared/feature-flags";
 import { trpcServer } from "@hono/trpc-server";
-import { db } from "./data-access";
+import { db } from "./data-access/db";
 import { appRouter, createContext } from "./transport/trpc";
 import { trpcOnErrorFunction } from "./error-handling";
 

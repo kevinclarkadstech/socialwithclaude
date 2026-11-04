@@ -1,5 +1,5 @@
-import { AppLogger } from "../observability";
-import { Result } from "./result";
+import type { AppLogger } from "../observability";
+import type { Result } from "./result";
 
 export type QuerySchema<I = unknown, O = unknown> = { input: I; output: O };
 

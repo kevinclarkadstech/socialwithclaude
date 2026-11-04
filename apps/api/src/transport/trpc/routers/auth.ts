@@ -1,9 +1,11 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { signUpInput } from "@myapp/shared/types/users";
+import { UserProfileSchema } from "@myapp/shared/domains";
+import { succeed } from "@myapp/shared/utils";
 
-import { getActiveSessions, getActiveSessionToken, signUp } from "../../../data-access";
+import { createUserProfile, getUserProfileByUserId, getUserProfileByUsername, getUserSessions } from "../../../data-access";
 import { requireUser, type TRPCContext } from "../context";
+import { conflict, invalid, notFound } from "../errors";
 import { procedure, router } from "../trpc";
 
 /** The signed-in user and the session this request came from, or UNAUTHORIZED. */
@@ -23,53 +25,60 @@ function requireSession(ctx: TRPCContext) {
 export const authRouter = router({
     /**
      * Completes sign-up for an already-authenticated user by creating their
-     * profile and settings. Fails with CONFLICT "USERNAME_TAKEN" (show to the
-     * user) or CONFLICT "PROFILE_ALREADY_EXISTS" (the UI shouldn't allow this).
+     * profile and settings. Fails with a conflict if the username is taken or
+     * the user already has a profile.
      */
-    signUp: procedure.input(signUpInput).mutation(async ({ ctx, input }) => {
-        const user = requireUser(ctx);
-        return signUp(ctx.db, { userId: user.id, ...input });
-    }),
+    signUp: procedure
+        .input(UserProfileSchema.pick({ username: true, firstName: true, lastName: true, about: true }))
+        .mutation(async ({ ctx, input }) => {
+            const user = requireUser(ctx);
+            if (await getUserProfileByUserId({ userId: user.id })) return conflict("Profile already exists");
+            if (await getUserProfileByUsername({ username: input.username })) return conflict("Username is taken");
+            return succeed(await createUserProfile({ userId: user.id, ...input }));
+        }),
 
     /**
-     * Where the caller is signed in: their unexpired sessions, most recently
-     * active first. `current` marks the one this request came from.
-     * `userAgent` describes the browser/app; IP addresses aren't returned.
+     * Where the caller is signed in, most recently active first. `current`
+     * marks the one this request came from. Tokens aren't returned.
      */
     getMySessions: procedure.query(async ({ ctx }) => {
         const { user, session } = requireSession(ctx);
-        const sessions = await getActiveSessions(ctx.db, user.id);
-        return sessions.map((s) => ({ ...s, current: s.id === session.id }));
+        const sessions = await getUserSessions({ userId: user.id });
+        return succeed(sessions.map((s) => ({
+            id: s.id,
+            ipAddress: s.ipAddress,
+            userAgent: s.userAgent,
+            expiresAt: s.expiresAt,
+            createdAt: s.createdAt,
+            updatedAt: s.updatedAt,
+            current: s.id === session.id,
+        })));
     }),
 
-    /**
-     * Signs one of the caller's other devices out. NOT_FOUND
-     * "SESSION_NOT_FOUND" if it isn't theirs or has already ended (so
-     * repeating it is harmless to ignore); BAD_REQUEST "CURRENT_SESSION" for
-     * this device (use signOut, which also clears the cookie).
-     */
+    /** Signs one of the caller's other devices out (use signOut for this one). */
     revokeSession: procedure
         .input(z.object({ id: z.string().min(1) }))
         .mutation(async ({ ctx, input }) => {
             const { user, session } = requireSession(ctx);
-            if (input.id === session.id) {
-                throw new TRPCError({ code: "BAD_REQUEST", message: "CURRENT_SESSION" });
-            }
-            const token = await getActiveSessionToken(ctx.db, user.id, input.id);
-            if (!token) throw new TRPCError({ code: "NOT_FOUND", message: "SESSION_NOT_FOUND" });
+            if (input.id === session.id) return invalid("Use signOut for the current session");
 
-            await ctx.auth.api.revokeSession({ body: { token }, headers: ctx.reqHeaders });
+            const target = (await getUserSessions({ userId: user.id })).find((s) => s.id === input.id);
+            if (!target) return notFound("Session not found");
+
+            await ctx.auth.api.revokeSession({ body: { token: target.token }, headers: ctx.reqHeaders });
+            return succeed();
         }),
 
-    /** Signs every device out except this one. Returns nothing. */
+    /** Signs every device out except this one. */
     revokeOtherSessions: procedure.mutation(async ({ ctx }) => {
         requireSession(ctx);
         await ctx.auth.api.revokeOtherSessions({ headers: ctx.reqHeaders });
+        return succeed();
     }),
 
     signOut: procedure.mutation(async ({ ctx }) => {
         // Signed-out callers have nothing to clear; treat as success.
-        if (!ctx.session) return { success: true };
+        if (!ctx.session) return succeed();
 
         const { headers } = await ctx.auth.api.signOut({
             headers: ctx.reqHeaders,
@@ -80,7 +89,6 @@ export const authRouter = router({
         for (const cookie of headers.getSetCookie()) {
             ctx.resHeaders.append("set-cookie", cookie);
         }
-
-        return { success: true };
+        return succeed();
     }),
 });
