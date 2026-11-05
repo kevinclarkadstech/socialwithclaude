@@ -28,15 +28,15 @@ import { procedure, router } from "../trpc";
 
 export const postsRouter = router({
     getPostById: procedure.input(GetPostByIdQueryInputSchema).query(({ ctx, input }) =>
-        getPostByIdQuery({ input, context: { logger: ctx.logger }, dependencies: { getPostById } }),
+        getPostByIdQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getPostById } }),
     ),
 
     getFeed: procedure.input(GetFeedQueryInputSchema).query(({ ctx, input }) =>
-        getFeedQuery({ input, context: { logger: ctx.logger }, dependencies: { getPosts } }),
+        getFeedQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getPosts } }),
     ),
 
     getUserPosts: procedure.input(GetUserPostsQueryInputSchema).query(({ ctx, input }) =>
-        getUserPostsQuery({ input, context: { logger: ctx.logger }, dependencies: { getUserProfileByUsername, getPosts } }),
+        getUserPostsQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, getPosts } }),
     ),
 
     createPost: procedure.input(CreatePostMutationInputSchema).mutation(({ ctx, input }) =>

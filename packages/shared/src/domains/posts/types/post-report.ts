@@ -9,7 +9,7 @@ export const PostReportSchema = BaseUserCreatedEntitySchema.extend({
     reason: ReportReasonSchema,
     details: z.string().trim().max(1000).nullable(),
     status: ReportStatusSchema,
-    snapshot: PostSchema,
+    snapshot: PostSchema.omit({ viewer: true }),
 });
 
 export type PostReport = z.infer<typeof PostReportSchema>;

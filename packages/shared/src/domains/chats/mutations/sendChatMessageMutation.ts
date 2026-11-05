@@ -20,12 +20,12 @@ export type SendChatMessageMutationOutput = z.infer<typeof SendChatMessageMutati
 export const sendChatMessageMutation: Mutation<{ input: SendChatMessageMutationInput, output: SendChatMessageMutationOutput }, {
     getCallingUser: GetCallingUser;
     getChatMembers: (args: { chatId: string }) => Promise<ChatMember[]>;
-    getChatMessageById: (args: { id: string }) => Promise<ChatMessage | null>;
+    getChatMessageById: (args: { id: string; viewerId: string | null }) => Promise<ChatMessage | null>;
     createChatMessage: (args: { id: string; chatId: string; userId: string; content: string }) => Promise<ChatMessage | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
+    const caller = await dependencies.getCallingUser();
     const members = await dependencies.getChatMembers({ chatId: input.chatId });
 
-    const caller = await dependencies.getCallingUser();
     const allowed = canSendChatMessage(caller, members);
     if (!allowed.ok) {
         logDisallowedResult({
@@ -38,7 +38,7 @@ export const sendChatMessageMutation: Mutation<{ input: SendChatMessageMutationI
 
     const message = await dependencies.createChatMessage({ ...input, userId: allowed.value.userId });
     if (!message) {
-        const existing = await dependencies.getChatMessageById({ id: input.id });
+        const existing = await dependencies.getChatMessageById({ id: input.id, viewerId: caller?.userId ?? null });
         if (existing && existing.createdBy === allowed.value.userId) {
             // A retry of a create that already worked.
             logger.info("Message already created", { chatMessageId: input.id, callerId: allowed.value.userId });

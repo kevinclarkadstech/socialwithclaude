@@ -18,16 +18,16 @@ export type DeleteChatMessageMutationOutput = z.infer<typeof DeleteChatMessageMu
 /** Deletes a message for everyone. */
 export const deleteChatMessageMutation: Mutation<{ input: DeleteChatMessageMutationInput, output: DeleteChatMessageMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getChatMessageById: (args: { id: string }) => Promise<ChatMessage | null>;
+    getChatMessageById: (args: { id: string; viewerId: string | null }) => Promise<ChatMessage | null>;
     deleteChatMessage: (args: { id: string; userId: string }) => Promise<boolean>;
 }> = async ({ input, context: { logger }, dependencies }) => {
-    const message = await dependencies.getChatMessageById({ id: input.id });
+    const caller = await dependencies.getCallingUser();
+    const message = await dependencies.getChatMessageById({ id: input.id, viewerId: caller?.userId ?? null });
     if (!message) {
         logger.info("Message to delete not found", { chatMessageId: input.id });
         return fail(notFoundError("Message not found"));
     }
 
-    const caller = await dependencies.getCallingUser();
     const allowed = canDeleteChatMessage(caller, message);
     if (!allowed.ok) {
         logDisallowedResult({

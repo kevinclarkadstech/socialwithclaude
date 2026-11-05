@@ -28,6 +28,7 @@ export const getChatMessagesQuery: Query<{ input: GetChatMessagesQueryInput, out
     getChatMembers: (args: { chatId: string }) => Promise<ChatMember[]>;
     getChatMessages: (args: {
         chatId: string;
+        viewerId: string | null;
         after?: string | null;
         cursor?: string | null;
         limit: number;
@@ -48,6 +49,6 @@ export const getChatMessagesQuery: Query<{ input: GetChatMessagesQueryInput, out
 
     // canViewChat checked the caller is a member.
     const member = members.find((m) => m.userId === allowed.value.userId)!;
-    const page = await dependencies.getChatMessages({ ...input, after: member.clearedAt });
+    const page = await dependencies.getChatMessages({ ...input, viewerId: allowed.value.userId, after: member.clearedAt });
     return succeed(page);
 }

@@ -1,6 +1,8 @@
+import { eq } from "drizzle-orm";
 import type { ListingCondition, ListingPrice, Post } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toPost } from "../../../mappers/posts";
+import { selectPosts } from "../../../selects/selectPosts";
 
 export type CreatePostListingArgs = {
     id: string;
@@ -24,7 +26,7 @@ export async function createPostListing({ id, userId, content, ...listing }: Cre
             return null;
         }
 
-        const [listingRow] = await tx
+        await tx
             .insert(schema.postListings)
             .values({
                 postId: id,
@@ -35,8 +37,9 @@ export async function createPostListing({ id, userId, content, ...listing }: Cre
                 priceType: listing.type,
                 priceCents: listing.type === "fixed" ? listing.priceCents : null,
                 createdAt: post.createdAt,
-            })
-            .returning();
-        return toPost(post, listingRow!);
+            });
+
+        const [row] = await selectPosts(tx, userId).where(eq(schema.posts.id, id));
+        return toPost(row!);
     });
 }

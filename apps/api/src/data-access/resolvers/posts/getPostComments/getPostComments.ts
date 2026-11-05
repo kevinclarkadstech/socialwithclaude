@@ -4,19 +4,19 @@ import type { PostComment } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toPostComment } from "../../../mappers/posts";
 import { toPage } from "../../../paging";
+import { selectPostComments } from "../../../selects/selectPostComments";
 
-/** A post's comments, oldest or newest first. */
-export async function getPostComments({ postId, order, cursor, limit }: {
+/** A post's comments, oldest or newest first, as `viewerId` sees them. */
+export async function getPostComments({ postId, viewerId, order, cursor, limit }: {
     postId: string;
+    viewerId: string | null;
     order: "oldest" | "newest";
     cursor?: string | null;
     limit: number;
 }): Promise<Page<PostComment>> {
     const t = schema.postComments;
     const cursorRow = sql`(select created_at, id from post_comments where id = ${cursor})`;
-    const rows = await db
-        .select()
-        .from(t)
+    const rows = await selectPostComments(db, viewerId)
         .where(and(
             eq(t.postId, postId),
             isNull(t.deletedAt),

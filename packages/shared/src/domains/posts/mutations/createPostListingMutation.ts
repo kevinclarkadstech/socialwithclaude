@@ -24,7 +24,7 @@ export type CreatePostListingMutationOutput = z.infer<typeof CreatePostListingMu
  */
 export const createPostListingMutation: Mutation<{ input: CreatePostListingMutationInput, output: CreatePostListingMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getPostById: (args: { id: string }) => Promise<Post | null>;
+    getPostById: (args: { id: string; viewerId: string | null }) => Promise<Post | null>;
     createPostListing: (args: {
         id: string;
         userId: string;
@@ -48,7 +48,7 @@ export const createPostListingMutation: Mutation<{ input: CreatePostListingMutat
 
     const createdPost = await dependencies.createPostListing({ ...input, userId: allowed.value.userId });
     if (!createdPost) {
-        const existing = await dependencies.getPostById({ id: input.id });
+        const existing = await dependencies.getPostById({ id: input.id, viewerId: caller?.userId ?? null });
         if (existing && existing.createdBy === allowed.value.userId) {
             // A retry of a create that already worked.
             logger.info("Listing already created", { postId: input.id, callerId: allowed.value.userId });

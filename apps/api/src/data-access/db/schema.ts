@@ -300,7 +300,7 @@ export const postReports = pgTable("post_reports", {
     reason: text("reason", { enum: asEnum(reportReasons) }).notNull(),
     details: text("details"),
     status: text("status", { enum: asEnum(reportStatuses) }).notNull().default("open"),
-    snapshot: jsonb("snapshot").$type<Post>().notNull(),
+    snapshot: jsonb("snapshot").$type<Omit<Post, "viewer">>().notNull(),
     ...auditFields(),
 }, (t) => [
     uniqueIndex("post_reports_created_by_post_id_idx").on(t.createdBy, t.postId),
@@ -321,7 +321,7 @@ export const postCommentReports = pgTable("post_comment_reports", {
     reason: text("reason", { enum: asEnum(reportReasons) }).notNull(),
     details: text("details"),
     status: text("status", { enum: asEnum(reportStatuses) }).notNull().default("open"),
-    snapshot: jsonb("snapshot").$type<PostComment>().notNull(),
+    snapshot: jsonb("snapshot").$type<Omit<PostComment, "viewer">>().notNull(),
     ...auditFields(),
 }, (t) => [
     uniqueIndex("post_comment_reports_created_by_post_comment_id_idx").on(t.createdBy, t.postCommentId),

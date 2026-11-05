@@ -2,6 +2,7 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import type { ListingCondition, ListingPrice, ListingStatus, Post } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toPost } from "../../../mappers/posts";
+import { selectPosts } from "../../../selects/selectPosts";
 
 export type UpdatePostListingArgs = {
     id: string;
@@ -31,7 +32,7 @@ export async function updatePostListing({ id, userId, content, ...listing }: Upd
             return null;
         }
 
-        const [listingRow] = await tx
+        await tx
             .update(schema.postListings)
             .set({
                 title: listing.title,
@@ -43,8 +44,9 @@ export async function updatePostListing({ id, userId, content, ...listing }: Upd
                 priceCents: listing.type === "fixed" ? listing.priceCents : null,
                 updatedAt: now,
             })
-            .where(eq(schema.postListings.postId, id))
-            .returning();
-        return toPost(post, listingRow!);
+            .where(eq(schema.postListings.postId, id));
+
+        const [row] = await selectPosts(tx, userId).where(eq(schema.posts.id, id));
+        return toPost(row!);
     });
 }

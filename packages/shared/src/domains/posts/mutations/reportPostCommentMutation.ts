@@ -28,23 +28,23 @@ export type ReportPostCommentMutationOutput = z.infer<typeof ReportPostCommentMu
  */
 export const reportPostCommentMutation: Mutation<{ input: ReportPostCommentMutationInput, output: ReportPostCommentMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getPostCommentById: (args: { id: string }) => Promise<PostComment | null>;
+    getPostCommentById: (args: { id: string; viewerId: string | null }) => Promise<PostComment | null>;
     createPostCommentReport: (args: {
         id: string;
         userId: string;
         postCommentId: string;
         reason: ReportReason;
         details: string | null;
-        snapshot: PostComment;
+        snapshot: Omit<PostComment, "viewer">;
     }) => Promise<PostCommentReport>;
 }> = async ({ input, context: { logger }, dependencies }) => {
-    const comment = await dependencies.getPostCommentById({ id: input.postCommentId });
+    const caller = await dependencies.getCallingUser();
+    const comment = await dependencies.getPostCommentById({ id: input.postCommentId, viewerId: caller?.userId ?? null });
     if (!comment) {
         logger.info("Comment to report not found", { postCommentId: input.postCommentId });
         return fail(notFoundError("Comment not found"));
     }
 
-    const caller = await dependencies.getCallingUser();
     const allowed = canReportPostComment(caller, comment);
     if (!allowed.ok) {
         logDisallowedResult({
@@ -55,6 +55,8 @@ export const reportPostCommentMutation: Mutation<{ input: ReportPostCommentMutat
         return allowed;
     }
 
-    const report = await dependencies.createPostCommentReport({ ...input, userId: allowed.value.userId, snapshot: comment });
+    // The comment as created, not as the reporter sees it.
+    const { viewer: _viewer, ...snapshot } = comment;
+    const report = await dependencies.createPostCommentReport({ ...input, userId: allowed.value.userId, snapshot });
     return succeed(report);
 }

@@ -38,6 +38,8 @@ export function mockCaller(overrides: Partial<CallingUser> = {}): CallingUser {
     };
 }
 
+const creator = { userId: userId1, username: "user1", firstName: null, lastName: null };
+
 export function mockPost(overrides: Partial<Post> = {}): Post {
     return {
         id: "01JBBBBBBBBBBBBBBBBBBBBBB1",
@@ -46,6 +48,8 @@ export function mockPost(overrides: Partial<Post> = {}): Post {
         numComments: 0,
         numShares: 0,
         numReactions: 0,
+        creator,
+        viewer: { hasSaved: false },
         createdBy: userId1,
         updatedBy: userId1,
         createdAt: now,
@@ -61,6 +65,8 @@ export function mockPostComment(overrides: Partial<PostComment> = {}): PostComme
         content: "Nice",
         numUpVotes: 0,
         numDownVotes: 0,
+        creator,
+        viewer: { hasSaved: false, vote: null },
         createdBy: userId1,
         updatedBy: userId1,
         createdAt: now,
@@ -85,6 +91,8 @@ export function mockChatMessage(overrides: Partial<ChatMessage> = {}): ChatMessa
         id: "01JEEEEEEEEEEEEEEEEEEEEEE1",
         chatId: mockChatMember().chatId,
         content: "Hi",
+        creator,
+        viewer: { hasSaved: false },
         createdBy: userId1,
         updatedBy: userId1,
         createdAt: now,
