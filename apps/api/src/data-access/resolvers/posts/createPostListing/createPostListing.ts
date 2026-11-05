@@ -12,13 +12,18 @@ export type CreatePostListingArgs = {
     isNegotiable: boolean;
 } & ListingPrice;
 
-/** Creates a post with the client's `id`, and its listing details. */
-export async function createPostListing({ id, userId, content, ...listing }: CreatePostListingArgs): Promise<Post> {
+/** Creates a post with the client's `id`, and its listing details. Null if the id is already used. */
+export async function createPostListing({ id, userId, content, ...listing }: CreatePostListingArgs): Promise<Post | null> {
     return db.transaction(async (tx) => {
         const [post] = await tx
             .insert(schema.posts)
             .values({ id, content, createdBy: userId, updatedBy: userId })
+            .onConflictDoNothing({ target: schema.posts.id })
             .returning();
+        if (!post) {
+            return null;
+        }
+
         const [listingRow] = await tx
             .insert(schema.postListings)
             .values({
@@ -29,9 +34,9 @@ export async function createPostListing({ id, userId, content, ...listing }: Cre
                 isNegotiable: listing.isNegotiable,
                 priceType: listing.type,
                 priceCents: listing.type === "fixed" ? listing.priceCents : null,
-                createdAt: post!.createdAt,
+                createdAt: post.createdAt,
             })
             .returning();
-        return toPost(post!, listingRow!);
+        return toPost(post, listingRow!);
     });
 }

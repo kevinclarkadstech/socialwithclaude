@@ -61,7 +61,7 @@ export const chatsRouter = router({
         sendChatMessageMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getChatMembers, createChatMessage },
+            dependencies: { getCallingUser: ctx.getCallingUser, getChatMembers, getChatMessageById, createChatMessage },
         }),
     ),
 

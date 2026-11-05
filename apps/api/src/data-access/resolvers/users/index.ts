@@ -8,6 +8,7 @@ export { denyUserFollowRequest } from './denyUserFollowRequest/denyUserFollowReq
 export { followUser } from './followUser/followUser';
 export { getUserBlockList } from './getUserBlockList/getUserBlockList';
 export { getUserBlocks } from './getUserBlocks/getUserBlocks';
+export { getUserFeedbackById } from './getUserFeedbackById/getUserFeedbackById';
 export { getUserFollowRequests } from './getUserFollowRequests/getUserFollowRequests';
 export { getUserProfileByUserId } from './getUserProfileByUserId/getUserProfileByUserId';
 export { getUserProfileByUsername } from './getUserProfileByUsername/getUserProfileByUsername';
