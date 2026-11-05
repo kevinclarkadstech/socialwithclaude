@@ -1,6 +1,6 @@
 import { CreateUserFeedbackMutationInputSchema, createUserFeedbackMutation } from "@myapp/shared/domains";
 
-import { createUserFeedback } from "../../../data-access";
+import { createUserFeedback, getUserFeedbackById } from "../../../data-access";
 import { procedure, router } from "../trpc";
 
 export const feedbackRouter = router({
@@ -11,6 +11,7 @@ export const feedbackRouter = router({
             dependencies: {
                 getCallingUser: ctx.getCallingUser,
                 getUserAgent: () => ctx.reqHeaders.get("user-agent"),
+                getUserFeedbackById,
                 createUserFeedback,
             },
         }),

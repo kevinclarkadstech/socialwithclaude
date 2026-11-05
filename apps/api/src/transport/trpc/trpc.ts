@@ -1,4 +1,4 @@
-import { initTRPC } from "@trpc/server";
+import { initTRPC, TRPCError } from "@trpc/server";
 
 import type { TRPCContext } from "./context";
 import z, { ZodError } from "zod";
@@ -6,22 +6,21 @@ import { ResultSchema } from "@myapp/shared/types/result";
 import { appErrorToTrpcError, AppTrpcError } from "../../error-handling";
 
 const t = initTRPC.context<TRPCContext>().create({
-    // errorFormatter: (opts) => {
-    //     console.log('errorFormatter')
-    //     const { shape, error } = opts;
-
-    //     return {
-    //         ...shape,
-    //         data: {
-    //             ...shape.data,
-    //             // If it's a Zod validation error, flatten the error messages
-    //             zodError:
-    //                 error.code === 'BAD_REQUEST' && error.cause instanceof ZodError
-    //                     ? error.cause.flatten()
-    //                     : null,
-    //         },
-    //     };
-    // }
+    /**
+     * Unexpected errors (a thrown exception, a failed query) can carry SQL,
+     * query params or other users' data in their message and stack. The
+     * client gets a generic message instead; onError logs the original.
+     */
+    errorFormatter: ({ shape, error }) => {
+        if (error.code !== "INTERNAL_SERVER_ERROR") {
+            return shape;
+        }
+        return {
+            ...shape,
+            message: "Something went wrong",
+            data: { ...shape.data, stack: undefined },
+        };
+    },
 });
 
 const mapAppError = t.middleware(async ({ next }) => {
@@ -41,7 +40,7 @@ const mapAppError = t.middleware(async ({ next }) => {
             return result;
         } else {
             // TODO in the rare case a query or mutation is returned without a Result<Value> wrapper, probably need to make sure this is logged
-            let validatedResult = ResultSchema.parse(result.data);
+            const validatedResult = ResultSchema.parse(result.data);
             // returns Result<Value> without error and it's value
             if (validatedResult.ok) {
                 return {
@@ -61,8 +60,6 @@ const mapAppError = t.middleware(async ({ next }) => {
 
         }
     } catch (error) {
-        // TODO remove after testing
-        console.log(error)
         if (error instanceof AppTrpcError) {
             return {
                 ...result,
@@ -70,15 +67,12 @@ const mapAppError = t.middleware(async ({ next }) => {
                 error,
             }
         }
-        // truly unexpected error, how best approach?
+        // Truly unexpected, e.g. a procedure returned something that isn't a Result.
+        // onError logs it (with this as the cause); errorFormatter hides it from the client.
         return {
             ...result,
             ok: false,
-            error: {
-                code: "INTERNAL_SERVER_ERROR",
-                message: "There was an unexpected error",
-                name: "unexpected-error"
-            }
+            error: new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Unexpected error", cause: error }),
         }
     }
 });

@@ -46,11 +46,10 @@ export function appErrorToTrpcError(appError: AppError): AppTrpcError {
 
 type OnErrorFn = Parameters<typeof trpcServer>['0']['onError'];
 
+/** Logs unexpected errors with their full details; the client only sees a generic message. */
 export const trpcOnErrorFunction: OnErrorFn = ({ error, path, ctx }) => {
-    console.log('onError trpc')
-    if (error.code !== "INTERNAL_SERVER_ERROR") return;
-    (ctx?.logger ?? rootLogger).error(error.message, { err: error, path });
-    return {
-        hello: 'world'
+    if (error.code !== "INTERNAL_SERVER_ERROR") {
+        return;
     }
+    (ctx?.logger ?? rootLogger).error(error.message, { err: error.cause ?? error, path });
 }

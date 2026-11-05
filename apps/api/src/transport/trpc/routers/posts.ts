@@ -46,6 +46,7 @@ export const postsRouter = router({
             dependencies: {
                 getCallingUser: ctx.getCallingUser,
                 isPostingEnabled: () => ctx.featureFlagStore.isEnabled("usersCanPost"),
+                getPostById,
                 createPost,
             },
         }),

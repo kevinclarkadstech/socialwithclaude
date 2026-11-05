@@ -37,7 +37,7 @@ export const postCommentsRouter = router({
         createPostCommentMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, createPostComment },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, getPostCommentById, createPostComment },
         }),
     ),
 

@@ -19,7 +19,7 @@ export const postListingsRouter = router({
         createPostListingMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, createPostListing },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, createPostListing },
         }),
     ),
 
