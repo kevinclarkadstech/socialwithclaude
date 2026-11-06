@@ -11,7 +11,7 @@ export const UnblockUserMutationInputSchema = UserProfileSchema.pick({ username:
 
 export type UnblockUserMutationInput = z.infer<typeof UnblockUserMutationInputSchema>;
 
-export const UnblockUserMutationOutputSchema = z.undefined();
+export const UnblockUserMutationOutputSchema = z.null();
 
 export type UnblockUserMutationOutput = z.infer<typeof UnblockUserMutationOutputSchema>;
 

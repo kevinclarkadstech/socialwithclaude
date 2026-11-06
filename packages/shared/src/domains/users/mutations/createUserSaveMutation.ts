@@ -13,7 +13,7 @@ export const CreateUserSaveMutationInputSchema = z.object({
 
 export type CreateUserSaveMutationInput = z.infer<typeof CreateUserSaveMutationInputSchema>;
 
-export const CreateUserSaveMutationOutputSchema = z.undefined();
+export const CreateUserSaveMutationOutputSchema = z.null();
 
 export type CreateUserSaveMutationOutput = z.infer<typeof CreateUserSaveMutationOutputSchema>;
 

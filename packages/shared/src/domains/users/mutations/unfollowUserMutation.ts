@@ -11,7 +11,7 @@ export const UnfollowUserMutationInputSchema = UserProfileSchema.pick({ username
 
 export type UnfollowUserMutationInput = z.infer<typeof UnfollowUserMutationInputSchema>;
 
-export const UnfollowUserMutationOutputSchema = z.undefined();
+export const UnfollowUserMutationOutputSchema = z.null();
 
 export type UnfollowUserMutationOutput = z.infer<typeof UnfollowUserMutationOutputSchema>;
 
