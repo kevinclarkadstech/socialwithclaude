@@ -9,11 +9,11 @@ import { postStore } from '../postStore';
 /** Saves or unsaves a post. Every list showing it updates right away, and it's undone if the request fails. */
 export function useSavePost() {
   async function setSaved(post: Post, save: boolean) {
-    if (postStore.getPost(post.id)?.viewer.hasSaved === save) {
+    if (postStore.getItem(post.id)?.viewer.hasSaved === save) {
       // Already that way, e.g. a double tap.
       return;
     }
-    const previous = postStore.updatePost(post.id, (current) => ({
+    const previous = postStore.updateItem(post.id, (current) => ({
       ...current,
       numSaves: current.numSaves + (save ? 1 : -1),
       viewer: { ...current.viewer, hasSaved: save },
@@ -24,14 +24,14 @@ export function useSavePost() {
       const result = save ? await runCreateUserSaveMutation(input) : await runDeleteUserSaveMutation(input);
       orThrow(result);
       // A list that reloaded meanwhile (e.g. right after signing in) may have brought the old state back.
-      postStore.updatePost(post.id, (current) =>
+      postStore.updateItem(post.id, (current) =>
         current.viewer.hasSaved === save
           ? current
           : { ...current, numSaves: current.numSaves + (save ? 1 : -1), viewer: { ...current.viewer, hasSaved: save } },
       );
     } catch (error) {
       if (previous) {
-        postStore.restorePost(previous);
+        postStore.restoreItem(previous);
       }
       void showErrorToast(errorMessage(error));
     }
