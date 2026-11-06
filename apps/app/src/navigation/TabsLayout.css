@@ -31,3 +31,8 @@ ion-back-button.tab-back-button {
 .tab-back-button-wrapper {
   display: contents;
 }
+
+/* Under a root route (e.g. /me): hidden but mounted, and the tab bar with it. */
+.tabs-layout.tabs-layout-covered {
+  display: none;
+}

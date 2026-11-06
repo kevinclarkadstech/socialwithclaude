@@ -1,7 +1,7 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useNavigationType, NavigationType, type RouteObject } from 'react-router';
 import { NavContext, type BackButtonEvent, type NavContextState, type RouterDirection } from '@ionic/react';
-import { applyLocation, createInitialState, hrefOf, withIntent } from './stacks';
+import { applyLocation, createInitialState, hrefOf, tabIdForPath, withIntent } from './stacks';
 import {
   TabNavigationContext,
   type TabNavigationContextValue,
@@ -14,7 +14,7 @@ const NO_ROUTES: RouteObject[] = [];
  * Tab navigation where each tab keeps a stack of pages, like a native app,
  * in the native app and in browsers alike.
  */
-export function StackTabNavigationProvider({ tabs, sharedRoutes = NO_ROUTES, children }: Props) {
+export function StackTabNavigationProvider({ tabs, sharedRoutes = NO_ROUTES, rootRoutes = NO_ROUTES, children }: Props) {
   const location = useLocation();
   const navigationType = useNavigationType();
   const navigate = useNavigate();
@@ -52,12 +52,27 @@ export function StackTabNavigationProvider({ tabs, sharedRoutes = NO_ROUTES, chi
   }, [location.key, navigationType]);
 
   const activeStack = state.stacks[state.activeTab];
-  const canGoBack = activeStack.length > 1;
+  // Root routes aren't in any tab's stack, so the stacks ignore them.
+  const onRootRoute = !tabIdForPath(tabs, location.pathname);
+  const canGoBack = onRootRoute || activeStack.length > 1;
 
   const goBack = useCallback(() => {
+    const h = history.current;
+    if (onRootRoute) {
+      // Back to the tab underneath, as it was left.
+      const top = activeStack[activeStack.length - 1];
+      if (h.keys[h.index - 1] === top.location.key) {
+        navigate(-1);
+      } else {
+        navigate(hrefOf(top.location), {
+          replace: true,
+          state: withIntent({ type: 'switch-tab' }, top.location.state),
+        });
+      }
+      return;
+    }
     if (activeStack.length < 2) return;
     const target = activeStack[activeStack.length - 2];
-    const h = history.current;
     if (h.keys[h.index - 1] === target.location.key) {
       navigate(-1);
     } else {
@@ -66,7 +81,7 @@ export function StackTabNavigationProvider({ tabs, sharedRoutes = NO_ROUTES, chi
         state: withIntent({ type: 'pop', targetId: target.id }, target.location.state),
       });
     }
-  }, [activeStack, navigate]);
+  }, [activeStack, navigate, onRootRoute]);
 
   const switchTab = useCallback(
     (tabId: string) => {
@@ -129,6 +144,8 @@ export function StackTabNavigationProvider({ tabs, sharedRoutes = NO_ROUTES, chi
     () => ({
       tabs,
       sharedRoutes,
+      rootRoutes,
+      onRootRoute,
       activeTab: state.activeTab,
       stacks: state.stacks,
       visitedTabs: state.visitedTabs,
@@ -136,7 +153,7 @@ export function StackTabNavigationProvider({ tabs, sharedRoutes = NO_ROUTES, chi
       goBack,
       switchTab,
     }),
-    [tabs, sharedRoutes, state, canGoBack, goBack, switchTab],
+    [tabs, sharedRoutes, rootRoutes, onRootRoute, state, canGoBack, goBack, switchTab],
   );
 
   return (
