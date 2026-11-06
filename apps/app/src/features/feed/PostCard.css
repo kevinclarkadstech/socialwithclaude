@@ -32,3 +32,11 @@
 .post-card__header .user-avatar {
   margin-inline-end: 12px;
 }
+
+/* On wide screens, posts stay a readable column instead of stretching. */
+@media (min-width: 700px) {
+  .post-card {
+    max-width: 640px;
+    margin-inline: auto;
+  }
+}

@@ -1,0 +1,22 @@
+.sidebar {
+  --width: 240px;
+}
+
+.sidebar__list {
+  padding-top: 16px;
+}
+
+.sidebar__item {
+  --border-radius: 8px;
+  margin: 2px 8px;
+}
+
+.sidebar__item--active {
+  --background: rgba(var(--ion-color-primary-rgb), 0.12);
+  --color: var(--ion-color-primary);
+  font-weight: 600;
+}
+
+.sidebar__item--active ion-icon {
+  color: var(--ion-color-primary);
+}

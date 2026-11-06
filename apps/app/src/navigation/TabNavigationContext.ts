@@ -28,7 +28,7 @@ export interface TabNavigationContextValue {
   canGoBack: boolean;
   /** Leaves a root route for the tab underneath, or pops the top page off the active tab's stack. */
   goBack: () => void;
-  /** Shows a tab where it was left. Tapping the active tab pops it back to its root. */
+  /** Shows a tab where it was left. Tapping the active tab pops it back to its root; from a root route, shows the tab. */
   switchTab: (tabId: string) => void;
 }
 
