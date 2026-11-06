@@ -9,13 +9,13 @@ export interface SignInContextValue {
   requireSignIn: (action?: () => void) => void;
 }
 
-/** Provided by features/auth's SignInProvider. */
+/** Provided by app/SignInGate. */
 export const SignInContext = createContext<SignInContextValue | null>(null);
 
 export function useRequireSignIn(): SignInContextValue['requireSignIn'] {
   const context = useContext(SignInContext);
   if (!context) {
-    throw new Error('useRequireSignIn must be used inside SignInProvider');
+    throw new Error('useRequireSignIn must be used inside SignInGate');
   }
   return context.requireSignIn;
 }
