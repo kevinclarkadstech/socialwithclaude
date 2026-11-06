@@ -1,0 +1,22 @@
+import { IonButtons, IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/react';
+import { AccountButton } from '../components/AccountButton';
+import './pages.css';
+
+/** The Chats tab. Not built yet. */
+export default function ChatsPage() {
+  return (
+    <IonPage>
+      <IonHeader>
+        <IonToolbar>
+          <IonTitle>Chats</IonTitle>
+          <IonButtons slot="end">
+            <AccountButton />
+          </IonButtons>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent>
+        <p className="page-message">Your conversations will show up here.</p>
+      </IonContent>
+    </IonPage>
+  );
+}

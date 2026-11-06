@@ -9,17 +9,25 @@
     "preview": "vite preview",
     "test.e2e": "cypress run",
     "test.unit": "vitest",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@aparajita/capacitor-secure-storage": "^8",
     "@capacitor/core": "8.5.3",
     "@ionic/react": "^9.0.0",
+    "@myapp/shared": "workspace:*",
+    "@tanstack/react-query": "^5",
+    "@trpc/client": "11.19.0",
+    "better-auth": "1.7.6",
     "ionicons": "^8.1.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-router": "^8.5.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9",
     "@testing-library/dom": ">=7.21.4",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^16.2.0",
