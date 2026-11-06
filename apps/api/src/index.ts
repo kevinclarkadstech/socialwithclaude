@@ -27,7 +27,7 @@ export type AppHonoEnv = Env & {
         user: Auth["$Infer"]["Session"]["user"] | null
         session: Auth["$Infer"]["Session"]["session"] | null
     },
-    Bindings: {};
+    Bindings: object;
 }
 
 console.log('INITIALIZING SERVER')
