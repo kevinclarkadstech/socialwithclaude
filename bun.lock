@@ -63,11 +63,12 @@
       "dependencies": {
         "@aparajita/capacitor-secure-storage": "^8",
         "@capacitor/core": "8.5.3",
+        "@ionic/core": "9.0.8",
         "@ionic/react": "^9.0.0",
         "@myapp/shared": "workspace:*",
-        "@tanstack/react-query": "^5",
         "@trpc/client": "11.19.0",
         "better-auth": "1.7.6",
+        "dayjs": "^1.11",
         "ionicons": "^8.1.0",
         "react": "19.0.0",
         "react-dom": "19.0.0",
@@ -753,10 +754,6 @@
     "@stencil/core": ["@stencil/core@4.45.2", "", { "optionalDependencies": { "@rollup/rollup-darwin-arm64": "4.44.0", "@rollup/rollup-darwin-x64": "4.44.0", "@rollup/rollup-linux-arm64-gnu": "4.44.0", "@rollup/rollup-linux-arm64-musl": "4.44.0", "@rollup/rollup-linux-x64-gnu": "4.44.0", "@rollup/rollup-linux-x64-musl": "4.44.0", "@rollup/rollup-win32-arm64-msvc": "4.44.0", "@rollup/rollup-win32-x64-msvc": "4.44.0" }, "bin": { "stencil": "bin/stencil" } }, "sha512-CNkPVZsqyNMjFMX9bEkMJsvBbQxjLw480OaoamoqiLPdQCFjJQReeOjnWX1A5ivSn3UYEIJ6MoN5VXDkaHGt8Q=="],
 
     "@stencil/react-output-target": ["@stencil/react-output-target@1.6.5", "", { "dependencies": { "@lit/react": "^1.0.8", "html-react-parser": "^5.2.17", "react-style-stringify": "^1.2.0", "ts-morph": "^28.0.0" }, "peerDependencies": { "@stencil/core": ">=3 || >=4.0.0 || ^5.0.0 || >=5.0.0-beta.18", "react": "^18 || ^19", "react-dom": "^18 || ^19" } }, "sha512-S7ldaSwjjysJIo3E/ksxApHzRxEncT191wb5bovDZx5da+5B33k2cyiz4lOZ0zk2I5GRWniDsHIJJs94vKU6rQ=="],
-
-    "@tanstack/query-core": ["@tanstack/query-core@5.106.1", "", {}, "sha512-erYv/UACddcdgjOL2ixmFdK6tO/AVBeUcTCOtX2N51yZpDQ2U7KJ+xgB/bCNfsF3uoCDTqGHEEbDiFsIO9YUmQ=="],
-
-    "@tanstack/react-query": ["@tanstack/react-query@5.106.1", "", { "dependencies": { "@tanstack/query-core": "5.106.1" }, "peerDependencies": { "@types/react": "^18 || ^19", "react": "^18 || ^19" }, "optionalPeers": ["@types/react"] }, "sha512-ORDvJG/DSfmlFL9lQ8GDkE0VjtQbLeRDY7BL8xjKkQFGLfjFGfNWNuteWgPqA2gPJgLLuWfQ7IX0FlsHCJriyg=="],
 
     "@testing-library/dom": ["@testing-library/dom@10.4.2", "", { "dependencies": { "@babel/code-frame": "^7.10.4", "@babel/runtime": "^7.12.5", "@types/aria-query": "^5.0.1", "aria-query": "5.3.0", "dom-accessibility-api": "^0.5.9", "lz-string": "^1.5.0", "picocolors": "1.1.1", "pretty-format": "^27.0.2" } }, "sha512-yzr2S9HyAIdhz2/6qHgbs665Q7PKVcDF05vsOlHPxG1mo36gKVesdYVeDLnXgfjJ03CrKRk08knc6+E/9m8v2Q=="],
 

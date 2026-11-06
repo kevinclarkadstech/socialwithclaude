@@ -1,0 +1,10 @@
+.user-avatar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 600;
+  line-height: 1;
+  user-select: none;
+}

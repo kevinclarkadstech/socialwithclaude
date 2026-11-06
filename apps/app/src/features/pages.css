@@ -1,0 +1,7 @@
+.page-message {
+  display: flex;
+  justify-content: center;
+  padding: 32px 16px;
+  color: var(--ion-color-medium);
+  text-align: center;
+}

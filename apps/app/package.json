@@ -16,11 +16,12 @@
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "^8",
     "@capacitor/core": "8.5.3",
+    "@ionic/core": "9.0.8",
     "@ionic/react": "^9.0.0",
     "@myapp/shared": "workspace:*",
-    "@tanstack/react-query": "^5",
     "@trpc/client": "11.19.0",
     "better-auth": "1.7.6",
+    "dayjs": "^1.11",
     "ionicons": "^8.1.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
