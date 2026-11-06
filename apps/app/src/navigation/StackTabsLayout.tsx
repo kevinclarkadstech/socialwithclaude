@@ -5,7 +5,7 @@ import { useTabNavigation } from './TabNavigationContext';
 import { PageContext } from './PageContext';
 import { TabBar } from './TabBar';
 import { tabRoutes } from './tabRoutes';
-import { tabIdForPath, type StackEntry, type TabDefinition } from './stacks';
+import type { StackEntry, TabDefinition } from './stacks';
 import { animationsEnabled, runPageTransition, type TransitionDirection } from './transition';
 import { useSwipeBack, type SwipeBackOptions } from './useSwipeBack';
 import './TabsLayout.css';
@@ -16,15 +16,23 @@ import './TabsLayout.css';
  * instantly (see transition.ts).
  */
 export function StackTabsLayout() {
-  const { tabs, sharedRoutes, activeTab, stacks, visitedTabs } = useTabNavigation();
+  const { tabs, sharedRoutes, rootRoutes, onRootRoute, activeTab, stacks, visitedTabs, canGoBack } = useTabNavigation();
   const location = useLocation();
+  const rootPage = useRoutes(rootRoutes, location);
+  const activeTabPath = tabs.find((tab) => tab.id === activeTab)!.path;
+  const rootPageContext = useMemo(
+    () => ({ tabId: activeTab, tabPath: activeTabPath, isVisible: true, canGoBack }),
+    [activeTab, activeTabPath, canGoBack],
+  );
 
-  if (!tabIdForPath(tabs, location.pathname)) {
+  if (onRootRoute && !rootPage) {
     return <Navigate to={tabs[0].path} replace />;
   }
 
   return (
-    <div className="ion-page tabs-layout">
+    <>
+      {/* The tabs stay mounted under a root route, so their stacks and scroll positions survive. */}
+      <div className={onRootRoute ? 'ion-page tabs-layout tabs-layout-covered' : 'ion-page tabs-layout'}>
       <div className="tabs-layout-panes">
         {tabs
           .filter((tab) => visitedTabs.includes(tab.id))
@@ -39,7 +47,9 @@ export function StackTabsLayout() {
           ))}
       </div>
       <TabBar />
-    </div>
+      </div>
+      {onRootRoute && <PageContext.Provider value={rootPageContext}>{rootPage}</PageContext.Provider>}
+    </>
   );
 }
 

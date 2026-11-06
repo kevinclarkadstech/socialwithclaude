@@ -10,7 +10,7 @@ export const DeletePostCommentVoteMutationInputSchema = PostCommentVoteSchema.pi
 
 export type DeletePostCommentVoteMutationInput = z.infer<typeof DeletePostCommentVoteMutationInputSchema>;
 
-export const DeletePostCommentVoteMutationOutputSchema = z.undefined();
+export const DeletePostCommentVoteMutationOutputSchema = z.null();
 
 export type DeletePostCommentVoteMutationOutput = z.infer<typeof DeletePostCommentVoteMutationOutputSchema>;
 

@@ -18,6 +18,13 @@ export const ServerConfigSchema = z.object({
     APPLE_APP_BUNDLE_IDENTIFIER: z.string().optional(),
 });
 
+/**
+ * Where the Capacitor app runs: capacitor://localhost on iOS,
+ * https://localhost on Android. Allowed by CORS and trusted by better-auth
+ * alongside WEB_APP_URL.
+ */
+export const nativeAppOrigins = ["capacitor://localhost", "https://localhost"];
+
 export const serverConfig = (() => {
     if (process.env.NODE_ENV !== 'production') {
         const serverEnvPath = path.resolve(process.cwd(), './.env.local');

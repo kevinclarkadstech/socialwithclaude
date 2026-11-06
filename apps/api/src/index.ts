@@ -10,7 +10,7 @@ import type { AppLogger } from "@myapp/shared/observability";
 import { rootLogger } from "./observability/logs";
 import { withSpan } from "./observability";
 import { createAuthInstance } from "./auth";
-import { serverConfig } from "./config";
+import { nativeAppOrigins, serverConfig } from "./config";
 import { createAppFeatureFlagStore, type AppFeatureFlagStore } from "./shared/feature-flags";
 import { trpcServer } from "@hono/trpc-server";
 import { db } from "./data-access/db";
@@ -67,9 +67,11 @@ const app = new Hono<AppHonoEnv>()
     .use(
         "/*",
         cors({
-            origin: serverConfig.WEB_APP_URL,
+            origin: [serverConfig.WEB_APP_URL, ...nativeAppOrigins],
             allowMethods: ["GET", "POST", "OPTIONS"],
             allowHeaders: ["Content-Type", "Authorization"],
+            // The native app reads its session token from this header after signing in.
+            exposeHeaders: ["set-auth-token"],
             credentials: true,
         }),
     )

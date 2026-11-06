@@ -121,7 +121,9 @@ export const userProfiles = pgTable("user_profiles", {
     numFollowing: integer("num_following").notNull().default(0),
     ...timestamps(),
 }, (t) => [
-    uniqueIndex("user_profiles_username_lower_idx").on(sql`lower(${t.username})`),
+    // Usernames are stored lowercase (the shared schema lowercases them), so a plain unique index is enough.
+    uniqueIndex("user_profiles_username_idx").on(t.username),
+    check("user_profiles_username_lowercase", sql`${t.username} = lower(${t.username})`),
     check("user_profiles_num_followers_non_negative", sql`${t.numFollowers} >= 0`),
     check("user_profiles_num_following_non_negative", sql`${t.numFollowing} >= 0`),
 ]);

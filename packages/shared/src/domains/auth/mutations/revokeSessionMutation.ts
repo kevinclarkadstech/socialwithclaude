@@ -11,7 +11,7 @@ export const RevokeSessionMutationInputSchema = UserSessionSchema.pick({ id: tru
 
 export type RevokeSessionMutationInput = z.infer<typeof RevokeSessionMutationInputSchema>;
 
-export const RevokeSessionMutationOutputSchema = z.undefined();
+export const RevokeSessionMutationOutputSchema = z.null();
 
 export type RevokeSessionMutationOutput = z.infer<typeof RevokeSessionMutationOutputSchema>;
 

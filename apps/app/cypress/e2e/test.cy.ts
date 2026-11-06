@@ -1,6 +1,6 @@
-describe('My First Test', () => {
-  it('Visits the app root url', () => {
+describe('App', () => {
+  it('opens on the Feed tab', () => {
     cy.visit('/')
-    cy.contains('ion-content', 'Item 1')
+    cy.contains('ion-title', 'Feed')
   })
 })

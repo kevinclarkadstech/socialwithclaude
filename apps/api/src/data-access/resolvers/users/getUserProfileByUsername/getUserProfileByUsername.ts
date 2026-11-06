@@ -1,13 +1,13 @@
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type { UserProfile } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toUserProfile } from "../../../mappers/users";
 
-/** Usernames are case-insensitive. */
+/** Usernames are lowercase; the input schemas lowercase what callers send. */
 export async function getUserProfileByUsername({ username }: { username: string }): Promise<UserProfile | null> {
     const [row] = await db
         .select()
         .from(schema.userProfiles)
-        .where(eq(sql`lower(${schema.userProfiles.username})`, username.toLowerCase()));
+        .where(eq(schema.userProfiles.username, username));
     return row ? toUserProfile(row) : null;
 }

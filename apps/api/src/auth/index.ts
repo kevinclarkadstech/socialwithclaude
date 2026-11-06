@@ -1,9 +1,9 @@
 import { betterAuth } from "better-auth";
-import { emailOTP } from "better-auth/plugins";
+import { bearer, emailOTP } from "better-auth/plugins";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 
 import { newId, schema, type Database } from "../data-access/db";
-import { serverConfig } from "../config";
+import { nativeAppOrigins, serverConfig } from "../config";
 import { assertEmailCanBeSent, sendSignInCode } from "../email";
 import { rootLogger } from "../observability";
 
@@ -34,7 +34,11 @@ export function createAuthInstance(db: Database) {
         secret: serverConfig.BETTER_AUTH_SECRET,
         baseURL: serverConfig.BETTER_AUTH_URL,
         // Apple posts its sign-in response back from its own origin.
-        trustedOrigins: [serverConfig.WEB_APP_URL, ...(apple ? ["https://appleid.apple.com"] : [])],
+        trustedOrigins: [
+            serverConfig.WEB_APP_URL,
+            ...nativeAppOrigins,
+            ...(apple ? ["https://appleid.apple.com"] : []),
+        ],
         database: drizzleAdapter(db, {
             provider: "pg",
             schema,
@@ -48,6 +52,10 @@ export function createAuthInstance(db: Database) {
             ...(apple && { apple }),
         },
         plugins: [
+            // The native app can't rely on cookies, so it sends the session token
+            // as "Authorization: Bearer ..." (returned in the set-auth-token header).
+            // Browsers keep using the HttpOnly cookie.
+            bearer(),
             emailOTP({
                 // Not awaited, so how long sending takes doesn't reveal whether the email has an account.
                 sendVerificationOTP: async (data) => {

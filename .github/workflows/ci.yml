@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # The API and the shared package. The web and Ionic apps join once they build again.
+  # The API and the shared package.
   api:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -30,3 +30,23 @@ jobs:
         run: bun run --cwd apps/api typecheck
       - name: Lint API
         run: bun run --cwd apps/api lint
+
+  # The Ionic app (web and Capacitor share one build).
+  app:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+
+      - name: Typecheck app
+        run: bun run --cwd apps/app typecheck
+      - name: Lint app
+        run: bun run --cwd apps/app lint
+      - name: Test app
+        run: bun run --cwd apps/app test
+      - name: Build app
+        run: bun run --cwd apps/app build

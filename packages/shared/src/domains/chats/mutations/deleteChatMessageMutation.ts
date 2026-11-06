@@ -11,7 +11,7 @@ export const DeleteChatMessageMutationInputSchema = ChatMessageSchema.pick({ id:
 
 export type DeleteChatMessageMutationInput = z.infer<typeof DeleteChatMessageMutationInputSchema>;
 
-export const DeleteChatMessageMutationOutputSchema = z.undefined();
+export const DeleteChatMessageMutationOutputSchema = z.null();
 
 export type DeleteChatMessageMutationOutput = z.infer<typeof DeleteChatMessageMutationOutputSchema>;
 

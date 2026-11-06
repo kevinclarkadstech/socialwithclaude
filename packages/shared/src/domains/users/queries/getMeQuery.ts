@@ -7,11 +7,14 @@ export const GetMeQueryInputSchema = z.object({}).default({});
 
 export type GetMeQueryInput = z.infer<typeof GetMeQueryInputSchema>;
 
-export const GetMeQueryOutputSchema = CallingUserSchema.pick({ userId: true, email: true, profile: true }).nullable();
+export const GetMeQueryOutputSchema = CallingUserSchema.nullable();
 
 export type GetMeQueryOutput = z.infer<typeof GetMeQueryOutputSchema>;
 
-/** The caller, or null when signed out. `profile` is null until sign-up is complete. */
+/**
+ * The caller, or null when signed out. `profile` is null until sign-up is
+ * complete. Clients use it as their getCallingUser dependency.
+ */
 export const getMeQuery: Query<{ input: GetMeQueryInput, output: GetMeQueryOutput }, {
     getCallingUser: GetCallingUser;
 }> = async ({ dependencies }) => {
@@ -20,5 +23,5 @@ export const getMeQuery: Query<{ input: GetMeQueryInput, output: GetMeQueryOutpu
         return succeed(null);
     }
 
-    return succeed({ userId: caller.userId, email: caller.email, profile: caller.profile });
+    return succeed(caller);
 }
