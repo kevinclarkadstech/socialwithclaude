@@ -14,6 +14,6 @@ export const searchRouter = router({
     ),
 
     posts: procedure.input(SearchPostsQueryInputSchema).query(({ ctx, input }) =>
-        searchPostsQuery({ input, context: { logger: ctx.logger }, dependencies: { searchPosts } }),
+        searchPostsQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, searchPosts } }),
     ),
 });

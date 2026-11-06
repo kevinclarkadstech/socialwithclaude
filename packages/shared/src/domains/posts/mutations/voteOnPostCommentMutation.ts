@@ -19,16 +19,16 @@ export type VoteOnPostCommentMutationOutput = z.infer<typeof VoteOnPostCommentMu
 /** Up (1) or down (-1), replacing the caller's earlier vote. */
 export const voteOnPostCommentMutation: Mutation<{ input: VoteOnPostCommentMutationInput, output: VoteOnPostCommentMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getPostCommentById: (args: { id: string }) => Promise<PostComment | null>;
+    getPostCommentById: (args: { id: string; viewerId: string | null }) => Promise<PostComment | null>;
     setPostCommentVote: (args: { userId: string; postCommentId: string; value: PostCommentVoteValue }) => Promise<PostCommentVote | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
-    const comment = await dependencies.getPostCommentById({ id: input.postCommentId });
+    const caller = await dependencies.getCallingUser();
+    const comment = await dependencies.getPostCommentById({ id: input.postCommentId, viewerId: caller?.userId ?? null });
     if (!comment) {
         logger.info("Comment to vote on not found", { postCommentId: input.postCommentId });
         return fail(notFoundError("Comment not found"));
     }
 
-    const caller = await dependencies.getCallingUser();
     const allowed = canVoteOnPostComment(caller, comment);
     if (!allowed.ok) {
         logDisallowedResult({

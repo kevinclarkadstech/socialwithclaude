@@ -19,7 +19,7 @@ export type CreatePostMutationOutput = z.infer<typeof CreatePostMutationOutputSc
 export const createPostMutation: Mutation<{ input: CreatePostMutationInput, output: CreatePostMutationOutput }, {
     getCallingUser: GetCallingUser;
     isPostingEnabled: () => boolean;
-    getPostById: (args: { id: string }) => Promise<Post | null>;
+    getPostById: (args: { id: string; viewerId: string | null }) => Promise<Post | null>;
     createPost: (args: { id: string; userId: string; content: string }) => Promise<Post | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
@@ -40,7 +40,7 @@ export const createPostMutation: Mutation<{ input: CreatePostMutationInput, outp
 
     const createdPost = await dependencies.createPost({ ...input, userId: allowed.value.userId });
     if (!createdPost) {
-        const existing = await dependencies.getPostById({ id: input.id });
+        const existing = await dependencies.getPostById({ id: input.id, viewerId: caller?.userId ?? null });
         if (existing && existing.createdBy === allowed.value.userId) {
             // A retry of a create that already worked.
             logger.info("Post already created", { postId: input.id, callerId: allowed.value.userId });

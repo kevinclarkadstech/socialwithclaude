@@ -17,16 +17,16 @@ export type DeletePostCommentMutationOutput = z.infer<typeof DeletePostCommentMu
 
 export const deletePostCommentMutation: Mutation<{ input: DeletePostCommentMutationInput, output: DeletePostCommentMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getPostCommentById: (args: { id: string }) => Promise<PostComment | null>;
+    getPostCommentById: (args: { id: string; viewerId: string | null }) => Promise<PostComment | null>;
     deletePostComment: (args: { id: string; userId: string }) => Promise<boolean>;
 }> = async ({ input, context: { logger }, dependencies }) => {
-    const comment = await dependencies.getPostCommentById({ id: input.id });
+    const caller = await dependencies.getCallingUser();
+    const comment = await dependencies.getPostCommentById({ id: input.id, viewerId: caller?.userId ?? null });
     if (!comment) {
         logger.info("Comment to delete not found", { postCommentId: input.id });
         return fail(notFoundError("Comment not found"));
     }
 
-    const caller = await dependencies.getCallingUser();
     const allowed = canDeletePostComment(caller, comment);
     if (!allowed.ok) {
         logDisallowedResult({

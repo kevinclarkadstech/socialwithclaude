@@ -8,3 +8,4 @@ export * from "./user-session";
 export * from "./user-settings";
 export * from "./user-block-list";
 export * from "./calling-user";
+export * from "./user-profile-summary";

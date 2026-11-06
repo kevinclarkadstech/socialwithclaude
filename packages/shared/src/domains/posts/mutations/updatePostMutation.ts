@@ -18,16 +18,16 @@ export type UpdatePostMutationOutput = z.infer<typeof UpdatePostMutationOutputSc
 /** Changes a post's (or listing's) content. */
 export const updatePostMutation: Mutation<{ input: UpdatePostMutationInput, output: UpdatePostMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getPostById: (args: { id: string }) => Promise<Post | null>;
+    getPostById: (args: { id: string; viewerId: string | null }) => Promise<Post | null>;
     updatePost: (args: { id: string; userId: string; content: string }) => Promise<Post | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
-    const post = await dependencies.getPostById({ id: input.id });
+    const caller = await dependencies.getCallingUser();
+    const post = await dependencies.getPostById({ id: input.id, viewerId: caller?.userId ?? null });
     if (!post) {
         logger.info("Post to update not found", { postId: input.id });
         return fail(notFoundError("Post not found"));
     }
 
-    const caller = await dependencies.getCallingUser();
     const allowed = canUpdatePost(caller, post);
     if (!allowed.ok) {
         logDisallowedResult({

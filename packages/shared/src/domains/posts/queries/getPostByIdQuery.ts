@@ -2,6 +2,7 @@ import z from "zod";
 import type { Query } from "../../../types/query";
 import { fail, succeed } from "../../../utils/result";
 import { notFoundError } from "../../../error-handling";
+import type { GetCallingUser } from "../../users/types/calling-user";
 import { PostSchema, type Post } from "../types/post";
 
 export const GetPostByIdQueryInputSchema = z.object({
@@ -18,9 +19,11 @@ export type GetPostByIdQueryOutput = z.infer<typeof GetPostByIdQueryOutputSchema
 
 /** A post (or listing). Not found if it doesn't exist or was deleted. */
 export const getPostByIdQuery: Query<{ input: GetPostByIdQueryInput, output: GetPostByIdQueryOutput }, {
-    getPostById: (args: { id: string }) => Promise<Post | null>;
+    getCallingUser: GetCallingUser;
+    getPostById: (args: { id: string; viewerId: string | null }) => Promise<Post | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
-    const post = await dependencies.getPostById({ id: input.postId });
+    const caller = await dependencies.getCallingUser();
+    const post = await dependencies.getPostById({ id: input.postId, viewerId: caller?.userId ?? null });
     if (!post) {
         logger.info("Post not found", { postId: input.postId });
         return fail(notFoundError("Post not found"));

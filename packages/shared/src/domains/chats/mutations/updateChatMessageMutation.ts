@@ -17,16 +17,16 @@ export type UpdateChatMessageMutationOutput = z.infer<typeof UpdateChatMessageMu
 
 export const updateChatMessageMutation: Mutation<{ input: UpdateChatMessageMutationInput, output: UpdateChatMessageMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getChatMessageById: (args: { id: string }) => Promise<ChatMessage | null>;
+    getChatMessageById: (args: { id: string; viewerId: string | null }) => Promise<ChatMessage | null>;
     updateChatMessage: (args: { id: string; userId: string; content: string }) => Promise<ChatMessage | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
-    const message = await dependencies.getChatMessageById({ id: input.id });
+    const caller = await dependencies.getCallingUser();
+    const message = await dependencies.getChatMessageById({ id: input.id, viewerId: caller?.userId ?? null });
     if (!message) {
         logger.info("Message to update not found", { chatMessageId: input.id });
         return fail(notFoundError("Message not found"));
     }
 
-    const caller = await dependencies.getCallingUser();
     const allowed = canUpdateChatMessage(caller, message);
     if (!allowed.ok) {
         logDisallowedResult({

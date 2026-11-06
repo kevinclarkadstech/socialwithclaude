@@ -24,7 +24,7 @@ describe("getChatMessagesQuery", () => {
     it("hides messages from before the member deleted the chat", async () => {
         const { result, getChatMessages } = run(mockCaller().userId);
         expect((await result).ok).toBe(true);
-        expect(getChatMessages).toHaveBeenCalledWith({ chatId, limit: 20, after: clearedAt });
+        expect(getChatMessages).toHaveBeenCalledWith({ chatId, limit: 20, viewerId: mockCaller().userId, after: clearedAt });
     });
 
     it("is not found for someone who isn't in the chat", async () => {

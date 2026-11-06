@@ -12,7 +12,7 @@ export async function createPostCommentReport({ id, userId, postCommentId, reaso
     postCommentId: string;
     reason: ReportReason;
     details: string | null;
-    snapshot: PostComment;
+    snapshot: Omit<PostComment, "viewer">;
 }): Promise<PostCommentReport> {
     const [row] = await db
         .insert(schema.postCommentReports)

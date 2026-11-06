@@ -1,9 +1,9 @@
 import type { Post, PostComment, PostCommentReport, PostCommentVote, PostListing, PostReport } from "@myapp/shared/domains";
 import type { schema } from "../db";
+import type { SelectedPostRow } from "../selects/selectPosts";
+import type { SelectedPostCommentRow } from "../selects/selectPostComments";
 
-type PostRow = typeof schema.posts.$inferSelect;
 type PostListingRow = typeof schema.postListings.$inferSelect;
-type PostCommentRow = typeof schema.postComments.$inferSelect;
 type PostCommentVoteRow = typeof schema.postCommentVotes.$inferSelect;
 type PostReportRow = typeof schema.postReports.$inferSelect;
 type PostCommentReportRow = typeof schema.postCommentReports.$inferSelect;
@@ -27,34 +27,39 @@ export function toPostListing(row: PostListingRow): PostListing {
     }
 }
 
-/** A post, with its listing details if it's a listing. */
-export function toPost(row: PostRow, listing: PostListingRow | null): Post {
+/** A post from selectPosts, with its listing details if it's a listing. */
+export function toPost({ post, listing, creator, savedAt }: SelectedPostRow): Post {
     return {
-        id: row.id,
-        content: row.content,
-        numSaves: row.numSaves,
-        numComments: row.numComments,
-        numShares: row.numShares,
-        numReactions: row.numReactions,
+        id: post.id,
+        content: post.content,
+        numSaves: post.numSaves,
+        numComments: post.numComments,
+        numShares: post.numShares,
+        numReactions: post.numReactions,
         ...(listing && { listing: toPostListing(listing) }),
-        createdBy: row.createdBy,
-        updatedBy: row.updatedBy,
-        createdAt: row.createdAt.toISOString(),
-        updatedAt: row.updatedAt.toISOString(),
+        creator,
+        viewer: { hasSaved: savedAt !== null },
+        createdBy: post.createdBy,
+        updatedBy: post.updatedBy,
+        createdAt: post.createdAt.toISOString(),
+        updatedAt: post.updatedAt.toISOString(),
     };
 }
 
-export function toPostComment(row: PostCommentRow): PostComment {
+/** A comment from selectPostComments. */
+export function toPostComment({ comment, creator, vote, savedAt }: SelectedPostCommentRow): PostComment {
     return {
-        id: row.id,
-        postId: row.postId,
-        content: row.content,
-        numUpVotes: row.numUpVotes,
-        numDownVotes: row.numDownVotes,
-        createdBy: row.createdBy,
-        updatedBy: row.updatedBy,
-        createdAt: row.createdAt.toISOString(),
-        updatedAt: row.updatedAt.toISOString(),
+        id: comment.id,
+        postId: comment.postId,
+        content: comment.content,
+        numUpVotes: comment.numUpVotes,
+        numDownVotes: comment.numDownVotes,
+        creator,
+        viewer: { hasSaved: savedAt !== null, vote: vote === null ? null : vote === 1 ? 1 : -1 },
+        createdBy: comment.createdBy,
+        updatedBy: comment.updatedBy,
+        createdAt: comment.createdAt.toISOString(),
+        updatedAt: comment.updatedAt.toISOString(),
     };
 }
 

@@ -1,21 +1,21 @@
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import type { Page } from "@myapp/shared/common";
 import type { ListingStatus, Post } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toPost } from "../../../mappers/posts";
 import { toPage } from "../../../paging";
+import { selectPosts } from "../../../selects/selectPosts";
 
-/** Listings, newest first; only those with `status` if given. */
-export async function getPostListings({ status, cursor, limit }: {
+/** Listings, newest first, as `viewerId` sees them; only those with `status` if given. */
+export async function getPostListings({ status, viewerId, cursor, limit }: {
     status?: ListingStatus;
+    viewerId: string | null;
     cursor?: string | null;
     limit: number;
 }): Promise<Page<Post>> {
-    const rows = await db
-        .select({ post: schema.posts, listing: schema.postListings })
-        .from(schema.postListings)
-        .innerJoin(schema.posts, eq(schema.posts.id, schema.postListings.postId))
+    const rows = await selectPosts(db, viewerId)
         .where(and(
+            isNotNull(schema.postListings.postId),
             isNull(schema.posts.deletedAt),
             status ? eq(schema.postListings.status, status) : undefined,
             cursor
@@ -24,5 +24,5 @@ export async function getPostListings({ status, cursor, limit }: {
         ))
         .orderBy(desc(schema.postListings.createdAt), desc(schema.postListings.postId))
         .limit(limit + 1);
-    return toPage(rows.map((row) => toPost(row.post, row.listing)), limit, (post) => post.id);
+    return toPage(rows.map(toPost), limit, (post) => post.id);
 }

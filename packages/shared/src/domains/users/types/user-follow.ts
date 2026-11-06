@@ -16,3 +16,11 @@ export const UserFollowSchema = z.object({
 
 export type UserFollowStatus = z.infer<typeof UserFollowStatusSchema>;
 export type UserFollow = z.infer<typeof UserFollowSchema>;
+
+/**
+ * How a follow looks to the follower. A denied request still shows as
+ * "requested": denial is silent.
+ */
+export const ViewerFollowStatusSchema = z.enum(["none", "requested", "following"]);
+
+export type ViewerFollowStatus = z.infer<typeof ViewerFollowStatusSchema>;

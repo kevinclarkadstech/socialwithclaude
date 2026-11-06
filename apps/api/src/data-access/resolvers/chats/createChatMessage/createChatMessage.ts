@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import type { ChatMessage } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toChatMessage } from "../../../mappers/chats";
+import { selectChatMessages } from "../../../selects/selectChatMessages";
 
 /**
  * Sends a message with the client's `id`, and marks the chat as having a new
@@ -14,19 +15,21 @@ export async function createChatMessage({ id, chatId, userId, content }: {
     content: string;
 }): Promise<ChatMessage | null> {
     return db.transaction(async (tx) => {
-        const [row] = await tx
+        const [created] = await tx
             .insert(schema.chatMessages)
             .values({ id, chatId, content, createdBy: userId, updatedBy: userId })
             .onConflictDoNothing({ target: schema.chatMessages.id })
-            .returning();
-        if (!row) {
+            .returning({ createdAt: schema.chatMessages.createdAt });
+        if (!created) {
             return null;
         }
 
         await tx
             .update(schema.chats)
-            .set({ lastMessageAt: row.createdAt })
+            .set({ lastMessageAt: created.createdAt })
             .where(eq(schema.chats.id, chatId));
-        return toChatMessage(row);
+
+        const [row] = await selectChatMessages(tx, userId).where(eq(schema.chatMessages.id, id));
+        return toChatMessage(row!);
     });
 }

@@ -4,18 +4,18 @@ import type { ChatMessage } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toChatMessage } from "../../../mappers/chats";
 import { toPage } from "../../../paging";
+import { selectChatMessages } from "../../../selects/selectChatMessages";
 
-/** A chat's messages, newest first; only those sent after `after` if given. */
-export async function getChatMessages({ chatId, after, cursor, limit }: {
+/** A chat's messages, newest first, as `viewerId` sees them; only those sent after `after` if given. */
+export async function getChatMessages({ chatId, viewerId, after, cursor, limit }: {
     chatId: string;
+    viewerId: string | null;
     after?: string | null;
     cursor?: string | null;
     limit: number;
 }): Promise<Page<ChatMessage>> {
     const t = schema.chatMessages;
-    const rows = await db
-        .select()
-        .from(t)
+    const rows = await selectChatMessages(db, viewerId)
         .where(and(
             eq(t.chatId, chatId),
             isNull(t.deletedAt),

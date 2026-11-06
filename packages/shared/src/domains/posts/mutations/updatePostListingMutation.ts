@@ -27,7 +27,7 @@ export type UpdatePostListingMutationOutput = z.infer<typeof UpdatePostListingMu
 /** Replaces a listing's content and details. Not found for a post that isn't a listing. */
 export const updatePostListingMutation: Mutation<{ input: UpdatePostListingMutationInput, output: UpdatePostListingMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getPostById: (args: { id: string }) => Promise<Post | null>;
+    getPostById: (args: { id: string; viewerId: string | null }) => Promise<Post | null>;
     updatePostListing: (args: {
         id: string;
         userId: string;
@@ -39,13 +39,13 @@ export const updatePostListingMutation: Mutation<{ input: UpdatePostListingMutat
         isNegotiable: boolean;
     } & ListingPrice) => Promise<Post | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
-    const post = await dependencies.getPostById({ id: input.id });
+    const caller = await dependencies.getCallingUser();
+    const post = await dependencies.getPostById({ id: input.id, viewerId: caller?.userId ?? null });
     if (!post?.listing) {
         logger.info("Listing to update not found", { postId: input.id, isPost: Boolean(post) });
         return fail(notFoundError("Listing not found"));
     }
 
-    const caller = await dependencies.getCallingUser();
     const allowed = canUpdatePost(caller, post);
     if (!allowed.ok) {
         logDisallowedResult({

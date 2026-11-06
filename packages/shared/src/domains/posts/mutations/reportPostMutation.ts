@@ -23,23 +23,23 @@ export type ReportPostMutationOutput = z.infer<typeof ReportPostMutationOutputSc
  */
 export const reportPostMutation: Mutation<{ input: ReportPostMutationInput, output: ReportPostMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getPostById: (args: { id: string }) => Promise<Post | null>;
+    getPostById: (args: { id: string; viewerId: string | null }) => Promise<Post | null>;
     createPostReport: (args: {
         id: string;
         userId: string;
         postId: string;
         reason: ReportReason;
         details: string | null;
-        snapshot: Post;
+        snapshot: Omit<Post, "viewer">;
     }) => Promise<PostReport>;
 }> = async ({ input, context: { logger }, dependencies }) => {
-    const post = await dependencies.getPostById({ id: input.postId });
+    const caller = await dependencies.getCallingUser();
+    const post = await dependencies.getPostById({ id: input.postId, viewerId: caller?.userId ?? null });
     if (!post) {
         logger.info("Post to report not found", { postId: input.postId });
         return fail(notFoundError("Post not found"));
     }
 
-    const caller = await dependencies.getCallingUser();
     const allowed = canReportPost(caller, post);
     if (!allowed.ok) {
         logDisallowedResult({
@@ -50,6 +50,8 @@ export const reportPostMutation: Mutation<{ input: ReportPostMutationInput, outp
         return allowed;
     }
 
-    const report = await dependencies.createPostReport({ ...input, userId: allowed.value.userId, snapshot: post });
+    // The post as created, not as the reporter sees it.
+    const { viewer: _viewer, ...snapshot } = post;
+    const report = await dependencies.createPostReport({ ...input, userId: allowed.value.userId, snapshot });
     return succeed(report);
 }

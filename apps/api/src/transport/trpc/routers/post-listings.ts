@@ -12,7 +12,7 @@ import { procedure, router } from "../trpc";
 
 export const postListingsRouter = router({
     getListings: procedure.input(GetPostListingsQueryInputSchema).query(({ ctx, input }) =>
-        getPostListingsQuery({ input, context: { logger: ctx.logger }, dependencies: { getPostListings } }),
+        getPostListingsQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getPostListings } }),
     ),
 
     createListing: procedure.input(CreatePostListingMutationInputSchema).mutation(({ ctx, input }) =>
