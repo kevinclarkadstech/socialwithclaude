@@ -1,7 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
 import { IonApp, IonSplitPane, setupIonicReact } from '@ionic/react';
 import { TabNavigationProvider, TabsLayout } from '../navigation';
-import { rootRoutes, tabs } from './routes';
+import { rootRoutes, sharedRoutes, tabs } from './routes';
 import { Sidebar } from './Sidebar';
 import { SignInGate } from './SignInGate';
 
@@ -43,7 +43,7 @@ export function App() {
     <IonApp>
       <BrowserRouter>
         <SignInGate>
-          <TabNavigationProvider tabs={tabs} rootRoutes={rootRoutes}>
+          <TabNavigationProvider tabs={tabs} sharedRoutes={sharedRoutes} rootRoutes={rootRoutes}>
             {/* A sidebar on wide screens ("lg" and up), the tab bar below that. */}
             <IonSplitPane when="lg" contentId="main" className="app-split-pane">
               <Sidebar contentId="main" />

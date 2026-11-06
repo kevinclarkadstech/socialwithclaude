@@ -9,6 +9,7 @@ import {
   IonToolbar,
 } from '@ionic/react';
 import { bookmark, bookmarkOutline, chatbubbleOutline } from 'ionicons/icons';
+import { useNavigate } from 'react-router';
 import { UserAvatar } from '../../common/components/UserAvatar';
 import { timeAgo } from '../../common/formatters/dates';
 import { displayName } from '../../common/formatters/names';
@@ -16,13 +17,29 @@ import { listingPrice } from '../../common/formatters/prices';
 import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
 import { usePost } from '../../domains/posts/hooks/usePost';
 import { useSavePost } from '../../domains/posts/hooks/useSavePost';
+import { useTabHref } from '../../navigation';
+import { PostMenuButton } from './PostMenuButton';
 import './PostCard.css';
 
-/** A post (or listing) as a card: who and when, the content, and its actions. Saving needs sign-in. */
-export function PostCard({ postId }: { postId: string }) {
+interface PostCardProps {
+  postId: string;
+  /** In a list, tapping the post opens its page; on that page it doesn't. */
+  linkToPost?: boolean;
+  /** After the post is deleted from its menu, e.g. to leave its page. */
+  onDeleted?: () => void;
+}
+
+/**
+ * A post (or listing) as a card: who and when, the content, and its
+ * actions. Saving and reading comments need sign-in.
+ */
+export function PostCard({ postId, linkToPost = true, onDeleted }: PostCardProps) {
   const post = usePost(postId);
   const requireSignIn = useRequireSignIn();
   const { setSaved } = useSavePost();
+  const navigate = useNavigate();
+  const tabHref = useTabHref();
+  const openPost = () => navigate(tabHref(`posts/${postId}`));
 
   if (!post) {
     return null;
@@ -39,9 +56,15 @@ export function PostCard({ postId }: { postId: string }) {
             @{creator.username} · <time dateTime={post.createdAt}>{timeAgo(post.createdAt)}</time>
           </p>
         </IonLabel>
+        <IonButtons slot="end">
+          <PostMenuButton post={post} onDeleted={onDeleted} />
+        </IonButtons>
       </IonToolbar>
 
-      <IonCardContent>
+      <IonCardContent
+        className={linkToPost ? 'post-card__body post-card__body--link' : 'post-card__body'}
+        onClick={linkToPost ? openPost : undefined}
+      >
         {listing && (
           <div className="post-card__listing">
             <strong>{listing.title}</strong>
@@ -55,7 +78,13 @@ export function PostCard({ postId }: { postId: string }) {
       </IonCardContent>
 
       <IonButtons className="post-card__actions">
-        <IonButton fill="clear" size="small" color="medium" disabled>
+        <IonButton
+          fill="clear"
+          size="small"
+          color="medium"
+          disabled={!linkToPost}
+          onClick={() => requireSignIn(openPost)}
+        >
           <IonIcon slot="start" icon={chatbubbleOutline} aria-hidden="true" />
           <span className="visually-hidden">Comments, </span>
           {post.numComments}

@@ -40,3 +40,7 @@
     margin-inline: auto;
   }
 }
+
+.post-card__body--link {
+  cursor: pointer;
+}

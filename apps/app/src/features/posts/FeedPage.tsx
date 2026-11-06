@@ -1,6 +1,8 @@
 import {
   IonButtons,
   IonContent,
+  IonFab,
+  IonFabButton,
   IonHeader,
   IonInfiniteScroll,
   IonInfiniteScrollContent,
@@ -9,16 +11,23 @@ import {
   IonRefresherContent,
   IonSpinner,
   IonTitle,
+  IonIcon,
   IonToolbar,
 } from '@ionic/react';
+import { add } from 'ionicons/icons';
+import { useState } from 'react';
 import { AccountButton } from '../../common/components/AccountButton';
+import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
 import { useFeed } from '../../domains/posts/hooks/useFeed';
+import { ComposePostModal } from './ComposePostModal';
 import { PostCard } from './PostCard';
 import '../pages.css';
 
 /** The Feed tab: everyone's posts and listings, newest first. Readable signed out. */
 export default function FeedPage() {
-  const { postIds, isLoading, error, hasMore, loadMore, refresh } = useFeed();
+  const { ids: postIds, isLoading, error, hasMore, loadMore, refresh } = useFeed();
+  const requireSignIn = useRequireSignIn();
+  const [isComposing, setIsComposing] = useState(false);
 
   return (
     <IonPage>
@@ -50,6 +59,13 @@ export default function FeedPage() {
         <IonInfiniteScroll disabled={!hasMore} onIonInfinite={(event) => void loadMore().finally(() => event.target.complete())}>
           <IonInfiniteScrollContent />
         </IonInfiniteScroll>
+
+        <IonFab slot="fixed" vertical="bottom" horizontal="end">
+          <IonFabButton aria-label="New post" onClick={() => requireSignIn(() => setIsComposing(true))}>
+            <IonIcon icon={add} aria-hidden="true" />
+          </IonFabButton>
+        </IonFab>
+        <ComposePostModal isOpen={isComposing} onDismiss={() => setIsComposing(false)} />
       </IonContent>
     </IonPage>
   );
