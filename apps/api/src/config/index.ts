@@ -9,6 +9,13 @@ export const ServerConfigSchema = z.object({
     BETTER_AUTH_URL: z.string(),
     // The web app's origin: allowed by CORS and trusted by better-auth.
     WEB_APP_URL: z.url(),
+    // Social sign-in. Each provider is turned on only when its id and secret are set.
+    GOOGLE_CLIENT_ID: z.string().optional(),
+    GOOGLE_CLIENT_SECRET: z.string().optional(),
+    APPLE_CLIENT_ID: z.string().optional(),
+    APPLE_CLIENT_SECRET: z.string().optional(),
+    // The iOS app's bundle id, for Apple sign-in from the native app.
+    APPLE_APP_BUNDLE_IDENTIFIER: z.string().optional(),
 });
 
 export const serverConfig = (() => {
