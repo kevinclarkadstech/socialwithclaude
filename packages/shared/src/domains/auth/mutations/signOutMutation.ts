@@ -7,7 +7,7 @@ export const SignOutMutationInputSchema = z.object({}).default({});
 
 export type SignOutMutationInput = z.infer<typeof SignOutMutationInputSchema>;
 
-export const SignOutMutationOutputSchema = z.undefined();
+export const SignOutMutationOutputSchema = z.null();
 
 export type SignOutMutationOutput = z.infer<typeof SignOutMutationOutputSchema>;
 

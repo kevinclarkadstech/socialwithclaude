@@ -9,7 +9,7 @@ export const RevokeOtherSessionsMutationInputSchema = z.object({}).default({});
 
 export type RevokeOtherSessionsMutationInput = z.infer<typeof RevokeOtherSessionsMutationInputSchema>;
 
-export const RevokeOtherSessionsMutationOutputSchema = z.undefined();
+export const RevokeOtherSessionsMutationOutputSchema = z.null();
 
 export type RevokeOtherSessionsMutationOutput = z.infer<typeof RevokeOtherSessionsMutationOutputSchema>;
 

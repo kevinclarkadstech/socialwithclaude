@@ -11,7 +11,7 @@ export const DeletePostMutationInputSchema = PostSchema.pick({ id: true });
 
 export type DeletePostMutationInput = z.infer<typeof DeletePostMutationInputSchema>;
 
-export const DeletePostMutationOutputSchema = z.undefined();
+export const DeletePostMutationOutputSchema = z.null();
 
 export type DeletePostMutationOutput = z.infer<typeof DeletePostMutationOutputSchema>;
 
