@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A new push to a PR cancels the run for its previous commit.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The API and the shared package. The web and Ionic apps join once they build again.
+  api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+
+      - name: Typecheck shared
+        run: bun run --cwd packages/shared typecheck
+      - name: Test shared
+        run: bun run --cwd packages/shared test
+      - name: Typecheck API
+        run: bun run --cwd apps/api typecheck
+      - name: Lint API
+        run: bun run --cwd apps/api lint
