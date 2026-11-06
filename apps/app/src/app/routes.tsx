@@ -6,10 +6,7 @@ import MarketplacePage from '../features/marketplace/MarketplacePage';
 import ProfilePage from '../features/profile/ProfilePage';
 import type { TabDefinition } from '../navigation';
 
-/**
- * The app's main sections. The bottom tab bar shows them on phones; the
- * same list will drive a sidebar on wide screens.
- */
+/** The app's main sections: the bottom tab bar on phones, the sidebar on wide screens. */
 export const tabs: TabDefinition[] = [
   { id: 'feed', path: '/feed', label: 'Feed', icon: newspaperOutline, element: <FeedPage /> },
   { id: 'marketplace', path: '/marketplace', label: 'Marketplace', icon: storefrontOutline, element: <MarketplacePage /> },

@@ -86,6 +86,12 @@ export function StackTabNavigationProvider({ tabs, sharedRoutes = NO_ROUTES, roo
   const switchTab = useCallback(
     (tabId: string) => {
       const stack = state.stacks[tabId];
+      if (onRootRoute) {
+        // Leaving a root route (e.g. from the sidebar): show the tab where it was left.
+        const top = stack[stack.length - 1];
+        navigate(hrefOf(top.location), { state: withIntent({ type: 'switch-tab' }, top.location.state) });
+        return;
+      }
       if (tabId === state.activeTab) {
         if (stack.length < 2) return;
         const root = tabs.find((tab) => tab.id === tabId)!;
@@ -95,7 +101,7 @@ export function StackTabNavigationProvider({ tabs, sharedRoutes = NO_ROUTES, roo
         navigate(hrefOf(top.location), { state: withIntent({ type: 'switch-tab' }, top.location.state) });
       }
     },
-    [state.stacks, state.activeTab, tabs, navigate],
+    [state.stacks, state.activeTab, tabs, navigate, onRootRoute],
   );
 
   // Android hardware back button: pop the active stack, otherwise let Ionic's default run.

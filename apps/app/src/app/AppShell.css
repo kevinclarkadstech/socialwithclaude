@@ -1,0 +1,14 @@
+/*
+ * IonSplitPane's "lg" breakpoint: from here the sidebar shows, so the tab
+ * bar would only repeat it.
+ */
+@media (min-width: 992px) {
+  .app-main ion-tab-bar {
+    display: none;
+  }
+}
+
+.app-split-pane {
+  --side-min-width: 220px;
+  --side-max-width: 260px;
+}
