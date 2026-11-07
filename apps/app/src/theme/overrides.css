@@ -138,10 +138,10 @@ html.md ion-card {
   border-radius: var(--app-radius);
 }
 
-/* Segments: a pill control rather than underlined tabs. */
+/* Segments: a capsule control rather than underlined tabs. */
 html.md ion-segment {
   background: var(--app-fill);
-  border-radius: 10px;
+  border-radius: 999px;
   padding: 3px;
   min-height: 0;
 }
@@ -152,7 +152,7 @@ html.md ion-toolbar ion-segment {
 }
 
 html.md ion-segment-button {
-  --border-radius: 8px;
+  --border-radius: 999px;
   --color: var(--ion-color-medium);
   --color-checked: var(--ion-text-color);
   --background-checked: transparent;
@@ -179,7 +179,7 @@ html.md ion-segment-button::part(indicator) {
 
 html.md ion-segment-button::part(indicator-background) {
   height: 100%;
-  border-radius: 8px;
+  border-radius: 999px;
 }
 
 /* Overlays: rounder, with plain buttons. */
@@ -191,12 +191,27 @@ html.md .alert-title.sc-ion-alert-md {
   font-weight: 650;
 }
 
-html.md ion-action-sheet .action-sheet-container.sc-ion-action-sheet-md {
-  padding: 8px;
+/* Action sheets: one sheet from the bottom edge, rounded at the top, with a hairline above Cancel. */
+html.md ion-action-sheet .action-sheet-group.sc-ion-action-sheet-md:first-child {
+  border-radius: 16px 16px 0 0;
+  padding-top: 8px;
 }
 
-html.md ion-action-sheet .action-sheet-group.sc-ion-action-sheet-md {
-  border-radius: 16px 16px 0 0;
+html.md ion-action-sheet .action-sheet-group-cancel.sc-ion-action-sheet-md {
+  border-top: 1px solid var(--app-border);
+}
+
+/* In dark mode, sheets and alerts sit on a lighter surface than the page, so they stand out. */
+@media (prefers-color-scheme: dark) {
+  html.md ion-action-sheet,
+  html.md ion-alert {
+    --background: var(--ion-background-color-step-100);
+  }
+}
+
+html.md ion-action-sheet .action-sheet-title.sc-ion-action-sheet-md {
+  font-weight: 600;
+  color: var(--ion-color-medium);
 }
 
 html.md ion-toast {
