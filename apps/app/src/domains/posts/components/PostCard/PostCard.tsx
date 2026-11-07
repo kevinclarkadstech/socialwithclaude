@@ -75,7 +75,7 @@ export function PostCard({ postId, linkToPost = true, onDeleted }: PostCardProps
                 <IonBadge color={listing.status === 'sold' ? 'medium' : 'warning'}>{listingStatusLabels[listing.status]}</IonBadge>
               )}
             </div>
-            <IonNote color="primary" className="post-card__price">
+            <IonNote className="post-card__price">
               {listingPrice(listing)}
             </IonNote>
             <IonNote className="post-card__listing-meta">

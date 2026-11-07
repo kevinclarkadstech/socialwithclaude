@@ -1,0 +1,299 @@
+/*
+ * Ionic's Material ("md") mode, made calmer: sentence case, no ripples, hairlines
+ * instead of shadows, rounder corners, pill segments and the system font.
+ * The app is always in md mode (see App.tsx), so one set of rules covers every
+ * device. Selectors start with html.md so they outrank Ionic's own (scoped) styles.
+ */
+
+:root {
+  --ion-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --app-radius: 12px;
+  --app-border-strong: rgba(var(--ion-text-color-rgb), 0.22);
+  --app-segment-checked: #ffffff;
+  /* Header and tab bar: the primary colour in light mode. */
+  --app-bar: var(--ion-color-primary);
+  --app-bar-contrast: var(--ion-color-primary-contrast);
+  --app-bar-contrast-rgb: var(--ion-color-primary-contrast-rgb);
+}
+
+/* In dark mode the bars stay dark: a full-colour bar glares at night. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --app-segment-checked: var(--ion-background-color-step-150);
+    --app-bar: var(--ion-toolbar-background);
+    --app-bar-contrast: var(--ion-text-color);
+    --app-bar-contrast-rgb: var(--ion-text-color-rgb);
+  }
+}
+
+/* Sentence case, normal letter spacing. */
+html.md ion-button,
+html.md ion-segment-button,
+html.md ion-tab-button,
+html.md ion-back-button,
+html.md .alert-button.sc-ion-alert-md,
+html.md .action-sheet-button.sc-ion-action-sheet-md {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* Buttons: rounder, flat, a little bolder. */
+html.md ion-button {
+  --border-radius: 10px;
+  --box-shadow: none;
+  font-weight: 600;
+}
+
+/* The + button is the one place the accent colour (secondary) leads. */
+html.md ion-fab-button {
+  --background: var(--ion-color-secondary);
+  --background-activated: var(--ion-color-secondary-shade);
+  --background-hover: var(--ion-color-secondary-tint);
+  --color: var(--ion-color-secondary-contrast);
+  --border-radius: 16px;
+  --box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+
+/* Bars: no shadow; in dark mode, a hairline to separate them from the page. */
+html.md ion-header.header-md {
+  box-shadow: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  html.md ion-header.header-md {
+    border-bottom: 1px solid var(--app-border);
+  }
+}
+
+/* Page and modal headers in the bar colour. (Other toolbars, like a post card's header, stay plain.) */
+html.md ion-header ion-toolbar {
+  --background: var(--app-bar);
+  --color: var(--app-bar-contrast);
+  --border-width: 0;
+}
+
+/* A segment in a coloured header: a translucent track, the selected option in white. */
+html.md ion-header ion-segment {
+  background: rgba(var(--app-bar-contrast-rgb), 0.16);
+}
+
+html.md ion-header ion-segment-button {
+  --color: rgba(var(--app-bar-contrast-rgb), 0.85);
+  --color-checked: var(--app-bar);
+  --indicator-color: var(--app-bar-contrast);
+}
+
+@media (prefers-color-scheme: dark) {
+  html.md ion-header ion-segment {
+    background: var(--app-fill);
+  }
+
+  html.md ion-header ion-segment-button {
+    --color: var(--ion-color-medium);
+    --color-checked: var(--ion-text-color);
+    --indicator-color: var(--app-segment-checked);
+  }
+}
+
+html.md ion-footer.footer-md {
+  box-shadow: none;
+  border-top: 1px solid var(--app-border);
+}
+
+html.md ion-tab-bar {
+  --background: var(--app-bar);
+  --border: 0;
+}
+
+html.md ion-tab-button {
+  --color: rgba(var(--app-bar-contrast-rgb), 0.72);
+  --color-selected: var(--app-bar-contrast);
+}
+
+html.md ion-tab-button.tab-selected {
+  font-weight: 700;
+}
+
+@media (prefers-color-scheme: dark) {
+  html.md ion-tab-bar {
+    --border: 1px solid var(--app-border);
+  }
+
+  html.md ion-tab-button {
+    --color: var(--ion-color-medium);
+    --color-selected: var(--ion-color-primary);
+  }
+}
+
+html.md ion-toolbar ion-title {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+/* Cards: a hairline border and rounder corners instead of an elevation shadow, and normal text colour. */
+html.md ion-card {
+  color: var(--ion-text-color);
+  box-shadow: none;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+}
+
+/* Segments: a capsule control rather than underlined tabs. */
+html.md ion-segment {
+  background: var(--app-fill);
+  border-radius: 999px;
+  padding: 3px;
+  min-height: 0;
+}
+
+html.md ion-toolbar ion-segment {
+  margin: 0 16px 10px;
+  width: auto;
+}
+
+html.md ion-segment-button {
+  --border-radius: 999px;
+  --color: var(--ion-color-medium);
+  --color-checked: var(--ion-text-color);
+  --background-checked: transparent;
+  --indicator-color: var(--app-segment-checked);
+  --indicator-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  --padding-top: 6px;
+  --padding-bottom: 6px;
+  --padding-start: 6px;
+  --padding-end: 6px;
+  min-height: 34px;
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+html.md ion-segment-button ion-label {
+  margin: 6px 0;
+}
+
+/* The selected option's background fills the button, instead of an underline. */
+html.md ion-segment-button::part(indicator) {
+  top: 0;
+  height: 100%;
+}
+
+html.md ion-segment-button::part(indicator-background) {
+  height: 100%;
+  border-radius: 999px;
+}
+
+/* Overlays: rounder, with plain buttons. */
+html.md ion-alert {
+  --border-radius: 16px;
+}
+
+html.md .alert-title.sc-ion-alert-md {
+  font-weight: 650;
+}
+
+/* Action sheets: one sheet from the bottom edge, rounded at the top, with a hairline above Cancel. */
+html.md ion-action-sheet .action-sheet-group.sc-ion-action-sheet-md:first-child {
+  border-radius: 16px 16px 0 0;
+  padding-top: 8px;
+}
+
+html.md ion-action-sheet .action-sheet-group-cancel.sc-ion-action-sheet-md {
+  border-top: 1px solid var(--app-border);
+}
+
+/* In dark mode, sheets and alerts sit on a lighter surface than the page, so they stand out. */
+@media (prefers-color-scheme: dark) {
+  html.md ion-action-sheet,
+  html.md ion-alert {
+    --background: var(--ion-background-color-step-100);
+  }
+}
+
+html.md ion-action-sheet .action-sheet-title.sc-ion-action-sheet-md {
+  font-weight: 600;
+  color: var(--ion-color-medium);
+}
+
+html.md ion-toast {
+  --border-radius: 12px;
+}
+
+/*
+ * Inputs: a plain rounded box with the label above it, instead of Material's
+ * notched outline with the label sitting in the border. Applies to every
+ * fill="outline" input and textarea; labelPlacement="stacked" puts the label above.
+ */
+html.md ion-input.input-fill-outline,
+html.md ion-textarea.textarea-fill-outline {
+  --border-radius: 10px;
+  --padding-start: 12px;
+  --padding-end: 12px;
+}
+
+html.md ion-input.input-fill-outline .input-outline-container.sc-ion-input-md,
+html.md ion-textarea.textarea-fill-outline .textarea-outline-container.sc-ion-textarea-md {
+  display: none;
+}
+
+html.md ion-input.input-fill-outline .input-wrapper.sc-ion-input-md,
+html.md ion-textarea.textarea-fill-outline .textarea-wrapper.sc-ion-textarea-md {
+  position: relative;
+  min-height: 46px;
+  border: 1px solid var(--app-border-strong);
+  border-radius: 10px;
+  background: var(--ion-background-color);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+/* The label, above the box. (Margin, since Ionic fixes the host's padding at 0.) */
+html.md ion-input.input-fill-outline.input-label-placement-stacked,
+html.md ion-textarea.textarea-fill-outline.textarea-label-placement-stacked {
+  margin-top: 24px;
+}
+
+/* Scrolling a field into view (focus, scroll assist) keeps its label in view too. */
+html.md ion-input.input-fill-outline.input-label-placement-stacked .native-input.sc-ion-input-md,
+html.md ion-textarea.textarea-fill-outline.textarea-label-placement-stacked .native-textarea.sc-ion-textarea-md {
+  scroll-margin-top: 40px;
+}
+
+html.md ion-input.input-fill-outline.input-label-placement-stacked .input-control.sc-ion-input-md,
+html.md ion-textarea.textarea-fill-outline.textarea-label-placement-stacked .textarea-control.sc-ion-textarea-md {
+  position: static;
+}
+
+html.md ion-input.input-fill-outline.input-label-placement-stacked .label-text-wrapper.sc-ion-input-md,
+html.md ion-textarea.textarea-fill-outline.textarea-label-placement-stacked .label-text-wrapper.sc-ion-textarea-md {
+  position: absolute;
+  top: -24px;
+  inset-inline-start: 0;
+  max-width: 100%;
+  margin: 0;
+  transform: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ion-text-color);
+}
+
+/* Focused: the box in the primary colour, with a soft ring. */
+html.md ion-input.input-fill-outline.has-focus .input-wrapper.sc-ion-input-md,
+html.md ion-textarea.textarea-fill-outline.has-focus .textarea-wrapper.sc-ion-textarea-md {
+  border-color: var(--ion-color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--ion-color-primary-rgb), 0.18);
+}
+
+/* Invalid, once touched: the box and its message in the danger colour. */
+html.md ion-input.input-fill-outline.ion-invalid.ion-touched .input-wrapper.sc-ion-input-md,
+html.md ion-textarea.textarea-fill-outline.ion-invalid.ion-touched .textarea-wrapper.sc-ion-textarea-md {
+  border-color: var(--ion-color-danger);
+}
+
+html.md ion-input.input-fill-outline.ion-invalid.ion-touched.has-focus .input-wrapper.sc-ion-input-md,
+html.md ion-textarea.textarea-fill-outline.ion-invalid.ion-touched.has-focus .textarea-wrapper.sc-ion-textarea-md {
+  box-shadow: 0 0 0 3px rgba(var(--ion-color-danger-rgb), 0.18);
+}
+
+html.md ion-input.input-fill-outline .input-bottom.sc-ion-input-md,
+html.md ion-textarea.textarea-fill-outline .textarea-bottom.sc-ion-textarea-md {
+  padding-inline: 2px;
+}

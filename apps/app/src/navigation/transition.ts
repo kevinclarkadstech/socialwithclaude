@@ -6,7 +6,7 @@ import {
   type Animation,
   type TransitionOptions,
 } from '@ionic/react';
-import { isNativePlatform } from './platform';
+import { isIOS, isNativePlatform } from './platform';
 
 export type TransitionDirection = 'forward' | 'back';
 
@@ -22,9 +22,9 @@ export function animationsEnabled(): boolean {
   return isNativePlatform && (getConfig()?.getBoolean('animated', true) ?? true);
 }
 
-function currentMode(): 'ios' | 'md' {
-  const mode = getConfig()?.get('mode') ?? document.documentElement.getAttribute('mode');
-  return mode === 'ios' ? 'ios' : 'md';
+/** Which of Ionic's page animations to play. By platform, not Ionic's mode, which is md everywhere. */
+function transitionStyle(): 'ios' | 'md' {
+  return isIOS ? 'ios' : 'md';
 }
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
@@ -56,7 +56,7 @@ function prepareTransition(
   direction: TransitionDirection,
 ): PreparedTransition {
   let animation: Animation | undefined;
-  const mode = currentMode();
+  const mode = transitionStyle();
 
   enteringEl.style.zIndex = direction === 'back' ? '99' : '101';
   leavingEl.style.zIndex = '100';
@@ -139,7 +139,7 @@ export interface SwipeBackTransition {
  */
 export function swipeBackEnabled(): boolean {
   if (!isNativePlatform) return false;
-  return getConfig()?.getBoolean('swipeBackEnabled', currentMode() === 'ios') ?? currentMode() === 'ios';
+  return getConfig()?.getBoolean('swipeBackEnabled', transitionStyle() === 'ios') ?? transitionStyle() === 'ios';
 }
 
 /** A back transition driven by the user's finger, like IonRouterOutlet's swipe to go back. */

@@ -8,3 +8,8 @@
   line-height: 1;
   user-select: none;
 }
+
+/* In a coloured header (the account button), a thin ring keeps the avatar apart from the bar. */
+ion-header .user-avatar {
+  box-shadow: 0 0 0 2px rgba(var(--app-bar-contrast-rgb), 0.85);
+}
