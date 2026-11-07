@@ -1,7 +1,7 @@
 import { authClient } from '../../../lib/auth/authClient';
 import { sessionToken } from '../../../lib/auth/sessionToken';
 import { callingUserStore, refreshCallingUser } from '../../users/callingUserStore';
-import { commentStore } from '../../posts/commentStore';
+import { postCommentStore } from '../../posts/postCommentStore';
 import { postStore } from '../../posts/postStore';
 
 const codeErrors: Record<string, string> = {
@@ -26,7 +26,7 @@ export function useAuth() {
     }
     // What the viewer sees (saves, votes) depends on who's signed in.
     postStore.reset();
-    commentStore.reset();
+    postCommentStore.reset();
     await refreshCallingUser();
     return null;
   }
@@ -36,7 +36,7 @@ export function useAuth() {
     await sessionToken.clear();
     callingUserStore.set(null);
     postStore.reset();
-    commentStore.reset();
+    postCommentStore.reset();
   }
 
   return { sendCode, verifyCode, signOut };

@@ -24,7 +24,7 @@ import { PostCard } from '../../domains/posts/components/PostCard/PostCard';
 import '../../common/styles/pages.css';
 
 /** A post on its own page (/<tab>/posts/:postId), with its comments. Reading comments needs sign-in. */
-export function PostPage() {
+export function PostDetailPage() {
   const { postId = '' } = useParams();
   const { post, isLoading, notFound, error } = usePostDetail(postId);
   const { callingUser } = useCallingUser();

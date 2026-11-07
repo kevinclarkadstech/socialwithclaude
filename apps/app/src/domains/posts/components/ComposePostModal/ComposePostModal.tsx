@@ -9,8 +9,7 @@ import {
   IonToolbar,
 } from '@ionic/react';
 import type { Post } from '@myapp/shared/domains';
-import { useState } from 'react';
-import { usePostActions } from '../../hooks/usePostActions';
+import { useComposePost } from '../../hooks/useComposePost';
 
 const MAX_LENGTH = 2000;
 
@@ -23,25 +22,10 @@ interface ComposePostModalProps {
 
 /** Writing a new post, or editing one of yours. */
 export function ComposePostModal({ isOpen, post, onDismiss }: ComposePostModalProps) {
-  const { createPost, updatePost } = usePostActions();
-  const [content, setContent] = useState('');
-  const [isBusy, setIsBusy] = useState(false);
-  const trimmed = content.trim();
-
-  async function submit() {
-    setIsBusy(true);
-    try {
-      const done = post ? await updatePost(post.id, trimmed) : await createPost(trimmed);
-      if (done) {
-        onDismiss();
-      }
-    } finally {
-      setIsBusy(false);
-    }
-  }
+  const { content, setContent, canSubmit, reset, submit } = useComposePost({ post, onDismiss });
 
   return (
-    <IonModal isOpen={isOpen} onWillPresent={() => setContent(post?.content ?? '')} onDidDismiss={onDismiss}>
+    <IonModal isOpen={isOpen} onWillPresent={reset} onDidDismiss={onDismiss}>
       <IonHeader>
         <IonToolbar>
           <IonButtons slot="start">
@@ -49,11 +33,7 @@ export function ComposePostModal({ isOpen, post, onDismiss }: ComposePostModalPr
           </IonButtons>
           <IonTitle>{post ? 'Edit post' : 'New post'}</IonTitle>
           <IonButtons slot="end">
-            <IonButton
-              strong
-              disabled={isBusy || !trimmed || trimmed === post?.content}
-              onClick={() => void submit()}
-            >
+            <IonButton strong disabled={!canSubmit} onClick={() => void submit()}>
               {post ? 'Save' : 'Post'}
             </IonButton>
           </IonButtons>

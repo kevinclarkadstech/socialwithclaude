@@ -2,7 +2,7 @@ import { chatbubblesOutline, newspaperOutline, storefrontOutline } from 'ionicon
 import type { RouteObject } from 'react-router';
 import { ChatsPage } from '../pages/ChatsPage/ChatsPage';
 import { FeedPage } from '../pages/FeedPage/FeedPage';
-import { PostPage } from '../pages/PostPage/PostPage';
+import { PostDetailPage } from '../pages/PostDetailPage/PostDetailPage';
 import { MarketplacePage } from '../pages/MarketplacePage/MarketplacePage';
 import { ProfilePage } from '../pages/ProfilePage/ProfilePage';
 import type { TabDefinition } from '../navigation';
@@ -15,7 +15,7 @@ export const tabs: TabDefinition[] = [
 ];
 
 /** Pages that open on top of whichever tab you're in, e.g. /feed/posts/123. */
-export const sharedRoutes: RouteObject[] = [{ path: 'posts/:postId', element: <PostPage /> }];
+export const sharedRoutes: RouteObject[] = [{ path: 'posts/:postId', element: <PostDetailPage /> }];
 
 /** Top-level pages outside the tabs. They open over the tabs, without the tab bar. */
 export const rootRoutes: RouteObject[] = [{ path: '/me', element: <ProfilePage /> }];

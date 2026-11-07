@@ -1,20 +1,19 @@
 import { IonButton, IonButtons, IonFooter, IonIcon, IonTextarea, IonToolbar } from '@ionic/react';
 import { send } from 'ionicons/icons';
 import { useState } from 'react';
-import { useCommentActions } from '../../hooks/useCommentActions';
+import { createPostComment } from '../../actions/createPostComment';
 import './CommentComposer.css';
 
 /** Writing a comment, pinned to the bottom of the post page. */
 export function CommentComposer({ postId }: { postId: string }) {
-  const { createComment } = useCommentActions();
   const [content, setContent] = useState('');
   const [isBusy, setIsBusy] = useState(false);
-  const trimmed = content.trim();
 
   async function submit() {
     setIsBusy(true);
     try {
-      if (await createComment(postId, trimmed)) {
+      const result = await createPostComment({ postId, content: content.trim() });
+      if (result.ok) {
         setContent('');
       }
     } finally {
@@ -36,7 +35,7 @@ export function CommentComposer({ postId }: { postId: string }) {
           onIonInput={(event) => setContent(event.detail.value ?? '')}
         />
         <IonButtons slot="end">
-          <IonButton disabled={isBusy || !trimmed} onClick={() => void submit()}>
+          <IonButton disabled={isBusy || content.trim() === ''} onClick={() => void submit()}>
             <IonIcon slot="icon-only" icon={send} aria-hidden="true" />
             <span className="visually-hidden">Send</span>
           </IonButton>

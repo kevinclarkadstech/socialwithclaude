@@ -1,24 +1,24 @@
+import { unexpectedError } from '@myapp/shared/error-handling';
 import type { Result } from '@myapp/shared/types';
+import { fail } from '@myapp/shared/utils';
 import { errorMessage } from './errors';
 import { showErrorToast } from '../toasts';
 
-/** How an action went, for buttons and menus: its value, or that it failed (already shown in a toast). */
-export type ActionOutcome<T> = { ok: true; value: T } | { ok: false };
-
 /**
  * Runs an action that has no form to show an error in: a failed Result or
- * an exception becomes a toast.
+ * an exception becomes a toast. An exception (no network, a server failure)
+ * comes back as a failed Result with an "unexpected" error.
  */
-export async function runOrToast<T>(action: () => Promise<Result<T>>): Promise<ActionOutcome<T>> {
+export async function runOrToast<T>(action: () => Promise<Result<T>>): Promise<Result<T>> {
   try {
     const result = await action();
     if (!result.ok) {
       void showErrorToast(result.error.message ?? 'Something went wrong');
-      return { ok: false };
     }
-    return { ok: true, value: result.value };
+    return result;
   } catch (error) {
-    void showErrorToast(errorMessage(error));
-    return { ok: false };
+    const message = errorMessage(error);
+    void showErrorToast(message);
+    return fail(unexpectedError(message));
   }
 }

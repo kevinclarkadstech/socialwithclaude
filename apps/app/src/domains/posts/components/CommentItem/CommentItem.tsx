@@ -1,65 +1,29 @@
-import { IonButton, IonIcon, IonItem, IonLabel, useIonActionSheet } from '@ionic/react';
-import { canDeletePostComment, canUpdatePostComment } from '@myapp/shared/logic/authorization';
+import { IonButton, IonIcon, IonItem, IonLabel } from '@ionic/react';
 import { arrowDown, arrowDownOutline, arrowUp, arrowUpOutline, ellipsisHorizontal } from 'ionicons/icons';
 import { UserAvatar } from '../../../users/components/UserAvatar/UserAvatar';
 import { timeAgo } from '../../../../common/formatters/dates';
 import { displayName } from '../../../../common/formatters/names';
-import { usePrompts } from '../../../../common/hooks/usePrompts';
-import { useCommentActions } from '../../hooks/useCommentActions';
+import { setPostCommentVote } from '../../actions/setPostCommentVote';
+import { nextVote } from '../../commentVotes';
 import { usePostComment } from '../../hooks/usePostComment';
 import { useCallingUser } from '../../../users/hooks/useCallingUser';
+import { openCommentMenu } from './openCommentMenu';
 import './CommentItem.css';
 
 /** One comment: who and when, the text, up/down votes, and a menu (edit and delete yours, report others'). */
 export function CommentItem({ commentId }: { commentId: string }) {
   const comment = usePostComment(commentId);
   const { callingUser } = useCallingUser();
-  const { updateComment, deleteComment, vote, reportComment } = useCommentActions();
-  const { confirm, askForText, askForReport } = usePrompts();
-  const [presentActionSheet] = useIonActionSheet();
 
   if (!comment) {
     return null;
   }
-  const { creator, viewer } = comment;
-  const canEdit = canUpdatePostComment(callingUser, comment).ok;
-  const canDelete = canDeletePostComment(callingUser, comment).ok;
+  const { id, creator, viewer } = comment;
   const edited = comment.updatedAt !== comment.createdAt;
 
-  async function edit() {
-    const content = await askForText({ header: 'Edit comment', value: comment!.content, confirmText: 'Save' });
-    if (content && content !== comment!.content) {
-      await updateComment(comment!.id, content);
-    }
-  }
-
-  async function remove() {
-    const confirmed = await confirm({
-      header: 'Delete this comment?',
-      message: "This can't be undone.",
-      confirmText: 'Delete',
-    });
-    if (confirmed) {
-      await deleteComment(comment!);
-    }
-  }
-
-  async function report() {
-    const answer = await askForReport();
-    if (answer) {
-      await reportComment(comment!.id, answer);
-    }
-  }
-
-  function openMenu() {
-    void presentActionSheet({
-      buttons: [
-        ...(canEdit ? [{ text: 'Edit', handler: () => void edit() }] : []),
-        ...(canDelete ? [{ text: 'Delete', role: 'destructive', handler: () => void remove() }] : []),
-        ...(!canEdit ? [{ text: 'Report', handler: () => void report() }] : []),
-        { text: 'Cancel', role: 'cancel' },
-      ],
-    });
+  /** Tapping the vote you already gave removes it; otherwise it becomes your vote. */
+  function vote(tapped: 1 | -1) {
+    void setPostCommentVote({ postCommentId: id, value: nextVote(viewer.vote, tapped) });
   }
 
   return (
@@ -78,7 +42,7 @@ export function CommentItem({ commentId }: { commentId: string }) {
             color={viewer.vote === 1 ? 'primary' : 'medium'}
             data-vote="up"
             data-voted={String(viewer.vote === 1)}
-            onClick={() => void vote(comment, 1)}
+            onClick={() => vote(1)}
           >
             <IonIcon slot="start" icon={viewer.vote === 1 ? arrowUp : arrowUpOutline} aria-hidden="true" />
             <span className="visually-hidden">{viewer.vote === 1 ? 'Remove up vote' : 'Vote up'}, </span>
@@ -90,7 +54,7 @@ export function CommentItem({ commentId }: { commentId: string }) {
             color={viewer.vote === -1 ? 'danger' : 'medium'}
             data-vote="down"
             data-voted={String(viewer.vote === -1)}
-            onClick={() => void vote(comment, -1)}
+            onClick={() => vote(-1)}
           >
             <IonIcon slot="start" icon={viewer.vote === -1 ? arrowDown : arrowDownOutline} aria-hidden="true" />
             <span className="visually-hidden">{viewer.vote === -1 ? 'Remove down vote' : 'Vote down'}, </span>
@@ -98,7 +62,7 @@ export function CommentItem({ commentId }: { commentId: string }) {
           </IonButton>
         </div>
       </IonLabel>
-      <IonButton slot="end" fill="clear" color="medium" onClick={openMenu}>
+      <IonButton slot="end" fill="clear" color="medium" onClick={() => void openCommentMenu({ comment, callingUser })}>
         <IonIcon slot="icon-only" icon={ellipsisHorizontal} aria-hidden="true" />
         <span className="visually-hidden">More</span>
       </IonButton>
