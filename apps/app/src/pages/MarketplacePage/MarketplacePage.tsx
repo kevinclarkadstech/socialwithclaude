@@ -1,9 +1,9 @@
 import { IonButtons, IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/react';
-import { AccountButton } from '../domains/users/components/AccountButton';
-import './pages.css';
+import { AccountButton } from '../../domains/users/components/AccountButton/AccountButton';
+import '../../common/styles/pages.css';
 
 /** The Marketplace tab. Not built yet. */
-export default function MarketplacePage() {
+export function MarketplacePage() {
   return (
     <IonPage>
       <IonHeader>

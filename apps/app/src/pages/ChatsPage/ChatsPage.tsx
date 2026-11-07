@@ -1,9 +1,9 @@
 import { IonButtons, IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/react';
-import { AccountButton } from '../domains/users/components/AccountButton';
-import './pages.css';
+import { AccountButton } from '../../domains/users/components/AccountButton/AccountButton';
+import '../../common/styles/pages.css';
 
 /** The Chats tab. Not built yet. */
-export default function ChatsPage() {
+export function ChatsPage() {
   return (
     <IonPage>
       <IonHeader>

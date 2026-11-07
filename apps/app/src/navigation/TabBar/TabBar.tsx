@@ -1,5 +1,5 @@
 import { IonIcon, IonLabel, IonTabBar, IonTabButton } from '@ionic/react';
-import { useTabNavigation } from './TabNavigationContext';
+import { useTabNavigation } from '../TabNavigationContext';
 
 /**
  * The bottom tab bar. Tapping a tab shows it where it was left; tapping the

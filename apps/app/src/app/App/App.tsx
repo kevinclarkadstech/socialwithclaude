@@ -1,9 +1,9 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
 import { IonApp, IonSplitPane, setupIonicReact } from '@ionic/react';
-import { TabNavigationProvider, TabsLayout } from '../navigation';
-import { rootRoutes, sharedRoutes, tabs } from './routes';
-import { Sidebar } from './Sidebar';
-import { SignInGate } from './SignInGate';
+import { TabNavigationProvider, TabsLayout } from '../../navigation';
+import { rootRoutes, sharedRoutes, tabs } from '../routes';
+import { Sidebar } from '../Sidebar/Sidebar';
+import { SignInGate } from '../SignInGate/SignInGate';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -33,8 +33,8 @@ import '@ionic/react/css/display.css';
 import '@ionic/react/css/palettes/dark.system.css';
 
 /* Theme variables */
-import '../theme/variables.css';
-import './AppShell.css';
+import '../../theme/variables.css';
+import './App.css';
 
 setupIonicReact();
 

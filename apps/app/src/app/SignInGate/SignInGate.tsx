@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
-import { SignInContext } from '../common/hooks/useRequireSignIn';
-import { callingUserStore } from '../domains/users/callingUserStore';
-import { useCallingUser } from '../domains/users/hooks/useCallingUser';
-import { SignInModal } from '../domains/auth/components/SignInModal';
-import { OnboardingModal } from '../domains/users/components/OnboardingModal';
+import { SignInContext } from '../../common/hooks/useRequireSignIn';
+import { callingUserStore } from '../../domains/users/callingUserStore';
+import { useCallingUser } from '../../domains/users/hooks/useCallingUser';
+import { SignInModal } from '../../domains/auth/components/SignInModal/SignInModal';
+import { OnboardingModal } from '../../domains/users/components/OnboardingModal/OnboardingModal';
 
 type OpenModal = 'none' | 'signIn' | 'onboarding';
 

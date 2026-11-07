@@ -1,14 +1,14 @@
 import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useLocation, useRoutes, type Location, type RouteObject } from 'react-router';
 import { getIonPageElement } from '@ionic/react';
-import { useTabNavigation } from './TabNavigationContext';
-import { PageContext } from './PageContext';
-import { TabBar } from './TabBar';
-import { tabRoutes } from './tabRoutes';
-import type { StackEntry, TabDefinition } from './stacks';
-import { animationsEnabled, runPageTransition, type TransitionDirection } from './transition';
-import { useSwipeBack, type SwipeBackOptions } from './useSwipeBack';
-import './TabsLayout.css';
+import { useTabNavigation } from '../TabNavigationContext';
+import { PageContext } from '../PageContext';
+import { TabBar } from '../TabBar/TabBar';
+import { tabRoutes } from '../tabRoutes';
+import type { StackEntry, TabDefinition } from '../stacks';
+import { animationsEnabled, runPageTransition, type TransitionDirection } from '../transition';
+import { useSwipeBack, type SwipeBackOptions } from '../useSwipeBack';
+import './StackTabsLayout.css';
 
 /**
  * Each tab's stack stays mounted with only its top page shown. In the native

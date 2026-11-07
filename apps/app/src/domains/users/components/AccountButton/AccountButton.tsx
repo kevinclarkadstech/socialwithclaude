@@ -1,7 +1,7 @@
 import { IonButton } from '@ionic/react';
-import { useCallingUser } from '../hooks/useCallingUser';
-import { useRequireSignIn } from '../../../common/hooks/useRequireSignIn';
-import { UserAvatar } from './UserAvatar';
+import { useCallingUser } from '../../hooks/useCallingUser';
+import { useRequireSignIn } from '../../../../common/hooks/useRequireSignIn';
+import { UserAvatar } from '../UserAvatar/UserAvatar';
 
 /** The header's account button: your avatar (opens /me), or "Sign in". */
 export function AccountButton() {

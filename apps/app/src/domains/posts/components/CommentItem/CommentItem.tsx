@@ -1,13 +1,13 @@
 import { IonButton, IonIcon, IonItem, IonLabel, useIonActionSheet } from '@ionic/react';
 import { canDeletePostComment, canUpdatePostComment } from '@myapp/shared/logic/authorization';
 import { arrowDown, arrowDownOutline, arrowUp, arrowUpOutline, ellipsisHorizontal } from 'ionicons/icons';
-import { UserAvatar } from '../../users/components/UserAvatar';
-import { timeAgo } from '../../../common/formatters/dates';
-import { displayName } from '../../../common/formatters/names';
-import { usePrompts } from '../../../common/hooks/usePrompts';
-import { useCommentActions } from '../hooks/useCommentActions';
-import { usePostComment } from '../hooks/usePostComment';
-import { useCallingUser } from '../../users/hooks/useCallingUser';
+import { UserAvatar } from '../../../users/components/UserAvatar/UserAvatar';
+import { timeAgo } from '../../../../common/formatters/dates';
+import { displayName } from '../../../../common/formatters/names';
+import { usePrompts } from '../../../../common/hooks/usePrompts';
+import { useCommentActions } from '../../hooks/useCommentActions';
+import { usePostComment } from '../../hooks/usePostComment';
+import { useCallingUser } from '../../../users/hooks/useCallingUser';
 import './CommentItem.css';
 
 /** One comment: who and when, the text, up/down votes, and a menu (edit and delete yours, report others'). */

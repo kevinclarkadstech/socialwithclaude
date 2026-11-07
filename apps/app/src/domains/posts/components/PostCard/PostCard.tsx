@@ -10,15 +10,15 @@ import {
 } from '@ionic/react';
 import { bookmark, bookmarkOutline, chatbubbleOutline } from 'ionicons/icons';
 import { useNavigate } from 'react-router';
-import { UserAvatar } from '../../users/components/UserAvatar';
-import { timeAgo } from '../../../common/formatters/dates';
-import { displayName } from '../../../common/formatters/names';
-import { listingPrice } from '../../../common/formatters/prices';
-import { useRequireSignIn } from '../../../common/hooks/useRequireSignIn';
-import { usePost } from '../hooks/usePost';
-import { useSavePost } from '../hooks/useSavePost';
-import { useTabHref } from '../../../navigation';
-import { PostMenuButton } from './PostMenuButton';
+import { UserAvatar } from '../../../users/components/UserAvatar/UserAvatar';
+import { timeAgo } from '../../../../common/formatters/dates';
+import { displayName } from '../../../../common/formatters/names';
+import { listingPrice } from '../../../../common/formatters/prices';
+import { useRequireSignIn } from '../../../../common/hooks/useRequireSignIn';
+import { usePost } from '../../hooks/usePost';
+import { useSavePost } from '../../hooks/useSavePost';
+import { useTabHref } from '../../../../navigation';
+import { PostMenuButton } from '../PostMenuButton/PostMenuButton';
 import './PostCard.css';
 
 interface PostCardProps {

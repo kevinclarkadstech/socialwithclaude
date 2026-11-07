@@ -1,9 +1,9 @@
 import { IonContent, IonIcon, IonItem, IonLabel, IonList, IonMenu } from '@ionic/react';
 import { logInOutline, personCircleOutline } from 'ionicons/icons';
 import { useLocation } from 'react-router';
-import { useRequireSignIn } from '../common/hooks/useRequireSignIn';
-import { useCallingUser } from '../domains/users/hooks/useCallingUser';
-import { useTabNavigation } from '../navigation';
+import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
+import { useCallingUser } from '../../domains/users/hooks/useCallingUser';
+import { useTabNavigation } from '../../navigation';
 import './Sidebar.css';
 
 /** On wide screens, the tabs move here (the tab bar hides). It's the same list. */

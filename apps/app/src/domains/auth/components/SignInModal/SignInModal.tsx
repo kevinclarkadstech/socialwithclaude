@@ -10,8 +10,8 @@ import {
   IonToolbar,
 } from '@ionic/react';
 import type { FormEvent } from 'react';
-import { useSignInFlow } from '../hooks/useSignInFlow';
-import '../../../common/styles/modal-form.css';
+import { useSignInFlow } from '../../hooks/useSignInFlow';
+import '../../../../common/styles/modal-form.css';
 
 interface SignInModalProps {
   isOpen: boolean;

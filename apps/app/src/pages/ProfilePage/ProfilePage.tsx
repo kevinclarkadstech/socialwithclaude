@@ -1,15 +1,15 @@
 import { IonButton, IonButtons, IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/react';
-import { UserAvatar } from '../domains/users/components/UserAvatar';
-import { displayName } from '../common/formatters/names';
-import { useRequireSignIn } from '../common/hooks/useRequireSignIn';
-import { useCallingUser } from '../domains/users/hooks/useCallingUser';
-import { BackButton } from '../navigation';
-import { useAuth } from '../domains/auth/hooks/useAuth';
-import './pages.css';
+import { UserAvatar } from '../../domains/users/components/UserAvatar/UserAvatar';
+import { displayName } from '../../common/formatters/names';
+import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
+import { useCallingUser } from '../../domains/users/hooks/useCallingUser';
+import { BackButton } from '../../navigation';
+import { useAuth } from '../../domains/auth/hooks/useAuth';
+import '../../common/styles/pages.css';
 import './ProfilePage.css';
 
 /** Your own profile at /me, opened from the header avatar. Settings and the rest will live here. */
-export default function ProfilePage() {
+export function ProfilePage() {
   const { callingUser } = useCallingUser();
   const requireSignIn = useRequireSignIn();
   const { signOut } = useAuth();

@@ -1,6 +1,6 @@
 import { IonAvatar } from '@ionic/react';
 import type { UserProfileSummary } from '@myapp/shared/domains';
-import { initials } from '../../../common/formatters/names';
+import { initials } from '../../../../common/formatters/names';
 import './UserAvatar.css';
 
 /** A steady color per user, so the same person always looks the same. */
