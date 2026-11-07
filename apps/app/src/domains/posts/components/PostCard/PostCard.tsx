@@ -1,4 +1,5 @@
 import {
+  IonBadge,
   IonButton,
   IonButtons,
   IonCard,
@@ -14,6 +15,7 @@ import { UserAvatar } from '../../../users/components/UserAvatar/UserAvatar';
 import { timeAgo } from '../../../../common/formatters/dates';
 import { displayName } from '../../../../common/formatters/names';
 import { listingPrice } from '../../../../common/formatters/prices';
+import { listingConditionLabels, listingStatusLabels } from '../../../../common/formatters/listings';
 import { useRequireSignIn } from '../../../../common/hooks/useRequireSignIn';
 import { usePost } from '../../hooks/usePost';
 import { useSavePost } from '../../hooks/useSavePost';
@@ -66,11 +68,19 @@ export function PostCard({ postId, linkToPost = true, onDeleted }: PostCardProps
         onClick={linkToPost ? openPost : undefined}
       >
         {listing && (
-          <div className="post-card__listing">
-            <strong>{listing.title}</strong>
-            <IonNote color="primary">
+          <div className="post-card__listing" data-listing-status={listing.status}>
+            <div className="post-card__listing-title">
+              <strong>{listing.title}</strong>
+              {listing.status !== 'available' && (
+                <IonBadge color={listing.status === 'sold' ? 'medium' : 'warning'}>{listingStatusLabels[listing.status]}</IonBadge>
+              )}
+            </div>
+            <IonNote color="primary" className="post-card__price">
               {listingPrice(listing)}
-              {listing.isNegotiable && ' · Negotiable'}
+            </IonNote>
+            <IonNote className="post-card__listing-meta">
+              {listingConditionLabels[listing.condition]}
+              {listing.isNegotiable && ' · Open to offers'}
             </IonNote>
           </div>
         )}

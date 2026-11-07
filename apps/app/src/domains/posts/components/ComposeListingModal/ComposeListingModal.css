@@ -1,0 +1,10 @@
+.compose-listing__group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.compose-listing__label {
+  font-size: 0.85rem;
+  color: var(--ion-color-medium);
+}
