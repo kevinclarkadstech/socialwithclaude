@@ -23,7 +23,7 @@ export const createPostMutation: Mutation<{ input: CreatePostMutationInput, outp
     createPost: (args: { id: string; userId: string; content: string }) => Promise<Post | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCallerWithProfile(caller);
+    const allowed = requireCallerWithProfile({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

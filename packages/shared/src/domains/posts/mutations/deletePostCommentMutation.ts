@@ -27,7 +27,7 @@ export const deletePostCommentMutation: Mutation<{ input: DeletePostCommentMutat
         return fail(notFoundError("Comment not found"));
     }
 
-    const allowed = canDeletePostComment(caller, comment);
+    const allowed = canDeletePostComment({ caller, comment });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

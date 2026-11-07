@@ -23,7 +23,7 @@ export const denyFollowRequestMutation: Mutation<{ input: DenyFollowRequestMutat
     denyUserFollowRequest: (args: { userId: string; followerId: string }) => Promise<UserFollow | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCallerWithProfile(caller);
+    const allowed = requireCallerWithProfile({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

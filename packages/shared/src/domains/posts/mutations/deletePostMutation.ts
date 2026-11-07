@@ -28,7 +28,7 @@ export const deletePostMutation: Mutation<{ input: DeletePostMutationInput, outp
         return fail(notFoundError("Post not found"));
     }
 
-    const allowed = canDeletePost(caller, post);
+    const allowed = canDeletePost({ caller, post });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

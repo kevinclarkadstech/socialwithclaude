@@ -36,6 +36,10 @@ export function appErrorToTrpcError(appError: AppError): AppTrpcError {
             code = "CONFLICT";
             break;
         }
+        case "unexpected": {
+            code = "INTERNAL_SERVER_ERROR";
+            break;
+        }
     }
 
     return new AppTrpcError({

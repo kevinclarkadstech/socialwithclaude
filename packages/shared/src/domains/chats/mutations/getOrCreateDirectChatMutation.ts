@@ -34,7 +34,7 @@ export const getOrCreateDirectChatMutation: Mutation<{ input: GetOrCreateDirectC
     }
 
     const caller = await dependencies.getCallingUser();
-    const allowed = canCreateDirectChat(caller, receiver);
+    const allowed = canCreateDirectChat({ caller, receiver });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

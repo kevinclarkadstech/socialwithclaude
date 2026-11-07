@@ -9,14 +9,14 @@ const someoneElse = mockCaller({ userId: userId2 });
 
 describe("canCreateDirectChat", () => {
     it("allows a chat with someone else", () => {
-        expect(canCreateDirectChat(caller, mockProfile({ userId: userId2 })).ok).toBe(true);
+        expect(canCreateDirectChat({ caller, receiver: mockProfile({ userId: userId2 }) }).ok).toBe(true);
     });
     it("refuses a chat with yourself", () => {
-        expect(canCreateDirectChat(caller, mockProfile())).toMatchObject({ ok: false, error: { type: "validation" } });
+        expect(canCreateDirectChat({ caller, receiver: mockProfile() })).toMatchObject({ ok: false, error: { type: "validation" } });
     });
     it("needs a signed-in user who finished sign-up", () => {
-        expect(canCreateDirectChat(signedOut, mockProfile({ userId: userId2 }))).toMatchObject({ ok: false, error: { type: "authentication" } });
-        expect(canCreateDirectChat(midSignUp, mockProfile({ userId: userId2 }))).toMatchObject({ ok: false, error: { type: "authorization" } });
+        expect(canCreateDirectChat({ caller: signedOut, receiver: mockProfile({ userId: userId2 }) })).toMatchObject({ ok: false, error: { type: "authentication" } });
+        expect(canCreateDirectChat({ caller: midSignUp, receiver: mockProfile({ userId: userId2 }) })).toMatchObject({ ok: false, error: { type: "authorization" } });
     });
 });
 
@@ -26,13 +26,13 @@ describe.each([
 ] as const)("%s", (_name, can) => {
     const members = [mockChatMember(), mockChatMember({ userId: "01JAAAAAAAAAAAAAAAAAAAAAA3" })];
     it("allows a member", () => {
-        expect(can(caller, members)).toMatchObject({ ok: true, value: { userId: caller.userId } });
+        expect(can({ caller: caller, members })).toMatchObject({ ok: true, value: { userId: caller.userId } });
     });
     it("hides the chat from anyone else", () => {
-        expect(can(someoneElse, members)).toMatchObject({ ok: false, error: { type: "not-found" } });
+        expect(can({ caller: someoneElse, members })).toMatchObject({ ok: false, error: { type: "not-found" } });
     });
     it("needs a signed-in user", () => {
-        expect(can(signedOut, members)).toMatchObject({ ok: false, error: { type: "authentication" } });
+        expect(can({ caller: signedOut, members })).toMatchObject({ ok: false, error: { type: "authentication" } });
     });
 });
 
@@ -41,12 +41,12 @@ describe.each([
     ["canDeleteChatMessage", canDeleteChatMessage],
 ] as const)("%s", (_name, can) => {
     it("allows the sender", () => {
-        expect(can(caller, mockChatMessage()).ok).toBe(true);
+        expect(can({ caller: caller, message: mockChatMessage() }).ok).toBe(true);
     });
     it("refuses anyone else", () => {
-        expect(can(someoneElse, mockChatMessage())).toMatchObject({ ok: false, error: { type: "authorization" } });
+        expect(can({ caller: someoneElse, message: mockChatMessage() })).toMatchObject({ ok: false, error: { type: "authorization" } });
     });
     it("needs a signed-in user", () => {
-        expect(can(signedOut, mockChatMessage())).toMatchObject({ ok: false, error: { type: "authentication" } });
+        expect(can({ caller: signedOut, message: mockChatMessage() })).toMatchObject({ ok: false, error: { type: "authentication" } });
     });
 });

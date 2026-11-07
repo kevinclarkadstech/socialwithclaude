@@ -24,7 +24,7 @@ export const getMyChatsQuery: Query<{ input: GetMyChatsQueryInput, output: GetMy
     getUserChats: (args: { userId: string; cursor?: string | null; limit: number }) => Promise<Page<Chat>>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCallerWithProfile(caller);
+    const allowed = requireCallerWithProfile({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

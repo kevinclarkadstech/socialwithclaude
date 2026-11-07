@@ -28,7 +28,7 @@ export const deleteChatMessageMutation: Mutation<{ input: DeleteChatMessageMutat
         return fail(notFoundError("Message not found"));
     }
 
-    const allowed = canDeleteChatMessage(caller, message);
+    const allowed = canDeleteChatMessage({ caller, message });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

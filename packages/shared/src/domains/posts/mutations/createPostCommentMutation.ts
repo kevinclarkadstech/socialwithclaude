@@ -30,7 +30,7 @@ export const createPostCommentMutation: Mutation<{ input: CreatePostCommentMutat
         return fail(notFoundError("Post not found"));
     }
 
-    const allowed = canCommentOnPost(caller, post);
+    const allowed = canCommentOnPost({ caller, post });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

@@ -45,7 +45,7 @@ export const reportPostCommentMutation: Mutation<{ input: ReportPostCommentMutat
         return fail(notFoundError("Comment not found"));
     }
 
-    const allowed = canReportPostComment(caller, comment);
+    const allowed = canReportPostComment({ caller, comment });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

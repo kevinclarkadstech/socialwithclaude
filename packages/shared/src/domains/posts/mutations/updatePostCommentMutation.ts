@@ -28,7 +28,7 @@ export const updatePostCommentMutation: Mutation<{ input: UpdatePostCommentMutat
         return fail(notFoundError("Comment not found"));
     }
 
-    const allowed = canUpdatePostComment(caller, comment);
+    const allowed = canUpdatePostComment({ caller, comment });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

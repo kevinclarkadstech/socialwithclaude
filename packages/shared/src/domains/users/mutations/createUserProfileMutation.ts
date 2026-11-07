@@ -31,7 +31,7 @@ export const createUserProfileMutation: Mutation<{ input: CreateUserProfileMutat
     createUserProfile: (args: Pick<UserProfile, "userId" | "username" | "firstName" | "lastName" | "about">) => Promise<UserProfile>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCaller(caller);
+    const allowed = requireCaller({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

@@ -1,9 +1,10 @@
 import { chatbubblesOutline, newspaperOutline, storefrontOutline } from 'ionicons/icons';
 import type { RouteObject } from 'react-router';
-import ChatsPage from '../features/chats/ChatsPage';
-import FeedPage from '../features/feed/FeedPage';
-import MarketplacePage from '../features/marketplace/MarketplacePage';
-import ProfilePage from '../features/profile/ProfilePage';
+import { ChatsPage } from '../pages/ChatsPage/ChatsPage';
+import { FeedPage } from '../pages/FeedPage/FeedPage';
+import { PostDetailPage } from '../pages/PostDetailPage/PostDetailPage';
+import { MarketplacePage } from '../pages/MarketplacePage/MarketplacePage';
+import { ProfilePage } from '../pages/ProfilePage/ProfilePage';
 import type { TabDefinition } from '../navigation';
 
 /** The app's main sections: the bottom tab bar on phones, the sidebar on wide screens. */
@@ -12,6 +13,9 @@ export const tabs: TabDefinition[] = [
   { id: 'marketplace', path: '/marketplace', label: 'Marketplace', icon: storefrontOutline, element: <MarketplacePage /> },
   { id: 'chats', path: '/chats', label: 'Chats', icon: chatbubblesOutline, element: <ChatsPage /> },
 ];
+
+/** Pages that open on top of whichever tab you're in, e.g. /feed/posts/123. */
+export const sharedRoutes: RouteObject[] = [{ path: 'posts/:postId', element: <PostDetailPage /> }];
 
 /** Top-level pages outside the tabs. They open over the tabs, without the tab bar. */
 export const rootRoutes: RouteObject[] = [{ path: '/me', element: <ProfilePage /> }];

@@ -27,4 +27,15 @@ export default tseslint.config(
       'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
     },
   },
+  {
+    // Named exports only in the app's code: one name per thing, everywhere it's imported.
+    // (Config files such as vite.config.ts need a default export, so they're left out.)
+    files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        { selector: 'ExportDefaultDeclaration', message: 'Use a named export instead of export default.' },
+      ],
+    },
+  },
 )

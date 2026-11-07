@@ -28,7 +28,7 @@ export const updatePostMutation: Mutation<{ input: UpdatePostMutationInput, outp
         return fail(notFoundError("Post not found"));
     }
 
-    const allowed = canUpdatePost(caller, post);
+    const allowed = canUpdatePost({ caller, post });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

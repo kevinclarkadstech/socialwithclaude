@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { onPostCreated } from '../postEvents';
 import { postStore } from '../postStore';
 import { runGetFeedQuery } from '../operations/runGetFeedQuery';
-import { usePostList } from './usePostList';
+import { useEntityList } from '../../../lib/stores/useEntityList';
 
 const FEED = 'feed';
 
@@ -12,11 +12,11 @@ export function useFeed() {
   useEffect(
     () =>
       onPostCreated((post) => {
-        postStore.setPosts([post]);
+        postStore.setItems([post]);
         postStore.updateList(FEED, (list) => ({ ...list, ids: [post.id, ...list.ids.filter((id) => id !== post.id)] }));
       }),
     [],
   );
 
-  return usePostList(FEED, runGetFeedQuery);
+  return useEntityList(postStore, FEED, runGetFeedQuery);
 }

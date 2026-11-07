@@ -27,7 +27,7 @@ export const updateChatMessageMutation: Mutation<{ input: UpdateChatMessageMutat
         return fail(notFoundError("Message not found"));
     }
 
-    const allowed = canUpdateChatMessage(caller, message);
+    const allowed = canUpdateChatMessage({ caller, message });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

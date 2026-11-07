@@ -9,3 +9,9 @@ export async function showErrorToast(message: string) {
   const toast = await toastController.create({ message, duration: 4000, color: 'danger', position: 'top' });
   await toast.present();
 }
+
+/** Shows a short confirmation, e.g. "Report sent". */
+export async function showToast(message: string) {
+  const toast = await toastController.create({ message, duration: 2500, position: 'top' });
+  await toast.present();
+}

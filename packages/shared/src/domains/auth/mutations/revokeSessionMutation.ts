@@ -22,7 +22,7 @@ export const revokeSessionMutation: Mutation<{ input: RevokeSessionMutationInput
     revokeSessionToken: (token: string) => Promise<void>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCaller(caller);
+    const allowed = requireCaller({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

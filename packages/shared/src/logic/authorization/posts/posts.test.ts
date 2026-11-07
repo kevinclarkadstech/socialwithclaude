@@ -17,39 +17,39 @@ const author = mockCaller();
 const someoneElse = mockCaller({ userId: userId2 });
 
 describe.each([
-    ["canUpdatePost", canUpdatePost, mockPost()],
-    ["canDeletePost", canDeletePost, mockPost()],
-    ["canUpdatePostComment", canUpdatePostComment, mockPostComment()],
-    ["canDeletePostComment", canDeletePostComment, mockPostComment()],
-] as const)("%s", (_name, can, resource) => {
+    ["canUpdatePost", canUpdatePost, { post: mockPost() }],
+    ["canDeletePost", canDeletePost, { post: mockPost() }],
+    ["canUpdatePostComment", canUpdatePostComment, { comment: mockPostComment() }],
+    ["canDeletePostComment", canDeletePostComment, { comment: mockPostComment() }],
+] as const)("%s", (_name, can, context) => {
     it("allows the author", () => {
-        expect(can(author, resource as never)).toMatchObject({ ok: true, value: { userId: author.userId } });
+        expect(can({ caller: author, ...context } as never)).toMatchObject({ ok: true, value: { userId: author.userId } });
     });
     it("refuses someone else", () => {
-        expect(can(someoneElse, resource as never)).toMatchObject({ ok: false, error: { type: "authorization" } });
+        expect(can({ caller: someoneElse, ...context } as never)).toMatchObject({ ok: false, error: { type: "authorization" } });
     });
     it("needs a signed-in user", () => {
-        expect(can(signedOut, resource as never)).toMatchObject({ ok: false, error: { type: "authentication" } });
+        expect(can({ caller: signedOut, ...context } as never)).toMatchObject({ ok: false, error: { type: "authentication" } });
     });
     it("needs sign-up to be finished", () => {
-        expect(can(midSignUp, resource as never)).toMatchObject({ ok: false, error: { type: "authorization" } });
+        expect(can({ caller: midSignUp, ...context } as never)).toMatchObject({ ok: false, error: { type: "authorization" } });
     });
 });
 
 describe.each([
-    ["canReportPost", canReportPost, mockPost()],
-    ["canCommentOnPost", canCommentOnPost, mockPost()],
-    ["canVoteOnPostComment", canVoteOnPostComment, mockPostComment()],
-    ["canReportPostComment", canReportPostComment, mockPostComment()],
-] as const)("%s", (_name, can, resource) => {
+    ["canReportPost", canReportPost, { post: mockPost() }],
+    ["canCommentOnPost", canCommentOnPost, { post: mockPost() }],
+    ["canVoteOnPostComment", canVoteOnPostComment, { comment: mockPostComment() }],
+    ["canReportPostComment", canReportPostComment, { comment: mockPostComment() }],
+] as const)("%s", (_name, can, context) => {
     it("allows anyone who finished sign-up, author or not", () => {
-        expect(can(author, resource as never).ok).toBe(true);
-        expect(can(someoneElse, resource as never).ok).toBe(true);
+        expect(can({ caller: author, ...context } as never).ok).toBe(true);
+        expect(can({ caller: someoneElse, ...context } as never).ok).toBe(true);
     });
     it("needs a signed-in user", () => {
-        expect(can(signedOut, resource as never)).toMatchObject({ ok: false, error: { type: "authentication" } });
+        expect(can({ caller: signedOut, ...context } as never)).toMatchObject({ ok: false, error: { type: "authentication" } });
     });
     it("needs sign-up to be finished", () => {
-        expect(can(midSignUp, resource as never)).toMatchObject({ ok: false, error: { type: "authorization" } });
+        expect(can({ caller: midSignUp, ...context } as never)).toMatchObject({ ok: false, error: { type: "authorization" } });
     });
 });

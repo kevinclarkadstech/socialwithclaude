@@ -23,7 +23,7 @@ export const createUserSaveMutation: Mutation<{ input: CreateUserSaveMutationInp
     createUserSave: (args: { userId: string; type: UserSaveType; id: string }) => Promise<boolean>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCallerWithProfile(caller);
+    const allowed = requireCallerWithProfile({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

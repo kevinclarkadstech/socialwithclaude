@@ -24,7 +24,7 @@ export const markChatReadMutation: Mutation<{ input: MarkChatReadMutationInput, 
     const members = await dependencies.getChatMembers({ chatId: input.chatId });
 
     const caller = await dependencies.getCallingUser();
-    const allowed = canViewChat(caller, members);
+    const allowed = canViewChat({ caller, members });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,
