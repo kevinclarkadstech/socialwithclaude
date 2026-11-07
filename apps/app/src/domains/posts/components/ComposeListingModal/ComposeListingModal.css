@@ -4,7 +4,9 @@
   gap: 8px;
 }
 
+/* Matches the labels above inputs (theme/overrides.css). */
 .compose-listing__label {
   font-size: 0.85rem;
-  color: var(--ion-color-medium);
+  font-weight: 600;
+  color: var(--ion-text-color);
 }
