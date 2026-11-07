@@ -16,12 +16,12 @@ import {
 } from '@ionic/react';
 import { add } from 'ionicons/icons';
 import { useState } from 'react';
-import { AccountButton } from '../../common/components/AccountButton';
-import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
-import { useFeed } from '../../domains/posts/hooks/useFeed';
-import { ComposePostModal } from './ComposePostModal';
-import { PostCard } from './PostCard';
-import '../pages.css';
+import { AccountButton } from '../domains/users/components/AccountButton';
+import { useRequireSignIn } from '../common/hooks/useRequireSignIn';
+import { useFeed } from '../domains/posts/hooks/useFeed';
+import { ComposePostModal } from '../domains/posts/components/ComposePostModal';
+import { PostCard } from '../domains/posts/components/PostCard';
+import './pages.css';
 
 /** The Feed tab: everyone's posts and listings, newest first. Readable signed out. */
 export default function FeedPage() {

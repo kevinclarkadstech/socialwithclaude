@@ -1,10 +1,10 @@
 import { chatbubblesOutline, newspaperOutline, storefrontOutline } from 'ionicons/icons';
 import type { RouteObject } from 'react-router';
-import ChatsPage from '../features/chats/ChatsPage';
-import FeedPage from '../features/posts/FeedPage';
-import PostPage from '../features/posts/PostPage';
-import MarketplacePage from '../features/marketplace/MarketplacePage';
-import ProfilePage from '../features/profile/ProfilePage';
+import ChatsPage from '../pages/ChatsPage';
+import FeedPage from '../pages/FeedPage';
+import PostPage from '../pages/PostPage';
+import MarketplacePage from '../pages/MarketplacePage';
+import ProfilePage from '../pages/ProfilePage';
 import type { TabDefinition } from '../navigation';
 
 /** The app's main sections: the bottom tab bar on phones, the sidebar on wide screens. */

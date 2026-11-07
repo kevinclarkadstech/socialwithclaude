@@ -13,15 +13,15 @@ import {
   IonToolbar,
 } from '@ionic/react';
 import { useParams } from 'react-router';
-import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
-import { usePostComments } from '../../domains/posts/hooks/usePostComments';
-import { usePostDetail } from '../../domains/posts/hooks/usePostDetail';
-import { useCallingUser } from '../../domains/users/hooks/useCallingUser';
-import { BackButton, useTabNavigation } from '../../navigation';
-import { CommentComposer } from './comments/CommentComposer';
-import { CommentItem } from './comments/CommentItem';
-import { PostCard } from './PostCard';
-import '../pages.css';
+import { useRequireSignIn } from '../common/hooks/useRequireSignIn';
+import { usePostComments } from '../domains/posts/hooks/usePostComments';
+import { usePostDetail } from '../domains/posts/hooks/usePostDetail';
+import { useCallingUser } from '../domains/users/hooks/useCallingUser';
+import { BackButton, useTabNavigation } from '../navigation';
+import { CommentComposer } from '../domains/posts/components/CommentComposer';
+import { CommentItem } from '../domains/posts/components/CommentItem';
+import { PostCard } from '../domains/posts/components/PostCard';
+import './pages.css';
 
 /** A post on its own page (/<tab>/posts/:postId), with its comments. Reading comments needs sign-in. */
 export default function PostPage() {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '../../domains/auth/hooks/useAuth';
+import { useAuth } from './useAuth';
 
 export type SignInStep = 'email' | 'code';
 

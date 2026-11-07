@@ -1,6 +1,6 @@
 import { UserProfileSchema } from '@myapp/shared/domains';
 import { useState } from 'react';
-import { useCreateProfile } from '../../domains/users/hooks/useCreateProfile';
+import { useCreateProfile } from './useCreateProfile';
 
 /**
  * The onboarding modal's flow: choosing a username (and optionally a name)

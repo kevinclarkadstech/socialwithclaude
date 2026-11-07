@@ -3,10 +3,10 @@ import { canDeletePost, canUpdatePost } from '@myapp/shared/logic/authorization'
 import type { Post } from '@myapp/shared/domains';
 import { ellipsisHorizontal } from 'ionicons/icons';
 import { useState } from 'react';
-import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
-import { usePrompts } from '../../common/hooks/usePrompts';
-import { usePostActions } from '../../domains/posts/hooks/usePostActions';
-import { useCallingUser } from '../../domains/users/hooks/useCallingUser';
+import { useRequireSignIn } from '../../../common/hooks/useRequireSignIn';
+import { usePrompts } from '../../../common/hooks/usePrompts';
+import { usePostActions } from '../hooks/usePostActions';
+import { useCallingUser } from '../../users/hooks/useCallingUser';
 import { ComposePostModal } from './ComposePostModal';
 
 /**

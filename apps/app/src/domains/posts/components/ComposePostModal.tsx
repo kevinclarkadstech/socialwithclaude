@@ -10,7 +10,7 @@ import {
 } from '@ionic/react';
 import type { Post } from '@myapp/shared/domains';
 import { useState } from 'react';
-import { usePostActions } from '../../domains/posts/hooks/usePostActions';
+import { usePostActions } from '../hooks/usePostActions';
 
 const MAX_LENGTH = 2000;
 
