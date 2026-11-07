@@ -4,24 +4,25 @@
  *   --app-fill    quiet backgrounds (segments, the search field)
  *   --app-brand   the wide-screen sidebar, and its text (--app-brand-contrast)
  *   --app-price   listing prices
+ * Primary is for buttons, links, toggles and the bars; secondary is the accent (the + button).
  * Primary colours keep white (or, in dark mode, dark) text at 4.5:1 or more (WCAG AA).
  * Dark mode follows the device (dark.system.css is imported before this file).
  */
 
-/* Coral and navy. */
+/* Navy, with coral as the accent. */
 :root {
-  --ion-color-primary: #C8432E;
-  --ion-color-primary-rgb: 200,67,46;
+  --ion-color-primary: #1C2340;
+  --ion-color-primary-rgb: 28,35,64;
   --ion-color-primary-contrast: #ffffff;
   --ion-color-primary-contrast-rgb: 255,255,255;
-  --ion-color-primary-shade: #b03b28;
-  --ion-color-primary-tint: #ce5643;
-  --ion-color-secondary: #1C2340;
-  --ion-color-secondary-rgb: 28,35,64;
+  --ion-color-primary-shade: #191f38;
+  --ion-color-primary-tint: #333953;
+  --ion-color-secondary: #C8432E;
+  --ion-color-secondary-rgb: 200,67,46;
   --ion-color-secondary-contrast: #ffffff;
   --ion-color-secondary-contrast-rgb: 255,255,255;
-  --ion-color-secondary-shade: #191f38;
-  --ion-color-secondary-tint: #333953;
+  --ion-color-secondary-shade: #b03b28;
+  --ion-color-secondary-tint: #ce5643;
   --ion-color-tertiary: #A0612A;
   --ion-color-tertiary-rgb: 160,97,42;
   --ion-color-tertiary-contrast: #ffffff;
@@ -96,18 +97,18 @@
 /* :root.md, to outrank Ionic's own dark palette (the app is always in md mode). */
 @media (prefers-color-scheme: dark) {
   :root.md {
-  --ion-color-primary: #FF8A6E;
-  --ion-color-primary-rgb: 255,138,110;
-  --ion-color-primary-contrast: #1C2340;
-  --ion-color-primary-contrast-rgb: 28,35,64;
-  --ion-color-primary-shade: #e07961;
-  --ion-color-primary-tint: #ff967c;
-  --ion-color-secondary: #AEB6E0;
-  --ion-color-secondary-rgb: 174,182,224;
-  --ion-color-secondary-contrast: #12162B;
-  --ion-color-secondary-contrast-rgb: 18,22,43;
-  --ion-color-secondary-shade: #99a0c5;
-  --ion-color-secondary-tint: #b6bde3;
+  --ion-color-primary: #AEB6E0;
+  --ion-color-primary-rgb: 174,182,224;
+  --ion-color-primary-contrast: #12162B;
+  --ion-color-primary-contrast-rgb: 18,22,43;
+  --ion-color-primary-shade: #99a0c5;
+  --ion-color-primary-tint: #b6bde3;
+  --ion-color-secondary: #FF8A6E;
+  --ion-color-secondary-rgb: 255,138,110;
+  --ion-color-secondary-contrast: #1C2340;
+  --ion-color-secondary-contrast-rgb: 28,35,64;
+  --ion-color-secondary-shade: #e07961;
+  --ion-color-secondary-tint: #ff967c;
   --ion-color-tertiary: #E0A26B;
   --ion-color-tertiary-rgb: 224,162,107;
   --ion-color-tertiary-contrast: #12162B;

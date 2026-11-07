@@ -43,7 +43,12 @@ html.md ion-button {
   font-weight: 600;
 }
 
+/* The + button is the one place the accent colour (secondary) leads. */
 html.md ion-fab-button {
+  --background: var(--ion-color-secondary);
+  --background-activated: var(--ion-color-secondary-shade);
+  --background-hover: var(--ion-color-secondary-tint);
+  --color: var(--ion-color-secondary-contrast);
   --border-radius: 16px;
   --box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
 }
