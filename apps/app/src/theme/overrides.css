@@ -9,11 +9,19 @@
   --ion-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --app-radius: 12px;
   --app-segment-checked: #ffffff;
+  /* Header and tab bar: the primary colour in light mode. */
+  --app-bar: var(--ion-color-primary);
+  --app-bar-contrast: var(--ion-color-primary-contrast);
+  --app-bar-contrast-rgb: var(--ion-color-primary-contrast-rgb);
 }
 
+/* In dark mode the bars stay dark: a full-colour bar glares at night. */
 @media (prefers-color-scheme: dark) {
   :root {
     --app-segment-checked: var(--ion-background-color-step-150);
+    --app-bar: var(--ion-toolbar-background);
+    --app-bar-contrast: var(--ion-text-color);
+    --app-bar-contrast-rgb: var(--ion-text-color-rgb);
   }
 }
 
@@ -40,10 +48,45 @@ html.md ion-fab-button {
   --box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
 }
 
-/* Bars: a hairline instead of a shadow. */
+/* Bars: no shadow; in dark mode, a hairline to separate them from the page. */
 html.md ion-header.header-md {
   box-shadow: none;
-  border-bottom: 1px solid var(--app-border);
+}
+
+@media (prefers-color-scheme: dark) {
+  html.md ion-header.header-md {
+    border-bottom: 1px solid var(--app-border);
+  }
+}
+
+/* Page and modal headers in the bar colour. (Other toolbars, like a post card's header, stay plain.) */
+html.md ion-header ion-toolbar {
+  --background: var(--app-bar);
+  --color: var(--app-bar-contrast);
+  --border-width: 0;
+}
+
+/* A segment in a coloured header: a translucent track, the selected option in white. */
+html.md ion-header ion-segment {
+  background: rgba(var(--app-bar-contrast-rgb), 0.16);
+}
+
+html.md ion-header ion-segment-button {
+  --color: rgba(var(--app-bar-contrast-rgb), 0.85);
+  --color-checked: var(--app-bar);
+  --indicator-color: var(--app-bar-contrast);
+}
+
+@media (prefers-color-scheme: dark) {
+  html.md ion-header ion-segment {
+    background: var(--app-fill);
+  }
+
+  html.md ion-header ion-segment-button {
+    --color: var(--ion-color-medium);
+    --color-checked: var(--ion-text-color);
+    --indicator-color: var(--app-segment-checked);
+  }
 }
 
 html.md ion-footer.footer-md {
@@ -52,7 +95,28 @@ html.md ion-footer.footer-md {
 }
 
 html.md ion-tab-bar {
-  --border: 1px solid var(--app-border);
+  --background: var(--app-bar);
+  --border: 0;
+}
+
+html.md ion-tab-button {
+  --color: rgba(var(--app-bar-contrast-rgb), 0.72);
+  --color-selected: var(--app-bar-contrast);
+}
+
+html.md ion-tab-button.tab-selected {
+  font-weight: 700;
+}
+
+@media (prefers-color-scheme: dark) {
+  html.md ion-tab-bar {
+    --border: 1px solid var(--app-border);
+  }
+
+  html.md ion-tab-button {
+    --color: var(--ion-color-medium);
+    --color-selected: var(--ion-color-primary);
+  }
 }
 
 html.md ion-toolbar ion-title {
