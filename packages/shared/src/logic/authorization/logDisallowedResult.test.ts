@@ -26,17 +26,17 @@ function logged(result: ReturnType<typeof canUpdatePost>) {
 
 describe("logDisallowedResult", () => {
     it("logs routine failures as info", () => {
-        expect(logged(canUpdatePost(null, mockPost())).info).toHaveBeenCalledTimes(1);
-        expect(logged(canUpdatePost(mockCaller({ profile: null }), mockPost())).info).toHaveBeenCalledTimes(1);
+        expect(logged(canUpdatePost({ caller: null, post: mockPost() })).info).toHaveBeenCalledTimes(1);
+        expect(logged(canUpdatePost({ caller: mockCaller({ profile: null }), post: mockPost() })).info).toHaveBeenCalledTimes(1);
     });
 
     it("logs likely client bugs as warn", () => {
-        const logger = logged(canFollowUser(mockCaller(), mockProfile()));
+        const logger = logged(canFollowUser({ caller: mockCaller(), target: mockProfile() }));
         expect(logger.warn).toHaveBeenCalledTimes(1);
     });
 
     it("logs requests the app never sends as error, with the reason", () => {
-        const logger = logged(canUpdatePost(mockCaller({ userId: userId2 }), mockPost()));
+        const logger = logged(canUpdatePost({ caller: mockCaller({ userId: userId2 }), post: mockPost() }));
         expect(logger.error).toHaveBeenCalledWith(
             "Disallowed update-post",
             expect.objectContaining({ event: "authorization.disallowed", reason: "not-creator" }),

@@ -22,7 +22,7 @@ export const unblockUserMutation: Mutation<{ input: UnblockUserMutationInput, ou
     unblockUser: (args: { userId: string; blockedUserId: string }) => Promise<boolean>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCallerWithProfile(caller);
+    const allowed = requireCallerWithProfile({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

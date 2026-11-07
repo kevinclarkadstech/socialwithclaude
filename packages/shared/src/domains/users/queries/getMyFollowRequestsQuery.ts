@@ -24,7 +24,7 @@ export const getMyFollowRequestsQuery: Query<{ input: GetMyFollowRequestsQueryIn
     getUserFollowRequests: (args: { userId: string; cursor?: string | null; limit: number }) => Promise<Page<UserFollow>>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCallerWithProfile(caller);
+    const allowed = requireCallerWithProfile({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

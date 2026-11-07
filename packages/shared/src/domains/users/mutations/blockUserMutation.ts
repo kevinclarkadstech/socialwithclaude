@@ -29,7 +29,7 @@ export const blockUserMutation: Mutation<{ input: BlockUserMutationInput, output
     }
 
     const caller = await dependencies.getCallingUser();
-    const allowed = canBlockUser(caller, target);
+    const allowed = canBlockUser({ caller, target });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

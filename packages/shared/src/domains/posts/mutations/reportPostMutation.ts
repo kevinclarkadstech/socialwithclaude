@@ -40,7 +40,7 @@ export const reportPostMutation: Mutation<{ input: ReportPostMutationInput, outp
         return fail(notFoundError("Post not found"));
     }
 
-    const allowed = canReportPost(caller, post);
+    const allowed = canReportPost({ caller, post });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

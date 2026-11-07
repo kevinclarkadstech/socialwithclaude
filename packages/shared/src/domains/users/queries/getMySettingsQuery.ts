@@ -20,7 +20,7 @@ export const getMySettingsQuery: Query<{ input: GetMySettingsQueryInput, output:
     getUserSettings: (args: { userId: string }) => Promise<UserSettings | null>;
 }> = async ({ context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCallerWithProfile(caller);
+    const allowed = requireCallerWithProfile({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

@@ -1,18 +1,16 @@
 import {
     CreatePostCommentMutationInputSchema,
     DeletePostCommentMutationInputSchema,
-    DeletePostCommentVoteMutationInputSchema,
     GetPostCommentsQueryInputSchema,
     ReportPostCommentMutationInputSchema,
     UpdatePostCommentMutationInputSchema,
-    VoteOnPostCommentMutationInputSchema,
+    SetPostCommentVoteMutationInputSchema,
     createPostCommentMutation,
     deletePostCommentMutation,
-    deletePostCommentVoteMutation,
     getPostCommentsQuery,
     reportPostCommentMutation,
     updatePostCommentMutation,
-    voteOnPostCommentMutation,
+    setPostCommentVoteMutation,
 } from "@myapp/shared/domains";
 
 import {
@@ -57,19 +55,11 @@ export const postCommentsRouter = router({
         }),
     ),
 
-    voteOnPostComment: procedure.input(VoteOnPostCommentMutationInputSchema).mutation(({ ctx, input }) =>
-        voteOnPostCommentMutation({
+    setPostCommentVote: procedure.input(SetPostCommentVoteMutationInputSchema).mutation(({ ctx, input }) =>
+        setPostCommentVoteMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentById, setPostCommentVote },
-        }),
-    ),
-
-    deletePostCommentVote: procedure.input(DeletePostCommentVoteMutationInputSchema).mutation(({ ctx, input }) =>
-        deletePostCommentVoteMutation({
-            input,
-            context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, deletePostCommentVote },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentById, setPostCommentVote, deletePostCommentVote },
         }),
     ),
 

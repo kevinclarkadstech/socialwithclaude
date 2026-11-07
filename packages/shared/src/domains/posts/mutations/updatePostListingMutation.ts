@@ -46,7 +46,7 @@ export const updatePostListingMutation: Mutation<{ input: UpdatePostListingMutat
         return fail(notFoundError("Listing not found"));
     }
 
-    const allowed = canUpdatePost(caller, post);
+    const allowed = canUpdatePost({ caller, post });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

@@ -25,7 +25,7 @@ export const getMySessionsQuery: Query<{ input: GetMySessionsQueryInput, output:
     getUserSessions: (args: { userId: string }) => Promise<UserSession[]>;
 }> = async ({ context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCaller(caller);
+    const allowed = requireCaller({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

@@ -24,7 +24,7 @@ export const getMySavesQuery: Query<{ input: GetMySavesQueryInput, output: GetMy
     getUserSaves: (args: { userId: string; cursor?: string | null; limit: number }) => Promise<Page<UserSave>>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCallerWithProfile(caller);
+    const allowed = requireCallerWithProfile({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

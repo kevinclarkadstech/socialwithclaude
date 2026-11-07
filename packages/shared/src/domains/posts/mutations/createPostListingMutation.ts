@@ -36,7 +36,7 @@ export const createPostListingMutation: Mutation<{ input: CreatePostListingMutat
     } & ListingPrice) => Promise<Post | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCallerWithProfile(caller);
+    const allowed = requireCallerWithProfile({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

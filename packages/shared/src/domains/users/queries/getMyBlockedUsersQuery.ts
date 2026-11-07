@@ -24,7 +24,7 @@ export const getMyBlockedUsersQuery: Query<{ input: GetMyBlockedUsersQueryInput,
     getUserBlocks: (args: { userId: string; cursor?: string | null; limit: number }) => Promise<Page<UserBlock>>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCallerWithProfile(caller);
+    const allowed = requireCallerWithProfile({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

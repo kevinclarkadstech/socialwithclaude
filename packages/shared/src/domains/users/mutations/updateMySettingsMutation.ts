@@ -26,7 +26,7 @@ export const updateMySettingsMutation: Mutation<{ input: UpdateMySettingsMutatio
     updateUserSettings: (args: { userId: string } & UpdateMySettingsMutationInput) => Promise<UserSettings | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCallerWithProfile(caller);
+    const allowed = requireCallerWithProfile({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

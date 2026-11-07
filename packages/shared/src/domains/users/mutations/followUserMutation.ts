@@ -34,7 +34,7 @@ export const followUserMutation: Mutation<{ input: FollowUserMutationInput, outp
     }
 
     const caller = await dependencies.getCallingUser();
-    const allowed = canFollowUser(caller, target);
+    const allowed = canFollowUser({ caller, target });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,
