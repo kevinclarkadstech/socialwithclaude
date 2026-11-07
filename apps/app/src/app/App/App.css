@@ -12,3 +12,10 @@
   --side-min-width: 220px;
   --side-max-width: 260px;
 }
+
+/* Segment labels in sentence case, as elsewhere: Material's uppercase, spaced-out labels cut off at phone width. */
+ion-segment-button {
+  text-transform: none;
+  letter-spacing: normal;
+  min-width: 0;
+}

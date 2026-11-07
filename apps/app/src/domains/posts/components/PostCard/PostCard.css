@@ -14,9 +14,32 @@
 }
 
 .post-card__listing {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 12px;
+  row-gap: 2px;
+}
+
+.post-card__listing-title {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.post-card__price {
+  font-weight: 600;
+  text-align: end;
+}
+
+.post-card__listing-meta {
+  grid-column: 1 / -1;
+}
+
+.post-card__listing[data-listing-status='sold'] .post-card__price {
+  color: var(--ion-color-medium);
+  text-decoration: line-through;
 }
 
 .post-card__content {
