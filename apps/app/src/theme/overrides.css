@@ -230,10 +230,16 @@ html.md ion-textarea.textarea-fill-outline .textarea-wrapper.sc-ion-textarea-md 
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-/* The label, above the box. */
+/* The label, above the box. (Margin, since Ionic fixes the host's padding at 0.) */
 html.md ion-input.input-fill-outline.input-label-placement-stacked,
 html.md ion-textarea.textarea-fill-outline.textarea-label-placement-stacked {
-  padding-top: 24px;
+  margin-top: 24px;
+}
+
+/* Scrolling a field into view (focus, scroll assist) keeps its label in view too. */
+html.md ion-input.input-fill-outline.input-label-placement-stacked .native-input.sc-ion-input-md,
+html.md ion-textarea.textarea-fill-outline.textarea-label-placement-stacked .native-textarea.sc-ion-textarea-md {
+  scroll-margin-top: 40px;
 }
 
 html.md ion-input.input-fill-outline.input-label-placement-stacked .input-control.sc-ion-input-md,
