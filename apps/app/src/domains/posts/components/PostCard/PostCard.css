@@ -29,7 +29,8 @@
 }
 
 .post-card__price {
-  font-weight: 600;
+  --color: var(--app-price);
+  font-weight: 700;
   text-align: end;
 }
 

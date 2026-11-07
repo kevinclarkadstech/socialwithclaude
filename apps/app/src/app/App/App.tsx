@@ -34,9 +34,12 @@ import '@ionic/react/css/palettes/dark.system.css';
 
 /* Theme variables */
 import '../../theme/variables.css';
+import '../../theme/overrides.css';
 import './App.css';
 
-setupIonicReact();
+// Material mode on every device, restyled in theme/overrides.css, so there's one look to design.
+// No ripples: a pressed state is enough. Page transitions still follow the platform (see navigation/transition.ts).
+setupIonicReact({ mode: 'md', rippleEffect: false });
 
 export function App() {
   return (

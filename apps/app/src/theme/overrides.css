@@ -1,0 +1,140 @@
+/*
+ * Ionic's Material ("md") mode, made calmer: sentence case, no ripples, hairlines
+ * instead of shadows, rounder corners, pill segments and the system font.
+ * The app is always in md mode (see App.tsx), so one set of rules covers every
+ * device. Selectors start with html.md so they outrank Ionic's own (scoped) styles.
+ */
+
+:root {
+  --ion-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --app-radius: 12px;
+  --app-segment-checked: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --app-segment-checked: var(--ion-background-color-step-150);
+  }
+}
+
+/* Sentence case, normal letter spacing. */
+html.md ion-button,
+html.md ion-segment-button,
+html.md ion-tab-button,
+html.md ion-back-button,
+html.md .alert-button.sc-ion-alert-md,
+html.md .action-sheet-button.sc-ion-action-sheet-md {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* Buttons: rounder, flat, a little bolder. */
+html.md ion-button {
+  --border-radius: 10px;
+  --box-shadow: none;
+  font-weight: 600;
+}
+
+html.md ion-fab-button {
+  --border-radius: 16px;
+  --box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+
+/* Bars: a hairline instead of a shadow. */
+html.md ion-header.header-md {
+  box-shadow: none;
+  border-bottom: 1px solid var(--app-border);
+}
+
+html.md ion-footer.footer-md {
+  box-shadow: none;
+  border-top: 1px solid var(--app-border);
+}
+
+html.md ion-tab-bar {
+  --border: 1px solid var(--app-border);
+}
+
+html.md ion-toolbar ion-title {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+/* Cards: a hairline border and rounder corners instead of an elevation shadow, and normal text colour. */
+html.md ion-card {
+  color: var(--ion-text-color);
+  box-shadow: none;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius);
+}
+
+/* Segments: a pill control rather than underlined tabs. */
+html.md ion-segment {
+  background: var(--app-fill);
+  border-radius: 10px;
+  padding: 3px;
+  min-height: 0;
+}
+
+html.md ion-toolbar ion-segment {
+  margin: 0 16px 10px;
+  width: auto;
+}
+
+html.md ion-segment-button {
+  --border-radius: 8px;
+  --color: var(--ion-color-medium);
+  --color-checked: var(--ion-text-color);
+  --background-checked: transparent;
+  --indicator-color: var(--app-segment-checked);
+  --indicator-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  --padding-top: 6px;
+  --padding-bottom: 6px;
+  --padding-start: 6px;
+  --padding-end: 6px;
+  min-height: 34px;
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+html.md ion-segment-button ion-label {
+  margin: 6px 0;
+}
+
+/* The selected option's background fills the button, instead of an underline. */
+html.md ion-segment-button::part(indicator) {
+  top: 0;
+  height: 100%;
+}
+
+html.md ion-segment-button::part(indicator-background) {
+  height: 100%;
+  border-radius: 8px;
+}
+
+/* Overlays: rounder, with plain buttons. */
+html.md ion-alert {
+  --border-radius: 16px;
+}
+
+html.md .alert-title.sc-ion-alert-md {
+  font-weight: 650;
+}
+
+html.md ion-action-sheet .action-sheet-container.sc-ion-action-sheet-md {
+  padding: 8px;
+}
+
+html.md ion-action-sheet .action-sheet-group.sc-ion-action-sheet-md {
+  border-radius: 16px 16px 0 0;
+}
+
+html.md ion-toast {
+  --border-radius: 12px;
+}
+
+/* Inputs: rounder, softer outlines. */
+html.md ion-input.input-fill-outline,
+html.md ion-textarea.textarea-fill-outline {
+  --border-radius: 10px;
+}
