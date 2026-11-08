@@ -4,6 +4,7 @@ import type { ListingStatus, Post } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toPost } from "../../../mappers/posts";
 import { toPage } from "../../../paging";
+import { postVisibleTo } from "../../../selects/postVisibility";
 import { selectPosts } from "../../../selects/selectPosts";
 
 /** Listings, newest first, as `viewerId` sees them; only those with `status` if given. */
@@ -17,6 +18,7 @@ export async function getPostListings({ status, viewerId, cursor, limit }: {
         .where(and(
             isNotNull(schema.postListings.postId),
             isNull(schema.posts.deletedAt),
+            postVisibleTo(viewerId),
             status ? eq(schema.postListings.status, status) : undefined,
             cursor
                 ? sql`(${schema.postListings.createdAt}, ${schema.postListings.postId}) < (select created_at, post_id from post_listings where post_id = ${cursor})`

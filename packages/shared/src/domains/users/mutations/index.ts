@@ -9,3 +9,4 @@ export * from './followUserMutation';
 export * from './unblockUserMutation';
 export * from './unfollowUserMutation';
 export * from './updateMySettingsMutation';
+export * from './updateMyProfileMutation';

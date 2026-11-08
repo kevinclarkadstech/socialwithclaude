@@ -1,3 +1,4 @@
+export { countUserPosts } from './countUserPosts/countUserPosts';
 export { createPost } from './createPost/createPost';
 export { createPostComment } from './createPostComment/createPostComment';
 export { createPostCommentReport } from './createPostCommentReport/createPostCommentReport';

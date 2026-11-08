@@ -4,6 +4,7 @@ import type { Post } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toPost } from "../../../mappers/posts";
 import { toPage } from "../../../paging";
+import { postVisibleTo } from "../../../selects/postVisibility";
 import { selectPosts } from "../../../selects/selectPosts";
 
 /** Posts whose content (or listing title) contains `query`, case-insensitive, newest first. */
@@ -17,6 +18,7 @@ export async function searchPosts({ query, viewerId, cursor, limit }: {
     const rows = await selectPosts(db, viewerId)
         .where(and(
             isNull(schema.posts.deletedAt),
+            postVisibleTo(viewerId),
             or(ilike(schema.posts.content, pattern), ilike(schema.postListings.title, pattern)),
             cursor
                 ? sql`(${schema.posts.createdAt}, ${schema.posts.id}) < (select created_at, id from posts where id = ${cursor})`
