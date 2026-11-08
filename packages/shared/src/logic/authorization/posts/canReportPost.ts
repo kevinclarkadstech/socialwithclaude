@@ -2,7 +2,7 @@ import type { CallingUser } from "../../../domains/users/types/calling-user";
 import type { Post } from "../../../domains/posts/types/post";
 import { allow, disallow, type AuthorizationCheck } from "../allowDisallow";
 import { hasProfile, isSignedIn } from "../conditions";
-import { canViewPost } from "./canViewPost";
+import { canViewPost } from "../../../domains/posts/utils/canViewPost";
 
 /** Anyone who has finished sign-up can report a post they can see. */
 export const canReportPost: AuthorizationCheck<{ caller: CallingUser | null; post: Post }> = ({ caller, post }) => {

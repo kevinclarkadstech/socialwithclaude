@@ -2,7 +2,7 @@ import z from "zod";
 import type { Query } from "../../../types/query";
 import { fail, succeed } from "../../../utils/result";
 import { notFoundError } from "../../../error-handling";
-import { canViewPost } from "../../../logic/authorization/posts/canViewPost";
+import { canViewPost } from "../utils/canViewPost";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { PostSchema, type Post } from "../types/post";

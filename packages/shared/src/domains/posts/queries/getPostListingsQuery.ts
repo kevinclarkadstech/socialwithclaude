@@ -2,7 +2,7 @@ import z from "zod";
 import type { Query } from "../../../types/query";
 import { succeed } from "../../../utils/result";
 import { blockedEitherWay } from "../../../logic/authorization/conditions";
-import { viewablePosts } from "../../../logic/authorization/posts/canViewPost";
+import { viewablePosts } from "../utils/canViewPost";
 import { PageInputSchema, type Page } from "../../../common/types/page";
 import { PostSchema, type Post } from "../types/post";
 import { ListingStatusSchema, type ListingStatus } from "../types/post-listing";
