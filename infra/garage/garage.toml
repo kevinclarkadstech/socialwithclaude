@@ -1,0 +1,27 @@
+# Local S3-compatible storage for development (docker-compose service "garage").
+# Production uses Cloudflare R2; the API only talks to the S3 API, so only the
+# STORAGE_* settings differ. Nothing here is secret: it never leaves your machine.
+metadata_dir = "/var/lib/garage/meta"
+data_dir = "/var/lib/garage/data"
+db_engine = "sqlite"
+
+replication_factor = 1
+
+rpc_bind_addr = "0.0.0.0:3901"
+rpc_public_addr = "127.0.0.1:3901"
+rpc_secret = "1799bccfd7411eddcf9ebd316bc1f5287ad12a68094e1c6ac6abde7e6feae1ec"
+
+[s3_api]
+s3_region = "garage"
+api_bind_addr = "0.0.0.0:3900"
+root_domain = ".s3.garage.localhost"
+
+# Public reads of the media bucket, like R2's public bucket domain:
+# http://myapp-media-dev.web.garage.localhost:3902/<key>
+[s3_web]
+bind_addr = "0.0.0.0:3902"
+root_domain = ".web.garage.localhost"
+
+[admin]
+api_bind_addr = "0.0.0.0:3903"
+admin_token = "local-dev-admin-token"

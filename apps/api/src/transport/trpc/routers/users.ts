@@ -1,5 +1,11 @@
 import {
     AcceptFollowRequestMutationInputSchema,
+    ConfirmProfileImageUploadMutationInputSchema,
+    CreateProfileImageUploadMutationInputSchema,
+    RemoveProfileImageMutationInputSchema,
+    confirmProfileImageUploadMutation,
+    createProfileImageUploadMutation,
+    removeProfileImageMutation,
     BlockUserMutationInputSchema,
     CreateUserSaveMutationInputSchema,
     DeleteUserSaveMutationInputSchema,
@@ -49,9 +55,11 @@ import {
     getUserSettings,
     unblockUser,
     unfollowUser,
+    touchUserProfile,
     updateUserProfile,
     updateUserSettings,
 } from "../../../data-access";
+import { createUploadUrl, deleteMedia, deleteUploads, putMedia, readUpload } from "../../../storage";
 import { procedure, router } from "../trpc";
 
 export const usersRouter = router({
@@ -68,6 +76,30 @@ export const usersRouter = router({
             input,
             context: { logger: ctx.logger },
             dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, updateUserProfile },
+        }),
+    ),
+
+    createProfileImageUpload: procedure.input(CreateProfileImageUploadMutationInputSchema).mutation(({ ctx, input }) =>
+        createProfileImageUploadMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: { getCallingUser: ctx.getCallingUser, createUploadUrl },
+        }),
+    ),
+
+    confirmProfileImageUpload: procedure.input(ConfirmProfileImageUploadMutationInputSchema).mutation(({ ctx, input }) =>
+        confirmProfileImageUploadMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: { getCallingUser: ctx.getCallingUser, readUpload, putMedia, deleteUploads, touchUserProfile },
+        }),
+    ),
+
+    removeProfileImage: procedure.input(RemoveProfileImageMutationInputSchema).mutation(({ ctx, input }) =>
+        removeProfileImageMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: { getCallingUser: ctx.getCallingUser, deleteMedia, touchUserProfile },
         }),
     ),
 

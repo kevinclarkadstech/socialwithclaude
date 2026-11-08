@@ -16,7 +16,7 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/react';
-import type { UserPostsType } from '@myapp/shared/domains';
+import type { GetUserProfileQueryOutput, UserPostsType } from '@myapp/shared/domains';
 import { ellipsisHorizontal, lockClosedOutline } from 'ionicons/icons';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
@@ -25,6 +25,7 @@ import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
 import { chooseFrom } from '../../lib/prompts';
 import { BackButton, useTabHref } from '../../navigation';
 import { useAuth } from '../../domains/auth/hooks/useAuth';
+import { applyCreatorChange } from '../../domains/posts/utils/applyCreatorChange';
 import { PostCard } from '../../domains/posts/components/PostCard/PostCard';
 import { useUserPosts } from '../../domains/posts/hooks/useUserPosts';
 import { EditProfileModal } from '../../domains/users/components/EditProfileModal/EditProfileModal';
@@ -61,6 +62,12 @@ export function UserProfilePage() {
     if (choice === 'sign-out') {
       await signOut();
     }
+  }
+
+  /** A change to the profile (e.g. a new photo) also shows on its posts and comments already loaded. */
+  function onProfileChange(changed: GetUserProfileQueryOutput) {
+    setProfile(changed);
+    applyCreatorChange(changed);
   }
 
   async function refresh() {
@@ -110,7 +117,7 @@ export function UserProfilePage() {
             <ProfileHeader
               profile={profile}
               isOwn={isOwn}
-              onProfileChange={setProfile}
+              onProfileChange={onProfileChange}
               onEdit={() => setIsEditing(true)}
             />
 
@@ -168,6 +175,7 @@ export function UserProfilePage() {
             isOpen={isEditing}
             onDismiss={() => setIsEditing(false)}
             onSaved={(saved) => {
+              applyCreatorChange(saved);
               // On /<tab>/users/:username, follow a new username; /me follows it already.
               if (params.username && saved.username !== params.username) {
                 navigate(tabHref(`users/${saved.username}`), { replace: true });

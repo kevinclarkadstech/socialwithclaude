@@ -10,3 +10,6 @@ export * from './unblockUserMutation';
 export * from './unfollowUserMutation';
 export * from './updateMySettingsMutation';
 export * from './updateMyProfileMutation';
+export * from './createProfileImageUploadMutation';
+export * from './confirmProfileImageUploadMutation';
+export * from './removeProfileImageMutation';

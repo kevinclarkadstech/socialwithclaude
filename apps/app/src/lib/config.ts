@@ -6,4 +6,9 @@ export const config = {
    * builds, where the app's own origin (capacitor://localhost) means nothing to others.
    */
   publicUrl: import.meta.env.VITE_PUBLIC_URL ?? window.location.origin,
+  /**
+   * Where uploaded images are served from: the media bucket's public address
+   * (R2's custom domain in production; local Garage by default).
+   */
+  mediaUrl: import.meta.env.VITE_MEDIA_URL ?? 'http://myapp-media-dev.web.garage.localhost:3902',
 };

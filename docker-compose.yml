@@ -42,6 +42,20 @@ services:
     volumes:
       - meili_data:/meili_data
 
+  # S3-compatible storage for uploads and media (production: Cloudflare R2).
+  # After the first `docker compose up`, run infra/garage/init.sh once.
+  garage:
+    image: dxflrs/garage:v2.1.0
+    container_name: ${GARAGE_CONTAINER_NAME:-garage}
+    restart: unless-stopped
+    ports:
+      - "${GARAGE_S3_PORT:-3900}:3900" # S3 API (presigned uploads)
+      - "${GARAGE_WEB_PORT:-3902}:3902" # public media
+    volumes:
+      - ./infra/garage/garage.toml:/etc/garage.toml:ro
+      - garage_meta:/var/lib/garage/meta
+      - garage_data:/var/lib/garage/data
+
   jaeger:
     image: jaegertracing/all-in-one:1.76.0
     container_name: ${JAEGER_CONTAINER_NAME:-jaeger}
@@ -68,3 +82,5 @@ volumes:
   postgres_data:
   redis_data:
   meili_data:
+  garage_meta:
+  garage_data:

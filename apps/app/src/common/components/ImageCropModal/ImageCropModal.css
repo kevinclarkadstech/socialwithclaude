@@ -1,0 +1,9 @@
+/* A dark stage behind the photo, in light and dark mode alike. */
+.image-crop-modal__content {
+  --background: #111;
+}
+
+.image-crop-modal ion-footer ion-toolbar {
+  --padding-start: 16px;
+  --padding-end: 16px;
+}

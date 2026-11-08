@@ -13,3 +13,23 @@
 ion-header .user-avatar {
   box-shadow: 0 0 0 2px rgba(var(--app-bar-contrast-rgb), 0.85);
 }
+
+.user-avatar {
+  position: relative;
+  overflow: hidden;
+}
+
+/* The photo covers the initials once it has loaded. */
+.user-avatar__photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.user-avatar__photo[data-loaded='true'] {
+  opacity: 1;
+}

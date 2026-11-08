@@ -62,6 +62,21 @@ export function createEntityStore<T extends { id: string }>() {
       return previous;
     },
 
+    /** Changes every item `update` changes (it returns the same item to leave one alone). */
+    updateAll(update: (item: T) => T) {
+      let changed = false;
+      const next = new Map<string, T>();
+      for (const [id, item] of items) {
+        const updated = update(item);
+        changed ||= updated !== item;
+        next.set(id, updated);
+      }
+      if (changed) {
+        items = next;
+        notify();
+      }
+    },
+
     /** Puts an item back as it was, e.g. when a change fails. */
     restoreItem(item: T) {
       items = new Map(items).set(item.id, item);
