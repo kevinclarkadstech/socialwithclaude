@@ -12,7 +12,7 @@ import { hasBlocked, isBlockedBy, isSelf } from "../conditions";
  */
 export const canViewUserPosts: AuthorizationCheck<{
     caller: CallingUser | null;
-    profile: UserProfile;
+    profile: Pick<UserProfile, "userId">;
     visibility: ProfileVisibility;
     followStatus: ViewerFollowStatus;
 }, CallingUser | null> = ({ caller, profile, visibility, followStatus }) => {

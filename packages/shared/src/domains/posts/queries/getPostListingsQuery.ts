@@ -1,6 +1,8 @@
 import z from "zod";
 import type { Query } from "../../../types/query";
 import { succeed } from "../../../utils/result";
+import { blockedEitherWay } from "../../../logic/authorization/conditions";
+import { viewablePosts } from "../../../logic/authorization/posts/canViewPost";
 import { PageInputSchema, type Page } from "../../../common/types/page";
 import { PostSchema, type Post } from "../types/post";
 import { ListingStatusSchema, type ListingStatus } from "../types/post-listing";
@@ -19,12 +21,18 @@ export const GetPostListingsQueryOutputSchema = z.object({
 
 export type GetPostListingsQueryOutput = z.infer<typeof GetPostListingsQueryOutputSchema>;
 
-/** Listings, newest first; only those with `status` if given. */
+/** Listings, newest first; only those with `status` if given. Only what the caller may see (canViewPost). */
 export const getPostListingsQuery: Query<{ input: GetPostListingsQueryInput, output: GetPostListingsQueryOutput }, {
     getCallingUser: GetCallingUser;
-    getPostListings: (args: { status?: ListingStatus; viewerId: string | null; cursor?: string | null; limit: number }) => Promise<Page<Post>>;
+    getPostListings: (args: { excludeCreatorIds: string[]; status?: ListingStatus; viewerId: string | null; cursor?: string | null; limit: number }) => Promise<Page<Post>>;
 }> = async ({ input, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const page = await dependencies.getPostListings({ ...input, viewerId: caller?.userId ?? null });
-    return succeed(page);
+    // Posts from anyone blocked either way are left out; the rest are checked one by one (canViewPost).
+    const page = await dependencies.getPostListings({
+        ...input,
+        viewerId: caller?.userId ?? null,
+        excludeCreatorIds: blockedEitherWay(caller),
+    });
+    // A page can come back shorter than the limit; nextCursor still follows what was fetched.
+    return succeed({ ...page, items: viewablePosts({ caller, posts: page.items }) });
 }

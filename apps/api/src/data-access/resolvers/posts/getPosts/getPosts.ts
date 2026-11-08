@@ -1,17 +1,18 @@
-import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, notInArray, sql } from "drizzle-orm";
 import type { Page } from "@myapp/shared/common";
 import type { Post } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toPost } from "../../../mappers/posts";
 import { toPage } from "../../../paging";
-import { postVisibleTo } from "../../../selects/postVisibility";
 import { selectPosts } from "../../../selects/selectPosts";
 
 /**
  * Posts and listings, newest first, as `viewerId` sees them; only
  * `createdBy`'s if given, and only listings (or only non-listings) if `isListing` is given.
  */
-export async function getPosts({ createdBy, isListing, viewerId, cursor, limit }: {
+export async function getPosts({ excludeCreatorIds = [], createdBy, isListing, viewerId, cursor, limit }: {
+    // Creators whose posts are left out.
+    excludeCreatorIds?: string[];
     createdBy?: string;
     isListing?: boolean;
     viewerId: string | null;
@@ -21,7 +22,7 @@ export async function getPosts({ createdBy, isListing, viewerId, cursor, limit }
     const rows = await selectPosts(db, viewerId)
         .where(and(
             isNull(schema.posts.deletedAt),
-            postVisibleTo(viewerId),
+            excludeCreatorIds.length ? notInArray(schema.posts.createdBy, excludeCreatorIds) : undefined,
             createdBy ? eq(schema.posts.createdBy, createdBy) : undefined,
             isListing === undefined
                 ? undefined

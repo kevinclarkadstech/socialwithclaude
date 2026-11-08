@@ -1,6 +1,8 @@
 import z from "zod";
 import type { Query } from "../../../types/query";
 import { succeed } from "../../../utils/result";
+import { blockedEitherWay } from "../../../logic/authorization/conditions";
+import { viewablePosts } from "../../../logic/authorization/posts/canViewPost";
 import { PageInputSchema, type Page } from "../../../common/types/page";
 import { PostSchema, type Post } from "../types/post";
 import type { GetCallingUser } from "../../users/types/calling-user";
@@ -21,9 +23,15 @@ export type SearchPostsQueryOutput = z.infer<typeof SearchPostsQueryOutputSchema
 /** Posts and listings whose content (or listing title) contains `query`, newest first. */
 export const searchPostsQuery: Query<{ input: SearchPostsQueryInput, output: SearchPostsQueryOutput }, {
     getCallingUser: GetCallingUser;
-    searchPosts: (args: { query: string; viewerId: string | null; cursor?: string | null; limit: number }) => Promise<Page<Post>>;
+    searchPosts: (args: { excludeCreatorIds: string[]; query: string; viewerId: string | null; cursor?: string | null; limit: number }) => Promise<Page<Post>>;
 }> = async ({ input, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const page = await dependencies.searchPosts({ ...input, viewerId: caller?.userId ?? null });
-    return succeed(page);
+    // Posts from anyone blocked either way are left out; the rest are checked one by one (canViewPost).
+    const page = await dependencies.searchPosts({
+        ...input,
+        viewerId: caller?.userId ?? null,
+        excludeCreatorIds: blockedEitherWay(caller),
+    });
+    // A page can come back shorter than the limit; nextCursor still follows what was fetched.
+    return succeed({ ...page, items: viewablePosts({ caller, posts: page.items }) });
 }

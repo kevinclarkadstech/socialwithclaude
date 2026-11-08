@@ -22,3 +22,7 @@ export const hasBlocked = (caller: CallingUser, userId: string) => caller.blockL
 
 /** `userId` has blocked the caller. */
 export const isBlockedBy = (caller: CallingUser, userId: string) => caller.blockList.blockedBy.includes(userId);
+
+/** Everyone the caller has blocked or been blocked by: their posts are left out of lists. */
+export const blockedEitherWay = (caller: CallingUser | null): string[] =>
+    caller ? [...caller.blockList.blocking, ...caller.blockList.blockedBy] : [];
