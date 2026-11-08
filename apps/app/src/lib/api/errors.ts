@@ -45,3 +45,15 @@ export function errorMessage(error: unknown): string {
   }
   return 'Something went wrong';
 }
+
+/** For dependencies whose contract is "null if it clashes": a conflict (e.g. a taken username) becomes null. */
+export async function nullIfConflict<T>(call: Promise<T>): Promise<T | null> {
+  try {
+    return await call;
+  } catch (error) {
+    if (apiErrorCode(error) === 'CONFLICT') {
+      return null;
+    }
+    throw error;
+  }
+}

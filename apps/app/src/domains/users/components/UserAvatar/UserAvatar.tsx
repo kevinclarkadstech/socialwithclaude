@@ -1,21 +1,14 @@
 import { IonAvatar } from '@ionic/react';
 import type { UserProfileSummary } from '@myapp/shared/domains';
 import { initials } from '../../../../common/formatters/names';
+import { userHue } from '../../userColor';
 import './UserAvatar.css';
-
-/** A steady color per user, so the same person always looks the same. */
-function hueOf(userId: string): number {
-  let hash = 0;
-  for (const char of userId) {
-    hash = (hash * 31 + char.charCodeAt(0)) % 360;
-  }
-  return hash;
-}
 
 interface UserAvatarProps {
   user: Pick<UserProfileSummary, 'userId' | 'username' | 'firstName' | 'lastName'>;
   size?: number;
   slot?: string;
+  className?: string;
 }
 
 /**
@@ -23,12 +16,12 @@ interface UserAvatarProps {
  * will be derived from the user id later; the initials then become the
  * fallback.
  */
-export function UserAvatar({ user, size = 40, slot }: UserAvatarProps) {
+export function UserAvatar({ user, size = 40, slot, className }: UserAvatarProps) {
   return (
     <IonAvatar
       slot={slot}
-      className="user-avatar"
-      style={{ width: size, height: size, fontSize: size * 0.4, background: `hsl(${hueOf(user.userId)} 55% 45%)` }}
+      className={className ? `user-avatar ${className}` : 'user-avatar'}
+      style={{ width: size, height: size, fontSize: size * 0.4, background: `hsl(${userHue(user.userId)} 55% 45%)` }}
       aria-hidden="true"
     >
       {initials(user)}

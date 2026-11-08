@@ -16,6 +16,7 @@
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "^8",
     "@capacitor/core": "8.5.3",
+    "@capacitor/share": "8.0.3",
     "@ionic/core": "9.0.8",
     "@ionic/react": "^9.0.0",
     "@myapp/shared": "workspace:*",
