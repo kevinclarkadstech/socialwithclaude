@@ -14,6 +14,12 @@ export const disallowedReasons = {
     "not-creator": { errorType: "authorization", message: "Only the author can do that", logLevel: "error" },
     // Not-found rather than forbidden, so non-members can't tell the chat exists.
     "not-member": { errorType: "not-found", message: "Not found", logLevel: "error" },
+    // They blocked the caller. Not-found, so a blocked user can't tell they're blocked.
+    "blocked-by-user": { errorType: "not-found", message: "User not found", logLevel: "info" },
+    // The caller blocked them; the UI offers Unblock instead.
+    "blocking-user": { errorType: "authorization", message: "Unblock them first", logLevel: "warn" },
+    // A followers-only profile, and the caller isn't an approved follower.
+    "followers-only": { errorType: "authorization", message: "This account is private", logLevel: "info" },
 } satisfies Record<string, { errorType: AppError["type"]; message: string; logLevel: "info" | "warn" | "error" }>;
 
 export type DisallowedReason = keyof typeof disallowedReasons;

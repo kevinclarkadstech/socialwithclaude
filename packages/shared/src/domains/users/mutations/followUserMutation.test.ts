@@ -1,24 +1,12 @@
 import { describe, expect, it, mock } from "bun:test";
+import type { ProfileVisibility } from "../types/user-settings";
 import { mockCaller, mockProfile, userId2 } from "../../../testing/fixtures";
 import { testContext } from "../../../testing/context";
-import type { UserSettings } from "../types/user-settings";
 import { followUserMutation } from "./followUserMutation";
 
 const target = mockProfile({ userId: userId2, username: "user2" });
 
-function settings(profileVisibility: UserSettings["profileVisibility"]): UserSettings {
-    return {
-        userId: userId2,
-        darkModeEnabled: false,
-        followersCanTag: true,
-        nonFollowersCanTag: false,
-        profileVisibility,
-        createdAt: target.createdAt,
-        updatedAt: target.updatedAt,
-    };
-}
-
-function run(profileVisibility: UserSettings["profileVisibility"]) {
+function run(profileVisibility: ProfileVisibility) {
     const followUser = mock(async (args: { followerId: string; followingId: string; status: "accepted" | "pending" }) => ({
         ...args,
         createdAt: target.createdAt,
@@ -30,7 +18,7 @@ function run(profileVisibility: UserSettings["profileVisibility"]) {
         dependencies: {
             getCallingUser: async () => mockCaller(),
             getUserProfileByUsername: async () => target,
-            getUserSettings: async () => settings(profileVisibility),
+            getProfileVisibility: async () => profileVisibility,
             followUser,
         },
     });
@@ -55,7 +43,7 @@ describe("followUserMutation", () => {
             dependencies: {
                 getCallingUser: async () => mockCaller(),
                 getUserProfileByUsername: async () => mockProfile(),
-                getUserSettings: async () => settings("public"),
+                getProfileVisibility: async () => "public",
                 followUser: async () => { throw new Error("should not be called"); },
             },
         });

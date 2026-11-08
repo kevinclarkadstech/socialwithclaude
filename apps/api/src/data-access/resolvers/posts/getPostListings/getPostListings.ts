@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, notInArray, sql } from "drizzle-orm";
 import type { Page } from "@myapp/shared/common";
 import type { ListingStatus, Post } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
@@ -7,7 +7,9 @@ import { toPage } from "../../../paging";
 import { selectPosts } from "../../../selects/selectPosts";
 
 /** Listings, newest first, as `viewerId` sees them; only those with `status` if given. */
-export async function getPostListings({ status, viewerId, cursor, limit }: {
+export async function getPostListings({ excludedCreatorIds = [], status, viewerId, cursor, limit }: {
+    // Creators whose posts are left out.
+    excludedCreatorIds?: string[];
     status?: ListingStatus;
     viewerId: string | null;
     cursor?: string | null;
@@ -17,6 +19,7 @@ export async function getPostListings({ status, viewerId, cursor, limit }: {
         .where(and(
             isNotNull(schema.postListings.postId),
             isNull(schema.posts.deletedAt),
+            excludedCreatorIds.length ? notInArray(schema.posts.createdBy, excludedCreatorIds) : undefined,
             status ? eq(schema.postListings.status, status) : undefined,
             cursor
                 ? sql`(${schema.postListings.createdAt}, ${schema.postListings.postId}) < (select created_at, post_id from post_listings where post_id = ${cursor})`

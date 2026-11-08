@@ -1,0 +1,32 @@
+/* On wide screens, a profile stays a readable column, like the feed's cards. */
+.user-profile {
+  max-width: 640px;
+  margin-inline: auto;
+  padding-bottom: 16px;
+}
+
+@media (min-width: 700px) {
+  .user-profile .profile-header__cover {
+    border-radius: 0 0 var(--app-radius) var(--app-radius);
+  }
+}
+
+.user-profile__segment {
+  margin: 16px 16px 4px;
+  width: auto;
+}
+
+.user-profile__gate,
+.user-profile__private {
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.user-profile__private ion-icon {
+  font-size: 32px;
+}
+
+.user-profile__private strong {
+  color: var(--ion-text-color);
+}

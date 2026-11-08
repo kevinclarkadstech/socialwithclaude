@@ -28,17 +28,19 @@ export function toPostListing(row: PostListingRow): PostListing {
 }
 
 /** A post from selectPosts, with its listing details if it's a listing. */
-export function toPost({ post, listing, creator, savedAt }: SelectedPostRow): Post {
+export function toPost({ post, listing, creator, creatorVisibility, savedAt, followedAt }: SelectedPostRow): Post {
     return {
         id: post.id,
+        type: post.type,
         content: post.content,
         numSaves: post.numSaves,
         numComments: post.numComments,
         numShares: post.numShares,
         numReactions: post.numReactions,
         ...(listing && { listing: toPostListing(listing) }),
-        creator,
-        viewer: { hasSaved: savedAt !== null },
+        // Sign-up creates settings with the profile; without them, treat the profile as followers-only.
+        creator: { ...creator, profileVisibility: creatorVisibility ?? "followers" },
+        viewer: { hasSaved: savedAt !== null, followsCreator: followedAt !== null },
         createdBy: post.createdBy,
         updatedBy: post.updatedBy,
         createdAt: post.createdAt.toISOString(),

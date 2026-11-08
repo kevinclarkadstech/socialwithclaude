@@ -13,6 +13,7 @@ import {
     GetUserProfileQueryInputSchema,
     UnblockUserMutationInputSchema,
     UnfollowUserMutationInputSchema,
+    UpdateMyProfileMutationInputSchema,
     UpdateMySettingsMutationInputSchema,
     acceptFollowRequestMutation,
     blockUserMutation,
@@ -28,6 +29,7 @@ import {
     getUserProfileQuery,
     unblockUserMutation,
     unfollowUserMutation,
+    updateMyProfileMutation,
     updateMySettingsMutation,
 } from "@myapp/shared/domains";
 
@@ -38,14 +40,16 @@ import {
     deleteUserSave,
     denyUserFollowRequest,
     followUser,
+    getProfileVisibility,
     getUserBlocks,
-    getUserFollow,
+    getUserFollowStatus,
     getUserFollowRequests,
     getUserProfileByUsername,
     getUserSaves,
     getUserSettings,
     unblockUser,
     unfollowUser,
+    updateUserProfile,
     updateUserSettings,
 } from "../../../data-access";
 import { procedure, router } from "../trpc";
@@ -56,14 +60,22 @@ export const usersRouter = router({
     ),
 
     getUserProfile: procedure.input(GetUserProfileQueryInputSchema).query(({ ctx, input }) =>
-        getUserProfileQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, getUserFollow } }),
+        getUserProfileQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, getProfileVisibility, getUserFollowStatus } }),
+    ),
+
+    updateMyProfile: procedure.input(UpdateMyProfileMutationInputSchema).mutation(({ ctx, input }) =>
+        updateMyProfileMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, updateUserProfile },
+        }),
     ),
 
     follow: procedure.input(FollowUserMutationInputSchema).mutation(({ ctx, input }) =>
         followUserMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, getUserSettings, followUser },
+            dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, getProfileVisibility, followUser },
         }),
     ),
 

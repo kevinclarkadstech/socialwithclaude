@@ -4,8 +4,10 @@ import { creatorFields } from "./creatorFields";
 import type { Executor } from "./executor";
 
 /**
- * Posts with their listing details (if any), creator, and whether
- * `viewerId` saved them. Add where/orderBy/limit, then map rows with toPost.
+ * Posts with their listing details (if any), creator (and who may see their
+ * posts), whether `viewerId` saved them, and whether `viewerId` is an approved
+ * follower of the creator. Data only: deciding who may see a post is
+ * canViewPost's job, in shared. Add where/orderBy/limit, then map rows with toPost.
  */
 export function selectPosts(executor: Executor, viewerId: string | null) {
     return executor
@@ -13,11 +15,24 @@ export function selectPosts(executor: Executor, viewerId: string | null) {
             post: schema.posts,
             listing: schema.postListings,
             creator: creatorFields,
+            creatorVisibility: schema.userSettings.profileVisibility,
             savedAt: schema.userSaves.createdAt,
+            followedAt: schema.userFollows.createdAt,
         })
         .from(schema.posts)
         .innerJoin(schema.userProfiles, eq(schema.userProfiles.userId, schema.posts.createdBy))
+        .leftJoin(schema.userSettings, eq(schema.userSettings.userId, schema.posts.createdBy))
         .leftJoin(schema.postListings, eq(schema.postListings.postId, schema.posts.id))
+        .leftJoin(
+            schema.userFollows,
+            viewerId
+                ? and(
+                    eq(schema.userFollows.followingId, schema.posts.createdBy),
+                    eq(schema.userFollows.followerId, viewerId),
+                    eq(schema.userFollows.status, "accepted"),
+                )
+                : sql`false`,
+        )
         .leftJoin(
             schema.userSaves,
             viewerId

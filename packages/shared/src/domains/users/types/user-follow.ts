@@ -24,3 +24,11 @@ export type UserFollow = z.infer<typeof UserFollowSchema>;
 export const ViewerFollowStatusSchema = z.enum(["none", "requested", "following"]);
 
 export type ViewerFollowStatus = z.infer<typeof ViewerFollowStatusSchema>;
+
+/** How a follow with `status` (null for none) looks to the follower: none, requested (pending or denied) or following. */
+export function toViewerFollowStatus(status: UserFollowStatus | null): ViewerFollowStatus {
+    if (status === null) {
+        return "none";
+    }
+    return status === "accepted" ? "following" : "requested";
+}

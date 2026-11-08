@@ -21,6 +21,8 @@ import {
     deletePost,
     getPostById,
     getPosts,
+    getProfileVisibility,
+    getUserFollowStatus,
     getUserProfileByUsername,
     updatePost,
 } from "../../../data-access";
@@ -36,7 +38,7 @@ export const postsRouter = router({
     ),
 
     getUserPosts: procedure.input(GetUserPostsQueryInputSchema).query(({ ctx, input }) =>
-        getUserPostsQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, getPosts } }),
+        getUserPostsQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, getProfileVisibility, getUserFollowStatus, getPosts } }),
     ),
 
     createPost: procedure.input(CreatePostMutationInputSchema).mutation(({ ctx, input }) =>

@@ -7,7 +7,7 @@ import { logDisallowedResult } from "../../../logic/authorization/logDisallowedR
 import type { GetCallingUser } from "../types/calling-user";
 import { UserFollowSchema, type UserFollow } from "../types/user-follow";
 import { UserProfileSchema, type UserProfile } from "../types/user-profile";
-import type { UserSettings } from "../types/user-settings";
+import type { ProfileVisibility } from "../types/user-settings";
 
 export const FollowUserMutationInputSchema = UserProfileSchema.pick({ username: true });
 
@@ -24,7 +24,8 @@ export type FollowUserMutationOutput = z.infer<typeof FollowUserMutationOutputSc
 export const followUserMutation: Mutation<{ input: FollowUserMutationInput, output: FollowUserMutationOutput }, {
     getCallingUser: GetCallingUser;
     getUserProfileByUsername: (args: { username: string }) => Promise<UserProfile | null>;
-    getUserSettings: (args: { userId: string }) => Promise<UserSettings | null>;
+    // Null if the user has no settings (which shouldn't happen).
+    getProfileVisibility: (args: { userId: string }) => Promise<ProfileVisibility | null>;
     followUser: (args: { followerId: string; followingId: string; status: "accepted" | "pending" }) => Promise<UserFollow>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const target = await dependencies.getUserProfileByUsername(input);
@@ -44,8 +45,8 @@ export const followUserMutation: Mutation<{ input: FollowUserMutationInput, outp
         return allowed;
     }
 
-    const settings = await dependencies.getUserSettings({ userId: target.userId });
-    if (!settings) {
+    const visibility = await dependencies.getProfileVisibility({ userId: target.userId });
+    if (!visibility) {
         // Sign-up creates settings with the profile, so this means broken data.
         logger.error("Settings missing for a user with a profile", { targetUserId: target.userId });
         return fail(notFoundError("User not found"));
@@ -54,7 +55,7 @@ export const followUserMutation: Mutation<{ input: FollowUserMutationInput, outp
     const follow = await dependencies.followUser({
         followerId: allowed.value.userId,
         followingId: target.userId,
-        status: settings.profileVisibility === "public" ? "accepted" : "pending",
+        status: visibility === "public" ? "accepted" : "pending",
     });
     return succeed(follow);
 }

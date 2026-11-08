@@ -156,6 +156,8 @@ html.md ion-segment-button {
   --color: var(--ion-color-medium);
   --color-checked: var(--ion-text-color);
   --background-checked: transparent;
+  --background-hover: transparent;
+  --background-focused: transparent;
   --indicator-color: var(--app-segment-checked);
   --indicator-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
   --padding-top: 6px;

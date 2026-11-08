@@ -1,4 +1,4 @@
-import { and, desc, ilike, isNull, or, sql } from "drizzle-orm";
+import { and, desc, ilike, isNull, notInArray, or, sql } from "drizzle-orm";
 import type { Page } from "@myapp/shared/common";
 import type { Post } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
@@ -7,7 +7,9 @@ import { toPage } from "../../../paging";
 import { selectPosts } from "../../../selects/selectPosts";
 
 /** Posts whose content (or listing title) contains `query`, case-insensitive, newest first. */
-export async function searchPosts({ query, viewerId, cursor, limit }: {
+export async function searchPosts({ excludedCreatorIds = [], query, viewerId, cursor, limit }: {
+    // Creators whose posts are left out.
+    excludedCreatorIds?: string[];
     query: string;
     viewerId: string | null;
     cursor?: string | null;
@@ -17,6 +19,7 @@ export async function searchPosts({ query, viewerId, cursor, limit }: {
     const rows = await selectPosts(db, viewerId)
         .where(and(
             isNull(schema.posts.deletedAt),
+            excludedCreatorIds.length ? notInArray(schema.posts.createdBy, excludedCreatorIds) : undefined,
             or(ilike(schema.posts.content, pattern), ilike(schema.postListings.title, pattern)),
             cursor
                 ? sql`(${schema.posts.createdAt}, ${schema.posts.id}) < (select created_at, id from posts where id = ${cursor})`

@@ -20,6 +20,7 @@ import { useRequireSignIn } from '../../../../common/hooks/useRequireSignIn';
 import { usePost } from '../../hooks/usePost';
 import { useSavePost } from '../../hooks/useSavePost';
 import { useTabHref } from '../../../../navigation';
+import { AuthorLink } from '../AuthorLink/AuthorLink';
 import { PostMenuButton } from '../PostMenuButton/PostMenuButton';
 import './PostCard.css';
 
@@ -27,6 +28,8 @@ interface PostCardProps {
   postId: string;
   /** In a list, tapping the post opens its page; on that page it doesn't. */
   linkToPost?: boolean;
+  /** Tapping the author opens their profile; on that profile it doesn't. */
+  linkToAuthor?: boolean;
   /** After the post is deleted from its menu, e.g. to leave its page. */
   onDeleted?: () => void;
 }
@@ -35,7 +38,7 @@ interface PostCardProps {
  * A post (or listing) as a card: who and when, the content, and its
  * actions. Saving and reading comments need sign-in.
  */
-export function PostCard({ postId, linkToPost = true, onDeleted }: PostCardProps) {
+export function PostCard({ postId, linkToPost = true, linkToAuthor = true, onDeleted }: PostCardProps) {
   const post = usePost(postId);
   const requireSignIn = useRequireSignIn();
   const { setSaved } = useSavePost();
@@ -51,9 +54,15 @@ export function PostCard({ postId, linkToPost = true, onDeleted }: PostCardProps
   return (
     <IonCard className="post-card">
       <IonToolbar className="post-card__header">
-        <UserAvatar slot="start" user={creator} />
+        <AuthorLink slot="start" username={creator.username} enabled={linkToAuthor}>
+          <UserAvatar user={creator} />
+        </AuthorLink>
         <IonLabel>
-          <h2>{displayName(creator)}</h2>
+          <h2>
+            <AuthorLink username={creator.username} enabled={linkToAuthor}>
+              {displayName(creator)}
+            </AuthorLink>
+          </h2>
           <p>
             @{creator.username} · <time dateTime={post.createdAt}>{timeAgo(post.createdAt)}</time>
           </p>

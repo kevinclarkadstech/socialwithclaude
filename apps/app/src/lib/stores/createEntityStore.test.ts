@@ -4,18 +4,19 @@ import { createEntityStore } from './createEntityStore';
 
 const postStore = createEntityStore<Post>();
 
-const creator = { userId: '01JAAAAAAAAAAAAAAAAAAAAAA1', username: 'maya', firstName: null, lastName: null };
+const creator = { userId: '01JAAAAAAAAAAAAAAAAAAAAAA1', username: 'maya', firstName: null, lastName: null, profileVisibility: 'public' as const };
 
 function post(id: string, overrides: Partial<Post> = {}): Post {
   return {
     id,
+    type: 'post',
     content: 'Hello',
     numSaves: 0,
     numComments: 0,
     numShares: 0,
     numReactions: 0,
     creator,
-    viewer: { hasSaved: false },
+    viewer: { hasSaved: false, followsCreator: false },
     createdBy: creator.userId,
     updatedBy: creator.userId,
     createdAt: '2026-11-06T12:00:00.000Z',
@@ -32,7 +33,7 @@ describe('createEntityStore', () => {
     postStore.updateList('feed', (list) => ({ ...list, ids: ['a', 'b'], hasLoaded: true }));
     postStore.updateList('saves', (list) => ({ ...list, ids: ['b'], hasLoaded: true }));
 
-    postStore.updateItem('b', (p) => ({ ...p, viewer: { hasSaved: true } }));
+    postStore.updateItem('b', (p) => ({ ...p, viewer: { ...p.viewer, hasSaved: true } }));
 
     expect(postStore.getList('feed').ids).toEqual(['a', 'b']);
     expect(postStore.getList('saves').ids).toEqual(['b']);

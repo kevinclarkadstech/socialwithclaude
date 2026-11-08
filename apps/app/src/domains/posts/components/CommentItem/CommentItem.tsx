@@ -7,6 +7,7 @@ import { setPostCommentVote } from '../../actions/setPostCommentVote';
 import { nextVote } from '../../commentVotes';
 import { usePostComment } from '../../hooks/usePostComment';
 import { useCallingUser } from '../../../users/hooks/useCallingUser';
+import { AuthorLink } from '../AuthorLink/AuthorLink';
 import { openCommentMenu } from './openCommentMenu';
 import './CommentItem.css';
 
@@ -28,10 +29,14 @@ export function CommentItem({ commentId }: { commentId: string }) {
 
   return (
     <IonItem className="comment" lines="full" data-comment-id={comment.id}>
-      <UserAvatar slot="start" user={creator} size={32} />
+      <AuthorLink slot="start" username={creator.username}>
+        <UserAvatar user={creator} size={32} />
+      </AuthorLink>
       <IonLabel className="ion-text-wrap">
         <p className="comment__meta">
-          <strong>{displayName(creator)}</strong> · <time dateTime={comment.createdAt}>{timeAgo(comment.createdAt)}</time>
+          <AuthorLink username={creator.username}>
+            <strong>{displayName(creator)}</strong>
+          </AuthorLink> · <time dateTime={comment.createdAt}>{timeAgo(comment.createdAt)}</time>
           {edited && ' · edited'}
         </p>
         <p className="comment__content">{comment.content}</p>

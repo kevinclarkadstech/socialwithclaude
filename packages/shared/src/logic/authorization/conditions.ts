@@ -16,3 +16,13 @@ export const isSelf = (caller: CallingUser, userId: string) => userId === caller
 /** The caller is one of a chat's `members`. */
 export const isChatMember = (caller: CallingUser, members: ChatMember[]) =>
     members.some((member) => member.userId === caller.userId);
+
+/** The caller has blocked `userId`. */
+export const hasBlocked = (caller: CallingUser, userId: string) => caller.blockList.blocking.includes(userId);
+
+/** `userId` has blocked the caller. */
+export const isBlockedBy = (caller: CallingUser, userId: string) => caller.blockList.blockedBy.includes(userId);
+
+/** Everyone the caller has blocked or been blocked by: their posts are left out of lists. */
+export const blockedEitherWay = (caller: CallingUser | null): string[] =>
+    caller ? [...caller.blockList.blocking, ...caller.blockList.blockedBy] : [];

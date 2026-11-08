@@ -1,0 +1,94 @@
+/* A gradient from the user's own colour into the brand colour, until covers are photos. */
+.profile-header__cover {
+  aspect-ratio: 3 / 1;
+  max-height: 220px;
+  width: 100%;
+  background: linear-gradient(135deg, hsl(var(--profile-hue) 45% 38%), var(--app-brand) 75%);
+}
+
+.profile-header__row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px;
+  margin-top: -44px;
+}
+
+/* A ring in the page colour separates the avatar from the cover. */
+.profile-header__avatar {
+  box-shadow: 0 0 0 4px var(--ion-background-color);
+}
+
+.profile-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-bottom: 2px;
+}
+
+.profile-header__actions ion-button {
+  margin: 0;
+  min-height: 38px;
+}
+
+.profile-header__icon-button {
+  --padding-start: 10px;
+  --padding-end: 10px;
+}
+
+.profile-header__about {
+  padding: 12px 16px 0;
+}
+
+.profile-header__name {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.profile-header__username {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 2px 0 0;
+  color: var(--ion-color-medium);
+}
+
+.profile-header__bio {
+  margin: 10px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.profile-header__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 16px 16px 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--app-border);
+  border-bottom: 1px solid var(--app-border);
+  text-align: center;
+}
+
+/* The number above its label (the label comes first in the markup, as <dl> wants). */
+.profile-header__stats div {
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.profile-header__stats div + div {
+  border-inline-start: 1px solid var(--app-border);
+}
+
+.profile-header__stats dd {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.profile-header__stats dt {
+  font-size: 0.8rem;
+  color: var(--ion-color-medium);
+}
