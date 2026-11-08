@@ -23,14 +23,14 @@ export type SearchPostsQueryOutput = z.infer<typeof SearchPostsQueryOutputSchema
 /** Posts and listings whose content (or listing title) contains `query`, newest first. */
 export const searchPostsQuery: Query<{ input: SearchPostsQueryInput, output: SearchPostsQueryOutput }, {
     getCallingUser: GetCallingUser;
-    searchPosts: (args: { excludeCreatorIds: string[]; query: string; viewerId: string | null; cursor?: string | null; limit: number }) => Promise<Page<Post>>;
+    searchPosts: (args: { excludedCreatorIds: string[]; query: string; viewerId: string | null; cursor?: string | null; limit: number }) => Promise<Page<Post>>;
 }> = async ({ input, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     // Posts from anyone blocked either way are left out; the rest are checked one by one (canViewPost).
     const page = await dependencies.searchPosts({
         ...input,
         viewerId: caller?.userId ?? null,
-        excludeCreatorIds: blockedEitherWay(caller),
+        excludedCreatorIds: blockedEitherWay(caller),
     });
     // A page can come back shorter than the limit; nextCursor still follows what was fetched.
     return succeed({ ...page, items: viewablePosts({ caller, posts: page.items }) });

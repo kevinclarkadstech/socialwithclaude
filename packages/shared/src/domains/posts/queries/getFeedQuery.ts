@@ -21,14 +21,14 @@ export type GetFeedQueryOutput = z.infer<typeof GetFeedQueryOutputSchema>;
 /** Every post and listing, newest first. Only what the caller may see (canViewPost). */
 export const getFeedQuery: Query<{ input: GetFeedQueryInput, output: GetFeedQueryOutput }, {
     getCallingUser: GetCallingUser;
-    getPosts: (args: { excludeCreatorIds: string[]; viewerId: string | null; cursor?: string | null; limit: number }) => Promise<Page<Post>>;
+    getPosts: (args: { excludedCreatorIds: string[]; viewerId: string | null; cursor?: string | null; limit: number }) => Promise<Page<Post>>;
 }> = async ({ input, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     // Posts from anyone blocked either way are left out; the rest are checked one by one (canViewPost).
     const page = await dependencies.getPosts({
         ...input,
         viewerId: caller?.userId ?? null,
-        excludeCreatorIds: blockedEitherWay(caller),
+        excludedCreatorIds: blockedEitherWay(caller),
     });
     // A page can come back shorter than the limit; nextCursor still follows what was fetched.
     return succeed({ ...page, items: viewablePosts({ caller, posts: page.items }) });

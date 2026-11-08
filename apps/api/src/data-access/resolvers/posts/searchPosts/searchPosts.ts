@@ -7,9 +7,9 @@ import { toPage } from "../../../paging";
 import { selectPosts } from "../../../selects/selectPosts";
 
 /** Posts whose content (or listing title) contains `query`, case-insensitive, newest first. */
-export async function searchPosts({ excludeCreatorIds = [], query, viewerId, cursor, limit }: {
+export async function searchPosts({ excludedCreatorIds = [], query, viewerId, cursor, limit }: {
     // Creators whose posts are left out.
-    excludeCreatorIds?: string[];
+    excludedCreatorIds?: string[];
     query: string;
     viewerId: string | null;
     cursor?: string | null;
@@ -19,7 +19,7 @@ export async function searchPosts({ excludeCreatorIds = [], query, viewerId, cur
     const rows = await selectPosts(db, viewerId)
         .where(and(
             isNull(schema.posts.deletedAt),
-            excludeCreatorIds.length ? notInArray(schema.posts.createdBy, excludeCreatorIds) : undefined,
+            excludedCreatorIds.length ? notInArray(schema.posts.createdBy, excludedCreatorIds) : undefined,
             or(ilike(schema.posts.content, pattern), ilike(schema.postListings.title, pattern)),
             cursor
                 ? sql`(${schema.posts.createdAt}, ${schema.posts.id}) < (select created_at, id from posts where id = ${cursor})`

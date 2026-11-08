@@ -22,7 +22,7 @@ describe("getFeedQuery", () => {
             dependencies: { getCallingUser: async () => caller, getPosts },
         });
         expect(getPosts).toHaveBeenCalledWith(expect.objectContaining({
-            excludeCreatorIds: ["01JAAAAAAAAAAAAAAAAAAAAAA3", "01JAAAAAAAAAAAAAAAAAAAAAA4"],
+            excludedCreatorIds: ["01JAAAAAAAAAAAAAAAAAAAAAA3", "01JAAAAAAAAAAAAAAAAAAAAAA4"],
         }));
         // The cursor still follows what was fetched, so paging carries on past the dropped post.
         expect(result).toEqual({ ok: true, value: { items: [publicPost], nextCursor: "next" } });

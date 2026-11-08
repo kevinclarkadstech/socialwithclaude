@@ -4,6 +4,7 @@ import {
     listingConditions,
     listingPriceTypes,
     listingStatuses,
+    postTypes,
     profileVisibilities,
     reportReasons,
     reportStatuses,
@@ -209,6 +210,8 @@ export const userFeedback = pgTable("user_feedback", {
 
 export const posts = pgTable("posts", {
     id: text("id").primaryKey(),
+    // "listing" when it has a post_listings row (set together when it's created).
+    type: text("type", { enum: asEnum(postTypes) }).notNull().default("post"),
     // created_by is the author.
     content: text("content").notNull(),
     numSaves: integer("num_saves").notNull().default(0),
@@ -222,6 +225,7 @@ export const posts = pgTable("posts", {
     // embedded time isn't trusted.
     index("posts_created_at_id_idx").on(t.createdAt, t.id),
     index("posts_created_by_created_at_id_idx").on(t.createdBy, t.createdAt, t.id),
+    check("posts_type_valid", isOneOf(t.type, postTypes)),
     check("posts_num_saves_non_negative", sql`${t.numSaves} >= 0`),
     check("posts_num_comments_non_negative", sql`${t.numComments} >= 0`),
     check("posts_num_shares_non_negative", sql`${t.numShares} >= 0`),

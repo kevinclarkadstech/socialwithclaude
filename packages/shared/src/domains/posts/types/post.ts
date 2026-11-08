@@ -4,7 +4,11 @@ import { PostListingSchema } from "./post-listing";
 import { UserProfileSummarySchema } from "../../users/types/user-profile-summary";
 import { ProfileVisibilitySchema } from "../../users/types/user-settings";
 
+/** What kind of post it is: a plain post, or a listing (which also has listing details). */
+export const PostTypeSchema = z.enum(["post", "listing"]);
+
 export const PostSchema = BaseUserCreatedEntitySchema.extend({
+    type: PostTypeSchema,
     content: z.string().max(2000),
     numSaves: z.int().min(0),
     numComments: z.int().min(0),
@@ -23,4 +27,5 @@ export const PostSchema = BaseUserCreatedEntitySchema.extend({
     }),
 });
 
+export type PostType = z.infer<typeof PostTypeSchema>;
 export type Post = z.infer<typeof PostSchema>;

@@ -45,6 +45,7 @@ const creator = { userId: userId1, username: "user1", firstName: null, lastName:
 export function mockPost(overrides: Partial<Post> = {}): Post {
     return {
         id: "01JBBBBBBBBBBBBBBBBBBBBBB1",
+        type: "post",
         content: "Hello",
         numSaves: 0,
         numComments: 0,

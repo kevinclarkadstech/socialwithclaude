@@ -31,6 +31,7 @@ export function toPostListing(row: PostListingRow): PostListing {
 export function toPost({ post, listing, creator, creatorVisibility, savedAt, followedAt }: SelectedPostRow): Post {
     return {
         id: post.id,
+        type: post.type,
         content: post.content,
         numSaves: post.numSaves,
         numComments: post.numComments,

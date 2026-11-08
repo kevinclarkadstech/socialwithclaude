@@ -7,9 +7,9 @@ import { toPage } from "../../../paging";
 import { selectPosts } from "../../../selects/selectPosts";
 
 /** Listings, newest first, as `viewerId` sees them; only those with `status` if given. */
-export async function getPostListings({ excludeCreatorIds = [], status, viewerId, cursor, limit }: {
+export async function getPostListings({ excludedCreatorIds = [], status, viewerId, cursor, limit }: {
     // Creators whose posts are left out.
-    excludeCreatorIds?: string[];
+    excludedCreatorIds?: string[];
     status?: ListingStatus;
     viewerId: string | null;
     cursor?: string | null;
@@ -19,7 +19,7 @@ export async function getPostListings({ excludeCreatorIds = [], status, viewerId
         .where(and(
             isNotNull(schema.postListings.postId),
             isNull(schema.posts.deletedAt),
-            excludeCreatorIds.length ? notInArray(schema.posts.createdBy, excludeCreatorIds) : undefined,
+            excludedCreatorIds.length ? notInArray(schema.posts.createdBy, excludedCreatorIds) : undefined,
             status ? eq(schema.postListings.status, status) : undefined,
             cursor
                 ? sql`(${schema.postListings.createdAt}, ${schema.postListings.postId}) < (select created_at, post_id from post_listings where post_id = ${cursor})`

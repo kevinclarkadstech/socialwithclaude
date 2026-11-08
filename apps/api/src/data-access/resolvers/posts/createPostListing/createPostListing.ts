@@ -22,7 +22,7 @@ export async function createPostListing({ id, userId, content, ...listing }: Cre
     return db.transaction(async (tx) => {
         const [post] = await tx
             .insert(schema.posts)
-            .values({ id, content, createdBy: userId, updatedBy: userId })
+            .values({ id, type: "listing", content, createdBy: userId, updatedBy: userId })
             .onConflictDoNothing({ target: schema.posts.id })
             .returning();
         if (!post) {

@@ -9,6 +9,7 @@ const creator = { userId: '01JAAAAAAAAAAAAAAAAAAAAAA1', username: 'maya', firstN
 function post(id: string, overrides: Partial<Post> = {}): Post {
   return {
     id,
+    type: 'post',
     content: 'Hello',
     numSaves: 0,
     numComments: 0,

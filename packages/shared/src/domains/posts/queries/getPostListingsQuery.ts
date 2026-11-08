@@ -24,14 +24,14 @@ export type GetPostListingsQueryOutput = z.infer<typeof GetPostListingsQueryOutp
 /** Listings, newest first; only those with `status` if given. Only what the caller may see (canViewPost). */
 export const getPostListingsQuery: Query<{ input: GetPostListingsQueryInput, output: GetPostListingsQueryOutput }, {
     getCallingUser: GetCallingUser;
-    getPostListings: (args: { excludeCreatorIds: string[]; status?: ListingStatus; viewerId: string | null; cursor?: string | null; limit: number }) => Promise<Page<Post>>;
+    getPostListings: (args: { excludedCreatorIds: string[]; status?: ListingStatus; viewerId: string | null; cursor?: string | null; limit: number }) => Promise<Page<Post>>;
 }> = async ({ input, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     // Posts from anyone blocked either way are left out; the rest are checked one by one (canViewPost).
     const page = await dependencies.getPostListings({
         ...input,
         viewerId: caller?.userId ?? null,
-        excludeCreatorIds: blockedEitherWay(caller),
+        excludedCreatorIds: blockedEitherWay(caller),
     });
     // A page can come back shorter than the limit; nextCursor still follows what was fetched.
     return succeed({ ...page, items: viewablePosts({ caller, posts: page.items }) });
