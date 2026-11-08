@@ -24,6 +24,8 @@ export function toUserProfile(row: UserProfileRow): UserProfile {
         about: row.about,
         numFollowers: row.numFollowers,
         numFollowing: row.numFollowing,
+        numPosts: row.numPosts,
+        numListings: row.numListings,
         createdAt: row.createdAt.toISOString(),
         updatedAt: row.updatedAt.toISOString(),
     };

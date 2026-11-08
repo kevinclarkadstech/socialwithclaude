@@ -15,6 +15,9 @@ export const UserProfileSchema = z.object({
     about: z.string().max(20000).nullable(),
     numFollowers: z.int().min(0),
     numFollowing: z.int().min(0),
+    // Every post, listings included; listings are also counted on their own.
+    numPosts: z.int().min(0),
+    numListings: z.int().min(0),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
 });

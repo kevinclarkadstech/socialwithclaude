@@ -32,7 +32,7 @@ function run({ caller = mockCaller(), visibility = "public", follow = null, type
 describe("getUserPostsQuery", () => {
     it.each([
         [undefined, undefined],
-        ["posts", false],
+        ["posts", undefined],
         ["listings", true],
     ] as const)("type %s asks for isListing %s", async (type, isListing) => {
         const { result, getPosts } = run({ type });

@@ -3,7 +3,7 @@ import type { GetUserProfileQueryOutput } from '@myapp/shared/domains';
 import { ellipsisHorizontal, lockClosed, shareOutline } from 'ionicons/icons';
 import type { CSSProperties } from 'react';
 import { displayName } from '../../../../common/formatters/names';
-import { userHue } from '../../userColor';
+import { userHue } from '../../utils/userHue';
 import { UserAvatar } from '../UserAvatar/UserAvatar';
 import { useProfileHeader } from './useProfileHeader';
 import './ProfileHeader.css';

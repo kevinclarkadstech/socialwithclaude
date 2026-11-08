@@ -36,7 +36,6 @@ import {
 import {
     acceptUserFollowRequest,
     blockUser,
-    countUserPosts,
     createUserSave,
     deleteUserSave,
     denyUserFollowRequest,
@@ -61,7 +60,7 @@ export const usersRouter = router({
     ),
 
     getUserProfile: procedure.input(GetUserProfileQueryInputSchema).query(({ ctx, input }) =>
-        getUserProfileQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, getProfileVisibility, getUserFollowStatus, countUserPosts } }),
+        getUserProfileQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, getProfileVisibility, getUserFollowStatus } }),
     ),
 
     updateMyProfile: procedure.input(UpdateMyProfileMutationInputSchema).mutation(({ ctx, input }) =>

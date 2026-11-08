@@ -119,6 +119,9 @@ export const userProfiles = pgTable("user_profiles", {
     about: text("about"),
     numFollowers: integer("num_followers").notNull().default(0),
     numFollowing: integer("num_following").notNull().default(0),
+    // Every post, listings included; listings are also counted on their own.
+    numPosts: integer("num_posts").notNull().default(0),
+    numListings: integer("num_listings").notNull().default(0),
     ...timestamps(),
 }, (t) => [
     // Usernames are stored lowercase (the shared schema lowercases them), so a plain unique index is enough.

@@ -16,7 +16,7 @@ export const UserPostsTypeSchema = z.enum(["posts", "listings"]);
 
 export const GetUserPostsQueryInputSchema = PageInputSchema.extend({
     username: UserProfileSchema.shape.username,
-    // Only posts that aren't listings, or only listings; both if left out.
+    // "listings": only listings. "posts" (or left out): every post, listings included.
     type: UserPostsTypeSchema.optional(),
 });
 
@@ -80,7 +80,7 @@ export const getUserPostsQuery: Query<{ input: GetUserPostsQueryInput, output: G
 
     const page = await dependencies.getPosts({
         createdBy: profile.userId,
-        isListing: input.type === undefined ? undefined : input.type === "listings",
+        isListing: input.type === "listings" ? true : undefined,
         viewerId: caller?.userId ?? null,
         cursor: input.cursor,
         limit: input.limit,

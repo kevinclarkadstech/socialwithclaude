@@ -24,10 +24,6 @@ export function runGetUserProfileQuery({ username }: { username: string }) {
         const profile = await fetched;
         return profile ? followStatusFrom(profile.viewer.followStatus) : null;
       },
-      countUserPosts: async () => {
-        const profile = await fetched;
-        return profile?.numPosts ?? 0;
-      },
     },
   });
 }

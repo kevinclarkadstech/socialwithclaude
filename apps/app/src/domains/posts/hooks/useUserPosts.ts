@@ -5,11 +5,11 @@ import { onPostCreated } from '../postEvents';
 import { postStore } from '../postStore';
 import { runGetUserPostsQuery } from '../operations/runGetUserPostsQuery';
 
-/** The postStore list of a user's posts (that aren't listings) or listings. */
+/** The postStore list of a user's posts (listings included) or just their listings. */
 export const userPostsListKey = (username: string, type: UserPostsType) => `user:${username}:${type}`;
 
 /**
- * A profile's posts or listings, newest first, a page at a time. Only loads
+ * A profile's posts (listings included) or just its listings, newest first, a page at a time. Only loads
  * when the viewer may see them (profile.viewer.canSeePosts).
  */
 export function useUserPosts({ profile, type }: { profile: GetUserProfileQueryOutput | null; type: UserPostsType }) {
@@ -19,7 +19,8 @@ export function useUserPosts({ profile, type }: { profile: GetUserProfileQueryOu
   useEffect(
     () =>
       onPostCreated((post) => {
-        if (!profile || post.createdBy !== profile.userId || Boolean(post.listing) !== (type === 'listings')) {
+        // The Posts tab has every post; the Listings tab only listings.
+        if (!profile || post.createdBy !== profile.userId || (type === 'listings' && !post.listing)) {
           return;
         }
         postStore.updateList(key, (list) => ({ ...list, ids: [post.id, ...list.ids.filter((id) => id !== post.id)] }));

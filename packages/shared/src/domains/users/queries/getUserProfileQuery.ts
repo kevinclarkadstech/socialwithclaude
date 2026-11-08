@@ -16,7 +16,6 @@ export const GetUserProfileQueryInputSchema = UserProfileSchema.pick({ username:
 export type GetUserProfileQueryInput = z.infer<typeof GetUserProfileQueryInputSchema>;
 
 export const GetUserProfileQueryOutputSchema = UserProfileSchema.extend({
-    numPosts: z.int().min(0),
     profileVisibility: ProfileVisibilitySchema,
     // How the profile looks to whoever is asking.
     viewer: z.object({
@@ -42,7 +41,6 @@ export const getUserProfileQuery: Query<{ input: GetUserProfileQueryInput, outpu
     getProfileVisibility: (args: { userId: string }) => Promise<ProfileVisibility | null>;
     // The status of followerId's follow of followingId; null if there's none.
     getUserFollowStatus: (args: { followerId: string; followingId: string }) => Promise<UserFollowStatus | null>;
-    countUserPosts: (args: { userId: string }) => Promise<number>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const profile = await dependencies.getUserProfileByUsername(input);
     if (!profile) {
@@ -73,11 +71,9 @@ export const getUserProfileQuery: Query<{ input: GetUserProfileQueryInput, outpu
         followStatus = await dependencies.getUserFollowStatus({ followerId: caller.userId, followingId: profile.userId });
     }
     const viewerFollowStatus = toViewerFollowStatus(followStatus);
-    const numPosts = await dependencies.countUserPosts({ userId: profile.userId });
 
     return succeed({
         ...profile,
-        numPosts,
         profileVisibility,
         viewer: {
             followStatus: viewerFollowStatus,

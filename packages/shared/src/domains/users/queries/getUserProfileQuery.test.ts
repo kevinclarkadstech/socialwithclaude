@@ -6,7 +6,7 @@ import { mockCaller, mockProfile, userId2 } from "../../../testing/fixtures";
 import { testContext } from "../../../testing/context";
 import { getUserProfileQuery } from "./getUserProfileQuery";
 
-const target = mockProfile({ userId: userId2, username: "user2" });
+const target = mockProfile({ userId: userId2, username: "user2", numPosts: 7, numListings: 2 });
 
 function follow(status: UserFollow["status"]): UserFollow {
     return { followerId: mockCaller().userId, followingId: userId2, status, createdAt: target.createdAt, updatedAt: target.updatedAt };
@@ -26,7 +26,6 @@ function run({ caller = mockCaller(), existing = null, profile = target, visibil
             getUserProfileByUsername: async () => profile,
             getProfileVisibility: async () => visibility,
             getUserFollowStatus: async () => existing?.status ?? null,
-            countUserPosts: async () => 7,
         },
     });
 }
@@ -41,8 +40,8 @@ const blockedBy = (userId: string) => mockCaller({ blockList: { blocking: [], bl
 const blocking = (userId: string) => mockCaller({ blockList: { blocking: [userId], blockedBy: [] } });
 
 describe("getUserProfileQuery", () => {
-    it("returns the profile with its post count and visibility", async () => {
-        expect(await run({ visibility: "followers" })).toMatchObject({ ok: true, value: { username: "user2", numPosts: 7, profileVisibility: "followers" } });
+    it("returns the profile with its counts and visibility", async () => {
+        expect(await run({ visibility: "followers" })).toMatchObject({ ok: true, value: { username: "user2", numPosts: 7, numListings: 2, profileVisibility: "followers" } });
     });
 
     it("is not found for someone the user has blocked", async () => {
