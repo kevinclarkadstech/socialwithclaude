@@ -1,0 +1,67 @@
+.post-photos-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.post-photos-field__list {
+  align-self: stretch;
+  padding: 0;
+  border-radius: 12px;
+  border: 1px solid var(--ion-color-step-150, rgba(0, 0, 0, 0.12));
+  overflow: hidden;
+}
+
+.post-photos-field__item {
+  --padding-start: 8px;
+  --inner-padding-end: 4px;
+  --min-height: 72px;
+}
+
+.post-photos-field__thumb {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  margin: 8px 12px 8px 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--ion-color-step-100, #eee);
+  flex-shrink: 0;
+}
+
+.post-photos-field__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.post-photos-field__thumb ion-spinner,
+.post-photos-field__thumb ion-icon {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+}
+
+.post-photos-field__thumb ion-spinner {
+  color: #fff;
+}
+
+.post-photos-field__thumb ion-icon {
+  font-size: 28px;
+  background: #fff;
+  border-radius: 50%;
+}
+
+/* Dim the photo while it uploads, and when it failed. */
+.post-photos-field__item[data-status='uploading'] .post-photos-field__thumb img,
+.post-photos-field__item[data-status='failed'] .post-photos-field__thumb img {
+  opacity: 0.5;
+}
+
+.post-photos-field__remove {
+  margin: 0;
+}

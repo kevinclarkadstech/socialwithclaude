@@ -4,6 +4,7 @@ import { fromApi } from '../../../lib/api/results';
 import { logger } from '../../../lib/logger';
 import { getCallingUser } from '../../users/callingUserStore';
 import { postFromStoreOrApi } from './postsFromApi';
+import { postMediaFromApp } from './postMediaFromApp';
 
 /** Creates a post. `id` comes from newId(), so a retry returns the first post rather than a second. */
 export function runCreatePostMutation(post: CreatePostMutationInput) {
@@ -15,7 +16,9 @@ export function runCreatePostMutation(post: CreatePostMutationInput) {
       // Only the server knows the feature flag; it refuses if posting is off.
       isPostingEnabled: () => true,
       getPostById: postFromStoreOrApi,
-      createPost: ({ id, content }) => fromApi(api.posts.createPost.mutate({ id, content })),
+      getPostMediaByIds: postMediaFromApp,
+      createPost: ({ id, content, media }) =>
+        fromApi(api.posts.createPost.mutate({ id, content, media: media.map(({ id, caption }) => ({ id, caption })) })),
     },
   });
 }

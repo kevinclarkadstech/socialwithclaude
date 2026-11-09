@@ -1,0 +1,98 @@
+.post-photo-carousel {
+  position: relative;
+  width: 100%;
+  /* Tall photos stay on screen on wide windows; whole photos still fit inside. */
+  max-height: 70vh;
+  background: var(--ion-color-step-50, #f4f4f4);
+}
+
+.post-photo-carousel__track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+.post-photo-carousel__track::-webkit-scrollbar {
+  display: none;
+}
+
+.post-photo-carousel__slide {
+  flex: 0 0 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  cursor: zoom-in;
+}
+
+.post-photo-carousel__count {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.post-photo-carousel__dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.post-photo-carousel__dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+}
+
+.post-photo-carousel__dots span[data-active='true'] {
+  background: #fff;
+}
+
+.post-photo-carousel .post-photo-carousel__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  --color: #fff;
+  --background: rgba(0, 0, 0, 0.45);
+  --background-hover: rgba(0, 0, 0, 0.6);
+  --border-radius: 50%;
+  --padding-start: 0;
+  --padding-end: 0;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+}
+
+.post-photo-carousel__nav--prev {
+  left: 8px;
+}
+
+.post-photo-carousel__nav--next {
+  right: 8px;
+}
+
+/* Touch screens swipe; the arrows are for mice. */
+@media (hover: none) {
+  .post-photo-carousel__nav {
+    display: none;
+  }
+}

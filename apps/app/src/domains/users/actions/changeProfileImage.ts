@@ -2,17 +2,10 @@ import { profileImageAspectRatios, profileImageWidths, type ProfileImageKind } f
 import { runOrToast } from '../../../lib/api/runOrToast';
 import { newId } from '../../../lib/ids';
 import { renderCroppedImages, type CropArea } from '../../media/utils/renderCroppedImages';
+import { uploadToStorage } from '../../media/utils/uploadToStorage';
 import { callingUserStore } from '../callingUserStore';
 import { runConfirmProfileImageUploadMutation } from '../operations/runConfirmProfileImageUploadMutation';
 import { runCreateProfileImageUploadMutation } from '../operations/runCreateProfileImageUploadMutation';
-
-/** Uploads one file to a presigned URL, with the Content-Type it was signed for. */
-async function upload({ url, blob, contentType }: { url: string; blob: Blob; contentType: string }) {
-  const response = await fetch(url, { method: 'PUT', body: blob, headers: { 'Content-Type': contentType } });
-  if (!response.ok) {
-    throw new Error(`The upload failed (${response.status}). Try again.`);
-  }
-}
 
 /**
  * Sets the signed-in user's avatar or cover from a photo: crops and resizes it
@@ -40,7 +33,7 @@ export async function changeProfileImage({ kind, photo, crop }: { kind: ProfileI
     await Promise.all(
       created.value.uploads.map((target) => {
         const image = images.find((candidate) => candidate.width === target.width)!;
-        return upload({ url: target.url, blob: image.blob, contentType: target.contentType });
+        return uploadToStorage({ url: target.url, blob: image.blob, contentType: target.contentType });
       }),
     );
     return runConfirmProfileImageUploadMutation({ kind, uploadId });

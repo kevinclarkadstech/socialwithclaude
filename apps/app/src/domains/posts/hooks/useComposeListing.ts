@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { createPostListing } from '../actions/createPostListing';
 import { updatePostListing } from '../actions/updatePostListing';
 import { parsePriceCents, priceFieldValue } from '../listingPrices';
+import { usePostPhotos } from './usePostPhotos';
 
 /** What's wrong with the form, by field, after trying to submit. */
 interface ListingFormErrors {
@@ -13,8 +14,9 @@ interface ListingFormErrors {
 
 /**
  * Listing something for sale, or editing `post` (a listing): the fields as
- * typed, checking them, and saving. The description is also the post's
- * text in the feed. Text is trimmed only when it's sent.
+ * typed, its photos, checking them, and saving (once photos have uploaded).
+ * The description is also the post's text in the feed. Text is trimmed only
+ * when it's sent.
  */
 export function useComposeListing({ post, onDismiss }: { post?: Post; onDismiss: () => void }) {
   const [title, setTitle] = useState('');
@@ -26,6 +28,8 @@ export function useComposeListing({ post, onDismiss }: { post?: Post; onDismiss:
   const [status, setStatus] = useState<ListingStatus>('available');
   const [errors, setErrors] = useState<ListingFormErrors>({});
   const [isBusy, setIsBusy] = useState(false);
+  const photos = usePostPhotos();
+  const canSubmit = !isBusy && !photos.isUploading && !photos.hasFailed;
 
   /** Starts from the listing's details when editing, or a blank form. */
   function reset() {
@@ -38,6 +42,7 @@ export function useComposeListing({ post, onDismiss }: { post?: Post; onDismiss:
     setCondition(listing?.condition ?? 'used');
     setStatus(listing?.status ?? 'available');
     setErrors({});
+    photos.reset(post?.media);
   }
 
   /** The price as the API takes it, or null if a fixed price isn't a valid amount. */
@@ -72,6 +77,7 @@ export function useComposeListing({ post, onDismiss }: { post?: Post; onDismiss:
       condition,
       // Only a fixed price can be negotiable.
       isNegotiable: priced.type === 'fixed' && isNegotiable,
+      media: photos.choices,
       ...priced,
     };
     setIsBusy(true);
@@ -116,7 +122,8 @@ export function useComposeListing({ post, onDismiss }: { post?: Post; onDismiss:
       setStatus,
     },
     errors,
-    isBusy,
+    photos,
+    canSubmit,
     reset,
     submit,
   };

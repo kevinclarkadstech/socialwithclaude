@@ -22,6 +22,8 @@ import { useSavePost } from '../../hooks/useSavePost';
 import { useTabHref } from '../../../../navigation';
 import { AuthorLink } from '../AuthorLink/AuthorLink';
 import { PostMenuButton } from '../PostMenuButton/PostMenuButton';
+import { PostPhotoCarousel } from '../PostPhotoCarousel/PostPhotoCarousel';
+import { PostPhotoGrid } from '../PostPhotoGrid/PostPhotoGrid';
 import './PostCard.css';
 
 interface PostCardProps {
@@ -35,8 +37,9 @@ interface PostCardProps {
 }
 
 /**
- * A post (or listing) as a card: who and when, the content, and its
- * actions. Saving and reading comments need sign-in.
+ * A post (or listing) as a card: who and when, the content and photos (a
+ * grid for posts, a carousel for listings), and its actions. Saving and
+ * reading comments need sign-in.
  */
 export function PostCard({ postId, linkToPost = true, linkToAuthor = true, onDeleted }: PostCardProps) {
   const post = usePost(postId);
@@ -72,6 +75,8 @@ export function PostCard({ postId, linkToPost = true, linkToAuthor = true, onDel
         </IonButtons>
       </IonToolbar>
 
+      {listing && <PostPhotoCarousel media={post.media} />}
+
       <IonCardContent
         className={linkToPost ? 'post-card__body post-card__body--link' : 'post-card__body'}
         onClick={linkToPost ? openPost : undefined}
@@ -94,6 +99,11 @@ export function PostCard({ postId, linkToPost = true, linkToAuthor = true, onDel
           </div>
         )}
         {post.content && <p className="post-card__content">{post.content}</p>}
+        {!listing && post.media.length > 0 && (
+          <div className="post-card__photos">
+            <PostPhotoGrid media={post.media} />
+          </div>
+        )}
       </IonCardContent>
 
       <IonButtons className="post-card__actions">

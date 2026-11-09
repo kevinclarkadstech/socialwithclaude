@@ -68,3 +68,12 @@
 .post-card__body--link {
   cursor: pointer;
 }
+
+.post-card__photos {
+  margin-top: 8px;
+}
+
+/* A listing's photos sit just under the author, edge to edge, with its details below. */
+.post-card .post-photo-carousel {
+  margin-bottom: 12px;
+}

@@ -1,0 +1,52 @@
+.post-photo-grid {
+  display: grid;
+  /* A tall single photo stays on screen on wide windows (cropped to fit). */
+  max-height: 70vh;
+  gap: 2px;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+
+.post-photo-grid[data-count='2'] {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* Three: one large on the left, two stacked on the right. */
+.post-photo-grid[data-count='3'] {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+
+.post-photo-grid[data-count='3'] .post-photo-grid__tile:first-child {
+  grid-row: 1 / span 2;
+}
+
+.post-photo-grid[data-count='4'] {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+
+.post-photo-grid__tile {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
+.post-photo-grid__more {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.45);
+}
