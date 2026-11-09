@@ -259,13 +259,18 @@ export const postListings = pgTable("post_listings", {
 ]);
 
 /**
- * A published image: its files are at `${path}-${size}` in the media bucket.
- * Uploaded (and recorded here) before whatever uses it is saved; what uses
- * it links to it (post_media, and later comments and chats), and decides who may.
+ * A photo on a post or listing. Its files are at
+ * `{post creator}/{post_id}/{id}-{size}` in the media bucket: the app uploads
+ * them as they're picked, and saving the post publishes them.
  */
-export const media = pgTable("media", {
+export const postMedia = pgTable("post_media", {
     id: text("id").primaryKey(),
-    path: text("path").notNull(),
+    postId: text("post_id")
+        .notNull()
+        .references(() => posts.id, { onDelete: "cascade" }),
+    // Its order on the post, from 0.
+    position: integer("position").notNull(),
+    caption: text("caption"),
     // At the largest size.
     width: integer("width").notNull(),
     height: integer("height").notNull(),
@@ -273,26 +278,8 @@ export const media = pgTable("media", {
     placeholder: text("placeholder"),
     ...auditFields(),
 }, (t) => [
-    // For clearing out images uploaded for things that were never saved.
-    index("media_created_at_idx").on(t.createdAt),
-    check("media_dimensions_positive", sql`${t.width} > 0 and ${t.height} > 0`),
-]);
-
-/** A photo on a post or listing, in order, with its caption there. A photo is on one post at most. */
-export const postMedia = pgTable("post_media", {
-    postId: text("post_id")
-        .notNull()
-        .references(() => posts.id, { onDelete: "cascade" }),
-    mediaId: text("media_id")
-        .notNull()
-        .references(() => media.id, { onDelete: "cascade" }),
-    // Its order on the post, from 0.
-    position: integer("position").notNull(),
-    caption: text("caption"),
-}, (t) => [
-    primaryKey({ columns: [t.postId, t.mediaId] }),
-    uniqueIndex("post_media_media_id_idx").on(t.mediaId),
     index("post_media_post_id_position_idx").on(t.postId, t.position),
+    check("post_media_dimensions_positive", sql`${t.width} > 0 and ${t.height} > 0`),
     check("post_media_position_non_negative", sql`${t.position} >= 0`),
 ]);
 

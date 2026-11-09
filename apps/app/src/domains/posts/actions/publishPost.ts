@@ -1,30 +1,30 @@
 import { runOrToast } from '../../../lib/api/runOrToast';
-import { newId } from '../../../lib/ids';
 import { runCreatePostListingMutation } from '../operations/runCreatePostListingMutation';
 import { runCreatePostMutation } from '../operations/runCreatePostMutation';
 import { emitPostCreated } from '../postEvents';
 import { pendingPostStore, type PendingPost } from '../pendingPostStore';
 import { postStore } from '../postStore';
-import { uploadPostPhotos } from './uploadPostPhotos';
+import { warnAboutDroppedPhotos } from '../utils/droppedPhotosWarning';
 
 /**
- * Posts something new (a post or a listing) with its photos, without making
- * anyone wait: it shows at the top of the feed straight away while its
- * photos upload and it's created, then the real post takes its place. If it
- * fails, it stays with the reason, to retry or discard (and a toast says so).
+ * Posts something new (a post or a listing) without making anyone wait: it
+ * shows at the top of the feed straight away while it's saved (its photos
+ * were uploaded as they were picked, and saving publishes them), then the
+ * real post takes its place. A photo that couldn't be added is left off,
+ * with a warning. If saving fails, it stays with the reason, to retry or
+ * discard (and a toast says so).
  */
-export function publishPost({ content, photos }: Pick<PendingPost, 'content' | 'photos'>) {
-  const pending: PendingPost = { id: newId(), content, photos, status: 'sending', error: null };
-  pendingPostStore.add(pending);
+export function publishPost(pending: Pick<PendingPost, 'id' | 'content' | 'photos'>) {
+  pendingPostStore.add({ ...pending, status: 'sending', error: null });
   void send(pending.id);
 }
 
-/** Tries a failed post again: photos already uploaded aren't uploaded again, and the same id can't make a second post. */
+/** Tries a failed post again: the same id can't make a second post. */
 export function retryPendingPost(id: string) {
   void send(id);
 }
 
-/** Gives up on a failed post. */
+/** Gives up on a failed post. Its uploads expire on their own. */
 export function discardPendingPost(id: string) {
   const pending = pendingPostStore.get(id);
   if (pending) {
@@ -40,16 +40,18 @@ async function send(id: string) {
   }
   pendingPostStore.update(id, { status: 'sending', error: null });
 
-  const result = await runOrToast(async () => {
-    const uploaded = await uploadPostPhotos({ photos: pending.photos.map(({ photo }) => photo) });
-    if (!uploaded.ok) {
-      return uploaded;
-    }
-    const media = pending.photos.map(({ photo, caption }) => ({ id: photo.mediaId, caption }));
-    return pending.content.kind === 'post'
+  const media = pending.photos.map(({ photo, caption }) => ({
+    id: photo.mediaId,
+    caption,
+    width: photo.width,
+    height: photo.height,
+    placeholder: photo.placeholder,
+  }));
+  const result = await runOrToast(() =>
+    pending.content.kind === 'post'
       ? runCreatePostMutation({ id, content: pending.content.content, media })
-      : runCreatePostListingMutation({ ...pending.content.listing, id, media });
-  });
+      : runCreatePostListingMutation({ ...pending.content.listing, id, media }),
+  );
 
   if (!result.ok) {
     pendingPostStore.update(id, { status: 'failed', error: result.error.message ?? "Couldn't post" });
@@ -60,6 +62,7 @@ async function send(id: string) {
   emitPostCreated(result.value);
   release(pending);
   pendingPostStore.remove(id);
+  warnAboutDroppedPhotos({ sent: media, saved: result.value });
 }
 
 /** Frees the photos kept in memory for it. */

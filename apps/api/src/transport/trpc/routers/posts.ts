@@ -1,5 +1,4 @@
 import {
-    ConfirmPostMediaUploadsMutationInputSchema,
     CreatePostMediaUploadsMutationInputSchema,
     CreatePostMutationInputSchema,
     DeletePostMutationInputSchema,
@@ -8,7 +7,6 @@ import {
     GetUserPostsQueryInputSchema,
     ReportPostMutationInputSchema,
     UpdatePostMutationInputSchema,
-    confirmPostMediaUploadsMutation,
     createPostMediaUploadsMutation,
     createPostMutation,
     deletePostMutation,
@@ -20,20 +18,18 @@ import {
 } from "@myapp/shared/domains";
 
 import {
-    createMedia,
     createPost,
     createPostReport,
     deletePost,
     getPostById,
-    getPostMediaByIds,
     getPosts,
     getProfileVisibility,
     getUserFollowStatus,
     getUserProfileByUsername,
     updatePost,
 } from "../../../data-access";
-import { createUploadUrl, deleteMedia, deleteUploads, putMedia, readUpload } from "../../../storage";
-import { newMediaToken } from "../../../storage/newMediaToken";
+import { createUploadUrl, deleteMedia } from "../../../storage";
+import { publishPostPhotosWith } from "../../../storage/postPhotos";
 import { procedure, router } from "../trpc";
 
 export const postsRouter = router({
@@ -57,7 +53,7 @@ export const postsRouter = router({
                 getCallingUser: ctx.getCallingUser,
                 isPostingEnabled: () => ctx.featureFlagStore.isEnabled("usersCanPost"),
                 getPostById,
-                getPostMediaByIds,
+                publishPostPhotos: publishPostPhotosWith(ctx.logger),
                 createPost,
             },
         }),
@@ -70,24 +66,8 @@ export const postsRouter = router({
             dependencies: {
                 getCallingUser: ctx.getCallingUser,
                 isPostingEnabled: () => ctx.featureFlagStore.isEnabled("usersCanPost"),
+                getPostById,
                 createUploadUrl,
-            },
-        }),
-    ),
-
-    confirmPostMediaUploads: procedure.input(ConfirmPostMediaUploadsMutationInputSchema).mutation(({ ctx, input }) =>
-        confirmPostMediaUploadsMutation({
-            input,
-            context: { logger: ctx.logger },
-            dependencies: {
-                getCallingUser: ctx.getCallingUser,
-                getPostMediaByIds,
-                readUpload,
-                putMedia,
-                deleteMedia,
-                deleteUploads,
-                newToken: newMediaToken,
-                createMedia,
             },
         }),
     ),
@@ -96,7 +76,7 @@ export const postsRouter = router({
         updatePostMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, getPostMediaByIds, deleteMedia, updatePost },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, publishPostPhotos: publishPostPhotosWith(ctx.logger), deleteMedia, updatePost },
         }),
     ),
 

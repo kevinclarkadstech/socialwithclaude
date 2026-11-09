@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "99faf697-68b7-4f92-85e4-36ce209bac07",
+  "id": "b2d03ec7-003b-4732-90c5-0b0a343d653a",
   "prevIds": [
     "695ada08-7a13-47dc-bd97-e8a21f40c383"
   ],
@@ -27,12 +27,6 @@
     {
       "isRlsEnabled": false,
       "name": "chats",
-      "entityType": "tables",
-      "schema": "public"
-    },
-    {
-      "isRlsEnabled": false,
-      "name": "media",
       "entityType": "tables",
       "schema": "public"
     },
@@ -572,123 +566,6 @@
       "name": "id",
       "entityType": "columns",
       "schema": "public",
-      "table": "media"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "path",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "media"
-    },
-    {
-      "type": "integer",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "width",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "media"
-    },
-    {
-      "type": "integer",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "height",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "media"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "placeholder",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "media"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "created_by",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "media"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "updated_by",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "media"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "now()",
-      "generated": null,
-      "identity": null,
-      "name": "created_at",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "media"
-    },
-    {
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "now()",
-      "generated": null,
-      "identity": null,
-      "name": "updated_at",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "media"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "id",
-      "entityType": "columns",
-      "schema": "public",
       "table": "post_comment_reports"
     },
     {
@@ -1157,7 +1034,7 @@
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "post_id",
+      "name": "id",
       "entityType": "columns",
       "schema": "public",
       "table": "post_media"
@@ -1170,7 +1047,7 @@
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "media_id",
+      "name": "post_id",
       "entityType": "columns",
       "schema": "public",
       "table": "post_media"
@@ -1197,6 +1074,97 @@
       "generated": null,
       "identity": null,
       "name": "caption",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "post_media"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "width",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "post_media"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "height",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "post_media"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "placeholder",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "post_media"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "created_by",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "post_media"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "updated_by",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "post_media"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "post_media"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updated_at",
       "entityType": "columns",
       "schema": "public",
       "table": "post_media"
@@ -2424,27 +2392,6 @@
       "nameExplicit": true,
       "columns": [
         {
-          "value": "created_at",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "media_created_at_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "media"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
           "value": "created_by",
           "isExpression": false,
           "asc": true,
@@ -2615,27 +2562,6 @@
       "entityType": "indexes",
       "schema": "public",
       "table": "post_listings"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "media_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": true,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "post_media_media_id_idx",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "post_media"
     },
     {
       "nameExplicit": true,
@@ -3304,40 +3230,6 @@
     {
       "nameExplicit": false,
       "columns": [
-        "created_by"
-      ],
-      "schemaTo": "public",
-      "tableTo": "users",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "CASCADE",
-      "name": "media_created_by_users_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "media"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
-        "updated_by"
-      ],
-      "schemaTo": "public",
-      "tableTo": "users",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "SET NULL",
-      "name": "media_updated_by_users_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "media"
-    },
-    {
-      "nameExplicit": false,
-      "columns": [
         "post_comment_id"
       ],
       "schemaTo": "public",
@@ -3508,16 +3400,33 @@
     {
       "nameExplicit": false,
       "columns": [
-        "media_id"
+        "created_by"
       ],
       "schemaTo": "public",
-      "tableTo": "media",
+      "tableTo": "users",
       "columnsTo": [
         "id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
-      "name": "post_media_media_id_media_id_fkey",
+      "name": "post_media_created_by_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "post_media"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "updated_by"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "name": "post_media_updated_by_users_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "post_media"
@@ -3835,17 +3744,6 @@
     },
     {
       "columns": [
-        "post_id",
-        "media_id"
-      ],
-      "nameExplicit": false,
-      "name": "post_media_pkey",
-      "entityType": "pks",
-      "schema": "public",
-      "table": "post_media"
-    },
-    {
-      "columns": [
         "user_id",
         "blocked_user_id"
       ],
@@ -3901,16 +3799,6 @@
         "id"
       ],
       "nameExplicit": false,
-      "name": "media_pkey",
-      "schema": "public",
-      "table": "media",
-      "entityType": "pks"
-    },
-    {
-      "columns": [
-        "id"
-      ],
-      "nameExplicit": false,
       "name": "post_comment_reports_pkey",
       "schema": "public",
       "table": "post_comment_reports",
@@ -3934,6 +3822,16 @@
       "name": "post_listings_pkey",
       "schema": "public",
       "table": "post_listings",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "post_media_pkey",
+      "schema": "public",
+      "table": "post_media",
       "entityType": "pks"
     },
     {
@@ -4035,13 +3933,6 @@
       "table": "chats"
     },
     {
-      "value": "\"width\" > 0 and \"height\" > 0",
-      "name": "media_dimensions_positive",
-      "entityType": "checks",
-      "schema": "public",
-      "table": "media"
-    },
-    {
       "value": "\"reason\" in ('spam', 'harassment', 'hate', 'violence', 'sexual_content', 'scam', 'prohibited_item', 'other')",
       "name": "post_comment_reports_reason_valid",
       "entityType": "checks",
@@ -4110,6 +4001,13 @@
       "entityType": "checks",
       "schema": "public",
       "table": "post_listings"
+    },
+    {
+      "value": "\"width\" > 0 and \"height\" > 0",
+      "name": "post_media_dimensions_positive",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "post_media"
     },
     {
       "value": "\"position\" >= 0",

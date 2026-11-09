@@ -1,14 +1,14 @@
 import z from "zod";
 import type { Mutation } from "../../../types/mutation";
 import { fail, succeed } from "../../../utils/result";
-import { notFoundError } from "../../../error-handling";
+import { notFoundError, validationError } from "../../../error-handling";
 import { canUpdatePost } from "../../../logic/authorization/posts/canUpdatePost";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { PostSchema, type Post } from "../types/post";
-import { checkPostMediaChoice, placePostMedia, removedPostMedia } from "../utils/postMediaChoice";
+import { hasUniqueMedia, newPostMedia, postMediaRows, removedPostMedia, type PostMediaFields, type PostMediaRow } from "../utils/postMedia";
 import { maxPostPhotos } from "../constants";
-import { PostMediaChoiceSchema, type PostMediaPlacement, type UploadedPostMedia } from "../types/post-media";
+import { PostMediaSchema } from "../types/post-media";
 import { postPhotoKeys } from "../utils/postPhotoKeys";
 import {
     ListingPriceSchema,
@@ -21,8 +21,8 @@ import {
 export const UpdatePostListingMutationInputSchema = PostSchema.pick({ id: true, content: true })
     .extend(PostListingFieldsSchema.pick({ title: true, description: true, condition: true, status: true, isNegotiable: true }).shape)
     .extend({
-        // All its photos, in order: ones it has, and new ones uploaded and confirmed first.
-        media: z.array(PostMediaChoiceSchema).max(maxPostPhotos).default([]),
+        // All its photos, in order: ones it has, and new ones uploaded first (createPostMediaUploadsMutation).
+        media: z.array(PostMediaSchema.pick({ id: true, caption: true, width: true, height: true, placeholder: true })).max(maxPostPhotos).default([]),
     })
     .and(ListingPriceSchema);
 
@@ -36,7 +36,8 @@ export type UpdatePostListingMutationOutput = z.infer<typeof UpdatePostListingMu
 export const updatePostListingMutation: Mutation<{ input: UpdatePostListingMutationInput, output: UpdatePostListingMutationOutput }, {
     getCallingUser: GetCallingUser;
     getPostById: (args: { id: string; viewerId: string | null }) => Promise<Post | null>;
-    getPostMediaByIds: (args: { ids: string[] }) => Promise<UploadedPostMedia[]>;
+    /** Publishes photos uploaded for the post; returns those it could, with their real dimensions. */
+    publishPostPhotos: (args: { userId: string; postId: string; media: PostMediaFields[] }) => Promise<{ id: string; width: number; height: number }[]>;
     /** Deletes published photo files. */
     deleteMedia: (args: { keys: string[] }) => Promise<void>;
     /** Saves the listing, and sets its photos to `media`, taking `removedMediaIds` off it. Null if it was deleted. */
@@ -44,7 +45,7 @@ export const updatePostListingMutation: Mutation<{ input: UpdatePostListingMutat
         id: string;
         userId: string;
         content: string;
-        media: PostMediaPlacement[];
+        media: PostMediaRow[];
         removedMediaIds: string[];
         title: string;
         description: string;
@@ -70,17 +71,20 @@ export const updatePostListingMutation: Mutation<{ input: UpdatePostListingMutat
         return allowed;
     }
 
-    const found = input.media.length > 0 ? await dependencies.getPostMediaByIds({ ids: input.media.map((media) => media.id) }) : [];
-    const mediaAllowed = checkPostMediaChoice({ callerId: allowed.value.userId, postId: post.id, chosen: input.media, found });
-    if (!mediaAllowed.ok) {
-        logger.warn("Listing photos refused", { postId: post.id, callerId: allowed.value.userId, error: mediaAllowed.error });
-        return mediaAllowed;
+    if (!hasUniqueMedia(input.media)) {
+        return fail(validationError("The same photo is in there twice"));
     }
-    const removed = removedPostMedia({ current: post.media, chosen: input.media });
+    // New photos were uploaded as they were picked: publish them now (any that can't be are left off).
+    const added = newPostMedia({ current: post.media, media: input.media });
+    const published = added.length > 0
+        ? await dependencies.publishPostPhotos({ userId: post.createdBy, postId: post.id, media: added })
+        : [];
+    const media = postMediaRows({ media: input.media, current: post.media, published });
+    const removed = removedPostMedia({ current: post.media, media: input.media });
 
     const updatedPost = await dependencies.updatePostListing({
         ...input,
-        media: placePostMedia(input.media),
+        media,
         removedMediaIds: removed.map((media) => media.id),
         userId: allowed.value.userId,
     });
@@ -91,7 +95,9 @@ export const updatePostListingMutation: Mutation<{ input: UpdatePostListingMutat
 
     // The photos taken off it are gone for good (their addresses only reached people shown the post).
     if (removed.length > 0) {
-        await dependencies.deleteMedia({ keys: removed.flatMap(postPhotoKeys) });
+        await dependencies.deleteMedia({
+            keys: removed.flatMap((item) => postPhotoKeys({ userId: post.createdBy, postId: post.id, mediaId: item.id })),
+        });
     }
 
     return succeed(updatedPost);

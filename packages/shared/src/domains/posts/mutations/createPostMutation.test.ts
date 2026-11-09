@@ -15,7 +15,7 @@ function run({ created, existing }: { created: Post | null; existing: Post | nul
             getCallingUser: async () => mockCaller(),
             isPostingEnabled: () => true,
             getPostById: async () => existing,
-            getPostMediaByIds: async () => [],
+            publishPostPhotos: async () => [],
             createPost,
         },
     });

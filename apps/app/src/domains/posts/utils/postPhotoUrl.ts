@@ -1,15 +1,17 @@
 import { longSideDimensions } from '@myapp/shared/common/images';
-import { mediaKey, postPhotoSizes, type PostMedia } from '@myapp/shared/domains';
+import { postPhotoKey, postPhotoSizes, type PostMedia } from '@myapp/shared/domains';
 import { config } from '../../../lib/config';
 import type { DisplayPhoto } from '../../../lib/images/displayPhoto';
 
+type PhotoAddress = Pick<PostMedia, 'id' | 'postId' | 'createdBy'>;
+
 /** Where one size of a published post photo is served from. Addresses never change, so they're cached for good. */
-export function postPhotoUrl({ media, size }: { media: Pick<PostMedia, 'path'>; size: number }): string {
-  return `${config.mediaUrl}/${mediaKey({ path: media.path, size })}`;
+export function postPhotoUrl({ media, size }: { media: PhotoAddress; size: number }): string {
+  return `${config.mediaUrl}/${postPhotoKey({ userId: media.createdBy, postId: media.postId, mediaId: media.id, size })}`;
 }
 
 /** Every size of a post photo for an <img srcset>, by its actual width, so the browser picks one. */
-export function postPhotoSrcSet(media: Pick<PostMedia, 'path' | 'width' | 'height'>): string {
+export function postPhotoSrcSet(media: PhotoAddress & Pick<PostMedia, 'width' | 'height'>): string {
   return postPhotoSizes
     .map((size) => `${postPhotoUrl({ media, size })} ${longSideDimensions({ width: media.width, height: media.height, size }).width}w`)
     .join(', ');

@@ -1,33 +1,37 @@
-import { eq, inArray } from "drizzle-orm";
-import type { PostMediaPlacement } from "@myapp/shared/domains";
+import { and, eq, inArray, sql } from "drizzle-orm";
+import type { PostMediaRow } from "@myapp/shared/domains";
 import { schema, type Transaction } from "./db";
 
 /**
- * Sets a post's photos, in order with their captions, and deletes the images
- * in `removedMediaIds` (their files are deleted by the mutation). Which
- * photos may go on the post was decided in shared.
+ * Sets a post's photos as `userId`: adds new ones, updates the order and
+ * captions of those it has, and deletes `removedMediaIds` (their files are
+ * deleted by the mutation). Which photos it gets was decided in shared.
  */
-export async function placePostMedia(tx: Transaction, { postId, media, removedMediaIds }: {
+export async function placePostMedia(tx: Transaction, { postId, userId, media, removedMediaIds }: {
     postId: string;
-    media: PostMediaPlacement[];
+    userId: string;
+    media: PostMediaRow[];
     removedMediaIds: string[];
 }) {
     if (removedMediaIds.length > 0) {
-        // Deleting the images takes their links with them.
-        await tx.delete(schema.media).where(inArray(schema.media.id, removedMediaIds));
+        await tx
+            .delete(schema.postMedia)
+            .where(and(eq(schema.postMedia.postId, postId), inArray(schema.postMedia.id, removedMediaIds)));
     }
-    for (const { id, caption, position } of media) {
+    for (const row of media) {
         await tx
             .insert(schema.postMedia)
-            .values({ postId, mediaId: id, caption, position })
-            .onConflictDoUpdate({ target: [schema.postMedia.postId, schema.postMedia.mediaId], set: { caption, position } });
+            .values({ ...row, postId, createdBy: userId, updatedBy: userId })
+            .onConflictDoUpdate({
+                target: schema.postMedia.id,
+                set: { position: row.position, caption: row.caption, updatedBy: userId, updatedAt: new Date() },
+                // Only a photo of this post (an id can't move a photo between posts).
+                setWhere: sql`${schema.postMedia.postId} = ${postId}`,
+            });
     }
 }
 
-/** Deletes a post's images (used when the post is deleted; their files are deleted by the mutation). */
+/** Deletes a post's photo rows (when the post is deleted; the mutation deletes their files). */
 export async function deletePostMedia(tx: Transaction, { postId }: { postId: string }) {
-    const linked = await tx.select({ id: schema.postMedia.mediaId }).from(schema.postMedia).where(eq(schema.postMedia.postId, postId));
-    if (linked.length > 0) {
-        await tx.delete(schema.media).where(inArray(schema.media.id, linked.map((row) => row.id)));
-    }
+    await tx.delete(schema.postMedia).where(eq(schema.postMedia.postId, postId));
 }

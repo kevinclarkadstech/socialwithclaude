@@ -1,24 +1,22 @@
 import { succeed } from '@myapp/shared/utils';
+import { mapWithConcurrency } from '../../../lib/async/mapWithConcurrency';
 import { uploadToStorage } from '../../../lib/images/uploadToStorage';
-import { getCallingUser } from '../../users/callingUserStore';
-import { isMediaConfirmed, rememberConfirmedMedia } from '../operations/postMediaFromApp';
-import { runConfirmPostMediaUploadsMutation } from '../operations/runConfirmPostMediaUploadsMutation';
 import { runCreatePostMediaUploadsMutation } from '../operations/runCreatePostMediaUploadsMutation';
 import type { PreparedPostPhoto } from '../utils/preparePostPhoto';
 
+/** How many files upload at once: enough to be quick, few enough for a slow phone connection. */
+const parallelUploads = 4;
+
 /**
- * Uploads photos for a post being sent: one call for every upload URL, the
- * files straight to storage, then one call to have the API check and publish
- * them. Photos already uploaded (by an earlier try) are skipped. Throws if
- * storage refuses a file; returns the API's failure otherwise.
+ * Uploads photos as they're picked for a post being written or edited: one
+ * call for every upload URL, then the files straight to storage, a few at a
+ * time. Saving the post publishes them. Returns which photos uploaded fully
+ * (every size); the API's failure, if it refused them all.
  */
-export async function uploadPostPhotos({ photos }: { photos: PreparedPostPhoto[] }) {
-  const toUpload = photos.filter((photo) => !isMediaConfirmed(photo.mediaId));
-  if (toUpload.length === 0) {
-    return succeed(null);
-  }
+export async function uploadPostPhotos({ postId, photos }: { postId: string; photos: PreparedPostPhoto[] }) {
   const created = await runCreatePostMediaUploadsMutation({
-    media: toUpload.map((photo) => ({
+    postId,
+    media: photos.map((photo) => ({
       mediaId: photo.mediaId,
       files: photo.files.map((file) => ({ size: file.size, contentType: file.contentType, contentLength: file.blob.size })),
     })),
@@ -26,22 +24,12 @@ export async function uploadPostPhotos({ photos }: { photos: PreparedPostPhoto[]
   if (!created.ok) {
     return created;
   }
-  await Promise.all(
-    created.value.uploads.map((target) => {
-      const photo = toUpload.find((candidate) => candidate.mediaId === target.mediaId)!;
-      const file = photo.files.find((candidate) => candidate.size === target.size)!;
-      return uploadToStorage({ url: target.url, blob: file.blob, contentType: target.contentType });
-    }),
-  );
-  const confirmed = await runConfirmPostMediaUploadsMutation({
-    media: toUpload.map((photo) => ({ mediaId: photo.mediaId, placeholder: photo.placeholder })),
+  const uploads = created.value.uploads;
+  const results = await mapWithConcurrency(uploads, parallelUploads, (target) => {
+    const photo = photos.find((candidate) => candidate.mediaId === target.mediaId)!;
+    const file = photo.files.find((candidate) => candidate.size === target.size)!;
+    return uploadToStorage({ url: target.url, blob: file.blob, contentType: target.contentType });
   });
-  if (!confirmed.ok) {
-    return confirmed;
-  }
-  const caller = await getCallingUser();
-  if (caller) {
-    rememberConfirmedMedia({ media: confirmed.value.media, userId: caller.userId });
-  }
-  return succeed(null);
+  const failedIds = new Set(uploads.filter((_, index) => results[index]!.status === 'rejected').map((target) => target.mediaId));
+  return succeed({ uploadedIds: photos.map((photo) => photo.mediaId).filter((id) => !failedIds.has(id)) });
 }

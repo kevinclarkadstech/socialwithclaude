@@ -9,11 +9,11 @@ export type PendingPostContent = { kind: 'post'; content: string } | { kind: 'li
 
 /**
  * A post or listing being sent: shown at the top of the feed straight away
- * (with its photos from this device) while its photos upload and it's
- * created, then replaced by the real post. A failed one stays, to retry or discard.
+ * (with its photos from this device) while it's saved, then replaced by the
+ * real post. A failed one stays, to retry or discard.
  */
 export interface PendingPost {
-  /** The post's id once created (made here, so sending again can't make a second post). */
+  /** The post's id (made by the app when writing began, so sending again can't make a second post). */
   id: string;
   content: PendingPostContent;
   photos: { photo: PreparedPostPhoto; caption: string | null }[];

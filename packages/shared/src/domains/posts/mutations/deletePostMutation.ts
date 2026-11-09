@@ -44,7 +44,9 @@ export const deletePostMutation: Mutation<{ input: DeletePostMutationInput, outp
     const deleted = await dependencies.deletePost({ id: post.id, userId: allowed.value.userId });
     // Its photos go with it (their addresses only reached people shown the post).
     if (deleted && post.media.length > 0) {
-        await dependencies.deleteMedia({ keys: post.media.flatMap(postPhotoKeys) });
+        await dependencies.deleteMedia({
+            keys: post.media.flatMap((item) => postPhotoKeys({ userId: post.createdBy, postId: post.id, mediaId: item.id })),
+        });
     }
     return succeed();
 }

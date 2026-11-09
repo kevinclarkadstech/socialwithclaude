@@ -2,16 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { config } from '../../../lib/config';
 import { feedAspectRatio, postPhotoSrcSet, postPhotoUrl } from './postPhotoUrl';
 
-const media = { path: 'post-media/01JMMMMMMMMMMMMMMMMMMMMMM1/token', width: 960, height: 1280 };
+const media = { id: '01JMMMMMMMMMMMMMMMMMMMMMM1', postId: '01JBBBBBBBBBBBBBBBBBBBBBB1', createdBy: '01JAAAAAAAAAAAAAAAAAAAAAA1', width: 960, height: 1280 };
+const base = `${media.createdBy}/${media.postId}/${media.id}`;
 
 describe('post photo URLs', () => {
-  it('points at a size of the published photo', () => {
-    expect(postPhotoUrl({ media, size: 640 })).toBe(`${config.mediaUrl}/${media.path}-640`);
+  it('points at a size of the published photo, under its creator and post', () => {
+    expect(postPhotoUrl({ media, size: 640 })).toBe(`${config.mediaUrl}/${base}-640`);
   });
 
   it('lists every size by its actual width (portrait photos are narrower than their size)', () => {
     expect(postPhotoSrcSet(media)).toBe(
-      [`${media.path}-320 240w`, `${media.path}-640 480w`, `${media.path}-1280 960w`].map((entry) => `${config.mediaUrl}/${entry}`).join(', '),
+      [`${base}-320 240w`, `${base}-640 480w`, `${base}-1280 960w`].map((entry) => `${config.mediaUrl}/${entry}`).join(', '),
     );
   });
 

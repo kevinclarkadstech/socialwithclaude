@@ -1,5 +1,5 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
-import type { ListingCondition, ListingPrice, ListingStatus, Post, PostMediaPlacement } from "@myapp/shared/domains";
+import type { ListingCondition, ListingPrice, ListingStatus, Post, PostMediaRow } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toPost } from "../../../mappers/posts";
 import { selectPosts } from "../../../selects/selectPosts";
@@ -9,7 +9,7 @@ export type UpdatePostListingArgs = {
     id: string;
     userId: string;
     content: string;
-    media: PostMediaPlacement[];
+    media: PostMediaRow[];
     removedMediaIds: string[];
     title: string;
     description: string;
@@ -49,7 +49,7 @@ export async function updatePostListing({ id, userId, content, media, removedMed
             })
             .where(eq(schema.postListings.postId, id));
 
-        await placePostMedia(tx, { postId: id, media, removedMediaIds });
+        await placePostMedia(tx, { postId: id, userId, media, removedMediaIds });
 
         const [row] = await selectPosts(tx, userId).where(eq(schema.posts.id, id));
         return toPost(row!);

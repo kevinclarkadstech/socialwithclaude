@@ -5,7 +5,7 @@ import type { PostComment } from "../domains/posts/types/post-comment";
 import type { CallingUser } from "../domains/users/types/calling-user";
 import type { UserProfile } from "../domains/users/types/user-profile";
 
-const now = "2026-01-01T00:00:00.000Z";
+export const now = "2026-01-01T00:00:00.000Z";
 
 export const userId1 = "01JAAAAAAAAAAAAAAAAAAAAAA1";
 export const userId2 = "01JAAAAAAAAAAAAAAAAAAAAAA2";

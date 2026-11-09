@@ -1,152 +1,132 @@
 import { describe, expect, it, mock } from "bun:test";
-import { mockCaller, mockPost, userId2 } from "../../../testing/fixtures";
-import { testContext } from "../../../testing/context";
+import { mockCaller, mockPost, now, userId2 } from "../../../testing/fixtures";
+import { silentLogger, testContext } from "../../../testing/context";
 import { mockJpeg } from "../../../testing/images";
-import type { UploadedPostMedia } from "../types/post-media";
-import { confirmPostMediaUploadsMutation } from "./confirmPostMediaUploadsMutation";
+import type { PostMedia } from "../types/post-media";
+import { publishPostPhotos } from "../utils/publishPostPhotos";
 import { createPostMediaUploadsMutation } from "./createPostMediaUploadsMutation";
 import { createPostMutation } from "./createPostMutation";
 import { deletePostMutation } from "./deletePostMutation";
 import { updatePostMutation } from "./updatePostMutation";
 
 const caller = mockCaller();
+const userId = caller.userId;
+const post = mockPost();
 const mediaId = "01JMMMMMMMMMMMMMMMMMMMMMM1";
-const uploadKey = (size: number) => `${caller.userId}/post-media/${mediaId}/${size}`;
+const second = "01JMMMMMMMMMMMMMMMMMMMMMM2";
+const key = (id: string, size: number, postId = post.id) => `${userId}/${postId}/${id}-${size}`;
+const field = (id: string, caption: string | null = null) => ({ id, caption, width: 1280, height: 960, placeholder: null });
 
-function uploaded(overrides: Partial<UploadedPostMedia> = {}): UploadedPostMedia {
+function onPost(id: string, position: number): PostMedia {
     return {
-        id: mediaId,
-        path: `post-media/${mediaId}/token`,
+        id,
+        postId: post.id,
+        position,
+        caption: null,
         width: 1280,
         height: 960,
         placeholder: null,
-        postId: null,
-        createdBy: caller.userId,
-        ...overrides,
+        createdBy: userId,
+        updatedBy: userId,
+        createdAt: now,
+        updatedAt: now,
     };
 }
 
 describe("createPostMediaUploadsMutation", () => {
-    const second = "01JMMMMMMMMMMMMMMMMMMMMMM2";
-    const create = (media: { mediaId: string; sizes: number[] }[], postingEnabled = true) => createPostMediaUploadsMutation({
-        input: { media: media.map(({ mediaId, sizes }) => ({ mediaId, files: sizes.map((size) => ({ size, contentType: "image/webp" as const, contentLength: 1000 })) })) },
+    const create = ({ media, postingEnabled = true, existing = null, as = caller }: {
+        media: { mediaId: string; sizes: number[] }[];
+        postingEnabled?: boolean;
+        existing?: ReturnType<typeof mockPost> | null;
+        as?: ReturnType<typeof mockCaller>;
+    }) => createPostMediaUploadsMutation({
+        input: {
+            postId: post.id,
+            media: media.map(({ mediaId: id, sizes }) => ({ mediaId: id, files: sizes.map((size) => ({ size, contentType: "image/webp" as const, contentLength: 1000 })) })),
+        },
         context: testContext,
         dependencies: {
-            getCallingUser: async () => caller,
+            getCallingUser: async () => as,
             isPostingEnabled: () => postingEnabled,
-            createUploadUrl: async ({ key }: { key: string }) => `https://storage.test/${key}?signed`,
+            getPostById: async () => existing,
+            createUploadUrl: async ({ key: uploadKey }: { key: string }) => `https://storage.test/${uploadKey}?signed`,
         },
     });
+    const sizes = [320, 640, 1280];
 
-    it("hands out an upload URL per size of every photo, under the caller's id, in one call", async () => {
-        const result = await create([{ mediaId, sizes: [320, 640, 1280] }, { mediaId: second, sizes: [320, 640, 1280] }]);
-        expect(result.ok && result.value.uploads.map((upload) => [upload.mediaId, upload.size])).toEqual(
-            [mediaId, second].flatMap((id) => [320, 640, 1280].map((size) => [id, size])),
+    it("hands out an upload URL per size of every photo, under the caller's and the post's ids, in one call", async () => {
+        const result = await create({ media: [{ mediaId, sizes }, { mediaId: second, sizes }] });
+        expect(result.ok && result.value.uploads.map((upload) => upload.url)).toEqual(
+            [mediaId, second].flatMap((id) => sizes.map((size) => `https://storage.test/${key(id, size)}?signed`)),
         );
-        expect(result.ok && result.value.uploads[0]!.url).toBe(`https://storage.test/${uploadKey(320)}?signed`);
+    });
+
+    it("works for the caller's own post being edited, but not someone else's", async () => {
+        expect(await create({ media: [{ mediaId, sizes }], existing: post })).toMatchObject({ ok: true });
+        expect(await create({ media: [{ mediaId, sizes }], existing: post, as: mockCaller({ userId: userId2 }) })).toMatchObject({ ok: false, error: { type: "authorization" } });
     });
 
     it("refuses anything but one file at each size, repeated photos, or posting turned off", async () => {
-        expect(await create([{ mediaId, sizes: [320, 1280] }])).toMatchObject({ ok: false, error: { type: "validation" } });
-        expect(await create([{ mediaId, sizes: [320, 640, 1280] }, { mediaId, sizes: [320, 640, 1280] }])).toMatchObject({ ok: false, error: { type: "validation" } });
-        expect(await create([{ mediaId, sizes: [320, 640, 1280] }], false)).toMatchObject({ ok: false, error: { type: "authorization" } });
+        expect(await create({ media: [{ mediaId, sizes: [320, 1280] }] })).toMatchObject({ ok: false, error: { type: "validation" } });
+        expect(await create({ media: [{ mediaId, sizes }, { mediaId, sizes }] })).toMatchObject({ ok: false, error: { type: "validation" } });
+        expect(await create({ media: [{ mediaId, sizes }], postingEnabled: false })).toMatchObject({ ok: false, error: { type: "authorization" } });
     });
 });
 
-describe("confirmPostMediaUploadsMutation", () => {
-    const second = "01JMMMMMMMMMMMMMMMMMMMMMM2";
-    const keyOf = (id: string, size: number) => `${caller.userId}/post-media/${id}/${size}`;
-
-    function confirm({ uploads, ids = [mediaId], existing = [], recorded }: {
-        uploads: Record<string, Uint8Array | null>;
-        ids?: string[];
-        existing?: UploadedPostMedia[];
-        recorded?: string[];
-    }) {
+describe("publishPostPhotos", () => {
+    function publish(uploads: Record<string, Uint8Array | null>, ids = [mediaId]) {
         const putMedia = mock(async (_args: { key: string; bytes: Uint8Array; contentType: string }) => {});
-        const deleteMedia = mock(async (_args: { keys: string[] }) => {});
         const deleteUploads = mock(async (_args: { keys: string[] }) => {});
-        const createMedia = mock(async ({ media }: { userId: string; media: { id: string }[] }) => recorded ?? media.map((item) => item.id));
-        const result = confirmPostMediaUploadsMutation({
-            input: { media: ids.map((id) => ({ mediaId: id, placeholder: "YJqGPQw7sFlslqhFafSE+Q6oJ1h2iHB2Rw" })) },
-            context: testContext,
-            dependencies: {
-                getCallingUser: async () => caller,
-                getPostMediaByIds: async () => existing,
-                readUpload: async ({ key }: { key: string }) => uploads[key] ?? null,
-                putMedia,
-                deleteMedia,
-                deleteUploads,
-                newToken: () => "token",
-                createMedia,
-            },
+        const result = publishPostPhotos({
+            userId,
+            postId: post.id,
+            media: ids.map((id) => ({ id })),
+            logger: silentLogger,
+            storage: { readUpload: async ({ key: uploadKey }) => uploads[uploadKey] ?? null, putMedia, deleteUploads },
         });
-        return { result, putMedia, deleteMedia, deleteUploads, createMedia };
+        return { result, putMedia, deleteUploads };
     }
+    const landscape = (id: string) => ({ [key(id, 320)]: mockJpeg(320, 240), [key(id, 640)]: mockJpeg(640, 480), [key(id, 1280)]: mockJpeg(1280, 960) });
 
-    const landscape = (id = mediaId) => ({ [keyOf(id, 320)]: mockJpeg(320, 240), [keyOf(id, 640)]: mockJpeg(640, 480), [keyOf(id, 1280)]: mockJpeg(1280, 960) });
-
-    it("publishes every size of every photo without metadata, records them and clears the uploads", async () => {
-        const { result, putMedia, deleteUploads, createMedia } = confirm({ uploads: { ...landscape(), ...landscape(second) }, ids: [mediaId, second] });
-        expect(await result).toMatchObject({ ok: true, value: { media: [{ id: mediaId, width: 1280, height: 960 }, { id: second }] } });
-        expect(putMedia.mock.calls.map(([args]) => args.key)).toEqual(
-            [mediaId, second].flatMap((id) => [320, 640, 1280].map((size) => `media/${id}/token-${size}`)),
-        );
+    it("publishes every size at the same key without metadata, and clears the uploads", async () => {
+        const { result, putMedia, deleteUploads } = publish(landscape(mediaId));
+        expect(await result).toEqual([{ id: mediaId, width: 1280, height: 960 }]);
+        expect(putMedia.mock.calls.map(([args]) => args.key)).toEqual([320, 640, 1280].map((size) => key(mediaId, size)));
         for (const [args] of putMedia.mock.calls) {
             expect(new TextDecoder().decode(args.bytes)).not.toContain("GPS");
         }
-        expect(createMedia).toHaveBeenCalledWith({
-            userId: caller.userId,
-            media: [mediaId, second].map((id) => ({ id, path: `media/${id}/token`, width: 1280, height: 960, placeholder: "YJqGPQw7sFlslqhFafSE+Q6oJ1h2iHB2Rw" })),
-        });
-        expect(deleteUploads).toHaveBeenCalledWith({ keys: [mediaId, second].flatMap((id) => [320, 640, 1280].map((size) => keyOf(id, size))) });
+        expect(deleteUploads).toHaveBeenCalledWith({ keys: [320, 640, 1280].map((size) => key(mediaId, size)) });
     });
 
     it("takes portrait photos by their longer side", async () => {
-        const { result } = confirm({ uploads: { [keyOf(mediaId, 320)]: mockJpeg(240, 320), [keyOf(mediaId, 640)]: mockJpeg(480, 640), [keyOf(mediaId, 1280)]: mockJpeg(960, 1280) } });
-        expect(await result).toMatchObject({ ok: true, value: { media: [{ width: 960, height: 1280 }] } });
+        const { result } = publish({ [key(mediaId, 320)]: mockJpeg(240, 320), [key(mediaId, 640)]: mockJpeg(480, 640), [key(mediaId, 1280)]: mockJpeg(960, 1280) });
+        expect(await result).toEqual([{ id: mediaId, width: 960, height: 1280 }]);
     });
 
-    it("refuses them all if one is missing, mis-sized, mismatched, too thin or not an image, publishing nothing", async () => {
+    it("leaves out a photo that's missing, mis-sized, mismatched, too thin or not an image, publishing the rest", async () => {
         for (const bad of [
-            { [keyOf(second, 640)]: null },
-            { [keyOf(second, 640)]: mockJpeg(600, 450) },
-            { [keyOf(second, 320)]: mockJpeg(320, 320) },
-            { [keyOf(second, 320)]: mockJpeg(320, 80), [keyOf(second, 640)]: mockJpeg(640, 160), [keyOf(second, 1280)]: mockJpeg(1280, 320) },
-            { [keyOf(second, 1280)]: new Uint8Array([60, 104, 116, 109, 108, 62]) },
+            { [key(second, 640)]: null },
+            { [key(second, 640)]: mockJpeg(600, 450) },
+            { [key(second, 320)]: mockJpeg(320, 320) },
+            { [key(second, 320)]: mockJpeg(320, 80), [key(second, 640)]: mockJpeg(640, 160), [key(second, 1280)]: mockJpeg(1280, 320) },
+            { [key(second, 1280)]: new Uint8Array([60, 104, 116, 109, 108, 62]) },
         ]) {
-            const { result, putMedia, deleteUploads, createMedia } = confirm({ uploads: { ...landscape(), ...landscape(second), ...bad }, ids: [mediaId, second] });
-            expect(await result).toMatchObject({ ok: false, error: { type: "validation" } });
-            expect(putMedia).not.toHaveBeenCalled();
-            expect(createMedia).not.toHaveBeenCalled();
-            expect(deleteUploads).toHaveBeenCalledTimes(1);
+            const { result, putMedia, deleteUploads } = publish({ ...landscape(mediaId), ...landscape(second), ...bad }, [mediaId, second]);
+            expect(await result).toEqual([{ id: mediaId, width: 1280, height: 960 }]);
+            expect(putMedia.mock.calls.every(([args]) => args.key.includes(mediaId))).toBe(true);
+            expect(deleteUploads.mock.calls[0]![0].keys).toHaveLength(6);
         }
-    });
-
-    it("returns photos already confirmed as they are (a retry), publishing only the rest", async () => {
-        const { result, putMedia } = confirm({ uploads: landscape(second), ids: [mediaId, second], existing: [uploaded()] });
-        expect(await result).toMatchObject({ ok: true, value: { media: [{ id: mediaId, path: `post-media/${mediaId}/token` }, { id: second }] } });
-        expect(putMedia.mock.calls.map(([args]) => args.key)).toEqual([320, 640, 1280].map((size) => `media/${second}/token-${size}`));
-    });
-
-    it("fails with a conflict when an id is someone else's photo", async () => {
-        const { result, putMedia } = confirm({ uploads: landscape(), existing: [uploaded({ createdBy: userId2 })] });
-        expect(await result).toMatchObject({ ok: false, error: { type: "conflict" } });
-        expect(putMedia).not.toHaveBeenCalled();
-    });
-
-    it("takes published files down again if an id was taken meanwhile", async () => {
-        const { result, deleteMedia } = confirm({ uploads: landscape(), recorded: [] });
-        expect(await result).toMatchObject({ ok: false, error: { type: "conflict" } });
-        expect(deleteMedia).toHaveBeenCalledWith({ keys: [320, 640, 1280].map((size) => `media/${mediaId}/token-${size}`) });
     });
 });
 
 describe("photos on posts", () => {
-    const post = mockPost();
-
-    function create({ content = "", media, found }: { content?: string; media: { id: string; caption: string | null }[]; found: UploadedPostMedia[] }) {
+    function create({ content = "", media, published = media.map(({ id }) => ({ id, width: 1280, height: 960 })) }: {
+        content?: string;
+        media: ReturnType<typeof field>[];
+        published?: { id: string; width: number; height: number }[];
+    }) {
         const createPost = mock(async () => post);
+        const publishPostPhotos = mock(async () => published);
         const result = createPostMutation({
             input: { id: post.id, content, media },
             context: testContext,
@@ -154,92 +134,96 @@ describe("photos on posts", () => {
                 getCallingUser: async () => caller,
                 isPostingEnabled: () => true,
                 getPostById: async () => null,
-                getPostMediaByIds: async ({ ids }) => found.filter((media) => ids.includes(media.id)),
+                publishPostPhotos,
                 createPost,
             },
         });
-        return { result, createPost };
+        return { result, createPost, publishPostPhotos };
     }
 
-    it("creates a photo-only post, with the photos in order and blank captions as none", async () => {
-        const second = uploaded({ id: "01JMMMMMMMMMMMMMMMMMMMMMM2" });
-        const { result, createPost } = create({
-            media: [{ id: second.id, caption: "  " }, { id: mediaId, caption: " The view " }],
-            found: [uploaded(), second],
+    it("creates a photo-only post: publishes its photos under its id, saves them in order with real sizes, blank captions as none", async () => {
+        const { result, createPost, publishPostPhotos } = create({
+            media: [field(second, "  "), field(mediaId, " The view ")],
+            published: [{ id: mediaId, width: 960, height: 1280 }, { id: second, width: 1280, height: 427 }],
         });
         expect(await result).toMatchObject({ ok: true });
+        expect(publishPostPhotos).toHaveBeenCalledWith({ userId, postId: post.id, media: [field(second, "  "), field(mediaId, " The view ")] });
         expect(createPost).toHaveBeenCalledWith({
             id: post.id,
             content: "",
-            userId: caller.userId,
+            userId,
             media: [
-                { id: second.id, caption: null, position: 0 },
-                { id: mediaId, caption: "The view", position: 1 },
+                { id: second, position: 0, caption: null, width: 1280, height: 427, placeholder: null },
+                { id: mediaId, position: 1, caption: "The view", width: 960, height: 1280, placeholder: null },
             ],
         });
     });
 
-    it("refuses a post with neither text nor photos", async () => {
-        const { result, createPost } = create({ content: "  ", media: [], found: [] });
+    it("leaves off a photo that couldn't be published, numbering the rest from 0", async () => {
+        const { result, createPost } = create({ content: "Hi", media: [field(mediaId), field(second)], published: [{ id: second, width: 1280, height: 960 }] });
+        expect(await result).toMatchObject({ ok: true });
+        expect(createPost).toHaveBeenCalledWith({
+            id: post.id,
+            content: "Hi",
+            userId,
+            media: [{ id: second, position: 0, caption: null, width: 1280, height: 960, placeholder: null }],
+        });
+    });
+
+    it("refuses a post with nothing in it, or whose only photos didn't upload", async () => {
+        const empty = create({ content: "  ", media: [] });
+        expect(await empty.result).toMatchObject({ ok: false, error: { type: "validation" } });
+        const lost = create({ media: [field(mediaId)], published: [] });
+        expect(await lost.result).toMatchObject({ ok: false, error: { type: "validation" } });
+        expect(lost.createPost).not.toHaveBeenCalled();
+    });
+
+    it("refuses the same photo twice", async () => {
+        const { result, publishPostPhotos } = create({ content: "Hi", media: [field(mediaId), field(mediaId)] });
         expect(await result).toMatchObject({ ok: false, error: { type: "validation" } });
-        expect(createPost).not.toHaveBeenCalled();
+        expect(publishPostPhotos).not.toHaveBeenCalled();
     });
 
-    it("refuses photos that aren't the caller's, are on another post, are repeated or weren't uploaded", async () => {
-        for (const [found, media, type] of [
-            [[uploaded({ createdBy: userId2 })], [{ id: mediaId, caption: null }], "authorization"],
-            [[uploaded({ postId: "01JBBBBBBBBBBBBBBBBBBBBBB9" })], [{ id: mediaId, caption: null }], "authorization"],
-            [[uploaded()], [{ id: mediaId, caption: null }, { id: mediaId, caption: null }], "validation"],
-            [[], [{ id: mediaId, caption: null }], "validation"],
-        ] as const) {
-            const { result, createPost } = create({ media: [...media], found: [...found] });
-            expect(await result).toMatchObject({ ok: false, error: { type } });
-            expect(createPost).not.toHaveBeenCalled();
-        }
-    });
-
-    it("keeps, adds and removes photos on an edit, deleting the removed ones' files", async () => {
-        const kept = { ...uploaded({ id: "01JMMMMMMMMMMMMMMMMMMMMMM3", path: "post-media/kept/t" }), postId: post.id };
-        const removed = { ...uploaded({ id: "01JMMMMMMMMMMMMMMMMMMMMMM4", path: "post-media/gone/t" }), postId: post.id };
-        const existing = mockPost({ media: [kept, removed].map(({ postId: _, createdBy: __, ...media }) => ({ ...media, caption: null })) });
+    it("on an edit, publishes only new photos, keeps and reorders the rest, and deletes removed ones' files", async () => {
+        const kept = "01JMMMMMMMMMMMMMMMMMMMMMM3";
+        const removed = "01JMMMMMMMMMMMMMMMMMMMMMM4";
+        const existing = mockPost({ media: [onPost(kept, 0), onPost(removed, 1)] });
         const updatePost = mock(async () => existing);
+        const publishPostPhotos = mock(async () => [{ id: mediaId, width: 960, height: 1280 }]);
         const deleteMedia = mock(async (_args: { keys: string[] }) => {});
         const result = await updatePostMutation({
-            input: { id: post.id, content: "Edited", media: [{ id: mediaId, caption: null }, { id: kept.id, caption: "Kept" }] },
+            input: { id: post.id, content: "Edited", media: [field(mediaId), field(kept, "Kept")] },
             context: testContext,
-            dependencies: {
-                getCallingUser: async () => caller,
-                getPostById: async () => existing,
-                getPostMediaByIds: async () => [uploaded(), kept],
-                deleteMedia,
-                updatePost,
-            },
+            dependencies: { getCallingUser: async () => caller, getPostById: async () => existing, publishPostPhotos, deleteMedia, updatePost },
         });
         expect(result).toMatchObject({ ok: true });
+        expect(publishPostPhotos).toHaveBeenCalledWith({ userId, postId: post.id, media: [field(mediaId)] });
         expect(updatePost).toHaveBeenCalledWith({
             id: post.id,
             content: "Edited",
-            userId: caller.userId,
-            media: [{ id: mediaId, caption: null, position: 0 }, { id: kept.id, caption: "Kept", position: 1 }],
-            removedMediaIds: [removed.id],
+            userId,
+            media: [
+                { id: mediaId, position: 0, caption: null, width: 960, height: 1280, placeholder: null },
+                { id: kept, position: 1, caption: "Kept", width: 1280, height: 960, placeholder: null },
+            ],
+            removedMediaIds: [removed],
         });
-        expect(deleteMedia).toHaveBeenCalledWith({ keys: [320, 640, 1280].map((size) => `post-media/gone/t-${size}`) });
+        expect(deleteMedia).toHaveBeenCalledWith({ keys: [320, 640, 1280].map((size) => key(removed, size)) });
     });
 
     it("deletes a deleted post's photo files", async () => {
         const deleteMedia = mock(async (_args: { keys: string[] }) => {});
-        const { postId: _, createdBy: __, ...media } = uploaded();
         const result = await deletePostMutation({
             input: { id: post.id },
             context: testContext,
             dependencies: {
                 getCallingUser: async () => caller,
-                getPostById: async () => mockPost({ media: [{ ...media, caption: null }] }),
+                getPostById: async () => mockPost({ media: [onPost(mediaId, 0)] }),
                 deletePost: async () => true,
                 deleteMedia,
             },
         });
         expect(result).toMatchObject({ ok: true });
-        expect(deleteMedia).toHaveBeenCalledWith({ keys: [320, 640, 1280].map((size) => `${media.path}-${size}`) });
+        expect(deleteMedia).toHaveBeenCalledWith({ keys: [320, 640, 1280].map((size) => key(mediaId, size)) });
     });
 });

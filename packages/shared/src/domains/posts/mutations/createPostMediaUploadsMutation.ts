@@ -7,12 +7,16 @@ import { logDisallowedResult } from "../../../logic/authorization/logDisallowedR
 import { maxImageUploadBytes } from "../../../common/images/constants";
 import { ImageContentTypeSchema } from "../../../common/images/types";
 import { maxPostPhotos, postPhotoSizes } from "../constants";
-import { postPhotoUploadKey } from "../utils/postPhotoKeys";
+import { postPhotoKey } from "../utils/postPhotoKeys";
+import { canUpdatePost } from "../../../logic/authorization/posts/canUpdatePost";
+import type { Post } from "../types/post";
 import type { GetCallingUser } from "../../users/types/calling-user";
 
 export const CreatePostMediaUploadsMutationInputSchema = z.object({
+    // The post they're for: a new one (its id made by the app) or one of the caller's being edited.
+    postId: z.ulid(),
     media: z.array(z.object({
-        // Made by the app (a ULID); uploads live under the caller's id, so it can't reach anyone else's.
+        // Made by the app (a ULID). Uploads live under the caller's id and the post's, so they can't reach anyone else's.
         mediaId: z.ulid(),
         // One file per size in postPhotoSizes (by the longer side), resized on the device.
         files: z.array(z.object({
@@ -33,13 +37,15 @@ export const CreatePostMediaUploadsMutationOutputSchema = z.object({
 export type CreatePostMediaUploadsMutationOutput = z.infer<typeof CreatePostMediaUploadsMutationOutputSchema>;
 
 /**
- * The first step of posting photos (up to maxPostPhotos at once): upload URLs
- * for every size of each. The app uploads there, confirms them
- * (confirmPostMediaUploadsMutation), then creates or edits the post with them.
+ * Upload URLs for every size of up to maxPostPhotos photos, as they're
+ * picked for a post being written or edited. The app uploads straight away;
+ * creating or editing the post publishes them. Uploads it never uses expire
+ * from the uploads bucket on their own.
  */
 export const createPostMediaUploadsMutation: Mutation<{ input: CreatePostMediaUploadsMutationInput, output: CreatePostMediaUploadsMutationOutput }, {
     getCallingUser: GetCallingUser;
     isPostingEnabled: () => boolean;
+    getPostById: (args: { id: string; viewerId: string | null }) => Promise<Post | null>;
     createUploadUrl: (args: { key: string; contentType: string; contentLength: number }) => Promise<string>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
@@ -55,6 +61,20 @@ export const createPostMediaUploadsMutation: Mutation<{ input: CreatePostMediaUp
     if (!dependencies.isPostingEnabled()) {
         logger.info("Posting is turned off", { callerId: allowed.value.userId });
         return fail(authorizationError("Posting is turned off"));
+    }
+
+    // Photos for a post that exists already only go to one the caller may edit.
+    const post = await dependencies.getPostById({ id: input.postId, viewerId: allowed.value.userId });
+    if (post) {
+        const mayEdit = canUpdatePost({ caller, post });
+        if (!mayEdit.ok) {
+            logDisallowedResult({
+                logger,
+                result: mayEdit,
+                details: { action: "create-post-media-uploads", callerId: allowed.value.userId, postId: post.id },
+            });
+            return mayEdit;
+        }
     }
 
     const ids = new Set(input.media.map((media) => media.mediaId));
@@ -75,7 +95,7 @@ export const createPostMediaUploadsMutation: Mutation<{ input: CreatePostMediaUp
         size: file.size,
         contentType: file.contentType,
         url: await dependencies.createUploadUrl({
-            key: postPhotoUploadKey({ userId, mediaId: media.mediaId, size: file.size }),
+            key: postPhotoKey({ userId, postId: input.postId, mediaId: media.mediaId, size: file.size }),
             contentType: file.contentType,
             contentLength: file.contentLength,
         }),

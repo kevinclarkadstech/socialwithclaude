@@ -20,8 +20,8 @@ interface PostPhotosFieldProps {
 
 /**
  * A post's or listing's photos in the composer: add (each is resized on the
- * device straight away; they upload when the post is sent), caption, drag
- * to reorder and remove.
+ * device and uploaded straight away), caption, drag to reorder, remove, and
+ * tap one that failed to try again.
  */
 export function PostPhotosField({ photos }: PostPhotosFieldProps) {
   const fileInput = useRef<HTMLInputElement>(null);
@@ -41,17 +41,25 @@ export function PostPhotosField({ photos }: PostPhotosFieldProps) {
           >
             {photos.photos.map((photo, index) => {
               const status = photo.kind === 'new' ? photo.status : 'ready';
+              // A photo that couldn't even be read can only be removed; one that didn't upload can be tried again.
+              const canRetry = photo.kind === 'new' && status === 'failed' && Boolean(photo.prepared);
               return (
               <IonItem key={photo.key} className="post-photos-field__item" data-status={status}>
-                <span slot="start" className="post-photos-field__thumb">
-                  <img src={photo.previewUrl} alt={`Photo ${index + 1}`} />
-                  {status === 'preparing' && <IonSpinner name="crescent" aria-label="Preparing" />}
+                <button
+                  type="button"
+                  slot="start"
+                  className="post-photos-field__thumb"
+                  disabled={!canRetry}
+                  onClick={() => photos.retry(photo.key)}
+                  aria-label={canRetry ? `Photo ${index + 1} didn't upload. Try again` : `Photo ${index + 1}`}
+                >
+                  <img src={photo.previewUrl} alt="" />
+                  {(status === 'preparing' || status === 'uploading') && <IonSpinner name="crescent" aria-label="Uploading" />}
                   {status === 'failed' && <IonIcon icon={alertCircle} color="danger" aria-hidden="true" />}
-                </span>
+                </button>
                 <IonInput
                   aria-label={`Caption for photo ${index + 1}`}
-                  placeholder={status === 'failed' ? "This photo couldn't be read. Remove it" : 'Add a caption'}
-                  disabled={status === 'failed'}
+                  placeholder={status !== 'failed' ? 'Add a caption' : canRetry ? "Didn't upload. Tap to retry" : "Couldn't read this photo"}
                   maxlength={maxPhotoCaptionLength}
                   value={photo.caption}
                   onIonInput={(event) => photos.setCaption(photo.key, event.detail.value ?? '')}
