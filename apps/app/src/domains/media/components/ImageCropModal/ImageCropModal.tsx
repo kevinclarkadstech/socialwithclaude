@@ -14,7 +14,7 @@ import {
 import { removeOutline, addOutline } from 'ionicons/icons';
 import { useState } from 'react';
 import Cropper, { type Area } from 'react-easy-crop';
-import type { CropArea } from '../../../lib/images/renderCroppedImages';
+import type { CropArea } from '../../utils/renderCroppedImages';
 import './ImageCropModal.css';
 
 interface ImageCropModalProps {

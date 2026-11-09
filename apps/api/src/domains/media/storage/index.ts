@@ -1,5 +1,5 @@
 import { AwsClient } from "aws4fetch";
-import { serverConfig } from "../config";
+import { serverConfig } from "../../../config";
 
 /**
  * Object storage through the S3 API, with requests signed by aws4fetch (plain

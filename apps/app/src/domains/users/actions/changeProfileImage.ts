@@ -1,7 +1,7 @@
 import { profileImageAspectRatios, profileImageWidths, type ProfileImageKind } from '@myapp/shared/domains';
 import { runOrToast } from '../../../lib/api/runOrToast';
 import { newId } from '../../../lib/ids';
-import { renderCroppedImages, type CropArea } from '../../../lib/images/renderCroppedImages';
+import { renderCroppedImages, type CropArea } from '../../media/utils/renderCroppedImages';
 import { callingUserStore } from '../callingUserStore';
 import { runConfirmProfileImageUploadMutation } from '../operations/runConfirmProfileImageUploadMutation';
 import { runCreateProfileImageUploadMutation } from '../operations/runCreateProfileImageUploadMutation';

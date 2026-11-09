@@ -2,7 +2,7 @@ import { IonButton, IonIcon } from '@ionic/react';
 import type { GetUserProfileQueryOutput } from '@myapp/shared/domains';
 import { camera, ellipsisHorizontal, lockClosed, shareOutline } from 'ionicons/icons';
 import { useState, type CSSProperties } from 'react';
-import { ImageCropModal } from '../../../../common/components/ImageCropModal/ImageCropModal';
+import { ImageCropModal } from '../../../media/components/ImageCropModal/ImageCropModal';
 import { displayName } from '../../../../common/formatters/names';
 import { profileImageUrl, profileImageWidthFor } from '../../utils/profileImageUrl';
 import { userHue } from '../../utils/userHue';

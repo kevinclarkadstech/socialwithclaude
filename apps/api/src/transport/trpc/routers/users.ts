@@ -59,7 +59,7 @@ import {
     updateUserProfile,
     updateUserSettings,
 } from "../../../data-access";
-import { createUploadUrl, deleteMedia, deleteUploads, putMedia, readUpload } from "../../../storage";
+import { createUploadUrl, deleteMedia, deleteUploads, putMedia, readUpload } from "../../../domains/media/storage";
 import { procedure, router } from "../trpc";
 
 export const usersRouter = router({
