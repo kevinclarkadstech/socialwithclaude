@@ -9,7 +9,7 @@ import { PostSchema, type Post } from "../types/post";
 import { checkPostMediaChoice, hasPostContent, placePostMedia, removedPostMedia } from "../utils/postMediaChoice";
 import { maxPostPhotos } from "../constants";
 import { PostMediaChoiceSchema, type PostMediaPlacement, type UploadedPostMedia } from "../types/post-media";
-import { postPhotoKeys } from "../../media/utils/postPhotoKeys";
+import { postPhotoKeys } from "../utils/postPhotoKeys";
 
 export const UpdatePostMutationInputSchema = PostSchema.pick({ id: true, content: true }).extend({
     // All its photos, in order: ones it has, and new ones uploaded and confirmed first.

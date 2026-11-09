@@ -19,8 +19,9 @@ interface PostPhotosFieldProps {
 }
 
 /**
- * A post's or listing's photos in the composer: add (each uploads straight
- * away), caption, drag to reorder, remove, and try a failed upload again.
+ * A post's or listing's photos in the composer: add (each is resized on the
+ * device straight away; they upload when the post is sent), caption, drag
+ * to reorder and remove.
  */
 export function PostPhotosField({ photos }: PostPhotosFieldProps) {
   const fileInput = useRef<HTMLInputElement>(null);
@@ -38,23 +39,19 @@ export function PostPhotosField({ photos }: PostPhotosFieldProps) {
               event.detail.complete(false);
             }}
           >
-            {photos.photos.map((photo, index) => (
-              <IonItem key={photo.key} className="post-photos-field__item" data-status={photo.status}>
-                <button
-                  type="button"
-                  slot="start"
-                  className="post-photos-field__thumb"
-                  disabled={photo.status !== 'failed'}
-                  onClick={() => photos.retry(photo.key)}
-                  aria-label={photo.status === 'failed' ? `Photo ${index + 1} didn't upload. Try again` : `Photo ${index + 1}`}
-                >
-                  <img src={photo.previewUrl} alt="" />
-                  {photo.status === 'uploading' && <IonSpinner name="crescent" aria-label="Uploading" />}
-                  {photo.status === 'failed' && <IonIcon icon={alertCircle} color="danger" aria-hidden="true" />}
-                </button>
+            {photos.photos.map((photo, index) => {
+              const status = photo.kind === 'new' ? photo.status : 'ready';
+              return (
+              <IonItem key={photo.key} className="post-photos-field__item" data-status={status}>
+                <span slot="start" className="post-photos-field__thumb">
+                  <img src={photo.previewUrl} alt={`Photo ${index + 1}`} />
+                  {status === 'preparing' && <IonSpinner name="crescent" aria-label="Preparing" />}
+                  {status === 'failed' && <IonIcon icon={alertCircle} color="danger" aria-hidden="true" />}
+                </span>
                 <IonInput
                   aria-label={`Caption for photo ${index + 1}`}
-                  placeholder={photo.status === 'failed' ? "Didn't upload. Tap the photo to retry" : 'Add a caption'}
+                  placeholder={status === 'failed' ? "This photo couldn't be read. Remove it" : 'Add a caption'}
+                  disabled={status === 'failed'}
                   maxlength={maxPhotoCaptionLength}
                   value={photo.caption}
                   onIonInput={(event) => photos.setCaption(photo.key, event.detail.value ?? '')}
@@ -71,7 +68,8 @@ export function PostPhotosField({ photos }: PostPhotosFieldProps) {
                 </IonButton>
                 {count > 1 && <IonReorder slot="end" />}
               </IonItem>
-            ))}
+              );
+            })}
           </IonReorderGroup>
         </IonList>
       )}

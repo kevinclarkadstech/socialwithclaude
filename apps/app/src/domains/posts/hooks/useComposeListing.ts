@@ -1,6 +1,8 @@
 import type { ListingCondition, ListingPrice, ListingStatus, ListingType, Post } from '@myapp/shared/domains';
 import { useState } from 'react';
-import { createPostListing } from '../actions/createPostListing';
+import { runOrToast } from '../../../lib/api/runOrToast';
+import { publishPost } from '../actions/publishPost';
+import { uploadPostPhotos } from '../actions/uploadPostPhotos';
 import { updatePostListing } from '../actions/updatePostListing';
 import { parsePriceCents, priceFieldValue } from '../listingPrices';
 import { usePostPhotos } from './usePostPhotos';
@@ -14,9 +16,10 @@ interface ListingFormErrors {
 
 /**
  * Listing something for sale, or editing `post` (a listing): the fields as
- * typed, its photos, checking them, and saving (once photos have uploaded).
- * The description is also the post's text in the feed. Text is trimmed only
- * when it's sent.
+ * typed, its photos, checking them, and saving. A new listing is sent in the
+ * background (it shows at the top straight away); an edit uploads any new
+ * photos, then saves, before closing. The description is also the post's
+ * text in the feed. Text is trimmed only when it's sent.
  */
 export function useComposeListing({ post, onDismiss }: { post?: Post; onDismiss: () => void }) {
   const [title, setTitle] = useState('');
@@ -29,7 +32,7 @@ export function useComposeListing({ post, onDismiss }: { post?: Post; onDismiss:
   const [errors, setErrors] = useState<ListingFormErrors>({});
   const [isBusy, setIsBusy] = useState(false);
   const photos = usePostPhotos();
-  const canSubmit = !isBusy && !photos.isUploading && !photos.hasFailed;
+  const canSubmit = !isBusy && !photos.isPreparing && !photos.hasFailed;
 
   /** Starts from the listing's details when editing, or a blank form. */
   function reset() {
@@ -77,14 +80,20 @@ export function useComposeListing({ post, onDismiss }: { post?: Post; onDismiss:
       condition,
       // Only a fixed price can be negotiable.
       isNegotiable: priced.type === 'fixed' && isNegotiable,
-      media: photos.choices,
       ...priced,
     };
+    if (!post) {
+      publishPost({ content: { kind: 'listing', listing: fields }, photos: photos.handOff() });
+      onDismiss();
+      return;
+    }
     setIsBusy(true);
     try {
-      const result = post
-        ? await updatePostListing({ ...fields, id: post.id, status })
-        : await createPostListing(fields);
+      const uploaded = await runOrToast(() => uploadPostPhotos({ photos: photos.newPhotos }));
+      if (!uploaded.ok) {
+        return;
+      }
+      const result = await updatePostListing({ ...fields, id: post.id, status, media: photos.choices });
       if (result.ok) {
         onDismiss();
       }
@@ -123,6 +132,7 @@ export function useComposeListing({ post, onDismiss }: { post?: Post; onDismiss:
     },
     errors,
     photos,
+    isBusy,
     canSubmit,
     reset,
     submit,

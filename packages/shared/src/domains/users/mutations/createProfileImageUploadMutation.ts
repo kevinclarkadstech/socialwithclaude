@@ -4,9 +4,11 @@ import { fail, succeed } from "../../../utils/result";
 import { validationError } from "../../../error-handling";
 import { requireCallerWithProfile } from "../../../logic/authorization/requireCaller";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
-import { maxImageUploadBytes, profileImageWidths } from "../../media/constants";
-import { ImageContentTypeSchema, ProfileImageKindSchema } from "../../media/types";
-import { profileImageUploadKey } from "../../media/utils/profileImageKeys";
+import { maxImageUploadBytes } from "../../../common/images/constants";
+import { ImageContentTypeSchema } from "../../../common/images/types";
+import { profileImageWidths } from "../constants";
+import { ProfileImageKindSchema } from "../types/profile-image";
+import { profileImageUploadKey } from "../utils/profileImageKeys";
 import type { GetCallingUser } from "../types/calling-user";
 
 export const CreateProfileImageUploadMutationInputSchema = z.object({

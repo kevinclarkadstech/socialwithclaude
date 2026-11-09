@@ -1,9 +1,11 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db, schema } from "../../../db";
+import { deletePostMedia } from "../../../post-media";
 
 /**
  * Soft deletes a post, as `userId`, and takes it off its author's counts
- * (and their listings count, for a listing). False if it doesn't exist or was already deleted.
+ * (and their listings count, for a listing), and deletes its images (the
+ * mutation deletes their files). False if it doesn't exist or was already deleted.
  */
 export async function deletePost({ id, userId }: { id: string; userId: string }): Promise<boolean> {
     return db.transaction(async (tx) => {
@@ -15,6 +17,8 @@ export async function deletePost({ id, userId }: { id: string; userId: string })
         if (!deleted) {
             return false;
         }
+
+        await deletePostMedia(tx, { postId: id });
 
         await tx
             .update(schema.userProfiles)

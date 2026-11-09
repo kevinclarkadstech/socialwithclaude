@@ -1,14 +1,15 @@
 import { IonButton, IonIcon } from '@ionic/react';
-import type { PostMedia } from '@myapp/shared/domains';
 import { chevronBack, chevronForward } from 'ionicons/icons';
 import { useRef, useState } from 'react';
-import { openPhotoViewer } from '../../../media/components/PhotoViewer/photoViewerStore';
-import { feedAspectRatio, toViewerPhotos } from '../../utils/postPhotoUrl';
-import { PostPhoto } from '../PostPhoto/PostPhoto';
+import { Photo } from '../../../../common/components/Photo/Photo';
+import { openPhotoViewer } from '../../../../common/components/PhotoViewer/photoViewerStore';
+import type { DisplayPhoto } from '../../../../lib/images/displayPhoto';
+import { feedAspectRatio } from '../../utils/postPhotoUrl';
 import './PostPhotoCarousel.css';
 
 interface PostPhotoCarouselProps {
-  media: PostMedia[];
+  /** Published, or still on this device while the listing is being sent. */
+  photos: DisplayPhoto[];
 }
 
 /**
@@ -16,10 +17,10 @@ interface PostPhotoCarouselProps {
  * photo's shape: swipe or use the arrows; dots say where you are. Tapping
  * one opens them all full screen.
  */
-export function PostPhotoCarousel({ media }: PostPhotoCarouselProps) {
+export function PostPhotoCarousel({ photos }: PostPhotoCarouselProps) {
   const track = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
-  if (media.length === 0) {
+  if (photos.length === 0) {
     return null;
   }
 
@@ -31,7 +32,7 @@ export function PostPhotoCarousel({ media }: PostPhotoCarouselProps) {
   }
 
   return (
-    <div className="post-photo-carousel" style={{ aspectRatio: String(feedAspectRatio(media[0]!)) }}>
+    <div className="post-photo-carousel" style={{ aspectRatio: String(feedAspectRatio(photos[0]!)) }}>
       <div
         ref={track}
         className="post-photo-carousel__track"
@@ -40,25 +41,25 @@ export function PostPhotoCarousel({ media }: PostPhotoCarouselProps) {
           setIndex(Math.round(element.scrollLeft / Math.max(1, element.clientWidth)));
         }}
       >
-        {media.map((item, itemIndex) => (
+        {photos.map((photo, itemIndex) => (
           <button
-            key={item.id}
+            key={photo.key}
             type="button"
             className="post-photo-carousel__slide"
-            aria-label={`Photo ${itemIndex + 1} of ${media.length}${item.caption ? `: ${item.caption}` : ''}`}
+            aria-label={`Photo ${itemIndex + 1} of ${photos.length}${photo.caption ? `: ${photo.caption}` : ''}`}
             onClick={(event) => {
               // The card opens the listing when tapped; a photo opens the viewer instead.
               event.stopPropagation();
-              openPhotoViewer({ photos: toViewerPhotos(media), index: itemIndex });
+              openPhotoViewer({ photos, index: itemIndex });
             }}
           >
-            <PostPhoto media={item} fit="contain" sizes="(min-width: 700px) 640px, 100vw" />
+            <Photo photo={photo} fit="contain" sizes="(min-width: 700px) 640px, 100vw" />
           </button>
         ))}
       </div>
-      {media.length > 1 && (
+      {photos.length > 1 && (
         <>
-          <span className="post-photo-carousel__count" aria-hidden="true">{index + 1}/{media.length}</span>
+          <span className="post-photo-carousel__count" aria-hidden="true">{index + 1}/{photos.length}</span>
           {index > 0 && (
             <IonButton
               fill="clear"
@@ -72,7 +73,7 @@ export function PostPhotoCarousel({ media }: PostPhotoCarouselProps) {
               <span className="visually-hidden">Previous photo</span>
             </IonButton>
           )}
-          {index < media.length - 1 && (
+          {index < photos.length - 1 && (
             <IonButton
               fill="clear"
               className="post-photo-carousel__nav post-photo-carousel__nav--next"
@@ -86,8 +87,8 @@ export function PostPhotoCarousel({ media }: PostPhotoCarouselProps) {
             </IonButton>
           )}
           <div className="post-photo-carousel__dots" aria-hidden="true">
-            {media.map((item, itemIndex) => (
-              <span key={item.id} data-active={String(itemIndex === index)} />
+            {photos.map((photo, itemIndex) => (
+              <span key={photo.key} data-active={String(itemIndex === index)} />
             ))}
           </div>
         </>

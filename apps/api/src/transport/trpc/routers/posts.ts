@@ -1,6 +1,6 @@
 import {
-    ConfirmPostMediaUploadMutationInputSchema,
-    CreatePostMediaUploadMutationInputSchema,
+    ConfirmPostMediaUploadsMutationInputSchema,
+    CreatePostMediaUploadsMutationInputSchema,
     CreatePostMutationInputSchema,
     DeletePostMutationInputSchema,
     GetFeedQueryInputSchema,
@@ -8,8 +8,8 @@ import {
     GetUserPostsQueryInputSchema,
     ReportPostMutationInputSchema,
     UpdatePostMutationInputSchema,
-    confirmPostMediaUploadMutation,
-    createPostMediaUploadMutation,
+    confirmPostMediaUploadsMutation,
+    createPostMediaUploadsMutation,
     createPostMutation,
     deletePostMutation,
     getFeedQuery,
@@ -20,12 +20,11 @@ import {
 } from "@myapp/shared/domains";
 
 import {
+    createMedia,
     createPost,
-    createPostMedia,
     createPostReport,
     deletePost,
     getPostById,
-    getPostMediaById,
     getPostMediaByIds,
     getPosts,
     getProfileVisibility,
@@ -33,8 +32,8 @@ import {
     getUserProfileByUsername,
     updatePost,
 } from "../../../data-access";
-import { createUploadUrl, deleteMedia, deleteUploads, putMedia, readUpload } from "../../../domains/media/storage";
-import { newMediaToken } from "../../../domains/media/utils/newMediaToken";
+import { createUploadUrl, deleteMedia, deleteUploads, putMedia, readUpload } from "../../../storage";
+import { newMediaToken } from "../../../storage/newMediaToken";
 import { procedure, router } from "../trpc";
 
 export const postsRouter = router({
@@ -64,27 +63,31 @@ export const postsRouter = router({
         }),
     ),
 
-    createPostMediaUpload: procedure.input(CreatePostMediaUploadMutationInputSchema).mutation(({ ctx, input }) =>
-        createPostMediaUploadMutation({
-            input,
-            context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, createUploadUrl },
-        }),
-    ),
-
-    confirmPostMediaUpload: procedure.input(ConfirmPostMediaUploadMutationInputSchema).mutation(({ ctx, input }) =>
-        confirmPostMediaUploadMutation({
+    createPostMediaUploads: procedure.input(CreatePostMediaUploadsMutationInputSchema).mutation(({ ctx, input }) =>
+        createPostMediaUploadsMutation({
             input,
             context: { logger: ctx.logger },
             dependencies: {
                 getCallingUser: ctx.getCallingUser,
-                getPostMediaById,
+                isPostingEnabled: () => ctx.featureFlagStore.isEnabled("usersCanPost"),
+                createUploadUrl,
+            },
+        }),
+    ),
+
+    confirmPostMediaUploads: procedure.input(ConfirmPostMediaUploadsMutationInputSchema).mutation(({ ctx, input }) =>
+        confirmPostMediaUploadsMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: {
+                getCallingUser: ctx.getCallingUser,
+                getPostMediaByIds,
                 readUpload,
                 putMedia,
                 deleteMedia,
                 deleteUploads,
                 newToken: newMediaToken,
-                createPostMedia,
+                createMedia,
             },
         }),
     ),

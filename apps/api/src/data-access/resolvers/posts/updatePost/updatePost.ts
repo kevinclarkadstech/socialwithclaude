@@ -26,7 +26,7 @@ export async function updatePost({ id, userId, content, media, removedMediaIds }
             return null;
         }
 
-        await placePostMedia(tx, { postId: id, userId, media, removedMediaIds });
+        await placePostMedia(tx, { postId: id, media, removedMediaIds });
 
         const [row] = await selectPosts(tx, userId).where(eq(schema.posts.id, id));
         return toPost(row!);

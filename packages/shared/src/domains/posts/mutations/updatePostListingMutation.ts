@@ -9,7 +9,7 @@ import { PostSchema, type Post } from "../types/post";
 import { checkPostMediaChoice, placePostMedia, removedPostMedia } from "../utils/postMediaChoice";
 import { maxPostPhotos } from "../constants";
 import { PostMediaChoiceSchema, type PostMediaPlacement, type UploadedPostMedia } from "../types/post-media";
-import { postPhotoKeys } from "../../media/utils/postPhotoKeys";
+import { postPhotoKeys } from "../utils/postPhotoKeys";
 import {
     ListingPriceSchema,
     PostListingFieldsSchema,

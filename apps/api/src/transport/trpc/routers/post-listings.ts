@@ -8,7 +8,7 @@ import {
 } from "@myapp/shared/domains";
 
 import { createPostListing, getPostById, getPostListings, getPostMediaByIds, updatePostListing } from "../../../data-access";
-import { deleteMedia } from "../../../domains/media/storage";
+import { deleteMedia } from "../../../storage";
 import { procedure, router } from "../trpc";
 
 export const postListingsRouter = router({

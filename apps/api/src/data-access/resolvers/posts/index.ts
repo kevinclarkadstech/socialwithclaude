@@ -1,8 +1,8 @@
+export { createMedia } from './createMedia/createMedia';
 export { createPost } from './createPost/createPost';
 export { createPostComment } from './createPostComment/createPostComment';
 export { createPostCommentReport } from './createPostCommentReport/createPostCommentReport';
 export { createPostListing } from './createPostListing/createPostListing';
-export { createPostMedia } from './createPostMedia/createPostMedia';
 export { createPostReport } from './createPostReport/createPostReport';
 export { deletePost } from './deletePost/deletePost';
 export { deletePostComment } from './deletePostComment/deletePostComment';
@@ -11,7 +11,6 @@ export { getPostById } from './getPostById/getPostById';
 export { getPostCommentById } from './getPostCommentById/getPostCommentById';
 export { getPostComments } from './getPostComments/getPostComments';
 export { getPostListings } from './getPostListings/getPostListings';
-export { getPostMediaById } from './getPostMediaById/getPostMediaById';
 export { getPostMediaByIds } from './getPostMediaByIds/getPostMediaByIds';
 export { getPosts } from './getPosts/getPosts';
 export { searchPosts } from './searchPosts/searchPosts';

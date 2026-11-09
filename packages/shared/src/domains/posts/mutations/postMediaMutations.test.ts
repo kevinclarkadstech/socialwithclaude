@@ -3,8 +3,8 @@ import { mockCaller, mockPost, userId2 } from "../../../testing/fixtures";
 import { testContext } from "../../../testing/context";
 import { mockJpeg } from "../../../testing/images";
 import type { UploadedPostMedia } from "../types/post-media";
-import { confirmPostMediaUploadMutation } from "./confirmPostMediaUploadMutation";
-import { createPostMediaUploadMutation } from "./createPostMediaUploadMutation";
+import { confirmPostMediaUploadsMutation } from "./confirmPostMediaUploadsMutation";
+import { createPostMediaUploadsMutation } from "./createPostMediaUploadsMutation";
 import { createPostMutation } from "./createPostMutation";
 import { deletePostMutation } from "./deletePostMutation";
 import { updatePostMutation } from "./updatePostMutation";
@@ -20,127 +20,125 @@ function uploaded(overrides: Partial<UploadedPostMedia> = {}): UploadedPostMedia
         width: 1280,
         height: 960,
         placeholder: null,
-        caption: null,
         postId: null,
         createdBy: caller.userId,
         ...overrides,
     };
 }
 
-describe("createPostMediaUploadMutation", () => {
-    const create = (sizes: number[]) => createPostMediaUploadMutation({
-        input: { mediaId, files: sizes.map((size) => ({ size, contentType: "image/webp", contentLength: 1000 })) },
+describe("createPostMediaUploadsMutation", () => {
+    const second = "01JMMMMMMMMMMMMMMMMMMMMMM2";
+    const create = (media: { mediaId: string; sizes: number[] }[], postingEnabled = true) => createPostMediaUploadsMutation({
+        input: { media: media.map(({ mediaId, sizes }) => ({ mediaId, files: sizes.map((size) => ({ size, contentType: "image/webp" as const, contentLength: 1000 })) })) },
         context: testContext,
         dependencies: {
             getCallingUser: async () => caller,
-            createUploadUrl: async ({ key }) => `https://storage.test/${key}?signed`,
+            isPostingEnabled: () => postingEnabled,
+            createUploadUrl: async ({ key }: { key: string }) => `https://storage.test/${key}?signed`,
         },
     });
 
-    it("hands out an upload URL per size, under the caller's id", async () => {
-        const result = await create([320, 640, 1280]);
-        expect(result).toMatchObject({ ok: true });
-        expect(result.ok && result.value.uploads.map((upload) => upload.url)).toEqual(
-            [320, 640, 1280].map((size) => `https://storage.test/${uploadKey(size)}?signed`),
+    it("hands out an upload URL per size of every photo, under the caller's id, in one call", async () => {
+        const result = await create([{ mediaId, sizes: [320, 640, 1280] }, { mediaId: second, sizes: [320, 640, 1280] }]);
+        expect(result.ok && result.value.uploads.map((upload) => [upload.mediaId, upload.size])).toEqual(
+            [mediaId, second].flatMap((id) => [320, 640, 1280].map((size) => [id, size])),
         );
+        expect(result.ok && result.value.uploads[0]!.url).toBe(`https://storage.test/${uploadKey(320)}?signed`);
     });
 
-    it("refuses anything but one file at each size", async () => {
-        expect(await create([320, 1280])).toMatchObject({ ok: false, error: { type: "validation" } });
-        expect(await create([320, 640, 640, 1280])).toMatchObject({ ok: false, error: { type: "validation" } });
+    it("refuses anything but one file at each size, repeated photos, or posting turned off", async () => {
+        expect(await create([{ mediaId, sizes: [320, 1280] }])).toMatchObject({ ok: false, error: { type: "validation" } });
+        expect(await create([{ mediaId, sizes: [320, 640, 1280] }, { mediaId, sizes: [320, 640, 1280] }])).toMatchObject({ ok: false, error: { type: "validation" } });
+        expect(await create([{ mediaId, sizes: [320, 640, 1280] }], false)).toMatchObject({ ok: false, error: { type: "authorization" } });
     });
 });
 
-describe("confirmPostMediaUploadMutation", () => {
-    function confirm({ uploads, existing = null, created = uploaded() }: {
-        uploads: Record<number, Uint8Array | null>;
-        existing?: UploadedPostMedia | null;
-        created?: UploadedPostMedia | null;
+describe("confirmPostMediaUploadsMutation", () => {
+    const second = "01JMMMMMMMMMMMMMMMMMMMMMM2";
+    const keyOf = (id: string, size: number) => `${caller.userId}/post-media/${id}/${size}`;
+
+    function confirm({ uploads, ids = [mediaId], existing = [], recorded }: {
+        uploads: Record<string, Uint8Array | null>;
+        ids?: string[];
+        existing?: UploadedPostMedia[];
+        recorded?: string[];
     }) {
         const putMedia = mock(async (_args: { key: string; bytes: Uint8Array; contentType: string }) => {});
         const deleteMedia = mock(async (_args: { keys: string[] }) => {});
         const deleteUploads = mock(async (_args: { keys: string[] }) => {});
-        const createPostMedia = mock(async (_args: object) => created);
-        const result = confirmPostMediaUploadMutation({
-            input: { mediaId, placeholder: "YJqGPQw7sFlslqhFafSE+Q6oJ1h2iHB2Rw" },
+        const createMedia = mock(async ({ media }: { userId: string; media: { id: string }[] }) => recorded ?? media.map((item) => item.id));
+        const result = confirmPostMediaUploadsMutation({
+            input: { media: ids.map((id) => ({ mediaId: id, placeholder: "YJqGPQw7sFlslqhFafSE+Q6oJ1h2iHB2Rw" })) },
             context: testContext,
             dependencies: {
                 getCallingUser: async () => caller,
-                getPostMediaById: async () => existing,
-                readUpload: async ({ key }) => uploads[Number(key.split("/").at(-1))] ?? null,
+                getPostMediaByIds: async () => existing,
+                readUpload: async ({ key }: { key: string }) => uploads[key] ?? null,
                 putMedia,
                 deleteMedia,
                 deleteUploads,
                 newToken: () => "token",
-                createPostMedia,
+                createMedia,
             },
         });
-        return { result, putMedia, deleteMedia, deleteUploads, createPostMedia };
+        return { result, putMedia, deleteMedia, deleteUploads, createMedia };
     }
 
-    const landscape = { 320: mockJpeg(320, 240), 640: mockJpeg(640, 480), 1280: mockJpeg(1280, 960) };
+    const landscape = (id = mediaId) => ({ [keyOf(id, 320)]: mockJpeg(320, 240), [keyOf(id, 640)]: mockJpeg(640, 480), [keyOf(id, 1280)]: mockJpeg(1280, 960) });
 
-    it("publishes every size without metadata, records the photo and clears the uploads", async () => {
-        const { result, putMedia, deleteUploads, createPostMedia } = confirm({ uploads: landscape });
-        expect(await result).toMatchObject({ ok: true, value: { id: mediaId, width: 1280, height: 960 } });
+    it("publishes every size of every photo without metadata, records them and clears the uploads", async () => {
+        const { result, putMedia, deleteUploads, createMedia } = confirm({ uploads: { ...landscape(), ...landscape(second) }, ids: [mediaId, second] });
+        expect(await result).toMatchObject({ ok: true, value: { media: [{ id: mediaId, width: 1280, height: 960 }, { id: second }] } });
         expect(putMedia.mock.calls.map(([args]) => args.key)).toEqual(
-            [320, 640, 1280].map((size) => `post-media/${mediaId}/token-${size}`),
+            [mediaId, second].flatMap((id) => [320, 640, 1280].map((size) => `media/${id}/token-${size}`)),
         );
         for (const [args] of putMedia.mock.calls) {
             expect(new TextDecoder().decode(args.bytes)).not.toContain("GPS");
         }
-        expect(createPostMedia).toHaveBeenCalledWith({
-            id: mediaId,
+        expect(createMedia).toHaveBeenCalledWith({
             userId: caller.userId,
-            path: `post-media/${mediaId}/token`,
-            width: 1280,
-            height: 960,
-            placeholder: "YJqGPQw7sFlslqhFafSE+Q6oJ1h2iHB2Rw",
+            media: [mediaId, second].map((id) => ({ id, path: `media/${id}/token`, width: 1280, height: 960, placeholder: "YJqGPQw7sFlslqhFafSE+Q6oJ1h2iHB2Rw" })),
         });
-        expect(deleteUploads).toHaveBeenCalledWith({ keys: [320, 640, 1280].map(uploadKey) });
+        expect(deleteUploads).toHaveBeenCalledWith({ keys: [mediaId, second].flatMap((id) => [320, 640, 1280].map((size) => keyOf(id, size))) });
     });
 
     it("takes portrait photos by their longer side", async () => {
-        const { result } = confirm({
-            uploads: { 320: mockJpeg(240, 320), 640: mockJpeg(480, 640), 1280: mockJpeg(960, 1280) },
-            created: uploaded({ width: 960, height: 1280 }),
-        });
-        expect(await result).toMatchObject({ ok: true, value: { width: 960, height: 1280 } });
+        const { result } = confirm({ uploads: { [keyOf(mediaId, 320)]: mockJpeg(240, 320), [keyOf(mediaId, 640)]: mockJpeg(480, 640), [keyOf(mediaId, 1280)]: mockJpeg(960, 1280) } });
+        expect(await result).toMatchObject({ ok: true, value: { media: [{ width: 960, height: 1280 }] } });
     });
 
-    it("refuses missing, mis-sized, mismatched or too-thin uploads, publishing nothing and clearing them", async () => {
-        for (const uploads of [
-            { ...landscape, 640: null },
-            { ...landscape, 640: mockJpeg(600, 450) },
-            { ...landscape, 320: mockJpeg(320, 320) },
-            { 320: mockJpeg(320, 80), 640: mockJpeg(640, 160), 1280: mockJpeg(1280, 320) },
-            { ...landscape, 1280: new Uint8Array([60, 104, 116, 109, 108, 62]) },
+    it("refuses them all if one is missing, mis-sized, mismatched, too thin or not an image, publishing nothing", async () => {
+        for (const bad of [
+            { [keyOf(second, 640)]: null },
+            { [keyOf(second, 640)]: mockJpeg(600, 450) },
+            { [keyOf(second, 320)]: mockJpeg(320, 320) },
+            { [keyOf(second, 320)]: mockJpeg(320, 80), [keyOf(second, 640)]: mockJpeg(640, 160), [keyOf(second, 1280)]: mockJpeg(1280, 320) },
+            { [keyOf(second, 1280)]: new Uint8Array([60, 104, 116, 109, 108, 62]) },
         ]) {
-            const { result, putMedia, deleteUploads, createPostMedia } = confirm({ uploads });
+            const { result, putMedia, deleteUploads, createMedia } = confirm({ uploads: { ...landscape(), ...landscape(second), ...bad }, ids: [mediaId, second] });
             expect(await result).toMatchObject({ ok: false, error: { type: "validation" } });
             expect(putMedia).not.toHaveBeenCalled();
-            expect(createPostMedia).not.toHaveBeenCalled();
-            expect(deleteUploads).toHaveBeenCalledWith({ keys: [320, 640, 1280].map(uploadKey) });
+            expect(createMedia).not.toHaveBeenCalled();
+            expect(deleteUploads).toHaveBeenCalledTimes(1);
         }
     });
 
-    it("returns the photo when a confirm is retried, without publishing again, and clears any new uploads", async () => {
-        const { result, putMedia, deleteUploads } = confirm({ uploads: {}, existing: uploaded() });
-        expect(await result).toMatchObject({ ok: true, value: { id: mediaId } });
-        expect(putMedia).not.toHaveBeenCalled();
-        expect(deleteUploads).toHaveBeenCalledWith({ keys: [320, 640, 1280].map(uploadKey) });
+    it("returns photos already confirmed as they are (a retry), publishing only the rest", async () => {
+        const { result, putMedia } = confirm({ uploads: landscape(second), ids: [mediaId, second], existing: [uploaded()] });
+        expect(await result).toMatchObject({ ok: true, value: { media: [{ id: mediaId, path: `post-media/${mediaId}/token` }, { id: second }] } });
+        expect(putMedia.mock.calls.map(([args]) => args.key)).toEqual([320, 640, 1280].map((size) => `media/${second}/token-${size}`));
     });
 
-    it("fails with a conflict when the id is someone else's photo", async () => {
-        const { result, putMedia } = confirm({ uploads: landscape, existing: uploaded({ createdBy: userId2 }) });
+    it("fails with a conflict when an id is someone else's photo", async () => {
+        const { result, putMedia } = confirm({ uploads: landscape(), existing: [uploaded({ createdBy: userId2 })] });
         expect(await result).toMatchObject({ ok: false, error: { type: "conflict" } });
         expect(putMedia).not.toHaveBeenCalled();
     });
 
-    it("takes the published files down again if the id was taken meanwhile", async () => {
-        const { result, deleteMedia } = confirm({ uploads: landscape, created: null });
+    it("takes published files down again if an id was taken meanwhile", async () => {
+        const { result, deleteMedia } = confirm({ uploads: landscape(), recorded: [] });
         expect(await result).toMatchObject({ ok: false, error: { type: "conflict" } });
-        expect(deleteMedia).toHaveBeenCalledWith({ keys: [320, 640, 1280].map((size) => `post-media/${mediaId}/token-${size}`) });
+        expect(deleteMedia).toHaveBeenCalledWith({ keys: [320, 640, 1280].map((size) => `media/${mediaId}/token-${size}`) });
     });
 });
 
@@ -203,7 +201,7 @@ describe("photos on posts", () => {
     it("keeps, adds and removes photos on an edit, deleting the removed ones' files", async () => {
         const kept = { ...uploaded({ id: "01JMMMMMMMMMMMMMMMMMMMMMM3", path: "post-media/kept/t" }), postId: post.id };
         const removed = { ...uploaded({ id: "01JMMMMMMMMMMMMMMMMMMMMMM4", path: "post-media/gone/t" }), postId: post.id };
-        const existing = mockPost({ media: [kept, removed].map(({ postId: _, createdBy: __, ...media }) => media) });
+        const existing = mockPost({ media: [kept, removed].map(({ postId: _, createdBy: __, ...media }) => ({ ...media, caption: null })) });
         const updatePost = mock(async () => existing);
         const deleteMedia = mock(async (_args: { keys: string[] }) => {});
         const result = await updatePostMutation({
@@ -236,7 +234,7 @@ describe("photos on posts", () => {
             context: testContext,
             dependencies: {
                 getCallingUser: async () => caller,
-                getPostById: async () => mockPost({ media: [media] }),
+                getPostById: async () => mockPost({ media: [{ ...media, caption: null }] }),
                 deletePost: async () => true,
                 deleteMedia,
             },

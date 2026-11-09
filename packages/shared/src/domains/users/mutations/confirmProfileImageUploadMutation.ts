@@ -4,11 +4,11 @@ import { fail, succeed } from "../../../utils/result";
 import { validationError } from "../../../error-handling";
 import { requireCallerWithProfile } from "../../../logic/authorization/requireCaller";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
-import { imageContentTypes, maxImageUploadBytes, profileImageWidths } from "../../media/constants";
-import { ProfileImageKindSchema } from "../../media/types";
-import { inspectImage } from "../../media/utils/inspectImage";
-import { profileImageHeight, profileImageKey, profileImageUploadKey } from "../../media/utils/profileImageKeys";
-import { stripImageMetadata } from "../../media/utils/stripImageMetadata";
+import { imageContentTypes, maxImageUploadBytes } from "../../../common/images/constants";
+import { inspectImage, stripImageMetadata } from "../../../common/images/utils";
+import { profileImageWidths } from "../constants";
+import { ProfileImageKindSchema } from "../types/profile-image";
+import { profileImageHeight, profileImageKey, profileImageUploadKey } from "../utils/profileImageKeys";
 import type { GetCallingUser } from "../types/calling-user";
 import { UserProfileSchema, type UserProfile } from "../types/user-profile";
 

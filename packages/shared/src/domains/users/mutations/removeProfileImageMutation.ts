@@ -3,9 +3,9 @@ import type { Mutation } from "../../../types/mutation";
 import { succeed } from "../../../utils/result";
 import { requireCallerWithProfile } from "../../../logic/authorization/requireCaller";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
-import { profileImageWidths } from "../../media/constants";
-import { ProfileImageKindSchema } from "../../media/types";
-import { profileImageKey } from "../../media/utils/profileImageKeys";
+import { profileImageWidths } from "../constants";
+import { ProfileImageKindSchema } from "../types/profile-image";
+import { profileImageKey } from "../utils/profileImageKeys";
 import type { GetCallingUser } from "../types/calling-user";
 import { UserProfileSchema, type UserProfile } from "../types/user-profile";
 

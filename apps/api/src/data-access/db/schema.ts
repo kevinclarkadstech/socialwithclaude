@@ -259,28 +259,40 @@ export const postListings = pgTable("post_listings", {
 ]);
 
 /**
- * A photo on a post or listing. Uploaded (and recorded here) while the post
- * is being written, so post_id is null until the post is created or edited
- * with it. Its files are at `${path}-${size}` in the media bucket.
+ * A published image: its files are at `${path}-${size}` in the media bucket.
+ * Uploaded (and recorded here) before whatever uses it is saved; what uses
+ * it links to it (post_media, and later comments and chats), and decides who may.
  */
-export const postMedia = pgTable("post_media", {
+export const media = pgTable("media", {
     id: text("id").primaryKey(),
-    postId: text("post_id").references(() => posts.id, { onDelete: "cascade" }),
-    // Its order on the post, from 0.
-    position: integer("position").notNull().default(0),
     path: text("path").notNull(),
     // At the largest size.
     width: integer("width").notNull(),
     height: integer("height").notNull(),
     // A ThumbHash (base64) shown while it loads.
     placeholder: text("placeholder"),
-    caption: text("caption"),
     ...auditFields(),
 }, (t) => [
+    // For clearing out images uploaded for things that were never saved.
+    index("media_created_at_idx").on(t.createdAt),
+    check("media_dimensions_positive", sql`${t.width} > 0 and ${t.height} > 0`),
+]);
+
+/** A photo on a post or listing, in order, with its caption there. A photo is on one post at most. */
+export const postMedia = pgTable("post_media", {
+    postId: text("post_id")
+        .notNull()
+        .references(() => posts.id, { onDelete: "cascade" }),
+    mediaId: text("media_id")
+        .notNull()
+        .references(() => media.id, { onDelete: "cascade" }),
+    // Its order on the post, from 0.
+    position: integer("position").notNull(),
+    caption: text("caption"),
+}, (t) => [
+    primaryKey({ columns: [t.postId, t.mediaId] }),
+    uniqueIndex("post_media_media_id_idx").on(t.mediaId),
     index("post_media_post_id_position_idx").on(t.postId, t.position),
-    // For clearing out photos uploaded for posts that were never made.
-    index("post_media_unattached_created_at_idx").on(t.createdAt).where(sql`${t.postId} is null`),
-    check("post_media_dimensions_positive", sql`${t.width} > 0 and ${t.height} > 0`),
     check("post_media_position_non_negative", sql`${t.position} >= 0`),
 ]);
 

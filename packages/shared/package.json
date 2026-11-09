@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./common": "./src/common/types/index.ts",
+    "./common/images": "./src/common/images/index.ts",
     "./domains": "./src/domains/index.ts",
     "./domains/*": "./src/domains/*/index.ts",
     "./types": "./src/types/index.ts",

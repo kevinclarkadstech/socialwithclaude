@@ -44,7 +44,7 @@ export async function createPostListing({ id, userId, content, media, ...listing
                 createdAt: post.createdAt,
             });
 
-        await placePostMedia(tx, { postId: id, userId, media, removedMediaIds: [] });
+        await placePostMedia(tx, { postId: id, media, removedMediaIds: [] });
 
         await tx
             .update(schema.userProfiles)

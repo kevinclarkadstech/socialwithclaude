@@ -4,7 +4,7 @@ import { TabNavigationProvider, TabsLayout } from '../../navigation';
 import { rootRoutes, sharedRoutes, tabs } from '../routes';
 import { Sidebar } from '../Sidebar/Sidebar';
 import { SignInGate } from '../SignInGate/SignInGate';
-import { PhotoViewer } from '../../domains/media/components/PhotoViewer/PhotoViewer';
+import { PhotoViewer } from '../../common/components/PhotoViewer/PhotoViewer';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';

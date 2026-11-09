@@ -1,0 +1,35 @@
+.photo {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--ion-color-step-100, #eee);
+  background-size: cover;
+  background-position: center;
+}
+
+.photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.photo[data-fit='contain'] img {
+  object-fit: contain;
+}
+
+/* A whole photo: its placeholder covers only where the photo will be, not the space around it. */
+.photo[data-fit='contain'] {
+  background-color: transparent;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.photo img[data-loaded='true'] {
+  opacity: 1;
+}

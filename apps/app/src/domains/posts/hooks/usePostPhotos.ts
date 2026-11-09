@@ -1,63 +1,55 @@
 import { maxPostPhotos, postPhotoSizes, type PostMedia, type PostMediaChoice } from '@myapp/shared/domains';
 import { useRef, useState } from 'react';
 import { showErrorToast } from '../../../lib/toasts';
-import { uploadPostPhoto } from '../actions/uploadPostPhoto';
+import type { PendingPost } from '../pendingPostStore';
 import { postPhotoUrl } from '../utils/postPhotoUrl';
+import { preparePostPhoto, type PreparedPostPhoto } from '../utils/preparePostPhoto';
 
-/** A photo in the composer: one already on the post, or one chosen now (uploading, ready or failed). */
-export interface ComposerPhoto {
-  /** Stays the same while it uploads, for React lists and for changing it. */
-  key: string;
-  /** What to show for it: the chosen file itself, or the post's small size. */
-  previewUrl: string;
-  status: 'uploading' | 'ready' | 'failed';
-  /** Once uploaded (or already on the post). */
-  media?: PostMedia;
-  /** Kept for trying the upload again. */
-  file?: File;
-  caption: string;
-}
+/** A photo in the composer: one already on the post, or one picked now (being resized, ready to send, or unusable). */
+export type ComposerPhoto =
+  | { key: string; kind: 'published'; media: PostMedia; previewUrl: string; caption: string }
+  | { key: string; kind: 'new'; status: 'preparing' | 'ready' | 'failed'; previewUrl: string; prepared?: PreparedPostPhoto; caption: string };
 
 let nextKey = 0;
 
 /**
- * The photos of a post or listing being written or edited: adding (each
- * uploads straight away, one at a time), removing, reordering and
- * captioning them, and what to send when it's saved.
+ * The photos of a post or listing being written or edited: adding (each is
+ * resized on the device straight away, one at a time; nothing uploads until
+ * it's sent), removing, reordering and captioning them, and what to send.
  */
 export function usePostPhotos() {
   const [photos, setPhotos] = useState<ComposerPhoto[]>([]);
   const [initial, setInitial] = useState<PostMediaChoice[]>([]);
-  // Uploads run one after another: resizing several big photos at once is heavy on a phone.
+  // Resizing several big photos at once is heavy on a phone.
   const queue = useRef<Promise<unknown>>(Promise.resolve());
 
-  function update(key: string, change: Partial<ComposerPhoto>) {
-    setPhotos((current) => current.map((photo) => (photo.key === key ? { ...photo, ...change } : photo)));
+  function update(key: string, change: Partial<Extract<ComposerPhoto, { kind: 'new' }>>) {
+    setPhotos((current) => current.map((photo) => (photo.key === key && photo.kind === 'new' ? { ...photo, ...change } : photo)));
   }
 
-  function upload(key: string, file: File) {
-    queue.current = queue.current.then(async () => {
-      const result = await uploadPostPhoto({ photo: file });
-      if (result.ok) {
-        update(key, { status: 'ready', media: result.value });
-      } else {
-        update(key, { status: 'failed' });
-      }
-    });
+  /** Frees what a photo holds in memory (the file, and its sizes unless they've gone to a post being sent). */
+  function release(photo: ComposerPhoto, { keepPrepared = false } = {}) {
+    if (photo.kind !== 'new') {
+      return;
+    }
+    if (photo.prepared && !keepPrepared) {
+      URL.revokeObjectURL(photo.prepared.previewUrl);
+    }
+    if (photo.previewUrl !== photo.prepared?.previewUrl) {
+      URL.revokeObjectURL(photo.previewUrl);
+    }
   }
 
   /** Starts from the post's photos when editing, or none. */
   function reset(media: PostMedia[] = []) {
     for (const photo of photos) {
-      if (photo.file) {
-        URL.revokeObjectURL(photo.previewUrl);
-      }
+      release(photo);
     }
     setPhotos(media.map((item) => ({
       key: item.id,
-      previewUrl: postPhotoUrl({ media: item, size: postPhotoSizes[0] }),
-      status: 'ready',
+      kind: 'published',
       media: item,
+      previewUrl: postPhotoUrl({ media: item, size: postPhotoSizes[0] }),
       caption: item.caption ?? '',
     })));
     setInitial(media.map(({ id, caption }) => ({ id, caption })));
@@ -68,33 +60,30 @@ export function usePostPhotos() {
     if (files.length > room) {
       void showErrorToast(`A post can have up to ${maxPostPhotos} photos`);
     }
-    const added = files.slice(0, Math.max(0, room)).map((file): ComposerPhoto => ({
-      key: `new-${nextKey++}`,
-      previewUrl: URL.createObjectURL(file),
-      status: 'uploading',
+    const added = files.slice(0, Math.max(0, room)).map((file) => ({
       file,
-      caption: '',
+      photo: { key: `new-${nextKey++}`, kind: 'new' as const, status: 'preparing' as const, previewUrl: URL.createObjectURL(file), caption: '' },
     }));
-    setPhotos((current) => [...current, ...added]);
-    for (const photo of added) {
-      upload(photo.key, photo.file!);
+    setPhotos((current) => [...current, ...added.map(({ photo }) => photo)]);
+    for (const { file, photo } of added) {
+      queue.current = queue.current.then(async () => {
+        try {
+          const prepared = await preparePostPhoto(file);
+          URL.revokeObjectURL(photo.previewUrl);
+          update(photo.key, { status: 'ready', prepared, previewUrl: prepared.previewUrl });
+        } catch {
+          update(photo.key, { status: 'failed' });
+        }
+      });
     }
   }
 
   function remove(key: string) {
     const photo = photos.find((candidate) => candidate.key === key);
-    if (photo?.file) {
-      URL.revokeObjectURL(photo.previewUrl);
+    if (photo) {
+      release(photo);
     }
     setPhotos((current) => current.filter((candidate) => candidate.key !== key));
-  }
-
-  function retry(key: string) {
-    const photo = photos.find((candidate) => candidate.key === key);
-    if (photo?.file) {
-      update(key, { status: 'uploading' });
-      upload(key, photo.file);
-    }
   }
 
   function move(from: number, to: number) {
@@ -107,18 +96,36 @@ export function usePostPhotos() {
   }
 
   function setCaption(key: string, caption: string) {
-    update(key, { caption });
+    setPhotos((current) => current.map((photo) => (photo.key === key ? { ...photo, caption } : photo)));
   }
 
-  /** The photos to save, in order (only uploaded ones; saving waits for the rest). */
-  const choices: PostMediaChoice[] = photos
-    .filter((photo) => photo.media)
-    .map((photo) => ({ id: photo.media!.id, caption: photo.caption.trim() || null }));
-  const isUploading = photos.some((photo) => photo.status === 'uploading');
-  const hasFailed = photos.some((photo) => photo.status === 'failed');
+  /**
+   * Gives the picked photos to a post being sent (it frees them once it's
+   * posted or discarded), and empties the composer.
+   */
+  function handOff(): PendingPost['photos'] {
+    const sent = photos.flatMap((photo) =>
+      photo.kind === 'new' && photo.prepared ? [{ photo: photo.prepared, caption: photo.caption.trim() || null }] : [],
+    );
+    for (const photo of photos) {
+      release(photo, { keepPrepared: true });
+    }
+    setPhotos([]);
+    return sent;
+  }
+
+  /** The photos to save, in order: each one's id (picked ones have theirs already) and caption. */
+  const choices: PostMediaChoice[] = photos.flatMap((photo) => {
+    const id = photo.kind === 'published' ? photo.media.id : photo.prepared?.mediaId;
+    return id ? [{ id, caption: photo.caption.trim() || null }] : [];
+  });
+  /** Picked photos to upload before saving. */
+  const newPhotos: PreparedPostPhoto[] = photos.flatMap((photo) => (photo.kind === 'new' && photo.prepared ? [photo.prepared] : []));
+  const isPreparing = photos.some((photo) => photo.kind === 'new' && photo.status === 'preparing');
+  const hasFailed = photos.some((photo) => photo.kind === 'new' && photo.status === 'failed');
   const isChanged = JSON.stringify(choices) !== JSON.stringify(initial) || photos.length !== initial.length;
 
-  return { photos, choices, isUploading, hasFailed, isChanged, reset, add, remove, retry, move, setCaption };
+  return { photos, choices, newPhotos, isPreparing, hasFailed, isChanged, reset, add, remove, move, setCaption, handOff };
 }
 
 export type PostPhotos = ReturnType<typeof usePostPhotos>;

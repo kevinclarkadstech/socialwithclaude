@@ -25,7 +25,7 @@ export async function createPost({ id, userId, content, media }: {
             return null;
         }
 
-        await placePostMedia(tx, { postId: id, userId, media, removedMediaIds: [] });
+        await placePostMedia(tx, { postId: id, media, removedMediaIds: [] });
 
         await tx
             .update(schema.userProfiles)

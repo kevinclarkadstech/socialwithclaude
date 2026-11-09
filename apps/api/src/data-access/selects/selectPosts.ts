@@ -18,10 +18,11 @@ export function selectPosts(executor: Executor, viewerId: string | null) {
             media: sql<PostMedia[]>`coalesce((
                 select json_agg(json_build_object(
                     'id', m.id, 'path', m.path, 'width', m.width, 'height', m.height,
-                    'placeholder', m.placeholder, 'caption', m.caption
-                ) order by m.position)
-                from ${schema.postMedia} m
-                where m.post_id = ${schema.posts.id}
+                    'placeholder', m.placeholder, 'caption', pm.caption
+                ) order by pm.position)
+                from ${schema.postMedia} pm
+                join ${schema.media} m on m.id = pm.media_id
+                where pm.post_id = ${schema.posts.id}
             ), '[]'::json)`,
             creator: creatorFields,
             creatorVisibility: schema.userSettings.profileVisibility,

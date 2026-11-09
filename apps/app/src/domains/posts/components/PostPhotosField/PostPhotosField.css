@@ -21,6 +21,7 @@
 
 .post-photos-field__thumb {
   position: relative;
+  display: block;
   width: 56px;
   height: 56px;
   margin: 8px 12px 8px 0;
@@ -56,8 +57,8 @@
   border-radius: 50%;
 }
 
-/* Dim the photo while it uploads, and when it failed. */
-.post-photos-field__item[data-status='uploading'] .post-photos-field__thumb img,
+/* Dim the photo while it's being prepared, and when it couldn't be. */
+.post-photos-field__item[data-status='preparing'] .post-photos-field__thumb img,
 .post-photos-field__item[data-status='failed'] .post-photos-field__thumb img {
   opacity: 0.5;
 }

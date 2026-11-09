@@ -24,6 +24,7 @@ import { AuthorLink } from '../AuthorLink/AuthorLink';
 import { PostMenuButton } from '../PostMenuButton/PostMenuButton';
 import { PostPhotoCarousel } from '../PostPhotoCarousel/PostPhotoCarousel';
 import { PostPhotoGrid } from '../PostPhotoGrid/PostPhotoGrid';
+import { toDisplayPhotos } from '../../utils/postPhotoUrl';
 import './PostCard.css';
 
 interface PostCardProps {
@@ -75,7 +76,7 @@ export function PostCard({ postId, linkToPost = true, linkToAuthor = true, onDel
         </IonButtons>
       </IonToolbar>
 
-      {listing && <PostPhotoCarousel media={post.media} />}
+      {listing && <PostPhotoCarousel photos={toDisplayPhotos(post.media)} />}
 
       <IonCardContent
         className={linkToPost ? 'post-card__body post-card__body--link' : 'post-card__body'}
@@ -101,7 +102,7 @@ export function PostCard({ postId, linkToPost = true, linkToAuthor = true, onDel
         {post.content && <p className="post-card__content">{post.content}</p>}
         {!listing && post.media.length > 0 && (
           <div className="post-card__photos">
-            <PostPhotoGrid media={post.media} />
+            <PostPhotoGrid photos={toDisplayPhotos(post.media)} />
           </div>
         )}
       </IonCardContent>

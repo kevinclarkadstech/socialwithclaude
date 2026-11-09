@@ -4,6 +4,7 @@ import {
   IonContent,
   IonHeader,
   IonModal,
+  IonSpinner,
   IonTextarea,
   IonTitle,
   IonToolbar,
@@ -24,7 +25,7 @@ interface ComposePostModalProps {
 
 /** Writing a new post (text, photos or both), or editing one of yours. */
 export function ComposePostModal({ isOpen, post, onDismiss }: ComposePostModalProps) {
-  const { content, setContent, photos, canSubmit, reset, submit } = useComposePost({ post, onDismiss });
+  const { content, setContent, photos, isBusy, canSubmit, reset, submit } = useComposePost({ post, onDismiss });
 
   return (
     <IonModal isOpen={isOpen} onWillPresent={reset} onDidDismiss={onDismiss}>
@@ -36,7 +37,7 @@ export function ComposePostModal({ isOpen, post, onDismiss }: ComposePostModalPr
           <IonTitle>{post ? 'Edit post' : 'New post'}</IonTitle>
           <IonButtons slot="end">
             <IonButton strong disabled={!canSubmit} onClick={() => void submit()}>
-              {post ? 'Save' : 'Post'}
+              {isBusy ? <IonSpinner name="dots" aria-label="Saving" /> : post ? 'Save' : 'Post'}
             </IonButton>
           </IonButtons>
         </IonToolbar>

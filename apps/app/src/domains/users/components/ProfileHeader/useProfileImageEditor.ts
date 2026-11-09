@@ -2,7 +2,7 @@ import { profileImageAspectRatios, type GetUserProfileQueryOutput, type ProfileI
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { showMenu } from '../../../../lib/prompts';
 import { showErrorToast } from '../../../../lib/toasts';
-import type { CropArea } from '../../../media/utils/renderCroppedImages';
+import type { CropArea } from '../../../../lib/images/renderCroppedImages';
 import { changeProfileImage } from '../../actions/changeProfileImage';
 import { removeProfileImage } from '../../actions/removeProfileImage';
 

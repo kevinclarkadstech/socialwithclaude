@@ -1,28 +1,21 @@
 import z from "zod";
-import { maxPhotoPlaceholderLength } from "../../media/constants";
+import { MediaSchema } from "../../../common/images/types";
 
 /** A photo's caption (optional). */
 export const PhotoCaptionSchema = z.string().trim().max(300);
 
-/** A photo on a post or listing. Its files are at `${path}-${size}` in the media bucket, one per postPhotoSizes. */
-export const PostMediaSchema = z.object({
-    id: z.ulid(),
-    path: z.string().min(1),
-    // At the largest size; smaller sizes keep the shape.
-    width: z.int().positive(),
-    height: z.int().positive(),
-    // A ThumbHash (base64) to show while it loads.
-    placeholder: z.string().max(maxPhotoPlaceholderLength).regex(/^[A-Za-z0-9+/]+=*$/).nullable(),
+/** A photo on a post or listing: the published image, and its caption there. */
+export const PostMediaSchema = MediaSchema.extend({
     caption: PhotoCaptionSchema.nullable(),
 });
 
-/** A photo as stored: who uploaded it, and the post it's on (null until it's added to one). */
-export const UploadedPostMediaSchema = PostMediaSchema.extend({
-    postId: z.ulid().nullable(),
+/** An uploaded photo as stored: who uploaded it, and the post it's on (null until a post is created or edited with it). */
+export const UploadedPostMediaSchema = MediaSchema.extend({
     createdBy: z.ulid(),
+    postId: z.ulid().nullable(),
 });
 
-/** A photo chosen for a post, in order: one already uploaded (confirmPostMediaUpload), or already on the post. */
+/** A photo chosen for a post, in order: one just uploaded and confirmed, or one already on the post. */
 export const PostMediaChoiceSchema = z.object({
     id: z.ulid(),
     caption: PhotoCaptionSchema.nullable(),

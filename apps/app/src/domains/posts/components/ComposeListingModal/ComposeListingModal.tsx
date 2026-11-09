@@ -8,6 +8,7 @@ import {
   IonModal,
   IonSegment,
   IonSegmentButton,
+  IonSpinner,
   IonTextarea,
   IonTitle,
   IonToggle,
@@ -30,7 +31,7 @@ interface ComposeListingModalProps {
 
 /** Listing something for sale, or editing one of your listings (including marking it sold). */
 export function ComposeListingModal({ isOpen, post, onDismiss }: ComposeListingModalProps) {
-  const { fields, set, errors, photos, canSubmit, reset, submit } = useComposeListing({ post, onDismiss });
+  const { fields, set, errors, photos, isBusy, canSubmit, reset, submit } = useComposeListing({ post, onDismiss });
 
   function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -47,7 +48,7 @@ export function ComposeListingModal({ isOpen, post, onDismiss }: ComposeListingM
           <IonTitle>{post ? 'Edit listing' : 'New listing'}</IonTitle>
           <IonButtons slot="end">
             <IonButton strong disabled={!canSubmit} onClick={() => void submit()}>
-              {post ? 'Save' : 'List'}
+              {isBusy ? <IonSpinner name="dots" aria-label="Saving" /> : post ? 'Save' : 'List'}
             </IonButton>
           </IonButtons>
         </IonToolbar>

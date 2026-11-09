@@ -24,6 +24,7 @@ import { listingStatusLabels } from '../../common/formatters/listings';
 import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
 import { AccountButton } from '../../domains/users/components/AccountButton/AccountButton';
 import { ComposeListingModal } from '../../domains/posts/components/ComposeListingModal/ComposeListingModal';
+import { PendingPosts } from '../../domains/posts/components/PendingPosts/PendingPosts';
 import { PostCard } from '../../domains/posts/components/PostCard/PostCard';
 import { useListings } from '../../domains/posts/hooks/useListings';
 import '../../common/styles/pages.css';
@@ -75,6 +76,8 @@ export function MarketplacePage() {
         {error !== null && <p className="page-message">Couldn't load listings. Pull down to try again.</p>}
         {!isLoading && error === null && postIds.length === 0 && <p className="page-message">No listings here yet.</p>}
 
+        {/* A listing being sent is available, so it shows under Available and All. */}
+        {(filter === 'available' || filter === ALL) && <PendingPosts kind="listing" />}
         {postIds.map((id) => (
           <PostCard key={id} postId={id} />
         ))}

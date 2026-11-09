@@ -20,6 +20,7 @@ import { AccountButton } from '../../domains/users/components/AccountButton/Acco
 import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
 import { useFeed } from '../../domains/posts/hooks/useFeed';
 import { ComposePostModal } from '../../domains/posts/components/ComposePostModal/ComposePostModal';
+import { PendingPosts } from '../../domains/posts/components/PendingPosts/PendingPosts';
 import { PostCard } from '../../domains/posts/components/PostCard/PostCard';
 import '../../common/styles/pages.css';
 
@@ -52,6 +53,7 @@ export function FeedPage() {
         {error !== null && <p className="page-message">Couldn't load the feed. Pull down to try again.</p>}
         {!isLoading && error === null && postIds.length === 0 && <p className="page-message">Nothing here yet.</p>}
 
+        <PendingPosts />
         {postIds.map((id) => (
           <PostCard key={id} postId={id} />
         ))}

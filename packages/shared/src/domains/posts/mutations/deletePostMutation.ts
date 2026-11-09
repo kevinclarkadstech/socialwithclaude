@@ -6,7 +6,7 @@ import { canDeletePost } from "../../../logic/authorization/posts/canDeletePost"
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { PostSchema, type Post } from "../types/post";
-import { postPhotoKeys } from "../../media/utils/postPhotoKeys";
+import { postPhotoKeys } from "../utils/postPhotoKeys";
 
 export const DeletePostMutationInputSchema = PostSchema.pick({ id: true });
 
