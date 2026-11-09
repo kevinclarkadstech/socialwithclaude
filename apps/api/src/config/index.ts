@@ -16,6 +16,17 @@ export const ServerConfigSchema = z.object({
     APPLE_CLIENT_SECRET: z.string().optional(),
     // The iOS app's bundle id, for Apple sign-in from the native app.
     APPLE_APP_BUNDLE_IDENTIFIER: z.string().optional(),
+    // Object storage, through the S3 API: Cloudflare R2 in production, Garage locally
+    // (docker-compose; set up with infra/garage/init.sh). See .env.example.
+    STORAGE_ENDPOINT: z.url(),
+    STORAGE_REGION: z.string(),
+    STORAGE_ACCESS_KEY_ID: z.string(),
+    STORAGE_SECRET_ACCESS_KEY: z.string(),
+    // Private: presigned uploads land here, and are processed before anything is public.
+    STORAGE_UPLOADS_BUCKET: z.string(),
+    // Public: processed images, served from STORAGE_MEDIA_PUBLIC_URL.
+    STORAGE_MEDIA_BUCKET: z.string(),
+    STORAGE_MEDIA_PUBLIC_URL: z.url(),
 });
 
 /**

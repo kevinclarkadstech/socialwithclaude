@@ -1,11 +1,14 @@
 import { IonButton, IonIcon } from '@ionic/react';
 import type { GetUserProfileQueryOutput } from '@myapp/shared/domains';
-import { ellipsisHorizontal, lockClosed, shareOutline } from 'ionicons/icons';
-import type { CSSProperties } from 'react';
+import { camera, ellipsisHorizontal, lockClosed, shareOutline } from 'ionicons/icons';
+import { useState, type CSSProperties } from 'react';
+import { ImageCropModal } from '../../../media/components/ImageCropModal/ImageCropModal';
 import { displayName } from '../../../../common/formatters/names';
+import { profileImageUrl, profileImageWidthFor } from '../../utils/profileImageUrl';
 import { userHue } from '../../utils/userHue';
 import { UserAvatar } from '../UserAvatar/UserAvatar';
 import { useProfileHeader } from './useProfileHeader';
+import { useProfileImageEditor } from './useProfileImageEditor';
 import './ProfileHeader.css';
 
 interface ProfileHeaderProps {
@@ -25,15 +28,41 @@ const counts = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFr
  */
 export function ProfileHeader({ profile, isOwn, onProfileChange, onEdit }: ProfileHeaderProps) {
   const { follow, unfollow, unblock, openMenu, share } = useProfileHeader({ profile, onProfileChange });
+  const imageEditor = useProfileImageEditor({ profile, onProfileChange });
   const { followStatus, hasBlocked } = profile.viewer;
+  const coverSrc = profileImageUrl({
+    user: profile,
+    kind: 'cover',
+    width: profileImageWidthFor({ kind: 'cover', displayWidth: Math.min(window.innerWidth, 640) }),
+  });
+  // Which src failed, so a new cover is tried again.
+  const [failedCoverSrc, setFailedCoverSrc] = useState<string | null>(null);
   const hasName = Boolean(profile.firstName || profile.lastName);
 
   return (
     <header className="profile-header">
-      <div className="profile-header__cover" style={{ '--profile-hue': userHue(profile.userId) } as CSSProperties} />
+      <div className="profile-header__cover" style={{ '--profile-hue': userHue(profile.userId) } as CSSProperties}>
+        {failedCoverSrc !== coverSrc && (
+          <img className="profile-header__cover-photo" src={coverSrc} alt="" decoding="async" onError={() => setFailedCoverSrc(coverSrc)} />
+        )}
+        {isOwn && (
+          <IonButton size="small" className="profile-header__edit-cover" onClick={() => imageEditor.openMenu('cover')}>
+            <IonIcon slot="icon-only" icon={camera} aria-hidden="true" />
+            <span className="visually-hidden">Change cover photo</span>
+          </IonButton>
+        )}
+      </div>
 
       <div className="profile-header__row">
-        <UserAvatar user={profile} size={88} className="profile-header__avatar" />
+        <div className="profile-header__avatar-wrap">
+          <UserAvatar user={profile} size={88} className="profile-header__avatar" />
+          {isOwn && (
+            <IonButton size="small" className="profile-header__edit-avatar" onClick={() => imageEditor.openMenu('avatar')}>
+              <IonIcon slot="icon-only" icon={camera} aria-hidden="true" />
+              <span className="visually-hidden">Change profile photo</span>
+            </IonButton>
+          )}
+        </div>
         <div className="profile-header__actions">
           {isOwn && (
             <IonButton fill="outline" onClick={onEdit}>
@@ -99,6 +128,20 @@ export function ProfileHeader({ profile, isOwn, onProfileChange, onEdit }: Profi
           <dd>{counts.format(profile.numFollowing)}</dd>
         </div>
       </dl>
+      {isOwn && (
+        <>
+          <input ref={imageEditor.fileInputRef} type="file" accept="image/*" hidden onChange={imageEditor.onPhotoChosen} />
+          <ImageCropModal
+            isOpen={imageEditor.crop !== null}
+            imageUrl={imageEditor.crop?.imageUrl ?? null}
+            title={imageEditor.crop?.title ?? ''}
+            aspectRatio={imageEditor.crop?.aspectRatio ?? 1}
+            shape={imageEditor.crop?.shape}
+            onCancel={imageEditor.cancel}
+            onConfirm={imageEditor.save}
+          />
+        </>
+      )}
     </header>
   );
 }

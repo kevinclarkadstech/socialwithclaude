@@ -8,7 +8,7 @@ import { getPostByIdQuery } from "./getPostByIdQuery";
 const privatePost = mockPost({
     id: "01JBBBBBBBBBBBBBBBBBBBBBB2",
     createdBy: userId2,
-    creator: { userId: userId2, username: "user2", firstName: null, lastName: null, profileVisibility: "followers" },
+    creator: { userId: userId2, username: "user2", firstName: null, lastName: null, updatedAt: "2026-01-01T00:00:00.000Z", profileVisibility: "followers" },
 });
 const publicPost = mockPost();
 

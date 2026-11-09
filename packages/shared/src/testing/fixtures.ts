@@ -40,7 +40,7 @@ export function mockCaller(overrides: Partial<CallingUser> = {}): CallingUser {
     };
 }
 
-const creator = { userId: userId1, username: "user1", firstName: null, lastName: null };
+const creator = { userId: userId1, username: "user1", firstName: null, lastName: null, updatedAt: now };
 
 export function mockPost(overrides: Partial<Post> = {}): Post {
     return {

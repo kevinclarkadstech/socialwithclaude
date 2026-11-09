@@ -4,7 +4,7 @@ import { createEntityStore } from './createEntityStore';
 
 const postStore = createEntityStore<Post>();
 
-const creator = { userId: '01JAAAAAAAAAAAAAAAAAAAAAA1', username: 'maya', firstName: null, lastName: null, profileVisibility: 'public' as const };
+const creator = { userId: '01JAAAAAAAAAAAAAAAAAAAAAA1', username: 'maya', firstName: null, lastName: null, updatedAt: '2026-11-06T12:00:00.000Z', profileVisibility: 'public' as const };
 
 function post(id: string, overrides: Partial<Post> = {}): Post {
   return {
@@ -67,5 +67,19 @@ describe('createEntityStore', () => {
 
   it('gives an empty, unloaded list for a key it has never seen', () => {
     expect(postStore.getList('search:bikes')).toMatchObject({ ids: [], hasLoaded: false });
+  });
+
+  it('changes every item an update changes, and notifies only if something did', () => {
+    postStore.setItems([post('a'), post('b')]);
+    let notified = 0;
+    const unsubscribe = postStore.subscribe(() => {
+      notified += 1;
+    });
+    postStore.updateAll((p) => (p.id === 'b' ? { ...p, content: 'Edited' } : p));
+    postStore.updateAll((p) => p);
+    unsubscribe();
+    expect(postStore.getItem('a')?.content).toBe('Hello');
+    expect(postStore.getItem('b')?.content).toBe('Edited');
+    expect(notified).toBe(1);
   });
 });

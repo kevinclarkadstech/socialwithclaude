@@ -21,3 +21,4 @@ export { updateUserSettings } from './updateUserSettings/updateUserSettings';
 export { updateUserProfile } from './updateUserProfile/updateUserProfile';
 export { getProfileVisibility } from './getProfileVisibility/getProfileVisibility';
 export { getUserFollowStatus } from './getUserFollowStatus/getUserFollowStatus';
+export { touchUserProfile } from './touchUserProfile/touchUserProfile';

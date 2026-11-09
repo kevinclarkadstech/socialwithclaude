@@ -62,3 +62,22 @@ export async function chooseFrom<Value extends string>({ header, options }: {
   const { data } = await actionSheet.onDidDismiss<{ value: Value }>();
   return data?.value ?? null;
 }
+
+/**
+ * A menu whose options act inside the tap itself (rather than after the menu
+ * closes, as chooseFrom does). Needed for anything a browser only allows from
+ * a direct tap, like opening the file picker.
+ */
+export async function showMenu({ header, options }: {
+  header?: string;
+  options: { text: string; role?: 'destructive'; onSelect: () => void }[];
+}) {
+  const actionSheet = await actionSheetController.create({
+    header,
+    buttons: [
+      ...options.map(({ text, role, onSelect }) => ({ text, role, handler: onSelect })),
+      { text: 'Cancel', role: 'cancel' },
+    ],
+  });
+  await actionSheet.present();
+}

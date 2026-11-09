@@ -6,7 +6,7 @@ import { canViewPost, viewablePosts } from "./canViewPost";
 const theirs = (profileVisibility: "public" | "followers", followsCreator = false) =>
     mockPost({
         createdBy: userId2,
-        creator: { userId: userId2, username: "user2", firstName: null, lastName: null, profileVisibility },
+        creator: { userId: userId2, username: "user2", firstName: null, lastName: null, updatedAt: "2026-01-01T00:00:00.000Z", profileVisibility },
         viewer: { hasSaved: false, followsCreator },
     });
 

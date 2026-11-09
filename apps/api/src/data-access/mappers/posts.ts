@@ -2,6 +2,7 @@ import type { Post, PostComment, PostCommentReport, PostCommentVote, PostListing
 import type { schema } from "../db";
 import type { SelectedPostRow } from "../selects/selectPosts";
 import type { SelectedPostCommentRow } from "../selects/selectPostComments";
+import { toCreator } from "../selects/creatorFields";
 
 type PostListingRow = typeof schema.postListings.$inferSelect;
 type PostCommentVoteRow = typeof schema.postCommentVotes.$inferSelect;
@@ -39,7 +40,7 @@ export function toPost({ post, listing, creator, creatorVisibility, savedAt, fol
         numReactions: post.numReactions,
         ...(listing && { listing: toPostListing(listing) }),
         // Sign-up creates settings with the profile; without them, treat the profile as followers-only.
-        creator: { ...creator, profileVisibility: creatorVisibility ?? "followers" },
+        creator: { ...toCreator(creator), profileVisibility: creatorVisibility ?? "followers" },
         viewer: { hasSaved: savedAt !== null, followsCreator: followedAt !== null },
         createdBy: post.createdBy,
         updatedBy: post.updatedBy,
@@ -56,7 +57,7 @@ export function toPostComment({ comment, creator, vote, savedAt }: SelectedPostC
         content: comment.content,
         numUpVotes: comment.numUpVotes,
         numDownVotes: comment.numDownVotes,
-        creator,
+        creator: toCreator(creator),
         viewer: { hasSaved: savedAt !== null, vote: vote === null ? null : vote === 1 ? 1 : -1 },
         createdBy: comment.createdBy,
         updatedBy: comment.updatedBy,
