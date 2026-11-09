@@ -9,3 +9,5 @@ export * from './setPostCommentVoteMutation';
 export * from './updatePostCommentMutation';
 export * from './updatePostListingMutation';
 export * from './updatePostMutation';
+export * from './confirmPostMediaUploadMutation';
+export * from './createPostMediaUploadMutation';

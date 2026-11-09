@@ -1,11 +1,20 @@
 import { eq, sql } from "drizzle-orm";
-import type { Post } from "@myapp/shared/domains";
+import type { Post, PostMediaPlacement } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toPost } from "../../../mappers/posts";
 import { selectPosts } from "../../../selects/selectPosts";
+import { placePostMedia } from "../../../post-media";
 
-/** Creates a post with the client's `id`, and counts it on the author's profile. Null if the id is already used. */
-export async function createPost({ id, userId, content }: { id: string; userId: string; content: string }): Promise<Post | null> {
+/**
+ * Creates a post with the client's `id` and puts the photos on it, and counts
+ * it on the author's profile. Null if the id is already used.
+ */
+export async function createPost({ id, userId, content, media }: {
+    id: string;
+    userId: string;
+    content: string;
+    media: PostMediaPlacement[];
+}): Promise<Post | null> {
     return db.transaction(async (tx) => {
         const [created] = await tx
             .insert(schema.posts)
@@ -15,6 +24,8 @@ export async function createPost({ id, userId, content }: { id: string; userId: 
         if (!created) {
             return null;
         }
+
+        await placePostMedia(tx, { postId: id, userId, media, removedMediaIds: [] });
 
         await tx
             .update(schema.userProfiles)

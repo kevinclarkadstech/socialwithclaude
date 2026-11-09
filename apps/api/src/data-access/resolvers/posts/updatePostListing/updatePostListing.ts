@@ -1,13 +1,16 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
-import type { ListingCondition, ListingPrice, ListingStatus, Post } from "@myapp/shared/domains";
+import type { ListingCondition, ListingPrice, ListingStatus, Post, PostMediaPlacement } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toPost } from "../../../mappers/posts";
 import { selectPosts } from "../../../selects/selectPosts";
+import { placePostMedia } from "../../../post-media";
 
 export type UpdatePostListingArgs = {
     id: string;
     userId: string;
     content: string;
+    media: PostMediaPlacement[];
+    removedMediaIds: string[];
     title: string;
     description: string;
     condition: ListingCondition;
@@ -15,8 +18,8 @@ export type UpdatePostListingArgs = {
     isNegotiable: boolean;
 } & ListingPrice;
 
-/** Replaces a listing's content and details, as `userId`. Null if it doesn't exist, was deleted or isn't a listing. */
-export async function updatePostListing({ id, userId, content, ...listing }: UpdatePostListingArgs): Promise<Post | null> {
+/** Replaces a listing's content, details and photos, as `userId`. Null if it doesn't exist, was deleted or isn't a listing. */
+export async function updatePostListing({ id, userId, content, media, removedMediaIds, ...listing }: UpdatePostListingArgs): Promise<Post | null> {
     return db.transaction(async (tx) => {
         const now = new Date();
         const [post] = await tx
@@ -45,6 +48,8 @@ export async function updatePostListing({ id, userId, content, ...listing }: Upd
                 updatedAt: now,
             })
             .where(eq(schema.postListings.postId, id));
+
+        await placePostMedia(tx, { postId: id, userId, media, removedMediaIds });
 
         const [row] = await selectPosts(tx, userId).where(eq(schema.posts.id, id));
         return toPost(row!);

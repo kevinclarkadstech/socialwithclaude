@@ -51,6 +51,7 @@ export function mockPost(overrides: Partial<Post> = {}): Post {
         numComments: 0,
         numShares: 0,
         numReactions: 0,
+        media: [],
         creator: { ...creator, profileVisibility: "public" },
         viewer: { hasSaved: false, followsCreator: false },
         createdBy: userId1,

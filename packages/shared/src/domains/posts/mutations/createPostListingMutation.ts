@@ -6,10 +6,17 @@ import { requireCallerWithProfile } from "../../../logic/authorization/requireCa
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { PostSchema, type Post } from "../types/post";
+import { checkPostMediaChoice, placePostMedia } from "../utils/postMediaChoice";
+import { maxPostPhotos } from "../constants";
+import { PostMediaChoiceSchema, type PostMediaPlacement, type UploadedPostMedia } from "../types/post-media";
 import { ListingPriceSchema, PostListingFieldsSchema, type ListingCondition, type ListingPrice } from "../types/post-listing";
 
 export const CreatePostListingMutationInputSchema = PostSchema.pick({ id: true, content: true })
     .extend(PostListingFieldsSchema.pick({ title: true, description: true, condition: true, isNegotiable: true }).shape)
+    .extend({
+        // Its photos in order, each uploaded and confirmed first (confirmPostMediaUploadMutation).
+        media: z.array(PostMediaChoiceSchema).max(maxPostPhotos).default([]),
+    })
     .and(ListingPriceSchema);
 
 export type CreatePostListingMutationInput = z.infer<typeof CreatePostListingMutationInputSchema>;
@@ -25,10 +32,13 @@ export type CreatePostListingMutationOutput = z.infer<typeof CreatePostListingMu
 export const createPostListingMutation: Mutation<{ input: CreatePostListingMutationInput, output: CreatePostListingMutationOutput }, {
     getCallingUser: GetCallingUser;
     getPostById: (args: { id: string; viewerId: string | null }) => Promise<Post | null>;
+    getPostMediaByIds: (args: { ids: string[] }) => Promise<UploadedPostMedia[]>;
+    /** Creates the listing and puts the photos on it. Null if the id is already used. */
     createPostListing: (args: {
         id: string;
         userId: string;
         content: string;
+        media: PostMediaPlacement[];
         title: string;
         description: string;
         condition: ListingCondition;
@@ -46,7 +56,18 @@ export const createPostListingMutation: Mutation<{ input: CreatePostListingMutat
         return allowed;
     }
 
-    const createdPost = await dependencies.createPostListing({ ...input, userId: allowed.value.userId });
+    const found = input.media.length > 0 ? await dependencies.getPostMediaByIds({ ids: input.media.map((media) => media.id) }) : [];
+    const mediaAllowed = checkPostMediaChoice({ callerId: allowed.value.userId, postId: null, chosen: input.media, found });
+    if (!mediaAllowed.ok) {
+        logger.warn("Listing photos refused", { postId: input.id, callerId: allowed.value.userId, error: mediaAllowed.error });
+        return mediaAllowed;
+    }
+
+    const createdPost = await dependencies.createPostListing({
+        ...input,
+        media: placePostMedia(input.media),
+        userId: allowed.value.userId,
+    });
     if (!createdPost) {
         const existing = await dependencies.getPostById({ id: input.id, viewerId: caller?.userId ?? null });
         if (existing && existing.createdBy === allowed.value.userId) {

@@ -6,6 +6,7 @@ import { canDeletePost } from "../../../logic/authorization/posts/canDeletePost"
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { PostSchema, type Post } from "../types/post";
+import { postPhotoKeys } from "../../media/utils/postPhotoKeys";
 
 export const DeletePostMutationInputSchema = PostSchema.pick({ id: true });
 
@@ -15,11 +16,13 @@ export const DeletePostMutationOutputSchema = z.null();
 
 export type DeletePostMutationOutput = z.infer<typeof DeletePostMutationOutputSchema>;
 
-/** Deletes a post (or listing). */
+/** Deletes a post (or listing), and its photos' files. */
 export const deletePostMutation: Mutation<{ input: DeletePostMutationInput, output: DeletePostMutationOutput }, {
     getCallingUser: GetCallingUser;
     getPostById: (args: { id: string; viewerId: string | null }) => Promise<Post | null>;
     deletePost: (args: { id: string; userId: string }) => Promise<boolean>;
+    /** Deletes published photo files. */
+    deleteMedia: (args: { keys: string[] }) => Promise<void>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     const post = await dependencies.getPostById({ id: input.id, viewerId: caller?.userId ?? null });
@@ -38,6 +41,10 @@ export const deletePostMutation: Mutation<{ input: DeletePostMutationInput, outp
         return allowed;
     }
 
-    await dependencies.deletePost({ id: post.id, userId: allowed.value.userId });
+    const deleted = await dependencies.deletePost({ id: post.id, userId: allowed.value.userId });
+    // Its photos go with it (their addresses only reached people shown the post).
+    if (deleted && post.media.length > 0) {
+        await dependencies.deleteMedia({ keys: post.media.flatMap(postPhotoKeys) });
+    }
     return succeed();
 }

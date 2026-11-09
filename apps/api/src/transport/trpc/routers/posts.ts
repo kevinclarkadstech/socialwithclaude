@@ -1,4 +1,6 @@
 import {
+    ConfirmPostMediaUploadMutationInputSchema,
+    CreatePostMediaUploadMutationInputSchema,
     CreatePostMutationInputSchema,
     DeletePostMutationInputSchema,
     GetFeedQueryInputSchema,
@@ -6,6 +8,8 @@ import {
     GetUserPostsQueryInputSchema,
     ReportPostMutationInputSchema,
     UpdatePostMutationInputSchema,
+    confirmPostMediaUploadMutation,
+    createPostMediaUploadMutation,
     createPostMutation,
     deletePostMutation,
     getFeedQuery,
@@ -17,15 +21,20 @@ import {
 
 import {
     createPost,
+    createPostMedia,
     createPostReport,
     deletePost,
     getPostById,
+    getPostMediaById,
+    getPostMediaByIds,
     getPosts,
     getProfileVisibility,
     getUserFollowStatus,
     getUserProfileByUsername,
     updatePost,
 } from "../../../data-access";
+import { createUploadUrl, deleteMedia, deleteUploads, putMedia, readUpload } from "../../../domains/media/storage";
+import { newMediaToken } from "../../../domains/media/utils/newMediaToken";
 import { procedure, router } from "../trpc";
 
 export const postsRouter = router({
@@ -49,7 +58,33 @@ export const postsRouter = router({
                 getCallingUser: ctx.getCallingUser,
                 isPostingEnabled: () => ctx.featureFlagStore.isEnabled("usersCanPost"),
                 getPostById,
+                getPostMediaByIds,
                 createPost,
+            },
+        }),
+    ),
+
+    createPostMediaUpload: procedure.input(CreatePostMediaUploadMutationInputSchema).mutation(({ ctx, input }) =>
+        createPostMediaUploadMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: { getCallingUser: ctx.getCallingUser, createUploadUrl },
+        }),
+    ),
+
+    confirmPostMediaUpload: procedure.input(ConfirmPostMediaUploadMutationInputSchema).mutation(({ ctx, input }) =>
+        confirmPostMediaUploadMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: {
+                getCallingUser: ctx.getCallingUser,
+                getPostMediaById,
+                readUpload,
+                putMedia,
+                deleteMedia,
+                deleteUploads,
+                newToken: newMediaToken,
+                createPostMedia,
             },
         }),
     ),
@@ -58,7 +93,7 @@ export const postsRouter = router({
         updatePostMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, updatePost },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, getPostMediaByIds, deleteMedia, updatePost },
         }),
     ),
 
@@ -66,7 +101,7 @@ export const postsRouter = router({
         deletePostMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, deletePost },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, deletePost, deleteMedia },
         }),
     ),
 

@@ -1,10 +1,11 @@
-import type { Post, PostComment, PostCommentReport, PostCommentVote, PostListing, PostReport } from "@myapp/shared/domains";
+import type { Post, PostComment, PostCommentReport, PostCommentVote, PostListing, PostReport, UploadedPostMedia } from "@myapp/shared/domains";
 import type { schema } from "../db";
 import type { SelectedPostRow } from "../selects/selectPosts";
 import type { SelectedPostCommentRow } from "../selects/selectPostComments";
 import { toCreator } from "../selects/creatorFields";
 
 type PostListingRow = typeof schema.postListings.$inferSelect;
+type PostMediaRow = typeof schema.postMedia.$inferSelect;
 type PostCommentVoteRow = typeof schema.postCommentVotes.$inferSelect;
 type PostReportRow = typeof schema.postReports.$inferSelect;
 type PostCommentReportRow = typeof schema.postCommentReports.$inferSelect;
@@ -29,7 +30,7 @@ export function toPostListing(row: PostListingRow): PostListing {
 }
 
 /** A post from selectPosts, with its listing details if it's a listing. */
-export function toPost({ post, listing, creator, creatorVisibility, savedAt, followedAt }: SelectedPostRow): Post {
+export function toPost({ post, listing, media, creator, creatorVisibility, savedAt, followedAt }: SelectedPostRow): Post {
     return {
         id: post.id,
         type: post.type,
@@ -39,6 +40,7 @@ export function toPost({ post, listing, creator, creatorVisibility, savedAt, fol
         numShares: post.numShares,
         numReactions: post.numReactions,
         ...(listing && { listing: toPostListing(listing) }),
+        media,
         // Sign-up creates settings with the profile; without them, treat the profile as followers-only.
         creator: { ...toCreator(creator), profileVisibility: creatorVisibility ?? "followers" },
         viewer: { hasSaved: savedAt !== null, followsCreator: followedAt !== null },
@@ -46,6 +48,19 @@ export function toPost({ post, listing, creator, creatorVisibility, savedAt, fol
         updatedBy: post.updatedBy,
         createdAt: post.createdAt.toISOString(),
         updatedAt: post.updatedAt.toISOString(),
+    };
+}
+
+export function toUploadedPostMedia(row: PostMediaRow): UploadedPostMedia {
+    return {
+        id: row.id,
+        path: row.path,
+        width: row.width,
+        height: row.height,
+        placeholder: row.placeholder,
+        caption: row.caption,
+        postId: row.postId,
+        createdBy: row.createdBy,
     };
 }
 

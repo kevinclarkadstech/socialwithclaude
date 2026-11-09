@@ -1,6 +1,7 @@
 import { describe, expect, it, mock } from "bun:test";
 import { mockCaller, mockProfile } from "../../../testing/fixtures";
 import { testContext } from "../../../testing/context";
+import { mockJpeg } from "../../../testing/images";
 import { confirmProfileImageUploadMutation } from "./confirmProfileImageUploadMutation";
 import { createProfileImageUploadMutation } from "./createProfileImageUploadMutation";
 import { removeProfileImageMutation } from "./removeProfileImageMutation";
@@ -8,17 +9,7 @@ import { removeProfileImageMutation } from "./removeProfileImageMutation";
 const caller = mockCaller();
 const uploadId = "01JZZZZZZZZZZZZZZZZZZZZZZ1";
 
-/** A minimal JPEG of `width` × `height` with an EXIF segment holding "GPS". */
-function jpeg(width: number, height: number) {
-    const exif = [..."Exif\0\0GPS"].map((c) => c.charCodeAt(0));
-    return new Uint8Array([
-        0xff, 0xd8,
-        0xff, 0xe1, 0, exif.length + 2, ...exif,
-        0xff, 0xc0, 0, 11, 8, height >> 8, height & 0xff, width >> 8, width & 0xff, 1, 1, 0x11, 0,
-        0xff, 0xda, 0, 8, 1, 1, 0, 0, 0x3f, 0,
-        0x12, 0x34, 0xff, 0xd9,
-    ]);
-}
+const jpeg = mockJpeg;
 
 function confirm(uploads: Record<string, Uint8Array | null>) {
     const putMedia = mock(async (_args: { key: string; bytes: Uint8Array; contentType: string }) => {});

@@ -7,7 +7,8 @@ import {
     updatePostListingMutation,
 } from "@myapp/shared/domains";
 
-import { createPostListing, getPostById, getPostListings, updatePostListing } from "../../../data-access";
+import { createPostListing, getPostById, getPostListings, getPostMediaByIds, updatePostListing } from "../../../data-access";
+import { deleteMedia } from "../../../domains/media/storage";
 import { procedure, router } from "../trpc";
 
 export const postListingsRouter = router({
@@ -19,7 +20,7 @@ export const postListingsRouter = router({
         createPostListingMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, createPostListing },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, getPostMediaByIds, createPostListing },
         }),
     ),
 
@@ -27,7 +28,7 @@ export const postListingsRouter = router({
         updatePostListingMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, updatePostListing },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, getPostMediaByIds, deleteMedia, updatePostListing },
         }),
     ),
 });

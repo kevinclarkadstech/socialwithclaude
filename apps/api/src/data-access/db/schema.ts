@@ -258,6 +258,32 @@ export const postListings = pgTable("post_listings", {
     check("post_listings_price_matches_type", sql`(${t.priceType} = 'fixed') = (${t.priceCents} is not null)`),
 ]);
 
+/**
+ * A photo on a post or listing. Uploaded (and recorded here) while the post
+ * is being written, so post_id is null until the post is created or edited
+ * with it. Its files are at `${path}-${size}` in the media bucket.
+ */
+export const postMedia = pgTable("post_media", {
+    id: text("id").primaryKey(),
+    postId: text("post_id").references(() => posts.id, { onDelete: "cascade" }),
+    // Its order on the post, from 0.
+    position: integer("position").notNull().default(0),
+    path: text("path").notNull(),
+    // At the largest size.
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    // A ThumbHash (base64) shown while it loads.
+    placeholder: text("placeholder"),
+    caption: text("caption"),
+    ...auditFields(),
+}, (t) => [
+    index("post_media_post_id_position_idx").on(t.postId, t.position),
+    // For clearing out photos uploaded for posts that were never made.
+    index("post_media_unattached_created_at_idx").on(t.createdAt).where(sql`${t.postId} is null`),
+    check("post_media_dimensions_positive", sql`${t.width} > 0 and ${t.height} > 0`),
+    check("post_media_position_non_negative", sql`${t.position} >= 0`),
+]);
+
 export const postComments = pgTable("post_comments", {
     id: text("id").primaryKey(),
     postId: text("post_id")
