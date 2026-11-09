@@ -15,13 +15,27 @@ const post = mockPost();
 const mediaId = "01JMMMMMMMMMMMMMMMMMMMMMM1";
 const second = "01JMMMMMMMMMMMMMMMMMMMMMM2";
 const key = (id: string, size: number, postId = post.id) => `${userId}/${postId}/${id}-${size}`;
-const field = (id: string, caption: string | null = null) => ({ id, caption, width: 1280, height: 960, placeholder: null });
+/** A photo as the app sends it: its own guesses for who, when, the post and the size, which the server replaces. */
+const field = (id: string, caption: string | null = null): PostMedia => ({
+    id,
+    postId: "01JXXXXXXXXXXXXXXXXXXXXXX9",
+    caption,
+    width: 10,
+    height: 10,
+    placeholder: null,
+    createdBy: userId2,
+    updatedBy: userId2,
+    createdAt: "2000-01-01T00:00:00.000Z",
+    updatedAt: "2000-01-01T00:00:00.000Z",
+});
+/** What the server saves for a new photo. */
+const saved = (id: string, caption: string | null, width: number, height: number) =>
+    expect.objectContaining({ id, postId: post.id, caption, width, height, createdBy: userId, updatedBy: userId });
 
-function onPost(id: string, position: number): PostMedia {
+function onPost(id: string): PostMedia {
     return {
         id,
         postId: post.id,
-        position,
         caption: null,
         width: 1280,
         height: 960,
@@ -141,7 +155,7 @@ describe("photos on posts", () => {
         return { result, createPost, publishPostPhotos };
     }
 
-    it("creates a photo-only post: publishes its photos under its id, saves them in order with real sizes, blank captions as none", async () => {
+    it("creates a photo-only post: publishes its photos under its id, saving them with the server's post, owner, time and real sizes", async () => {
         const { result, createPost, publishPostPhotos } = create({
             media: [field(second, "  "), field(mediaId, " The view ")],
             published: [{ id: mediaId, width: 960, height: 1280 }, { id: second, width: 1280, height: 427 }],
@@ -152,21 +166,19 @@ describe("photos on posts", () => {
             id: post.id,
             content: "",
             userId,
-            media: [
-                { id: second, position: 0, caption: null, width: 1280, height: 427, placeholder: null },
-                { id: mediaId, position: 1, caption: "The view", width: 960, height: 1280, placeholder: null },
-            ],
+            // In the order they were added (by id), whatever order they came in.
+            media: [saved(mediaId, "The view", 960, 1280), saved(second, null, 1280, 427)],
         });
     });
 
-    it("leaves off a photo that couldn't be published, numbering the rest from 0", async () => {
+    it("leaves off a photo that couldn't be published", async () => {
         const { result, createPost } = create({ content: "Hi", media: [field(mediaId), field(second)], published: [{ id: second, width: 1280, height: 960 }] });
         expect(await result).toMatchObject({ ok: true });
         expect(createPost).toHaveBeenCalledWith({
             id: post.id,
             content: "Hi",
             userId,
-            media: [{ id: second, position: 0, caption: null, width: 1280, height: 960, placeholder: null }],
+            media: [saved(second, null, 1280, 960)],
         });
     });
 
@@ -184,10 +196,10 @@ describe("photos on posts", () => {
         expect(publishPostPhotos).not.toHaveBeenCalled();
     });
 
-    it("on an edit, publishes only new photos, keeps and reorders the rest, and deletes removed ones' files", async () => {
+    it("on an edit, publishes only new photos, keeps the rest (with new captions), and deletes removed ones' files", async () => {
         const kept = "01JMMMMMMMMMMMMMMMMMMMMMM3";
         const removed = "01JMMMMMMMMMMMMMMMMMMMMMM4";
-        const existing = mockPost({ media: [onPost(kept, 0), onPost(removed, 1)] });
+        const existing = mockPost({ media: [onPost(kept), onPost(removed)] });
         const updatePost = mock(async () => existing);
         const publishPostPhotos = mock(async () => [{ id: mediaId, width: 960, height: 1280 }]);
         const deleteMedia = mock(async (_args: { keys: string[] }) => {});
@@ -202,10 +214,7 @@ describe("photos on posts", () => {
             id: post.id,
             content: "Edited",
             userId,
-            media: [
-                { id: mediaId, position: 0, caption: null, width: 960, height: 1280, placeholder: null },
-                { id: kept, position: 1, caption: "Kept", width: 1280, height: 960, placeholder: null },
-            ],
+            media: [saved(mediaId, null, 960, 1280), expect.objectContaining({ id: kept, caption: "Kept", width: 1280, height: 960, updatedBy: userId })],
             removedMediaIds: [removed],
         });
         expect(deleteMedia).toHaveBeenCalledWith({ keys: [320, 640, 1280].map((size) => key(removed, size)) });
@@ -218,7 +227,7 @@ describe("photos on posts", () => {
             context: testContext,
             dependencies: {
                 getCallingUser: async () => caller,
-                getPostById: async () => mockPost({ media: [onPost(mediaId, 0)] }),
+                getPostById: async () => mockPost({ media: [onPost(mediaId)] }),
                 deletePost: async () => true,
                 deleteMedia,
             },

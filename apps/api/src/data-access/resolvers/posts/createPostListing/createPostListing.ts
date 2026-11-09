@@ -1,5 +1,5 @@
 import { eq, sql } from "drizzle-orm";
-import type { ListingCondition, ListingPrice, Post, PostMediaRow } from "@myapp/shared/domains";
+import type { ListingCondition, ListingPrice, Post, PostMedia } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toPost } from "../../../mappers/posts";
 import { selectPosts } from "../../../selects/selectPosts";
@@ -9,7 +9,7 @@ export type CreatePostListingArgs = {
     id: string;
     userId: string;
     content: string;
-    media: PostMediaRow[];
+    media: PostMedia[];
     title: string;
     description: string;
     condition: ListingCondition;
@@ -44,7 +44,7 @@ export async function createPostListing({ id, userId, content, media, ...listing
                 createdAt: post.createdAt,
             });
 
-        await placePostMedia(tx, { postId: id, userId, media, removedMediaIds: [] });
+        await placePostMedia(tx, { postId: id, media, removedMediaIds: [] });
 
         await tx
             .update(schema.userProfiles)

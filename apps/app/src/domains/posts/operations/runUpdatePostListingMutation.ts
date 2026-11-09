@@ -19,7 +19,7 @@ export function runUpdatePostListingMutation(listing: UpdatePostListingMutationI
       deleteMedia: async () => {},
       // The API takes the caller from the session, so userId isn't sent; photos go as chosen, in order.
       updatePostListing: ({ userId, removedMediaIds, media, ...input }) =>
-        fromApi(api.postListings.updateListing.mutate({ ...input, media: media.map(({ id, caption, width, height, placeholder }) => ({ id, caption, width, height, placeholder })) })),
+        fromApi(api.postListings.updateListing.mutate({ ...input, media })),
     },
   });
 }

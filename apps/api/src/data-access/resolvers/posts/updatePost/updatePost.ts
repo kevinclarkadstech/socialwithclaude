@@ -1,5 +1,5 @@
 import { and, eq, isNull } from "drizzle-orm";
-import type { Post, PostMediaRow } from "@myapp/shared/domains";
+import type { Post, PostMedia } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toPost } from "../../../mappers/posts";
 import { selectPosts } from "../../../selects/selectPosts";
@@ -13,7 +13,7 @@ export async function updatePost({ id, userId, content, media, removedMediaIds }
     id: string;
     userId: string;
     content: string;
-    media: PostMediaRow[];
+    media: PostMedia[];
     removedMediaIds: string[];
 }): Promise<Post | null> {
     return db.transaction(async (tx) => {
@@ -26,7 +26,7 @@ export async function updatePost({ id, userId, content, media, removedMediaIds }
             return null;
         }
 
-        await placePostMedia(tx, { postId: id, userId, media, removedMediaIds });
+        await placePostMedia(tx, { postId: id, media, removedMediaIds });
 
         const [row] = await selectPosts(tx, userId).where(eq(schema.posts.id, id));
         return toPost(row!);

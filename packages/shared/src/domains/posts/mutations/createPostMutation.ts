@@ -7,12 +7,13 @@ import { logDisallowedResult } from "../../../logic/authorization/logDisallowedR
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { maxPostPhotos } from "../constants";
 import { PostSchema, type Post } from "../types/post";
-import { PostMediaSchema } from "../types/post-media";
-import { hasPostContent, hasUniqueMedia, postMediaRows, type PostMediaFields, type PostMediaRow } from "../utils/postMedia";
+import { PostMediaSchema, type PostMedia } from "../types/post-media";
+import { hasPostContent, hasUniqueMedia, savedPostMedia } from "../utils/postMedia";
 
 export const CreatePostMutationInputSchema = PostSchema.pick({ id: true, content: true }).extend({
-    // Its photos in order, each uploaded first (createPostMediaUploadsMutation) under this post's id.
-    media: z.array(PostMediaSchema.pick({ id: true, caption: true, width: true, height: true, placeholder: true })).max(maxPostPhotos).default([]),
+    // Its photos, each uploaded first (createPostMediaUploadsMutation) under this post's id. The server sets
+    // the post, who and when, and the photos' real sizes.
+    media: z.array(PostMediaSchema).max(maxPostPhotos).default([]),
 });
 
 export type CreatePostMutationInput = z.infer<typeof CreatePostMutationInputSchema>;
@@ -32,9 +33,9 @@ export const createPostMutation: Mutation<{ input: CreatePostMutationInput, outp
     isPostingEnabled: () => boolean;
     getPostById: (args: { id: string; viewerId: string | null }) => Promise<Post | null>;
     /** Publishes the post's uploaded photos; returns those it could, with their real dimensions. */
-    publishPostPhotos: (args: { userId: string; postId: string; media: PostMediaFields[] }) => Promise<{ id: string; width: number; height: number }[]>;
+    publishPostPhotos: (args: { userId: string; postId: string; media: PostMedia[] }) => Promise<{ id: string; width: number; height: number }[]>;
     /** Creates the post with its photos. Null if the id is already used. */
-    createPost: (args: { id: string; userId: string; content: string; media: PostMediaRow[] }) => Promise<Post | null>;
+    createPost: (args: { id: string; userId: string; content: string; media: PostMedia[] }) => Promise<Post | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     const allowed = requireCallerWithProfile({ caller });
@@ -75,7 +76,7 @@ export const createPostMutation: Mutation<{ input: CreatePostMutationInput, outp
     const published = input.media.length > 0
         ? await dependencies.publishPostPhotos({ userId, postId: input.id, media: input.media })
         : [];
-    const media = postMediaRows({ media: input.media, current: [], published });
+    const media = savedPostMedia({ postId: input.id, userId, media: input.media, current: [], published });
     if (!hasPostContent({ content: input.content, media })) {
         return fail(validationError("Your photos didn't upload. Try adding them again."));
     }

@@ -1,16 +1,15 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
-import type { PostMediaRow } from "@myapp/shared/domains";
+import type { PostMedia } from "@myapp/shared/domains";
 import { schema, type Transaction } from "./db";
 
 /**
- * Sets a post's photos as `userId`: adds new ones, updates the order and
- * captions of those it has, and deletes `removedMediaIds` (their files are
- * deleted by the mutation). Which photos it gets was decided in shared.
+ * Saves a post's photos as the mutation built them: adds new ones, updates
+ * the captions of those it has, and deletes `removedMediaIds` (their files
+ * are deleted by the mutation). Which photos it gets was decided in shared.
  */
-export async function placePostMedia(tx: Transaction, { postId, userId, media, removedMediaIds }: {
+export async function placePostMedia(tx: Transaction, { postId, media, removedMediaIds }: {
     postId: string;
-    userId: string;
-    media: PostMediaRow[];
+    media: PostMedia[];
     removedMediaIds: string[];
 }) {
     if (removedMediaIds.length > 0) {
@@ -18,13 +17,13 @@ export async function placePostMedia(tx: Transaction, { postId, userId, media, r
             .delete(schema.postMedia)
             .where(and(eq(schema.postMedia.postId, postId), inArray(schema.postMedia.id, removedMediaIds)));
     }
-    for (const row of media) {
+    for (const photo of media) {
         await tx
             .insert(schema.postMedia)
-            .values({ ...row, postId, createdBy: userId, updatedBy: userId })
+            .values({ ...photo, createdAt: new Date(photo.createdAt), updatedAt: new Date(photo.updatedAt) })
             .onConflictDoUpdate({
                 target: schema.postMedia.id,
-                set: { position: row.position, caption: row.caption, updatedBy: userId, updatedAt: new Date() },
+                set: { caption: photo.caption, updatedBy: photo.updatedBy, updatedAt: new Date(photo.updatedAt) },
                 // Only a photo of this post (an id can't move a photo between posts).
                 setWhere: sql`${schema.postMedia.postId} = ${postId}`,
             });

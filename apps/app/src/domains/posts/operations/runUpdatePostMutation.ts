@@ -18,7 +18,7 @@ export function runUpdatePostMutation(post: UpdatePostMutationInput) {
       // The API deletes the files of photos taken off the post.
       deleteMedia: async () => {},
       updatePost: ({ id, content, media }) =>
-        fromApi(api.posts.updatePost.mutate({ id, content, media: media.map(({ id, caption, width, height, placeholder }) => ({ id, caption, width, height, placeholder })) })),
+        fromApi(api.posts.updatePost.mutate({ id, content, media })),
     },
   });
 }

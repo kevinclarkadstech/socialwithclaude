@@ -17,7 +17,7 @@ export function runCreatePostListingMutation(listing: CreatePostListingMutationI
       publishPostPhotos: async ({ media }) => media.map(({ id, width, height }) => ({ id, width, height })),
       // The API takes the caller from the session, so userId isn't sent; photos go as chosen, in order.
       createPostListing: ({ userId, media, ...input }) =>
-        fromApi(api.postListings.createListing.mutate({ ...input, media: media.map(({ id, caption, width, height, placeholder }) => ({ id, caption, width, height, placeholder })) })),
+        fromApi(api.postListings.createListing.mutate({ ...input, media })),
     },
   });
 }

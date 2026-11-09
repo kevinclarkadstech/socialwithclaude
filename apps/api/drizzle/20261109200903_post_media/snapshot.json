@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "b2d03ec7-003b-4732-90c5-0b0a343d653a",
+  "id": "83aa5b34-b625-4dfa-b394-a5108f7728ec",
   "prevIds": [
     "695ada08-7a13-47dc-bd97-e8a21f40c383"
   ],
@@ -1048,19 +1048,6 @@
       "generated": null,
       "identity": null,
       "name": "post_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "post_media"
-    },
-    {
-      "type": "integer",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "position",
       "entityType": "columns",
       "schema": "public",
       "table": "post_media"
@@ -2574,7 +2561,7 @@
           "opclass": null
         },
         {
-          "value": "position",
+          "value": "id",
           "isExpression": false,
           "asc": true,
           "nullsFirst": false,
@@ -2586,7 +2573,7 @@
       "with": "",
       "method": "btree",
       "concurrently": false,
-      "name": "post_media_post_id_position_idx",
+      "name": "post_media_post_id_id_idx",
       "entityType": "indexes",
       "schema": "public",
       "table": "post_media"
@@ -4005,13 +3992,6 @@
     {
       "value": "\"width\" > 0 and \"height\" > 0",
       "name": "post_media_dimensions_positive",
-      "entityType": "checks",
-      "schema": "public",
-      "table": "post_media"
-    },
-    {
-      "value": "\"position\" >= 0",
-      "name": "post_media_position_non_negative",
       "entityType": "checks",
       "schema": "public",
       "table": "post_media"

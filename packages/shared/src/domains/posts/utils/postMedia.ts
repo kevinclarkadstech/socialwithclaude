@@ -1,11 +1,5 @@
 import type { PostMedia } from "../types/post-media";
 
-/** A photo as creating or editing a post takes it: the model's own fields the app sets (its order is its place in the list). */
-export type PostMediaFields = Pick<PostMedia, "id" | "caption" | "width" | "height" | "placeholder">;
-
-/** A photo as a post's row stores it (who and when are added when saving). */
-export type PostMediaRow = Pick<PostMedia, "id" | "position" | "caption" | "width" | "height" | "placeholder">;
-
 /** Whether a post has something in it: text, or at least one photo. */
 export function hasPostContent({ content, media }: { content: string; media: unknown[] }): boolean {
     return content.trim().length > 0 || media.length > 0;
@@ -17,39 +11,52 @@ export function hasUniqueMedia(media: Pick<PostMedia, "id">[]): boolean {
 }
 
 /** The photos in `media` that aren't on the post yet (to publish from their uploads). */
-export function newPostMedia<T extends Pick<PostMedia, "id">>({ current, media }: { current: Pick<PostMedia, "id">[]; media: T[] }): T[] {
+export function newPostMedia({ current, media }: { current: PostMedia[]; media: PostMedia[] }): PostMedia[] {
     return media.filter((item) => !current.some((existing) => existing.id === item.id));
 }
 
 /** The photos an edit takes off a post: those it has that aren't in `media` any more. */
-export function removedPostMedia<T extends Pick<PostMedia, "id">>({ current, media }: { current: T[]; media: Pick<PostMedia, "id">[] }): T[] {
+export function removedPostMedia({ current, media }: { current: PostMedia[]; media: PostMedia[] }): PostMedia[] {
     return current.filter((existing) => !media.some((item) => item.id === existing.id));
 }
 
 /**
- * The post's photos as they'll be saved: those in `media` that are on the
- * post already or were just published (with their real dimensions), in the
- * order given, numbered from 0. Photos that couldn't be published are left
- * out. Blank captions are none.
+ * The post's photos as they'll be saved, from what the app sent: those it
+ * has already (with the caption as sent), and new ones that were published.
+ * The server's values replace the app's: the post, who and when, and the
+ * real dimensions of published photos. Photos that couldn't be published are
+ * left out. In the order they were added (ULIDs sort by time).
  */
-export function postMediaRows({ media, current, published }: {
-    media: PostMediaFields[];
-    current: Pick<PostMedia, "id" | "width" | "height">[];
-    published: Pick<PostMedia, "id" | "width" | "height">[];
-}): PostMediaRow[] {
-    const rows: PostMediaRow[] = [];
+export function savedPostMedia({ postId, userId, media, current, published, now = new Date().toISOString() }: {
+    postId: string;
+    userId: string;
+    media: PostMedia[];
+    current: PostMedia[];
+    published: { id: string; width: number; height: number }[];
+    now?: string;
+}): PostMedia[] {
+    const saved: PostMedia[] = [];
     for (const item of media) {
-        const saved = current.find((existing) => existing.id === item.id) ?? published.find((done) => done.id === item.id);
-        if (saved) {
-            rows.push({
-                id: item.id,
-                position: rows.length,
-                caption: item.caption?.trim() || null,
-                width: saved.width,
-                height: saved.height,
-                placeholder: item.placeholder,
+        const caption = item.caption?.trim() || null;
+        const existing = current.find((photo) => photo.id === item.id);
+        if (existing) {
+            saved.push(caption === existing.caption ? existing : { ...existing, caption, updatedBy: userId, updatedAt: now });
+            continue;
+        }
+        const done = published.find((photo) => photo.id === item.id);
+        if (done) {
+            saved.push({
+                ...item,
+                postId,
+                caption,
+                width: done.width,
+                height: done.height,
+                createdBy: userId,
+                updatedBy: userId,
+                createdAt: now,
+                updatedAt: now,
             });
         }
     }
-    return rows;
+    return saved.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }

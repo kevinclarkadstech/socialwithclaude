@@ -8,12 +8,11 @@ export const PhotoCaptionSchema = z.string().trim().max(300);
 /**
  * A photo on a post or listing. Its files are at
  * `{post creator}/{postId}/{id}-{size}` in the media bucket, one per
- * postPhotoSizes (by the longer side).
+ * postPhotoSizes (by the longer side). A post shows its photos in the order
+ * they were added (their ids are ULIDs).
  */
 export const PostMediaSchema = BaseUserCreatedEntitySchema.extend({
     postId: z.ulid(),
-    // Its order on the post, from 0.
-    position: z.int().min(0),
     caption: PhotoCaptionSchema.nullable(),
     // At the largest size; smaller sizes keep the shape.
     width: z.int().positive(),

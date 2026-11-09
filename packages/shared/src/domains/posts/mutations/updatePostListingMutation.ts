@@ -6,9 +6,9 @@ import { canUpdatePost } from "../../../logic/authorization/posts/canUpdatePost"
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { PostSchema, type Post } from "../types/post";
-import { hasUniqueMedia, newPostMedia, postMediaRows, removedPostMedia, type PostMediaFields, type PostMediaRow } from "../utils/postMedia";
+import { hasUniqueMedia, newPostMedia, removedPostMedia, savedPostMedia } from "../utils/postMedia";
 import { maxPostPhotos } from "../constants";
-import { PostMediaSchema } from "../types/post-media";
+import { PostMediaSchema, type PostMedia } from "../types/post-media";
 import { postPhotoKeys } from "../utils/postPhotoKeys";
 import {
     ListingPriceSchema,
@@ -21,8 +21,8 @@ import {
 export const UpdatePostListingMutationInputSchema = PostSchema.pick({ id: true, content: true })
     .extend(PostListingFieldsSchema.pick({ title: true, description: true, condition: true, status: true, isNegotiable: true }).shape)
     .extend({
-        // All its photos, in order: ones it has, and new ones uploaded first (createPostMediaUploadsMutation).
-        media: z.array(PostMediaSchema.pick({ id: true, caption: true, width: true, height: true, placeholder: true })).max(maxPostPhotos).default([]),
+        // All its photos: ones it has, and new ones uploaded first (createPostMediaUploadsMutation).
+        media: z.array(PostMediaSchema).max(maxPostPhotos).default([]),
     })
     .and(ListingPriceSchema);
 
@@ -37,7 +37,7 @@ export const updatePostListingMutation: Mutation<{ input: UpdatePostListingMutat
     getCallingUser: GetCallingUser;
     getPostById: (args: { id: string; viewerId: string | null }) => Promise<Post | null>;
     /** Publishes photos uploaded for the post; returns those it could, with their real dimensions. */
-    publishPostPhotos: (args: { userId: string; postId: string; media: PostMediaFields[] }) => Promise<{ id: string; width: number; height: number }[]>;
+    publishPostPhotos: (args: { userId: string; postId: string; media: PostMedia[] }) => Promise<{ id: string; width: number; height: number }[]>;
     /** Deletes published photo files. */
     deleteMedia: (args: { keys: string[] }) => Promise<void>;
     /** Saves the listing, and sets its photos to `media`, taking `removedMediaIds` off it. Null if it was deleted. */
@@ -45,7 +45,7 @@ export const updatePostListingMutation: Mutation<{ input: UpdatePostListingMutat
         id: string;
         userId: string;
         content: string;
-        media: PostMediaRow[];
+        media: PostMedia[];
         removedMediaIds: string[];
         title: string;
         description: string;
@@ -79,7 +79,7 @@ export const updatePostListingMutation: Mutation<{ input: UpdatePostListingMutat
     const published = added.length > 0
         ? await dependencies.publishPostPhotos({ userId: post.createdBy, postId: post.id, media: added })
         : [];
-    const media = postMediaRows({ media: input.media, current: post.media, published });
+    const media = savedPostMedia({ postId: post.id, userId: allowed.value.userId, media: input.media, current: post.media, published });
     const removed = removedPostMedia({ current: post.media, media: input.media });
 
     const updatedPost = await dependencies.updatePostListing({

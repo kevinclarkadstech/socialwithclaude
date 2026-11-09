@@ -5,6 +5,8 @@ import { emitPostCreated } from '../postEvents';
 import { pendingPostStore, type PendingPost } from '../pendingPostStore';
 import { postStore } from '../postStore';
 import { warnAboutDroppedPhotos } from '../utils/droppedPhotosWarning';
+import { preparedPostMedia } from '../utils/preparePostPhoto';
+import { getCallingUser } from '../../users/callingUserStore';
 
 /**
  * Posts something new (a post or a listing) without making anyone wait: it
@@ -40,13 +42,8 @@ async function send(id: string) {
   }
   pendingPostStore.update(id, { status: 'sending', error: null });
 
-  const media = pending.photos.map(({ photo, caption }) => ({
-    id: photo.mediaId,
-    caption,
-    width: photo.width,
-    height: photo.height,
-    placeholder: photo.placeholder,
-  }));
+  const caller = await getCallingUser();
+  const media = pending.photos.map(({ photo, caption }) => preparedPostMedia(photo, { postId: id, userId: caller?.userId ?? '', caption }));
   const result = await runOrToast(() =>
     pending.content.kind === 'post'
       ? runCreatePostMutation({ id, content: pending.content.content, media })

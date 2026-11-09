@@ -18,7 +18,7 @@ export function runCreatePostMutation(post: CreatePostMutationInput) {
       // The API publishes the uploaded photos for real; here they're taken as they are.
       publishPostPhotos: async ({ media }) => media.map(({ id, width, height }) => ({ id, width, height })),
       createPost: ({ id, content, media }) =>
-        fromApi(api.posts.createPost.mutate({ id, content, media: media.map(({ id, caption, width, height, placeholder }) => ({ id, caption, width, height, placeholder })) })),
+        fromApi(api.posts.createPost.mutate({ id, content, media })),
     },
   });
 }

@@ -1,11 +1,12 @@
-import { maxPostPhotos, postPhotoSizes, type PostMedia, type PostMediaFields } from '@myapp/shared/domains';
+import { maxPostPhotos, postPhotoSizes, type PostMedia } from '@myapp/shared/domains';
 import { useRef, useState } from 'react';
 import { runOrToast } from '../../../lib/api/runOrToast';
 import { showErrorToast } from '../../../lib/toasts';
 import { uploadPostPhotos } from '../actions/uploadPostPhotos';
 import type { PendingPost } from '../pendingPostStore';
 import { postPhotoUrl } from '../utils/postPhotoUrl';
-import { preparePostPhoto, type PreparedPostPhoto } from '../utils/preparePostPhoto';
+import { preparedPostMedia, preparePostPhoto, type PreparedPostPhoto } from '../utils/preparePostPhoto';
+import { callingUserStore } from '../../users/callingUserStore';
 
 /** A photo in the composer: one already on the post, or one picked now (being resized, uploading, ready, or failed). */
 export type ComposerPhoto =
@@ -26,7 +27,8 @@ let nextKey = 0;
 /**
  * The photos of a post or listing being written or edited: adding (each is
  * resized on the device and uploaded straight away, so saving is quick),
- * removing, reordering, captioning, and trying a failed upload again.
+ * removing, captioning, and trying a failed upload again. They stay in the
+ * order they were added.
  * Saving the post publishes them.
  */
 export function usePostPhotos() {
@@ -134,29 +136,19 @@ export function usePostPhotos() {
     setPhotos((current) => current.filter((candidate) => candidate.key !== key));
   }
 
-  function move(from: number, to: number) {
-    setPhotos((current) => {
-      const next = [...current];
-      const [moved] = next.splice(from, 1);
-      next.splice(to, 0, moved!);
-      return next;
-    });
-  }
-
   function setCaption(key: string, caption: string) {
     setPhotos((current) => current.map((photo) => (photo.key === key ? { ...photo, caption } : photo)));
   }
 
-  /** The photos to save, in order, as the post's mutation takes them. */
-  const media: PostMediaFields[] = photos.flatMap((photo): PostMediaFields[] => {
+  /** The photos to save, as the post's mutation takes them (uploaded ones; saving waits for the rest). */
+  const userId = callingUserStore.get().callingUser?.userId ?? '';
+  const media: PostMedia[] = photos.flatMap((photo): PostMedia[] => {
     const caption = photo.caption.trim() || null;
     if (photo.kind === 'published') {
-      const { id, width, height, placeholder } = photo.media;
-      return [{ id, caption, width, height, placeholder }];
+      return [{ ...photo.media, caption }];
     }
     if (photo.status === 'ready' && photo.prepared) {
-      const { mediaId, width, height, placeholder } = photo.prepared;
-      return [{ id: mediaId, caption, width, height, placeholder }];
+      return [preparedPostMedia(photo.prepared, { postId: postId.current, userId, caption })];
     }
     return [];
   });
@@ -180,7 +172,7 @@ export function usePostPhotos() {
   const hasFailed = photos.some((photo) => photo.kind === 'new' && photo.status === 'failed');
   const isChanged = JSON.stringify(media.map(({ id, caption }) => ({ id, caption }))) !== initial || photos.length !== media.length;
 
-  return { photos, media, isBusy, hasFailed, isChanged, reset, add, retry, remove, move, setCaption, handOff };
+  return { photos, media, isBusy, hasFailed, isChanged, reset, add, retry, remove, setCaption, handOff };
 }
 
 export type PostPhotos = ReturnType<typeof usePostPhotos>;

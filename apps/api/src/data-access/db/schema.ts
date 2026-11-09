@@ -261,15 +261,14 @@ export const postListings = pgTable("post_listings", {
 /**
  * A photo on a post or listing. Its files are at
  * `{post creator}/{post_id}/{id}-{size}` in the media bucket: the app uploads
- * them as they're picked, and saving the post publishes them.
+ * them as they're picked, and saving the post publishes them. A post shows
+ * them in the order they were added (by id: ULIDs sort by time).
  */
 export const postMedia = pgTable("post_media", {
     id: text("id").primaryKey(),
     postId: text("post_id")
         .notNull()
         .references(() => posts.id, { onDelete: "cascade" }),
-    // Its order on the post, from 0.
-    position: integer("position").notNull(),
     caption: text("caption"),
     // At the largest size.
     width: integer("width").notNull(),
@@ -278,9 +277,8 @@ export const postMedia = pgTable("post_media", {
     placeholder: text("placeholder"),
     ...auditFields(),
 }, (t) => [
-    index("post_media_post_id_position_idx").on(t.postId, t.position),
+    index("post_media_post_id_id_idx").on(t.postId, t.id),
     check("post_media_dimensions_positive", sql`${t.width} > 0 and ${t.height} > 0`),
-    check("post_media_position_non_negative", sql`${t.position} >= 0`),
 ]);
 
 export const postComments = pgTable("post_comments", {

@@ -1,4 +1,4 @@
-import { maxPhotoAspectRatio, postPhotoSizes } from '@myapp/shared/domains';
+import { maxPhotoAspectRatio, postPhotoSizes, type PostMedia } from '@myapp/shared/domains';
 import { newId } from '../../../lib/ids';
 import type { DisplayPhoto } from '../../../lib/images/displayPhoto';
 import { renderPhotoSizes, type RenderedPhoto } from '../../../lib/images/renderPhotoSizes';
@@ -39,5 +39,25 @@ export function preparedDisplayPhoto(photo: PreparedPostPhoto, caption: string |
     height: photo.height,
     placeholder: photo.placeholder,
     caption,
+  };
+}
+
+/**
+ * A prepared photo as the post's PostMedia, as sent when saving. The server
+ * replaces what it decides (the post, who and when, the real size).
+ */
+export function preparedPostMedia(photo: PreparedPostPhoto, { postId, userId, caption }: { postId: string; userId: string; caption: string | null }): PostMedia {
+  const now = new Date().toISOString();
+  return {
+    id: photo.mediaId,
+    postId,
+    caption,
+    width: photo.width,
+    height: photo.height,
+    placeholder: photo.placeholder,
+    createdBy: userId,
+    updatedBy: userId,
+    createdAt: now,
+    updatedAt: now,
   };
 }
