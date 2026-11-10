@@ -34,8 +34,8 @@ export const updatePostMutation: Mutation<{ input: UpdatePostMutationInput, outp
     publishPostPhotos: (args: { userId: string; postId: string; media: PostMedia[] }) => Promise<{ id: string; width: number; height: number }[]>;
     /** Deletes published photo files. */
     deleteMedia: (args: { keys: string[] }) => Promise<void>;
-    /** Saves the text, and sets the post's photos to `media`, taking `removedMediaIds` off it. Null if it was deleted. */
-    updatePost: (args: { id: string; userId: string; content: string; media: PostMedia[]; removedMediaIds: string[] }) => Promise<Post | null>;
+    /** Saves the text, and makes the post's photos exactly `media`. Null if it was deleted. */
+    updatePost: (args: { id: string; userId: string; content: string; media: PostMedia[] }) => Promise<Post | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     const post = await dependencies.getPostById({ id: input.id, viewerId: caller?.userId ?? null });
@@ -75,7 +75,6 @@ export const updatePostMutation: Mutation<{ input: UpdatePostMutationInput, outp
         id: post.id,
         content: input.content,
         media,
-        removedMediaIds: removed.map((media) => media.id),
         userId: allowed.value.userId,
     });
     if (!updatedPost) {

@@ -3,18 +3,17 @@ import type { Post, PostMedia } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toPost } from "../../../mappers/posts";
 import { selectPosts } from "../../../selects/selectPosts";
-import { placePostMedia } from "../../../post-media";
+import { syncPostMedia } from "../../../post-media";
 
 /**
- * Changes a post's content and sets its photos, as `userId`: `media` in
- * order, and `removedMediaIds` taken off. Null if it doesn't exist or was deleted.
+ * Changes a post's content, as `userId`, and makes its photos exactly
+ * `media`. Null if it doesn't exist or was deleted.
  */
-export async function updatePost({ id, userId, content, media, removedMediaIds }: {
+export async function updatePost({ id, userId, content, media }: {
     id: string;
     userId: string;
     content: string;
     media: PostMedia[];
-    removedMediaIds: string[];
 }): Promise<Post | null> {
     return db.transaction(async (tx) => {
         const [updated] = await tx
@@ -26,7 +25,7 @@ export async function updatePost({ id, userId, content, media, removedMediaIds }
             return null;
         }
 
-        await placePostMedia(tx, { postId: id, media, removedMediaIds });
+        await syncPostMedia(tx, { postId: id, media });
 
         const [row] = await selectPosts(tx, userId).where(eq(schema.posts.id, id));
         return toPost(row!);

@@ -25,7 +25,7 @@ describe("updatePostMutation", () => {
     it("lets the author edit their post", async () => {
         const { result, updatePost } = run(mockCaller());
         expect(await result).toMatchObject({ ok: true, value: { content: "Edited" } });
-        expect(updatePost).toHaveBeenCalledWith({ id: post.id, content: "Edited", media: [], removedMediaIds: [], userId: mockCaller().userId });
+        expect(updatePost).toHaveBeenCalledWith({ id: post.id, content: "Edited", media: [], userId: mockCaller().userId });
     });
 
     it("refuses someone else, without saving", async () => {

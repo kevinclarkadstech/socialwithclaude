@@ -3,7 +3,7 @@ import type { ListingCondition, ListingPrice, Post, PostMedia } from "@myapp/sha
 import { db, schema } from "../../../db";
 import { toPost } from "../../../mappers/posts";
 import { selectPosts } from "../../../selects/selectPosts";
-import { placePostMedia } from "../../../post-media";
+import { syncPostMedia } from "../../../post-media";
 
 export type CreatePostListingArgs = {
     id: string;
@@ -44,7 +44,7 @@ export async function createPostListing({ id, userId, content, media, ...listing
                 createdAt: post.createdAt,
             });
 
-        await placePostMedia(tx, { postId: id, media, removedMediaIds: [] });
+        await syncPostMedia(tx, { postId: id, media });
 
         await tx
             .update(schema.userProfiles)

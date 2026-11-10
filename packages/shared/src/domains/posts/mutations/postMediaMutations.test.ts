@@ -215,7 +215,6 @@ describe("photos on posts", () => {
             content: "Edited",
             userId,
             media: [saved(mediaId, null, 960, 1280), expect.objectContaining({ id: kept, caption: "Kept", width: 1280, height: 960, updatedBy: userId })],
-            removedMediaIds: [removed],
         });
         expect(deleteMedia).toHaveBeenCalledWith({ keys: [320, 640, 1280].map((size) => key(removed, size)) });
     });

@@ -40,13 +40,12 @@ export const updatePostListingMutation: Mutation<{ input: UpdatePostListingMutat
     publishPostPhotos: (args: { userId: string; postId: string; media: PostMedia[] }) => Promise<{ id: string; width: number; height: number }[]>;
     /** Deletes published photo files. */
     deleteMedia: (args: { keys: string[] }) => Promise<void>;
-    /** Saves the listing, and sets its photos to `media`, taking `removedMediaIds` off it. Null if it was deleted. */
+    /** Saves the listing, and makes its photos exactly `media`. Null if it was deleted. */
     updatePostListing: (args: {
         id: string;
         userId: string;
         content: string;
         media: PostMedia[];
-        removedMediaIds: string[];
         title: string;
         description: string;
         condition: ListingCondition;
@@ -85,7 +84,6 @@ export const updatePostListingMutation: Mutation<{ input: UpdatePostListingMutat
     const updatedPost = await dependencies.updatePostListing({
         ...input,
         media,
-        removedMediaIds: removed.map((media) => media.id),
         userId: allowed.value.userId,
     });
     if (!updatedPost) {

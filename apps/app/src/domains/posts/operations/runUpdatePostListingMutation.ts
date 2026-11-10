@@ -18,7 +18,7 @@ export function runUpdatePostListingMutation(listing: UpdatePostListingMutationI
       // The API deletes the files of photos taken off the listing.
       deleteMedia: async () => {},
       // The API takes the caller from the session, so userId isn't sent; photos go as chosen, in order.
-      updatePostListing: ({ userId, removedMediaIds, media, ...input }) =>
+      updatePostListing: ({ userId, media, ...input }) =>
         fromApi(api.postListings.updateListing.mutate({ ...input, media })),
     },
   });

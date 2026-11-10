@@ -3,14 +3,13 @@ import type { ListingCondition, ListingPrice, ListingStatus, Post, PostMedia } f
 import { db, schema } from "../../../db";
 import { toPost } from "../../../mappers/posts";
 import { selectPosts } from "../../../selects/selectPosts";
-import { placePostMedia } from "../../../post-media";
+import { syncPostMedia } from "../../../post-media";
 
 export type UpdatePostListingArgs = {
     id: string;
     userId: string;
     content: string;
     media: PostMedia[];
-    removedMediaIds: string[];
     title: string;
     description: string;
     condition: ListingCondition;
@@ -19,7 +18,7 @@ export type UpdatePostListingArgs = {
 } & ListingPrice;
 
 /** Replaces a listing's content, details and photos, as `userId`. Null if it doesn't exist, was deleted or isn't a listing. */
-export async function updatePostListing({ id, userId, content, media, removedMediaIds, ...listing }: UpdatePostListingArgs): Promise<Post | null> {
+export async function updatePostListing({ id, userId, content, media, ...listing }: UpdatePostListingArgs): Promise<Post | null> {
     return db.transaction(async (tx) => {
         const now = new Date();
         const [post] = await tx
@@ -49,7 +48,7 @@ export async function updatePostListing({ id, userId, content, media, removedMed
             })
             .where(eq(schema.postListings.postId, id));
 
-        await placePostMedia(tx, { postId: id, media, removedMediaIds });
+        await syncPostMedia(tx, { postId: id, media });
 
         const [row] = await selectPosts(tx, userId).where(eq(schema.posts.id, id));
         return toPost(row!);
