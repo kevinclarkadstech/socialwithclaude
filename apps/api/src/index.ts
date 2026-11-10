@@ -1,14 +1,10 @@
 
 import { Hono, type Context, type Env } from "hono";
 import { cors } from "hono/cors";
-import { logger } from "hono/logger";
 import { requestId } from "hono/request-id";
-import {
-    contextStorage,
-} from 'hono/context-storage';
+import { contextStorage } from "hono/context-storage";
 import type { AppLogger } from "@myapp/shared/observability";
 import { rootLogger } from "./observability/logs";
-import { withSpan } from "./observability";
 import { createAuthInstance } from "./auth";
 import { nativeAppOrigins, serverConfig } from "./config";
 import { createAppFeatureFlagStore, type AppFeatureFlagStore } from "./shared/feature-flags";
@@ -30,34 +26,24 @@ export type AppHonoEnv = Env & {
     Bindings: object;
 }
 
-console.log('INITIALIZING SERVER')
-
 const auth = createAuthInstance(db);
+
+// Flags are fixed for now, so they're loaded once; a loader (e.g. from a flag service) would plug in here.
+const featureFlagStore = createAppFeatureFlagStore({ flagsOrLoader: { usersCanPost: true } });
+const featureFlagsLoaded = featureFlagStore.initialize();
 
 const app = new Hono<AppHonoEnv>()
     .use(contextStorage())
     .use(requestId())
-    .use(logger())
     .use("*", async (c, next) => {
-        const featureFlagStore = createAppFeatureFlagStore({
-            flagsOrLoader: {
-                usersCanPost: true,
-            }
-        });
-        await featureFlagStore.initialize();
-        c.set('featureFlagStore', featureFlagStore);
-        c.set('auth', auth);
-        const requestId = c.get('requestId')
-        const logger = rootLogger.child({
-            requestId,
-        });
-        rootLogger.info("Root logger");
-        logger.info("child logger")
-        c.set('logger', logger)
+        await featureFlagsLoaded;
+        c.set("featureFlagStore", featureFlagStore);
+        c.set("auth", auth);
+        const logger = rootLogger.child({ requestId: c.get("requestId") });
+        c.set("logger", logger);
         const start = performance.now();
         await next();
-
-        logger.info('request completed', {
+        logger.info("Request completed", {
             method: c.req.method,
             path: c.req.path,
             status: c.res.status,
@@ -75,14 +61,15 @@ const app = new Hono<AppHonoEnv>()
             credentials: true,
         }),
     )
-    .use("*", async (c, next) => {
-        const auth = c.get('auth');
-        const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    .get("/api/health", (c) => c.json({ ok: true }))
+    .on(["POST", "GET"], "/api/auth/*", (c) => c.get("auth").handler(c.req.raw))
+    // Only tRPC needs the caller; better-auth reads its own session.
+    .use("/api/trpc/*", async (c, next) => {
+        const session = await c.get("auth").api.getSession({ headers: c.req.raw.headers });
         c.set("user", session?.user ?? null);
         c.set("session", session?.session ?? null);
-        return next();
+        await next();
     })
-    .on(["POST", "GET"], "/api/auth/*", (c) => c.get('auth').handler(c.req.raw))
     .use(
         "/api/trpc/*",
         trpcServer({
@@ -92,24 +79,10 @@ const app = new Hono<AppHonoEnv>()
             onError: trpcOnErrorFunction,
         }),
     )
-    .get("/api2/ok", (c) => {
-        withSpan('/api2/ok', async () => {
-            c.get('logger').info("returning OK ")
-            if (serverConfig.DATABASE_URL) {
-                c.get('logger').error("Error with config", { why: "serverConfig has a db url", fix: "remove db url from config" })
-            }
-        });
-        return c.text("OK");
-    })
-    // .all('*', (c) => {
-    //     console.log('IN AALL')
-    //     return c.text('Custom 404 - Not Found', 404);
-    // })
-    .notFound((c) => c.text("Custom Hono 404: Route Not Found", 404))
+    .notFound((c) => c.json({ message: "Not found" }, 404))
     .onError((err, c) => {
-        c.get('logger').error(err.message, { err });
-
-        return c.json({ statusCode: 500, message: "Internal Server Error" }, 500);
+        c.get("logger").error(err.message, { err });
+        return c.json({ message: "Something went wrong" }, 500);
     });
 
 export default app;
