@@ -10,10 +10,10 @@ export const listingStatuses = ListingStatusSchema.options;
 export const reportReasons = ReportReasonSchema.options;
 export const reportStatuses = ReportStatusSchema.options;
 
-/** The most photos a post or listing may have. */
+/** The most photos a post or listing can have. */
 export const maxPostPhotos = 10;
 
-/** The longest a photo's caption may be. */
+/** The longest a photo's caption can be. */
 export const maxPhotoCaptionLength = PhotoCaptionSchema.maxLength!;
 
 /**
@@ -23,5 +23,5 @@ export const maxPhotoCaptionLength = PhotoCaptionSchema.maxLength!;
  */
 export const postPhotoSizes = [320, 640, 1280] as const;
 
-/** The most a photo's longer side may be over its shorter one (3:1 panoramas, 1:3 tall shots). */
+/** The most a photo's longer side can be over its shorter one (3:1 panoramas, 1:3 tall shots). */
 export const maxPhotoAspectRatio = 3;

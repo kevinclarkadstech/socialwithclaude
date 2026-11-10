@@ -63,17 +63,17 @@ export const createPostMediaUploadsMutation: Mutation<{ input: CreatePostMediaUp
         return fail(authorizationError("Posting is turned off"));
     }
 
-    // Photos for a post that exists already only go to one the caller may edit.
+    // Photos for a post that exists already only go to one the caller can edit.
     const post = await dependencies.getPostById({ id: input.postId, viewerId: allowed.value.userId });
     if (post) {
-        const mayEdit = canUpdatePost({ caller, post });
-        if (!mayEdit.ok) {
+        const canEdit = canUpdatePost({ caller, post });
+        if (!canEdit.ok) {
             logDisallowedResult({
                 logger,
-                result: mayEdit,
+                result: canEdit,
                 details: { action: "create-post-media-uploads", callerId: allowed.value.userId, postId: post.id },
             });
-            return mayEdit;
+            return canEdit;
         }
     }
 
