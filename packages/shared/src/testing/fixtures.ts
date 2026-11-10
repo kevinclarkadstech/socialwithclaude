@@ -1,7 +1,7 @@
 import type { ChatMember } from "../domains/chats/types/chat-member";
-import type { ChatMessage } from "../domains/chats/types/chat-message";
-import type { Post } from "../domains/posts/types/post";
-import type { PostComment } from "../domains/posts/types/post-comment";
+import type { ChatMessageView } from "../domains/chats/types/chat-message";
+import type { PostView } from "../domains/posts/types/post";
+import type { PostCommentView } from "../domains/posts/types/post-comment";
 import type { CallingUser } from "../domains/users/types/calling-user";
 import type { UserProfile } from "../domains/users/types/user-profile";
 
@@ -42,7 +42,7 @@ export function mockCaller(overrides: Partial<CallingUser> = {}): CallingUser {
 
 const creator = { userId: userId1, username: "user1", firstName: null, lastName: null, updatedAt: now };
 
-export function mockPost(overrides: Partial<Post> = {}): Post {
+export function mockPost(overrides: Partial<PostView> = {}): PostView {
     return {
         id: "01JBBBBBBBBBBBBBBBBBBBBBB1",
         type: "post",
@@ -62,7 +62,7 @@ export function mockPost(overrides: Partial<Post> = {}): Post {
     };
 }
 
-export function mockPostComment(overrides: Partial<PostComment> = {}): PostComment {
+export function mockPostComment(overrides: Partial<PostCommentView> = {}): PostCommentView {
     return {
         id: "01JCCCCCCCCCCCCCCCCCCCCCC1",
         postId: mockPost().id,
@@ -90,7 +90,7 @@ export function mockChatMember(overrides: Partial<ChatMember> = {}): ChatMember 
     };
 }
 
-export function mockChatMessage(overrides: Partial<ChatMessage> = {}): ChatMessage {
+export function mockChatMessage(overrides: Partial<ChatMessageView> = {}): ChatMessageView {
     return {
         id: "01JEEEEEEEEEEEEEEEEEEEEEE1",
         chatId: mockChatMember().chatId,

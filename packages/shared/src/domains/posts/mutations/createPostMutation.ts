@@ -6,7 +6,7 @@ import { requireCallerWithProfile } from "../../../logic/authorization/requireCa
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { maxPostPhotos } from "../constants";
-import { PostSchema, type Post } from "../types/post";
+import { PostSchema, PostViewSchema, type PostView } from "../types/post";
 import { PostMediaSchema, type PostMedia } from "../types/post-media";
 import { savedPostMedia } from "../logic/postMedia";
 import { hasPostContent, validatePostMedia } from "../validation/validatePostMedia";
@@ -19,7 +19,7 @@ export const CreatePostMutationInputSchema = PostSchema.pick({ id: true, content
 
 export type CreatePostMutationInput = z.infer<typeof CreatePostMutationInputSchema>;
 
-export const CreatePostMutationOutputSchema = PostSchema;
+export const CreatePostMutationOutputSchema = PostViewSchema;
 
 export type CreatePostMutationOutput = z.infer<typeof CreatePostMutationOutputSchema>;
 
@@ -32,11 +32,11 @@ export type CreatePostMutationOutput = z.infer<typeof CreatePostMutationOutputSc
 export const createPostMutation: Mutation<{ input: CreatePostMutationInput, output: CreatePostMutationOutput }, {
     getCallingUser: GetCallingUser;
     isPostingEnabled: () => boolean;
-    getPostById: (args: { id: string; viewerId: string | null }) => Promise<Post | null>;
+    getPostViewById: (args: { id: string; viewerId: string | null }) => Promise<PostView | null>;
     /** Publishes the post's uploaded photos; returns those it could, with their real dimensions. */
     publishPostPhotos: (args: { userId: string; postId: string; media: PostMedia[] }) => Promise<{ id: string; width: number; height: number }[]>;
     /** Creates the post with its photos. Null if the id is already used. */
-    createPost: (args: { id: string; userId: string; content: string; media: PostMedia[] }) => Promise<Post | null>;
+    createPost: (args: { id: string; userId: string; content: string; media: PostMedia[] }) => Promise<PostView | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     const allowed = requireCallerWithProfile({ caller });
@@ -55,7 +55,7 @@ export const createPostMutation: Mutation<{ input: CreatePostMutationInput, outp
         return fail(authorizationError("Posting is turned off"));
     }
 
-    const existing = await dependencies.getPostById({ id: input.id, viewerId: userId });
+    const existing = await dependencies.getPostViewById({ id: input.id, viewerId: userId });
     if (existing) {
         if (existing.createdBy === userId) {
             // A retry of a create that already worked.

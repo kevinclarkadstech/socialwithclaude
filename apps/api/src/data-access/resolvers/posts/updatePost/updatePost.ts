@@ -1,7 +1,7 @@
 import { and, eq, isNull } from "drizzle-orm";
-import type { Post, PostMedia } from "@myapp/shared/domains";
+import type { PostView, PostMedia } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { getPostById } from "../getPostById/getPostById";
+import { getPostViewById } from "../getPostViewById/getPostViewById";
 import { syncPostMedia } from "../syncPostMedia/syncPostMedia";
 
 /**
@@ -13,7 +13,7 @@ export async function updatePost({ id, userId, content, media }: {
     userId: string;
     content: string;
     media: PostMedia[];
-}): Promise<Post | null> {
+}): Promise<PostView | null> {
     return db.transaction(async (tx) => {
         const [updated] = await tx
             .update(schema.posts)
@@ -27,6 +27,6 @@ export async function updatePost({ id, userId, content, media }: {
         await syncPostMedia(tx, { postId: id, media });
 
         // Just written, so it exists.
-        return (await getPostById({ id, viewerId: userId }, tx))!;
+        return (await getPostViewById({ id, viewerId: userId }, tx))!;
     });
 }

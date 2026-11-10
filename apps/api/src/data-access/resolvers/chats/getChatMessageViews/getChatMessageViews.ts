@@ -1,20 +1,20 @@
 import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import type { Page } from "@myapp/shared/common";
-import type { ChatMessage } from "@myapp/shared/domains";
+import type { ChatMessageView } from "@myapp/shared/domains";
 import { schema } from "../../../db";
 import { toPage } from "../../../paging";
-import { readChatMessages } from "../readChatMessages/readChatMessages";
+import { findChatMessageViews } from "../findChatMessageViews/findChatMessageViews";
 
 /** A chat's messages, newest first, as `viewerId` sees them; only those sent after `after` if given. */
-export async function getChatMessages({ chatId, viewerId, after, cursor, limit }: {
+export async function getChatMessageViews({ chatId, viewerId, after, cursor, limit }: {
     chatId: string;
     viewerId: string | null;
     after?: string | null;
     cursor?: string | null;
     limit: number;
-}): Promise<Page<ChatMessage>> {
+}): Promise<Page<ChatMessageView>> {
     const t = schema.chatMessages;
-    const messages = await readChatMessages({
+    const messages = await findChatMessageViews({
         viewerId,
         where: and(
             eq(t.chatId, chatId),

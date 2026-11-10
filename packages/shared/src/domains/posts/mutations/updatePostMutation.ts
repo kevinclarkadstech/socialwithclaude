@@ -5,7 +5,7 @@ import { notFoundError, validationError } from "../../../error-handling";
 import { canUpdatePost } from "../../../logic/authorization/posts/canUpdatePost";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
-import { PostSchema, type Post } from "../types/post";
+import { PostSchema, PostViewSchema, type PostView } from "../types/post";
 import { newPostMedia, removedPostMedia, savedPostMedia } from "../logic/postMedia";
 import { hasPostContent, validatePostMedia } from "../validation/validatePostMedia";
 import { maxPostPhotos } from "../constants";
@@ -20,7 +20,7 @@ export const UpdatePostMutationInputSchema = PostSchema.pick({ id: true, content
 
 export type UpdatePostMutationInput = z.infer<typeof UpdatePostMutationInputSchema>;
 
-export const UpdatePostMutationOutputSchema = PostSchema;
+export const UpdatePostMutationOutputSchema = PostViewSchema;
 
 export type UpdatePostMutationOutput = z.infer<typeof UpdatePostMutationOutputSchema>;
 
@@ -31,16 +31,16 @@ export type UpdatePostMutationOutput = z.infer<typeof UpdatePostMutationOutputSc
  */
 export const updatePostMutation: Mutation<{ input: UpdatePostMutationInput, output: UpdatePostMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getPostById: (args: { id: string; viewerId: string | null }) => Promise<Post | null>;
+    getPostViewById: (args: { id: string; viewerId: string | null }) => Promise<PostView | null>;
     /** Publishes photos uploaded for the post; returns those it could, with their real dimensions. */
     publishPostPhotos: (args: { userId: string; postId: string; media: PostMedia[] }) => Promise<{ id: string; width: number; height: number }[]>;
     /** Deletes published photo files. */
     deleteMedia: (args: { keys: string[] }) => Promise<void>;
     /** Saves the text, and makes the post's photos exactly `media`. Null if it was deleted. */
-    updatePost: (args: { id: string; userId: string; content: string; media: PostMedia[] }) => Promise<Post | null>;
+    updatePost: (args: { id: string; userId: string; content: string; media: PostMedia[] }) => Promise<PostView | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const post = await dependencies.getPostById({ id: input.id, viewerId: caller?.userId ?? null });
+    const post = await dependencies.getPostViewById({ id: input.id, viewerId: caller?.userId ?? null });
     if (!post) {
         logger.info("Post to update not found", { postId: input.id });
         return fail(notFoundError("Post not found"));

@@ -5,7 +5,7 @@ import { conflictError } from "../../../error-handling";
 import { requireCallerWithProfile } from "../../../logic/authorization/requireCaller";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
-import { PostSchema, type Post } from "../types/post";
+import { PostSchema, PostViewSchema, type PostView } from "../types/post";
 import { savedPostMedia } from "../logic/postMedia";
 import { validatePostMedia } from "../validation/validatePostMedia";
 import { maxPostPhotos } from "../constants";
@@ -23,7 +23,7 @@ export const CreatePostListingMutationInputSchema = PostSchema.pick({ id: true, 
 
 export type CreatePostListingMutationInput = z.infer<typeof CreatePostListingMutationInputSchema>;
 
-export const CreatePostListingMutationOutputSchema = PostSchema;
+export const CreatePostListingMutationOutputSchema = PostViewSchema;
 
 export type CreatePostListingMutationOutput = z.infer<typeof CreatePostListingMutationOutputSchema>;
 
@@ -35,7 +35,7 @@ export type CreatePostListingMutationOutput = z.infer<typeof CreatePostListingMu
  */
 export const createPostListingMutation: Mutation<{ input: CreatePostListingMutationInput, output: CreatePostListingMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getPostById: (args: { id: string; viewerId: string | null }) => Promise<Post | null>;
+    getPostViewById: (args: { id: string; viewerId: string | null }) => Promise<PostView | null>;
     /** Publishes the listing's uploaded photos; returns those it could, with their real dimensions. */
     publishPostPhotos: (args: { userId: string; postId: string; media: PostMedia[] }) => Promise<{ id: string; width: number; height: number }[]>;
     /** Creates the listing with its photos. Null if the id is already used. */
@@ -48,7 +48,7 @@ export const createPostListingMutation: Mutation<{ input: CreatePostListingMutat
         description: string;
         condition: ListingCondition;
         isNegotiable: boolean;
-    } & ListingPrice) => Promise<Post | null>;
+    } & ListingPrice) => Promise<PostView | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     const allowed = requireCallerWithProfile({ caller });
@@ -62,7 +62,7 @@ export const createPostListingMutation: Mutation<{ input: CreatePostListingMutat
     }
 
     const userId = allowed.value.userId;
-    const existing = await dependencies.getPostById({ id: input.id, viewerId: userId });
+    const existing = await dependencies.getPostViewById({ id: input.id, viewerId: userId });
     if (existing) {
         if (existing.createdBy === userId) {
             // A retry of a create that already worked.

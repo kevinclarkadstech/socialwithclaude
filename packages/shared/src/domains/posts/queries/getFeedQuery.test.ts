@@ -1,5 +1,5 @@
 import { describe, expect, it, mock } from "bun:test";
-import type { Post } from "../types/post";
+import type { PostView } from "../types/post";
 import { mockCaller, mockPost, userId2 } from "../../../testing/fixtures";
 import { testContext } from "../../../testing/context";
 import { getFeedQuery } from "./getFeedQuery";
@@ -14,14 +14,14 @@ const publicPost = mockPost();
 
 describe("getFeedQuery", () => {
     it("leaves out blocked users, and posts the caller can't see", async () => {
-        const getPosts = mock(async () => ({ items: [privatePost, publicPost], nextCursor: "next" }));
+        const getPostViews = mock(async () => ({ items: [privatePost, publicPost], nextCursor: "next" }));
         const caller = mockCaller({ blockList: { blocking: ["01JAAAAAAAAAAAAAAAAAAAAAA3"], blockedBy: ["01JAAAAAAAAAAAAAAAAAAAAAA4"] } });
         const result = await getFeedQuery({
             input: { cursor: null, limit: 20 },
             context: testContext,
-            dependencies: { getCallingUser: async () => caller, getPosts },
+            dependencies: { getCallingUser: async () => caller, getPostViews },
         });
-        expect(getPosts).toHaveBeenCalledWith(expect.objectContaining({
+        expect(getPostViews).toHaveBeenCalledWith(expect.objectContaining({
             excludedCreatorIds: ["01JAAAAAAAAAAAAAAAAAAAAAA3", "01JAAAAAAAAAAAAAAAAAAAAAA4"],
         }));
         // The cursor still follows what was fetched, so paging carries on past the dropped post.
@@ -30,10 +30,10 @@ describe("getFeedQuery", () => {
 });
 
 describe("getPostByIdQuery", () => {
-    const run = (post: Post) => getPostByIdQuery({
+    const run = (post: PostView) => getPostByIdQuery({
         input: { postId: post.id },
         context: testContext,
-        dependencies: { getCallingUser: async () => mockCaller(), getPostById: async () => post },
+        dependencies: { getCallingUser: async () => mockCaller(), getPostViewById: async () => post },
     });
     it("is not found for a post the caller can't see", async () => {
         expect(await run(privatePost)).toMatchObject({ ok: false, error: { type: "not-found" } });

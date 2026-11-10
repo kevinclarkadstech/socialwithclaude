@@ -1,12 +1,12 @@
-import type { Post } from '@myapp/shared/domains';
+import type { PostView } from '@myapp/shared/domains';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createEntityStore } from './createEntityStore';
 
-const postStore = createEntityStore<Post>();
+const postStore = createEntityStore<PostView>();
 
 const creator = { userId: '01JAAAAAAAAAAAAAAAAAAAAAA1', username: 'maya', firstName: null, lastName: null, updatedAt: '2026-11-06T12:00:00.000Z', profileVisibility: 'public' as const };
 
-function post(id: string, overrides: Partial<Post> = {}): Post {
+function post(id: string, overrides: Partial<PostView> = {}): PostView {
   return {
     id,
     type: 'post',

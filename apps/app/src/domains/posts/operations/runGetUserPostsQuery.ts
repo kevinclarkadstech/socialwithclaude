@@ -20,7 +20,7 @@ export function runGetUserPostsQuery({ profile, type, cursor }: {
       getUserProfileByUsername: async () => profile,
       getProfileVisibility: async () => profile.profileVisibility,
       getUserFollowStatus: async () => followStatusFrom(profile.viewer.followStatus),
-      getPosts: ({ cursor, limit }) =>
+      getPostViews: ({ cursor, limit }) =>
         withRetry(() => fromApi(api.posts.getUserPosts.query({ username: profile.username, type, cursor, limit }))),
     },
   });

@@ -1,4 +1,4 @@
-import type { CallingUser, PostComment } from '@myapp/shared/domains';
+import type { CallingUser, PostCommentView } from '@myapp/shared/domains';
 import { canDeletePostComment, canUpdatePostComment } from '@myapp/shared/logic/authorization';
 import { askForReport } from '../../../../common/prompts/askForReport';
 import { askForText, chooseFrom, confirm } from '../../../../lib/prompts';
@@ -6,7 +6,7 @@ import { deletePostComment } from '../../actions/deletePostComment';
 import { reportPostComment } from '../../actions/reportPostComment';
 import { updatePostComment } from '../../actions/updatePostComment';
 
-async function edit(comment: PostComment) {
+async function edit(comment: PostCommentView) {
   const content = await askForText({ header: 'Edit comment', value: comment.content, confirmText: 'Save' });
   if (content === null || content === comment.content) {
     return;
@@ -14,7 +14,7 @@ async function edit(comment: PostComment) {
   await updatePostComment({ id: comment.id, content });
 }
 
-async function remove(comment: PostComment) {
+async function remove(comment: PostCommentView) {
   const confirmed = await confirm({ header: 'Delete this comment?', message: "This can't be undone.", confirmText: 'Delete' });
   if (!confirmed) {
     return;
@@ -22,7 +22,7 @@ async function remove(comment: PostComment) {
   await deletePostComment(comment);
 }
 
-async function report(comment: PostComment) {
+async function report(comment: PostCommentView) {
   const answer = await askForReport();
   if (answer === null) {
     return;
@@ -34,7 +34,7 @@ async function report(comment: PostComment) {
  * A comment's "more" menu: edit and delete for your own comments, report for
  * everyone else's. What's offered comes from the same can* checks the API enforces.
  */
-export async function openCommentMenu({ comment, callingUser }: { comment: PostComment; callingUser: CallingUser | null }) {
+export async function openCommentMenu({ comment, callingUser }: { comment: PostCommentView; callingUser: CallingUser | null }) {
   const canEdit = canUpdatePostComment({ caller: callingUser, comment }).ok;
   const canDelete = canDeletePostComment({ caller: callingUser, comment }).ok;
   const choice = await chooseFrom({

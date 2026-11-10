@@ -1,7 +1,7 @@
 import { eq, sql } from "drizzle-orm";
-import type { ListingCondition, ListingPrice, Post, PostMedia } from "@myapp/shared/domains";
+import type { ListingCondition, ListingPrice, PostView, PostMedia } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { getPostById } from "../getPostById/getPostById";
+import { getPostViewById } from "../getPostViewById/getPostViewById";
 import { syncPostMedia } from "../syncPostMedia/syncPostMedia";
 
 export type CreatePostListingArgs = {
@@ -19,7 +19,7 @@ export type CreatePostListingArgs = {
  * Creates a post with the client's `id`, its listing details and photos, and counts
  * it on the author's profile (as a post, and as a listing). Null if the id is already used.
  */
-export async function createPostListing({ id, userId, content, media, ...listing }: CreatePostListingArgs): Promise<Post | null> {
+export async function createPostListing({ id, userId, content, media, ...listing }: CreatePostListingArgs): Promise<PostView | null> {
     return db.transaction(async (tx) => {
         const [post] = await tx
             .insert(schema.posts)
@@ -54,6 +54,6 @@ export async function createPostListing({ id, userId, content, media, ...listing
             .where(eq(schema.userProfiles.userId, userId));
 
         // Just written, so it exists.
-        return (await getPostById({ id, viewerId: userId }, tx))!;
+        return (await getPostViewById({ id, viewerId: userId }, tx))!;
     });
 }

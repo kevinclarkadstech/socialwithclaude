@@ -1,4 +1,4 @@
-import type { Post, PostReport, ReportReason } from "@myapp/shared/domains";
+import type { PostView, PostReport, ReportReason } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toPostReport } from "../../../mappers/posts";
 
@@ -12,7 +12,7 @@ export async function createPostReport({ id, userId, postId, reason, details, sn
     postId: string;
     reason: ReportReason;
     details: string | null;
-    snapshot: Omit<Post, "viewer">;
+    snapshot: Omit<PostView, "viewer">;
 }): Promise<PostReport> {
     const [row] = await db
         .insert(schema.postReports)

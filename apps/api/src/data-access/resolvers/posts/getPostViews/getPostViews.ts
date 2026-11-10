@@ -1,15 +1,15 @@
 import { and, desc, eq, isNull, notInArray, sql } from "drizzle-orm";
 import type { Page } from "@myapp/shared/common";
-import type { Post } from "@myapp/shared/domains";
+import type { PostView } from "@myapp/shared/domains";
 import { schema } from "../../../db";
 import { toPage } from "../../../paging";
-import { readPosts } from "../readPosts/readPosts";
+import { findPostViews } from "../findPostViews/findPostViews";
 
 /**
  * Posts and listings, newest first, as `viewerId` sees them; only
  * `createdBy`'s if given, and only listings (or only non-listings) if `isListing` is given.
  */
-export async function getPosts({ excludedCreatorIds = [], createdBy, isListing, viewerId, cursor, limit }: {
+export async function getPostViews({ excludedCreatorIds = [], createdBy, isListing, viewerId, cursor, limit }: {
     // Creators whose posts are left out.
     excludedCreatorIds?: string[];
     createdBy?: string;
@@ -17,8 +17,8 @@ export async function getPosts({ excludedCreatorIds = [], createdBy, isListing, 
     viewerId: string | null;
     cursor?: string | null;
     limit: number;
-}): Promise<Page<Post>> {
-    const posts = await readPosts({
+}): Promise<Page<PostView>> {
+    const posts = await findPostViews({
         viewerId,
         where: and(
             isNull(schema.posts.deletedAt),

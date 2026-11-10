@@ -10,7 +10,7 @@ export function runGetPostByIdQuery({ postId }: { postId: string }) {
     context: { logger },
     dependencies: {
       getCallingUser,
-      getPostById: ({ id }) => fetchPostById(id),
+      getPostViewById: ({ id }) => fetchPostById(id),
     },
   });
 }

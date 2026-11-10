@@ -62,7 +62,7 @@ describe("createPostMediaUploadsMutation", () => {
         dependencies: {
             getCallingUser: async () => as,
             isPostingEnabled: () => postingEnabled,
-            getPostById: async () => existing,
+            getPostViewById: async () => existing,
             createUploadUrl: async ({ key: uploadKey }: { key: string }) => `https://storage.test/${uploadKey}?signed`,
         },
     });
@@ -147,7 +147,7 @@ describe("photos on posts", () => {
             dependencies: {
                 getCallingUser: async () => caller,
                 isPostingEnabled: () => true,
-                getPostById: async () => null,
+                getPostViewById: async () => null,
                 publishPostPhotos,
                 createPost,
             },
@@ -206,7 +206,7 @@ describe("photos on posts", () => {
         const result = await updatePostMutation({
             input: { id: post.id, content: "Edited", media: [field(mediaId), field(kept, "Kept")] },
             context: testContext,
-            dependencies: { getCallingUser: async () => caller, getPostById: async () => existing, publishPostPhotos, deleteMedia, updatePost },
+            dependencies: { getCallingUser: async () => caller, getPostViewById: async () => existing, publishPostPhotos, deleteMedia, updatePost },
         });
         expect(result).toMatchObject({ ok: true });
         expect(publishPostPhotos).toHaveBeenCalledWith({ userId, postId: post.id, media: [field(mediaId)] });
@@ -226,7 +226,7 @@ describe("photos on posts", () => {
             context: testContext,
             dependencies: {
                 getCallingUser: async () => caller,
-                getPostById: async () => mockPost({ media: [onPost(mediaId)] }),
+                getPostViewById: async () => mockPost({ media: [onPost(mediaId)] }),
                 deletePost: async () => true,
                 deleteMedia,
             },

@@ -5,7 +5,7 @@ import { notFoundError } from "../../../error-handling";
 import { canDeletePost } from "../../../logic/authorization/posts/canDeletePost";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
-import { PostSchema, type Post } from "../types/post";
+import { PostSchema, type PostView } from "../types/post";
 import { photoKeys } from "../../../common/photos/utils";
 import { postPhotoSizes } from "../constants";
 
@@ -20,13 +20,13 @@ export type DeletePostMutationOutput = z.infer<typeof DeletePostMutationOutputSc
 /** Deletes a post (or listing), and its photos' files. */
 export const deletePostMutation: Mutation<{ input: DeletePostMutationInput, output: DeletePostMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getPostById: (args: { id: string; viewerId: string | null }) => Promise<Post | null>;
+    getPostViewById: (args: { id: string; viewerId: string | null }) => Promise<PostView | null>;
     deletePost: (args: { id: string; userId: string }) => Promise<boolean>;
     /** Deletes published photo files. */
     deleteMedia: (args: { keys: string[] }) => Promise<void>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const post = await dependencies.getPostById({ id: input.id, viewerId: caller?.userId ?? null });
+    const post = await dependencies.getPostViewById({ id: input.id, viewerId: caller?.userId ?? null });
     if (!post) {
         logger.info("Post to delete not found", { postId: input.id });
         return fail(notFoundError("Post not found"));

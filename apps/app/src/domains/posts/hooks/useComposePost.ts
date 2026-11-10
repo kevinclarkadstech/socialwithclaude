@@ -1,4 +1,4 @@
-import type { Post } from '@myapp/shared/domains';
+import type { PostView } from '@myapp/shared/domains';
 import { useState } from 'react';
 import { newId } from '../../../lib/ids';
 import { publishPost } from '../actions/publishPost';
@@ -13,7 +13,7 @@ import { usePostPhotos } from './usePostPhotos';
  * straight away); an edit saves before closing. The text is trimmed only
  * when it's sent, so spaces and new lines can be typed.
  */
-export function useComposePost({ post, onDismiss }: { post?: Post; onDismiss: () => void }) {
+export function useComposePost({ post, onDismiss }: { post?: PostView; onDismiss: () => void }) {
   const [postId, setPostId] = useState('');
   const [content, setContent] = useState('');
   const [isBusy, setIsBusy] = useState(false);

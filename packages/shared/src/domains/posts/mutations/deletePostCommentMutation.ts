@@ -5,7 +5,7 @@ import { notFoundError } from "../../../error-handling";
 import { canDeletePostComment } from "../../../logic/authorization/posts/canDeletePostComment";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
-import { PostCommentSchema, type PostComment } from "../types/post-comment";
+import { PostCommentSchema, type PostCommentView } from "../types/post-comment";
 
 export const DeletePostCommentMutationInputSchema = PostCommentSchema.pick({ id: true });
 
@@ -17,11 +17,11 @@ export type DeletePostCommentMutationOutput = z.infer<typeof DeletePostCommentMu
 
 export const deletePostCommentMutation: Mutation<{ input: DeletePostCommentMutationInput, output: DeletePostCommentMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getPostCommentById: (args: { id: string; viewerId: string | null }) => Promise<PostComment | null>;
+    getPostCommentViewById: (args: { id: string; viewerId: string | null }) => Promise<PostCommentView | null>;
     deletePostComment: (args: { id: string; userId: string }) => Promise<boolean>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const comment = await dependencies.getPostCommentById({ id: input.id, viewerId: caller?.userId ?? null });
+    const comment = await dependencies.getPostCommentViewById({ id: input.id, viewerId: caller?.userId ?? null });
     if (!comment) {
         logger.info("Comment to delete not found", { postCommentId: input.id });
         return fail(notFoundError("Comment not found"));

@@ -1,6 +1,6 @@
 import { and, eq, sql, type SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
-import type { PostComment } from "@myapp/shared/domains";
+import type { PostCommentView } from "@myapp/shared/domains";
 import { db, schema, type Executor } from "../../../db";
 import { creatorFields, toCreator } from "../../../creator";
 
@@ -9,13 +9,13 @@ import { creatorFields, toCreator } from "../../../creator";
  * viewer's vote and whether they saved it.
  * Private to these resolvers: everything else goes through the resolvers.
  */
-export async function readPostComments({ executor = db, viewerId, where, orderBy = [], limit }: {
+export async function findPostCommentViews({ executor = db, viewerId, where, orderBy = [], limit }: {
     executor?: Executor;
     viewerId: string | null;
     where?: SQL;
     orderBy?: (SQL | AnyPgColumn)[];
     limit?: number;
-}): Promise<PostComment[]> {
+}): Promise<PostCommentView[]> {
     let query = selectPostComments(executor, viewerId);
     if (where) {
         query = query.where(where);
@@ -61,7 +61,7 @@ function selectPostComments(executor: Executor, viewerId: string | null) {
 type Row = Awaited<ReturnType<typeof selectPostComments>>[number];
 
 /** A comment from selectPostComments. */
-function toPostComment({ comment, creator, vote, savedAt }: Row): PostComment {
+function toPostComment({ comment, creator, vote, savedAt }: Row): PostCommentView {
     return {
         id: comment.id,
         postId: comment.postId,

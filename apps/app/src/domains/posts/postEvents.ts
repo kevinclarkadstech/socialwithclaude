@@ -1,6 +1,6 @@
-import type { Post } from '@myapp/shared/domains';
+import type { PostView } from '@myapp/shared/domains';
 
-type Listener = (post: Post) => void;
+type Listener = (post: PostView) => void;
 
 const listeners = new Set<Listener>();
 
@@ -16,7 +16,7 @@ export function onPostCreated(listener: Listener): () => void {
   };
 }
 
-export function emitPostCreated(post: Post) {
+export function emitPostCreated(post: PostView) {
   for (const listener of listeners) {
     listener(post);
   }

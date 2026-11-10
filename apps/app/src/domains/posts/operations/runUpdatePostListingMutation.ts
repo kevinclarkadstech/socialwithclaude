@@ -12,7 +12,7 @@ export function runUpdatePostListingMutation(listing: UpdatePostListingMutationI
     context: { logger },
     dependencies: {
       getCallingUser,
-      getPostById: postFromStoreOrApi,
+      getPostViewById: postFromStoreOrApi,
       // The API publishes the uploaded photos for real; here they're taken as they are.
       publishPostPhotos: async ({ media }) => media.map(({ id, width, height }) => ({ id, width, height })),
       // The API deletes the files of photos taken off the listing.

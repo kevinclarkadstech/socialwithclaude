@@ -12,7 +12,7 @@ export function runCreatePostListingMutation(listing: CreatePostListingMutationI
     context: { logger },
     dependencies: {
       getCallingUser,
-      getPostById: postFromStoreOrApi,
+      getPostViewById: postFromStoreOrApi,
       // The API publishes the uploaded photos for real; here they're taken as they are.
       publishPostPhotos: async ({ media }) => media.map(({ id, width, height }) => ({ id, width, height })),
       // The API takes the caller from the session, so userId isn't sent; photos go as chosen, in order.

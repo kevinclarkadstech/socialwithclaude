@@ -7,7 +7,7 @@ import { logDisallowedResult } from "../../../logic/authorization/logDisallowedR
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { ChatSchema } from "../types/chat";
 import type { ChatMember } from "../types/chat-member";
-import { ChatMessageSchema, type ChatMessage } from "../types/chat-message";
+import { ChatMessageViewSchema, type ChatMessageView } from "../types/chat-message";
 
 export const GetChatMessagesQueryInputSchema = PageInputSchema.extend({
     chatId: ChatSchema.shape.id,
@@ -16,7 +16,7 @@ export const GetChatMessagesQueryInputSchema = PageInputSchema.extend({
 export type GetChatMessagesQueryInput = z.infer<typeof GetChatMessagesQueryInputSchema>;
 
 export const GetChatMessagesQueryOutputSchema = z.object({
-    items: z.array(ChatMessageSchema),
+    items: z.array(ChatMessageViewSchema),
     nextCursor: z.string().nullable(),
 });
 
@@ -26,13 +26,13 @@ export type GetChatMessagesQueryOutput = z.infer<typeof GetChatMessagesQueryOutp
 export const getChatMessagesQuery: Query<{ input: GetChatMessagesQueryInput, output: GetChatMessagesQueryOutput }, {
     getCallingUser: GetCallingUser;
     getChatMembers: (args: { chatId: string }) => Promise<ChatMember[]>;
-    getChatMessages: (args: {
+    getChatMessageViews: (args: {
         chatId: string;
         viewerId: string | null;
         after?: string | null;
         cursor?: string | null;
         limit: number;
-    }) => Promise<Page<ChatMessage>>;
+    }) => Promise<Page<ChatMessageView>>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const members = await dependencies.getChatMembers({ chatId: input.chatId });
 
@@ -49,6 +49,6 @@ export const getChatMessagesQuery: Query<{ input: GetChatMessagesQueryInput, out
 
     // canViewChat checked the caller is a member.
     const member = members.find((m) => m.userId === allowed.value.userId)!;
-    const page = await dependencies.getChatMessages({ ...input, viewerId: allowed.value.userId, after: member.clearedAt });
+    const page = await dependencies.getChatMessageViews({ ...input, viewerId: allowed.value.userId, after: member.clearedAt });
     return succeed(page);
 }

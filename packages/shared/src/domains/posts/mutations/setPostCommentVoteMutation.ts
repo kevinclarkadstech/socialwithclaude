@@ -5,7 +5,7 @@ import { notFoundError } from "../../../error-handling";
 import { canVoteOnPostComment } from "../../../logic/authorization/posts/canVoteOnPostComment";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
-import type { PostComment } from "../types/post-comment";
+import type { PostCommentView } from "../types/post-comment";
 import { PostCommentVoteSchema, PostCommentVoteValueSchema, type PostCommentVote, type PostCommentVoteValue } from "../types/post-comment-vote";
 
 export const SetPostCommentVoteMutationInputSchema = PostCommentVoteSchema.pick({ postCommentId: true }).extend({
@@ -26,12 +26,12 @@ export type SetPostCommentVoteMutationOutput = z.infer<typeof SetPostCommentVote
  */
 export const setPostCommentVoteMutation: Mutation<{ input: SetPostCommentVoteMutationInput, output: SetPostCommentVoteMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getPostCommentById: (args: { id: string; viewerId: string | null }) => Promise<PostComment | null>;
+    getPostCommentViewById: (args: { id: string; viewerId: string | null }) => Promise<PostCommentView | null>;
     setPostCommentVote: (args: { userId: string; postCommentId: string; value: PostCommentVoteValue }) => Promise<PostCommentVote | null>;
     deletePostCommentVote: (args: { userId: string; postCommentId: string }) => Promise<boolean>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const comment = await dependencies.getPostCommentById({ id: input.postCommentId, viewerId: caller?.userId ?? null });
+    const comment = await dependencies.getPostCommentViewById({ id: input.postCommentId, viewerId: caller?.userId ?? null });
     if (!comment) {
         logger.info("Comment to vote on not found", { postCommentId: input.postCommentId });
         return fail(notFoundError("Comment not found"));

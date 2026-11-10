@@ -1,12 +1,12 @@
 import { IonButton, IonIcon } from '@ionic/react';
-import type { Post } from '@myapp/shared/domains';
+import type { PostView } from '@myapp/shared/domains';
 import { ellipsisHorizontal } from 'ionicons/icons';
 import { ComposeListingModal } from '../ComposeListingModal/ComposeListingModal';
 import { ComposePostModal } from '../ComposePostModal/ComposePostModal';
 import { usePostMenuButton } from './usePostMenuButton';
 
 /** A post's "more" button, and the editor it opens for your own posts (the listing form for a listing). */
-export function PostMenuButton({ post, onDeleted }: { post: Post; onDeleted?: () => void }) {
+export function PostMenuButton({ post, onDeleted }: { post: PostView; onDeleted?: () => void }) {
   const { openMenu, isEditing, stopEditing } = usePostMenuButton({ post, onDeleted });
 
   return (

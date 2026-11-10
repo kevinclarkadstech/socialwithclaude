@@ -12,7 +12,7 @@ export function runDeletePostMutation({ id }: { id: string }) {
     context: { logger },
     dependencies: {
       getCallingUser,
-      getPostById: postFromStoreOrApi,
+      getPostViewById: postFromStoreOrApi,
       deletePost: async ({ id }) => {
         await fromApi(api.posts.deletePost.mutate({ id }));
         return true;

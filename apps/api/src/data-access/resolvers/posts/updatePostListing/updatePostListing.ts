@@ -1,7 +1,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
-import type { ListingCondition, ListingPrice, ListingStatus, Post, PostMedia } from "@myapp/shared/domains";
+import type { ListingCondition, ListingPrice, ListingStatus, PostView, PostMedia } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { getPostById } from "../getPostById/getPostById";
+import { getPostViewById } from "../getPostViewById/getPostViewById";
 import { syncPostMedia } from "../syncPostMedia/syncPostMedia";
 
 export type UpdatePostListingArgs = {
@@ -17,7 +17,7 @@ export type UpdatePostListingArgs = {
 } & ListingPrice;
 
 /** Replaces a listing's content, details and photos, as `userId`. Null if it doesn't exist, was deleted or isn't a listing. */
-export async function updatePostListing({ id, userId, content, media, ...listing }: UpdatePostListingArgs): Promise<Post | null> {
+export async function updatePostListing({ id, userId, content, media, ...listing }: UpdatePostListingArgs): Promise<PostView | null> {
     return db.transaction(async (tx) => {
         const now = new Date();
         const [post] = await tx
@@ -50,6 +50,6 @@ export async function updatePostListing({ id, userId, content, media, ...listing
         await syncPostMedia(tx, { postId: id, media });
 
         // Just written, so it exists.
-        return (await getPostById({ id, viewerId: userId }, tx))!;
+        return (await getPostViewById({ id, viewerId: userId }, tx))!;
     });
 }

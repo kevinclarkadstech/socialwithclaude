@@ -1,4 +1,4 @@
-import type { Post } from '@myapp/shared/domains';
+import type { PostView } from '@myapp/shared/domains';
 import { errorMessage } from '../../../lib/api/errors';
 import { orThrow } from '../../../lib/api/results';
 import { showErrorToast } from '../../../lib/toasts';
@@ -8,7 +8,7 @@ import { postStore } from '../postStore';
 
 /** Saves or unsaves a post. Every list showing it updates right away, and it's undone if the request fails. */
 export function useSavePost() {
-  async function setSaved(post: Post, save: boolean) {
+  async function setSaved(post: PostView, save: boolean) {
     if (postStore.getItem(post.id)?.viewer.hasSaved === save) {
       // Already that way, e.g. a double tap.
       return;

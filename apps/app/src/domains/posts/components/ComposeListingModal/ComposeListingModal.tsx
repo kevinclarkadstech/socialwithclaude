@@ -14,7 +14,7 @@ import {
   IonToggle,
   IonToolbar,
 } from '@ionic/react';
-import { listingConditions, listingPriceTypes, listingStatuses, type Post } from '@myapp/shared/domains';
+import { listingConditions, listingPriceTypes, listingStatuses, type PostView } from '@myapp/shared/domains';
 import type { FormEvent } from 'react';
 import { listingConditionLabels, listingStatusLabels, listingTypeLabels } from '../../../../common/formatters/listings';
 import { useComposeListing } from '../../hooks/useComposeListing';
@@ -25,7 +25,7 @@ import './ComposeListingModal.css';
 interface ComposeListingModalProps {
   isOpen: boolean;
   /** The listing being edited; without one, a new listing. */
-  post?: Post;
+  post?: PostView;
   onDismiss: () => void;
 }
 

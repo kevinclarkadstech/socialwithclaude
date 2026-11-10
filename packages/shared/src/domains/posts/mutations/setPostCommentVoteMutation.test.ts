@@ -1,5 +1,5 @@
 import { describe, expect, it, mock } from "bun:test";
-import type { PostComment } from "../types/post-comment";
+import type { PostCommentView } from "../types/post-comment";
 import type { PostCommentVote } from "../types/post-comment-vote";
 import type { CallingUser } from "../../users/types/calling-user";
 import { mockCaller, mockPostComment } from "../../../testing/fixtures";
@@ -11,7 +11,7 @@ const caller = mockCaller();
 
 function run({ value, existing = comment, signedIn = caller }: {
     value: 1 | -1 | null;
-    existing?: PostComment | null;
+    existing?: PostCommentView | null;
     signedIn?: CallingUser | null;
 }) {
     const setPostCommentVote = mock(async ({ value }: { value: 1 | -1 }): Promise<PostCommentVote> => ({
@@ -27,7 +27,7 @@ function run({ value, existing = comment, signedIn = caller }: {
         context: testContext,
         dependencies: {
             getCallingUser: async () => signedIn,
-            getPostCommentById: async () => existing,
+            getPostCommentViewById: async () => existing,
             setPostCommentVote,
             deletePostCommentVote,
         },

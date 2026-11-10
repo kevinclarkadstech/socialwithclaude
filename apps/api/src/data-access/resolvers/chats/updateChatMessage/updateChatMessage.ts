@@ -1,14 +1,14 @@
 import { and, eq, isNull } from "drizzle-orm";
-import type { ChatMessage } from "@myapp/shared/domains";
+import type { ChatMessageView } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { getChatMessageById } from "../getChatMessageById/getChatMessageById";
+import { getChatMessageViewById } from "../getChatMessageViewById/getChatMessageViewById";
 
 /** Changes a message's content, as `userId`. Null if it doesn't exist or was deleted. */
 export async function updateChatMessage({ id, userId, content }: {
     id: string;
     userId: string;
     content: string;
-}): Promise<ChatMessage | null> {
+}): Promise<ChatMessageView | null> {
     const [updated] = await db
         .update(schema.chatMessages)
         .set({ content, updatedBy: userId, updatedAt: new Date() })
@@ -19,5 +19,5 @@ export async function updateChatMessage({ id, userId, content }: {
     }
 
     // Just written, so it exists.
-    return (await getChatMessageById({ id, viewerId: userId }))!;
+    return (await getChatMessageViewById({ id, viewerId: userId }))!;
 }

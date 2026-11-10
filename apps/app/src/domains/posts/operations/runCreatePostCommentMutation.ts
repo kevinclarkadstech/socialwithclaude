@@ -12,8 +12,8 @@ export function runCreatePostCommentMutation(comment: CreatePostCommentMutationI
     context: { logger },
     dependencies: {
       getCallingUser,
-      getPostById: postFromStoreOrApi,
-      getPostCommentById: commentFromStore,
+      getPostViewById: postFromStoreOrApi,
+      getPostCommentViewById: commentFromStore,
       createPostComment: ({ id, postId, content }) =>
         fromApi(api.postComments.createPostComment.mutate({ id, postId, content })),
     },

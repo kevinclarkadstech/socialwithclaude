@@ -1,4 +1,4 @@
-import type { Post } from '@myapp/shared/domains';
+import type { PostView } from '@myapp/shared/domains';
 import { canDeletePost, canUpdatePost } from '@myapp/shared/logic/authorization';
 import { useState } from 'react';
 import { askForReport } from '../../../../common/prompts/askForReport';
@@ -13,7 +13,7 @@ import { reportPost } from '../../actions/reportPost';
  * everyone else's. What's offered comes from the same can* checks the API
  * enforces.
  */
-export function usePostMenuButton({ post, onDeleted }: { post: Post; onDeleted?: () => void }) {
+export function usePostMenuButton({ post, onDeleted }: { post: PostView; onDeleted?: () => void }) {
   const { callingUser } = useCallingUser();
   const requireSignIn = useRequireSignIn();
   const [isEditing, setIsEditing] = useState(false);

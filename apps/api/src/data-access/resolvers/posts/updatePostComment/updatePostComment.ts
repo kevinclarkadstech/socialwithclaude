@@ -1,14 +1,14 @@
 import { and, eq, isNull } from "drizzle-orm";
-import type { PostComment } from "@myapp/shared/domains";
+import type { PostCommentView } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { getPostCommentById } from "../getPostCommentById/getPostCommentById";
+import { getPostCommentViewById } from "../getPostCommentViewById/getPostCommentViewById";
 
 /** Changes a comment's content, as `userId`. Null if it doesn't exist or was deleted. */
 export async function updatePostComment({ id, userId, content }: {
     id: string;
     userId: string;
     content: string;
-}): Promise<PostComment | null> {
+}): Promise<PostCommentView | null> {
     const [updated] = await db
         .update(schema.postComments)
         .set({ content, updatedBy: userId, updatedAt: new Date() })
@@ -19,5 +19,5 @@ export async function updatePostComment({ id, userId, content }: {
     }
 
     // Just written, so it exists.
-    return (await getPostCommentById({ id, viewerId: userId }))!;
+    return (await getPostCommentViewById({ id, viewerId: userId }))!;
 }

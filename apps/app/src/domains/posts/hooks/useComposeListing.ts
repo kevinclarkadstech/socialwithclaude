@@ -1,4 +1,4 @@
-import type { ListingCondition, ListingPrice, ListingStatus, ListingType, Post } from '@myapp/shared/domains';
+import type { ListingCondition, ListingPrice, ListingStatus, ListingType, PostView } from '@myapp/shared/domains';
 import { useState } from 'react';
 import { newId } from '../../../lib/ids';
 import { publishPost } from '../actions/publishPost';
@@ -21,7 +21,7 @@ interface ListingFormErrors {
  * away); an edit saves before closing. The description is also the post's
  * text in the feed. Text is trimmed only when it's sent.
  */
-export function useComposeListing({ post, onDismiss }: { post?: Post; onDismiss: () => void }) {
+export function useComposeListing({ post, onDismiss }: { post?: PostView; onDismiss: () => void }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priceType, setPriceType] = useState<ListingType>('fixed');

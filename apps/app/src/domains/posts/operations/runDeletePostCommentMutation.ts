@@ -12,7 +12,7 @@ export function runDeletePostCommentMutation({ id }: { id: string }) {
     context: { logger },
     dependencies: {
       getCallingUser,
-      getPostCommentById: commentFromStore,
+      getPostCommentViewById: commentFromStore,
       deletePostComment: async ({ id }) => {
         await fromApi(api.postComments.deletePostComment.mutate({ id }));
         return true;

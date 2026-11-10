@@ -1,6 +1,6 @@
 import { and, eq, sql, type SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
-import type { Post, PostMedia } from "@myapp/shared/domains";
+import type { PostView, PostMedia } from "@myapp/shared/domains";
 import { db, schema, type Executor } from "../../../db";
 import { creatorFields, toCreator } from "../../../creator";
 import { toPostListing } from "../../../mappers/posts";
@@ -12,13 +12,13 @@ import { toPostListing } from "../../../mappers/posts";
  * who can see a post is decided in shared (canViewPost).
  * Private to these resolvers: everything else goes through the resolvers.
  */
-export async function readPosts({ executor = db, viewerId, where, orderBy = [], limit }: {
+export async function findPostViews({ executor = db, viewerId, where, orderBy = [], limit }: {
     executor?: Executor;
     viewerId: string | null;
     where?: SQL;
     orderBy?: (SQL | AnyPgColumn)[];
     limit?: number;
-}): Promise<Post[]> {
+}): Promise<PostView[]> {
     let query = selectPosts(executor, viewerId);
     if (where) {
         query = query.where(where);
@@ -80,7 +80,7 @@ function selectPosts(executor: Executor, viewerId: string | null) {
 type Row = Awaited<ReturnType<typeof selectPosts>>[number];
 
 /** A post from selectPosts, with its listing details if it's a listing. */
-function toPost({ post, listing, media, creator, creatorVisibility, savedAt, followedAt }: Row): Post {
+function toPost({ post, listing, media, creator, creatorVisibility, savedAt, followedAt }: Row): PostView {
     return {
         id: post.id,
         type: post.type,

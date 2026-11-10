@@ -1,5 +1,5 @@
 import type { CallingUser } from "../../users/types/calling-user";
-import type { Post } from "../types/post";
+import type { PostView } from "../types/post";
 import type { AuthorizationCheck } from "../../../logic/authorization/allowDisallow";
 import { canViewUserPosts } from "../../../logic/authorization/users/canViewUserPosts";
 
@@ -9,7 +9,7 @@ import { canViewUserPosts } from "../../../logic/authorization/users/canViewUser
  */
 export const canViewPost: AuthorizationCheck<{
     caller: CallingUser | null;
-    post: Pick<Post, "createdBy" | "creator" | "viewer">;
+    post: Pick<PostView, "createdBy" | "creator" | "viewer">;
 }, CallingUser | null> = ({ caller, post }) =>
     canViewUserPosts({
         caller,
@@ -19,7 +19,7 @@ export const canViewPost: AuthorizationCheck<{
     });
 
 /** The posts in `posts` the caller can see (see canViewPost). */
-export function viewablePosts<P extends Pick<Post, "createdBy" | "creator" | "viewer">>({ caller, posts }: {
+export function viewablePosts<P extends Pick<PostView, "createdBy" | "creator" | "viewer">>({ caller, posts }: {
     caller: CallingUser | null;
     posts: P[];
 }): P[] {

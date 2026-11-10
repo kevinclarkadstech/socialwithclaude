@@ -1,21 +1,21 @@
 import { and, desc, ilike, isNull, notInArray, or, sql } from "drizzle-orm";
 import type { Page } from "@myapp/shared/common";
-import type { Post } from "@myapp/shared/domains";
+import type { PostView } from "@myapp/shared/domains";
 import { schema } from "../../../db";
 import { toPage } from "../../../paging";
-import { readPosts } from "../readPosts/readPosts";
+import { findPostViews } from "../findPostViews/findPostViews";
 
 /** Posts whose content (or listing title) contains `query`, case-insensitive, newest first. */
-export async function searchPosts({ excludedCreatorIds = [], query, viewerId, cursor, limit }: {
+export async function searchPostViews({ excludedCreatorIds = [], query, viewerId, cursor, limit }: {
     // Creators whose posts are left out.
     excludedCreatorIds?: string[];
     query: string;
     viewerId: string | null;
     cursor?: string | null;
     limit: number;
-}): Promise<Page<Post>> {
+}): Promise<Page<PostView>> {
     const pattern = `%${query.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
-    const posts = await readPosts({
+    const posts = await findPostViews({
         viewerId,
         where: and(
             isNull(schema.posts.deletedAt),

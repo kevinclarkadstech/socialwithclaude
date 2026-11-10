@@ -5,7 +5,7 @@ import { notFoundError } from "../../../error-handling";
 import { canReportPost } from "../../../logic/authorization/posts/canReportPost";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
-import { type Post } from "../types/post";
+import { type PostView } from "../types/post";
 import { PostReportSchema, type PostReport } from "../types/post-report";
 import type { ReportReason } from "../types/report";
 
@@ -23,18 +23,18 @@ export type ReportPostMutationOutput = z.infer<typeof ReportPostMutationOutputSc
  */
 export const reportPostMutation: Mutation<{ input: ReportPostMutationInput, output: ReportPostMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getPostById: (args: { id: string; viewerId: string | null }) => Promise<Post | null>;
+    getPostViewById: (args: { id: string; viewerId: string | null }) => Promise<PostView | null>;
     createPostReport: (args: {
         id: string;
         userId: string;
         postId: string;
         reason: ReportReason;
         details: string | null;
-        snapshot: Omit<Post, "viewer">;
+        snapshot: Omit<PostView, "viewer">;
     }) => Promise<PostReport>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const post = await dependencies.getPostById({ id: input.postId, viewerId: caller?.userId ?? null });
+    const post = await dependencies.getPostViewById({ id: input.postId, viewerId: caller?.userId ?? null });
     if (!post) {
         logger.info("Post to report not found", { postId: input.postId });
         return fail(notFoundError("Post not found"));

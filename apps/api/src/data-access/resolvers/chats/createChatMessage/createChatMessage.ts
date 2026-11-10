@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
-import type { ChatMessage } from "@myapp/shared/domains";
+import type { ChatMessageView } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { getChatMessageById } from "../getChatMessageById/getChatMessageById";
+import { getChatMessageViewById } from "../getChatMessageViewById/getChatMessageViewById";
 
 /**
  * Sends a message with the client's `id`, and marks the chat as having a new
@@ -12,7 +12,7 @@ export async function createChatMessage({ id, chatId, userId, content }: {
     chatId: string;
     userId: string;
     content: string;
-}): Promise<ChatMessage | null> {
+}): Promise<ChatMessageView | null> {
     return db.transaction(async (tx) => {
         const [created] = await tx
             .insert(schema.chatMessages)
@@ -29,6 +29,6 @@ export async function createChatMessage({ id, chatId, userId, content }: {
             .where(eq(schema.chats.id, chatId));
 
         // Just written, so it exists.
-        return (await getChatMessageById({ id, viewerId: userId }, tx))!;
+        return (await getChatMessageViewById({ id, viewerId: userId }, tx))!;
     });
 }

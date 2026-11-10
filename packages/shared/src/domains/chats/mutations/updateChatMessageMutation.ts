@@ -5,23 +5,23 @@ import { notFoundError } from "../../../error-handling";
 import { canUpdateChatMessage } from "../../../logic/authorization/chats/canUpdateChatMessage";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
-import { ChatMessageSchema, type ChatMessage } from "../types/chat-message";
+import { ChatMessageSchema, ChatMessageViewSchema, type ChatMessageView } from "../types/chat-message";
 
 export const UpdateChatMessageMutationInputSchema = ChatMessageSchema.pick({ id: true, content: true });
 
 export type UpdateChatMessageMutationInput = z.infer<typeof UpdateChatMessageMutationInputSchema>;
 
-export const UpdateChatMessageMutationOutputSchema = ChatMessageSchema;
+export const UpdateChatMessageMutationOutputSchema = ChatMessageViewSchema;
 
 export type UpdateChatMessageMutationOutput = z.infer<typeof UpdateChatMessageMutationOutputSchema>;
 
 export const updateChatMessageMutation: Mutation<{ input: UpdateChatMessageMutationInput, output: UpdateChatMessageMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getChatMessageById: (args: { id: string; viewerId: string | null }) => Promise<ChatMessage | null>;
-    updateChatMessage: (args: { id: string; userId: string; content: string }) => Promise<ChatMessage | null>;
+    getChatMessageViewById: (args: { id: string; viewerId: string | null }) => Promise<ChatMessageView | null>;
+    updateChatMessage: (args: { id: string; userId: string; content: string }) => Promise<ChatMessageView | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const message = await dependencies.getChatMessageById({ id: input.id, viewerId: caller?.userId ?? null });
+    const message = await dependencies.getChatMessageViewById({ id: input.id, viewerId: caller?.userId ?? null });
     if (!message) {
         logger.info("Message to update not found", { chatMessageId: input.id });
         return fail(notFoundError("Message not found"));

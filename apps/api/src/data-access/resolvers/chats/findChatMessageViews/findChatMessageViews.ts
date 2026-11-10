@@ -1,6 +1,6 @@
 import { and, eq, sql, type SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
-import type { ChatMessage } from "@myapp/shared/domains";
+import type { ChatMessageView } from "@myapp/shared/domains";
 import { db, schema, type Executor } from "../../../db";
 import { creatorFields, toCreator } from "../../../creator";
 
@@ -9,13 +9,13 @@ import { creatorFields, toCreator } from "../../../creator";
  * sender) and whether the viewer saved it.
  * Private to these resolvers: everything else goes through the resolvers.
  */
-export async function readChatMessages({ executor = db, viewerId, where, orderBy = [], limit }: {
+export async function findChatMessageViews({ executor = db, viewerId, where, orderBy = [], limit }: {
     executor?: Executor;
     viewerId: string | null;
     where?: SQL;
     orderBy?: (SQL | AnyPgColumn)[];
     limit?: number;
-}): Promise<ChatMessage[]> {
+}): Promise<ChatMessageView[]> {
     let query = selectChatMessages(executor, viewerId);
     if (where) {
         query = query.where(where);
@@ -51,7 +51,7 @@ function selectChatMessages(executor: Executor, viewerId: string | null) {
 type Row = Awaited<ReturnType<typeof selectChatMessages>>[number];
 
 /** A message from selectChatMessages. */
-function toChatMessage({ message, creator, savedAt }: Row): ChatMessage {
+function toChatMessage({ message, creator, savedAt }: Row): ChatMessageView {
     return {
         id: message.id,
         chatId: message.chatId,

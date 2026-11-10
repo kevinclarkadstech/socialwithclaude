@@ -40,7 +40,7 @@ export function PostDetailPage() {
           <IonButtons slot="start">
             <BackButton />
           </IonButtons>
-          <IonTitle>Post</IonTitle>
+          <IonTitle>PostView</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent>

@@ -3,9 +3,9 @@ import type { Page } from "@myapp/shared/common";
 import type { UserSave } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toPage } from "../../../paging";
-import { getPostCommentsByIds } from "../../posts/getPostCommentsByIds/getPostCommentsByIds";
-import { getPostsByIds } from "../../posts/getPostsByIds/getPostsByIds";
-import { getChatMessagesByIds } from "../../chats/getChatMessagesByIds/getChatMessagesByIds";
+import { getPostCommentViewsByIds } from "../../posts/getPostCommentViewsByIds/getPostCommentViewsByIds";
+import { getPostViewsByIds } from "../../posts/getPostViewsByIds/getPostViewsByIds";
+import { getChatMessageViewsByIds } from "../../chats/getChatMessageViewsByIds/getChatMessageViewsByIds";
 
 const s = schema.userSaves;
 // The saved item's id, whichever type it is.
@@ -44,9 +44,9 @@ export async function getUserSaves({ userId, cursor, limit }: {
     const postCommentIds = idsOf("postCommentId");
     const chatMessageIds = idsOf("chatMessageId");
     const [savedPosts, savedComments, savedMessages] = await Promise.all([
-        getPostsByIds({ ids: postIds, viewerId: userId }),
-        getPostCommentsByIds({ ids: postCommentIds, viewerId: userId }),
-        getChatMessagesByIds({ ids: chatMessageIds, viewerId: userId }),
+        getPostViewsByIds({ ids: postIds, viewerId: userId }),
+        getPostCommentViewsByIds({ ids: postCommentIds, viewerId: userId }),
+        getChatMessageViewsByIds({ ids: chatMessageIds, viewerId: userId }),
     ]);
     const posts = new Map(savedPosts.map((post) => [post.id, post]));
     const postComments = new Map(savedComments.map((comment) => [comment.id, comment]));

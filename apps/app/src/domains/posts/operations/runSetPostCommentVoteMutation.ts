@@ -12,7 +12,7 @@ export function runSetPostCommentVoteMutation(vote: SetPostCommentVoteMutationIn
     context: { logger },
     dependencies: {
       getCallingUser,
-      getPostCommentById: commentFromStore,
+      getPostCommentViewById: commentFromStore,
       setPostCommentVote: ({ postCommentId, value }) =>
         fromApi(api.postComments.setPostCommentVote.mutate({ postCommentId, value })),
       deletePostCommentVote: async ({ postCommentId }) => {

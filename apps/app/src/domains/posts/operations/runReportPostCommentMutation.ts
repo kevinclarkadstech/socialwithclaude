@@ -12,7 +12,7 @@ export function runReportPostCommentMutation(report: ReportPostCommentMutationIn
     context: { logger },
     dependencies: {
       getCallingUser,
-      getPostCommentById: commentFromStore,
+      getPostCommentViewById: commentFromStore,
       createPostCommentReport: ({ id, postCommentId, reason, details }) =>
         fromApi(api.postComments.reportPostComment.mutate({ id, postCommentId, reason, details })),
     },

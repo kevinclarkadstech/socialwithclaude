@@ -1,12 +1,12 @@
 import { describe, expect, it, mock } from "bun:test";
-import type { Post } from "../types/post";
+import type { PostView } from "../types/post";
 import { mockCaller, mockPost, userId2 } from "../../../testing/fixtures";
 import { testContext } from "../../../testing/context";
 import { createPostMutation } from "./createPostMutation";
 
 const post = mockPost();
 
-function run({ created, existing }: { created: Post | null; existing: Post | null }) {
+function run({ created, existing }: { created: PostView | null; existing: PostView | null }) {
     const createPost = mock(async () => created);
     const result = createPostMutation({
         input: { id: post.id, content: post.content, media: [] },
@@ -14,7 +14,7 @@ function run({ created, existing }: { created: Post | null; existing: Post | nul
         dependencies: {
             getCallingUser: async () => mockCaller(),
             isPostingEnabled: () => true,
-            getPostById: async () => existing,
+            getPostViewById: async () => existing,
             publishPostPhotos: async () => [],
             createPost,
         },

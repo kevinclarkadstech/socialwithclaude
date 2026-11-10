@@ -1,10 +1,10 @@
 import type { CallingUser } from "../../../domains/users/types/calling-user";
-import type { PostComment } from "../../../domains/posts/types/post-comment";
+import type { PostCommentView } from "../../../domains/posts/types/post-comment";
 import { allow, disallow, type AuthorizationCheck } from "../allowDisallow";
 import { hasProfile, isCreator, isSignedIn } from "../conditions";
 
 /** Only the author can edit a comment. */
-export const canUpdatePostComment: AuthorizationCheck<{ caller: CallingUser | null; comment: PostComment }> = ({ caller, comment }) => {
+export const canUpdatePostComment: AuthorizationCheck<{ caller: CallingUser | null; comment: PostCommentView }> = ({ caller, comment }) => {
     if (!isSignedIn(caller)) {
         return disallow("not-signed-in");
     }

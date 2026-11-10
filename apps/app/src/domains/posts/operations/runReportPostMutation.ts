@@ -12,7 +12,7 @@ export function runReportPostMutation(report: ReportPostMutationInput) {
     context: { logger },
     dependencies: {
       getCallingUser,
-      getPostById: postFromStoreOrApi,
+      getPostViewById: postFromStoreOrApi,
       createPostReport: ({ id, postId, reason, details }) =>
         fromApi(api.posts.reportPost.mutate({ id, postId, reason, details })),
     },

@@ -12,7 +12,7 @@ function run(caller: ReturnType<typeof mockCaller> | null, existing = post) {
         context: testContext,
         dependencies: {
             getCallingUser: async () => caller,
-            getPostById: async () => existing,
+            getPostViewById: async () => existing,
             publishPostPhotos: async () => [],
             deleteMedia: async () => {},
             updatePost,
@@ -40,7 +40,7 @@ describe("updatePostMutation", () => {
             context: testContext,
             dependencies: {
                 getCallingUser: async () => mockCaller(),
-                getPostById: async () => null,
+                getPostViewById: async () => null,
                 publishPostPhotos: async () => [],
                 deleteMedia: async () => {},
                 updatePost: async () => null,

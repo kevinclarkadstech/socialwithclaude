@@ -9,7 +9,7 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/react';
-import type { Post } from '@myapp/shared/domains';
+import type { PostView } from '@myapp/shared/domains';
 import { useComposePost } from '../../hooks/useComposePost';
 import { PostPhotosField } from '../PostPhotosField/PostPhotosField';
 import './ComposePostModal.css';
@@ -19,7 +19,7 @@ const MAX_LENGTH = 2000;
 interface ComposePostModalProps {
   isOpen: boolean;
   /** The post being edited; without one, a new post. */
-  post?: Post;
+  post?: PostView;
   onDismiss: () => void;
 }
 

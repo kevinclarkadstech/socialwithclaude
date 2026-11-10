@@ -14,7 +14,7 @@ export function runCreatePostMutation(post: CreatePostMutationInput) {
       getCallingUser,
       // Only the server knows the feature flag; it refuses if posting is off.
       isPostingEnabled: () => true,
-      getPostById: postFromStoreOrApi,
+      getPostViewById: postFromStoreOrApi,
       // The API publishes the uploaded photos for real; here they're taken as they are.
       publishPostPhotos: async ({ media }) => media.map(({ id, width, height }) => ({ id, width, height })),
       createPost: ({ id, content, media }) =>

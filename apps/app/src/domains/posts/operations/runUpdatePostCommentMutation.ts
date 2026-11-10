@@ -12,7 +12,7 @@ export function runUpdatePostCommentMutation(comment: UpdatePostCommentMutationI
     context: { logger },
     dependencies: {
       getCallingUser,
-      getPostCommentById: commentFromStore,
+      getPostCommentViewById: commentFromStore,
       updatePostComment: ({ id, content }) => fromApi(api.postComments.updatePostComment.mutate({ id, content })),
     },
   });
