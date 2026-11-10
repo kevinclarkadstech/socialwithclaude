@@ -29,7 +29,7 @@ describe("canViewPost", () => {
 });
 
 describe("viewablePosts", () => {
-    it("keeps only what the caller may see, in order", () => {
+    it("keeps only what the caller can see, in order", () => {
         const visible = theirs("public");
         const hidden = { ...theirs("followers"), id: "01JBBBBBBBBBBBBBBBBBBBBBB2" };
         expect(viewablePosts({ caller: mockCaller(), posts: [hidden, visible] })).toEqual([visible]);

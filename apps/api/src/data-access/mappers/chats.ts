@@ -1,7 +1,5 @@
-import type { Chat, ChatMember, ChatMessage } from "@myapp/shared/domains";
+import type { Chat, ChatMember } from "@myapp/shared/domains";
 import type { schema } from "../db";
-import type { SelectedChatMessageRow } from "../selects/selectChatMessages";
-import { toCreator } from "../selects/creatorFields";
 
 type ChatRow = typeof schema.chats.$inferSelect;
 type ChatMemberRow = typeof schema.chatMembers.$inferSelect;
@@ -28,17 +26,4 @@ export function toChatMember(row: ChatMemberRow): ChatMember {
     };
 }
 
-/** A message from selectChatMessages. */
-export function toChatMessage({ message, creator, savedAt }: SelectedChatMessageRow): ChatMessage {
-    return {
-        id: message.id,
-        chatId: message.chatId,
-        content: message.content,
-        creator: toCreator(creator),
-        viewer: { hasSaved: savedAt !== null },
-        createdBy: message.createdBy,
-        updatedBy: message.updatedBy,
-        createdAt: message.createdAt.toISOString(),
-        updatedAt: message.updatedAt.toISOString(),
-    };
-}
+

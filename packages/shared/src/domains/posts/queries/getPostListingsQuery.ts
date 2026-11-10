@@ -21,7 +21,7 @@ export const GetPostListingsQueryOutputSchema = z.object({
 
 export type GetPostListingsQueryOutput = z.infer<typeof GetPostListingsQueryOutputSchema>;
 
-/** Listings, newest first; only those with `status` if given. Only what the caller may see (canViewPost). */
+/** Listings, newest first; only those with `status` if given. Only what the caller can see (canViewPost). */
 export const getPostListingsQuery: Query<{ input: GetPostListingsQueryInput, output: GetPostListingsQueryOutput }, {
     getCallingUser: GetCallingUser;
     getPostListings: (args: { excludedCreatorIds: string[]; status?: ListingStatus; viewerId: string | null; cursor?: string | null; limit: number }) => Promise<Page<Post>>;

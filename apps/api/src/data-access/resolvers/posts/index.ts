@@ -9,8 +9,10 @@ export { deletePostCommentVote } from './deletePostCommentVote/deletePostComment
 export { getPostById } from './getPostById/getPostById';
 export { getPostCommentById } from './getPostCommentById/getPostCommentById';
 export { getPostComments } from './getPostComments/getPostComments';
+export { getPostCommentsByIds } from './getPostCommentsByIds/getPostCommentsByIds';
 export { getPostListings } from './getPostListings/getPostListings';
 export { getPosts } from './getPosts/getPosts';
+export { getPostsByIds } from './getPostsByIds/getPostsByIds';
 export { searchPosts } from './searchPosts/searchPosts';
 export { setPostCommentVote } from './setPostCommentVote/setPostCommentVote';
 export { updatePost } from './updatePost/updatePost';

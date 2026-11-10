@@ -1,8 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import type { ListingCondition, ListingPrice, Post, PostMedia } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { toPost } from "../../../mappers/posts";
-import { selectPosts } from "../../../selects/selectPosts";
+import { getPostById } from "../getPostById/getPostById";
 import { syncPostMedia } from "../syncPostMedia/syncPostMedia";
 
 export type CreatePostListingArgs = {
@@ -54,7 +53,7 @@ export async function createPostListing({ id, userId, content, media, ...listing
             })
             .where(eq(schema.userProfiles.userId, userId));
 
-        const [row] = await selectPosts(tx, userId).where(eq(schema.posts.id, id));
-        return toPost(row!);
+        // Just written, so it exists.
+        return (await getPostById({ id, viewerId: userId }, tx))!;
     });
 }

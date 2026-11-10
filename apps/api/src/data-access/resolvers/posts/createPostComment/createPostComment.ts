@@ -1,8 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import type { PostComment } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { toPostComment } from "../../../mappers/posts";
-import { selectPostComments } from "../../../selects/selectPostComments";
+import { getPostCommentById } from "../getPostCommentById/getPostCommentById";
 
 /** Comments on a post with the client's `id`. Null if the id is already used. */
 export async function createPostComment({ id, postId, userId, content }: {
@@ -26,7 +25,7 @@ export async function createPostComment({ id, postId, userId, content }: {
             .set({ numComments: sql`${schema.posts.numComments} + 1` })
             .where(eq(schema.posts.id, postId));
 
-        const [row] = await selectPostComments(tx, userId).where(eq(schema.postComments.id, id));
-        return toPostComment(row!);
+        // Just written, so it exists.
+        return (await getPostCommentById({ id, viewerId: userId }, tx))!;
     });
 }

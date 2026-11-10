@@ -1,10 +1,9 @@
 import { and, desc, eq, isNull, notInArray, sql } from "drizzle-orm";
 import type { Page } from "@myapp/shared/common";
 import type { Post } from "@myapp/shared/domains";
-import { db, schema } from "../../../db";
-import { toPost } from "../../../mappers/posts";
+import { schema } from "../../../db";
 import { toPage } from "../../../paging";
-import { selectPosts } from "../../../selects/selectPosts";
+import { readPosts } from "../readPosts/readPosts";
 
 /**
  * Posts and listings, newest first, as `viewerId` sees them; only
@@ -19,8 +18,9 @@ export async function getPosts({ excludedCreatorIds = [], createdBy, isListing, 
     cursor?: string | null;
     limit: number;
 }): Promise<Page<Post>> {
-    const rows = await selectPosts(db, viewerId)
-        .where(and(
+    const posts = await readPosts({
+        viewerId,
+        where: and(
             isNull(schema.posts.deletedAt),
             excludedCreatorIds.length ? notInArray(schema.posts.createdBy, excludedCreatorIds) : undefined,
             createdBy ? eq(schema.posts.createdBy, createdBy) : undefined,
@@ -28,8 +28,9 @@ export async function getPosts({ excludedCreatorIds = [], createdBy, isListing, 
             cursor
                 ? sql`(${schema.posts.createdAt}, ${schema.posts.id}) < (select created_at, id from posts where id = ${cursor})`
                 : undefined,
-        ))
-        .orderBy(desc(schema.posts.createdAt), desc(schema.posts.id))
-        .limit(limit + 1);
-    return toPage(rows.map(toPost), limit, (post) => post.id);
+        ),
+        orderBy: [desc(schema.posts.createdAt), desc(schema.posts.id)],
+        limit: limit + 1,
+    });
+    return toPage(posts, limit, (post) => post.id);
 }

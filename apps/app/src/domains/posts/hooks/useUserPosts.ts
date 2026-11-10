@@ -10,7 +10,7 @@ export const userPostsListKey = (username: string, type: UserPostsType) => `user
 
 /**
  * A profile's posts (listings included) or just its listings, newest first, a page at a time. Only loads
- * when the viewer may see them (profile.viewer.canSeePosts).
+ * when the viewer can see them (profile.viewer.canSeePosts).
  */
 export function useUserPosts({ profile, type }: { profile: GetUserProfileQueryOutput | null; type: UserPostsType }) {
   const key = profile ? userPostsListKey(profile.username, type) : 'user:none';

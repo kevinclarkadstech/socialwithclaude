@@ -31,7 +31,7 @@ export function authorizationError(message = "You're not allowed to do that", me
     return createAppError({ type: "authorization", message, metadata });
 }
 
-/** Doesn't exist, or the caller may not know it exists. */
+/** Doesn't exist, or the caller isn't allowed to know it exists. */
 export function notFoundError(message = "Not found", metadata?: Metadata): AppError {
     return createAppError({ type: "not-found", message, metadata });
 }

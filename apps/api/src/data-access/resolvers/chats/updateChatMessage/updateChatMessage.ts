@@ -1,8 +1,7 @@
 import { and, eq, isNull } from "drizzle-orm";
 import type { ChatMessage } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { toChatMessage } from "../../../mappers/chats";
-import { selectChatMessages } from "../../../selects/selectChatMessages";
+import { getChatMessageById } from "../getChatMessageById/getChatMessageById";
 
 /** Changes a message's content, as `userId`. Null if it doesn't exist or was deleted. */
 export async function updateChatMessage({ id, userId, content }: {
@@ -19,6 +18,6 @@ export async function updateChatMessage({ id, userId, content }: {
         return null;
     }
 
-    const [row] = await selectChatMessages(db, userId).where(eq(schema.chatMessages.id, id));
-    return toChatMessage(row!);
+    // Just written, so it exists.
+    return (await getChatMessageById({ id, viewerId: userId }))!;
 }

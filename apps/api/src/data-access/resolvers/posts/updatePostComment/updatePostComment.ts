@@ -1,8 +1,7 @@
 import { and, eq, isNull } from "drizzle-orm";
 import type { PostComment } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { toPostComment } from "../../../mappers/posts";
-import { selectPostComments } from "../../../selects/selectPostComments";
+import { getPostCommentById } from "../getPostCommentById/getPostCommentById";
 
 /** Changes a comment's content, as `userId`. Null if it doesn't exist or was deleted. */
 export async function updatePostComment({ id, userId, content }: {
@@ -19,6 +18,6 @@ export async function updatePostComment({ id, userId, content }: {
         return null;
     }
 
-    const [row] = await selectPostComments(db, userId).where(eq(schema.postComments.id, id));
-    return toPostComment(row!);
+    // Just written, so it exists.
+    return (await getPostCommentById({ id, viewerId: userId }))!;
 }

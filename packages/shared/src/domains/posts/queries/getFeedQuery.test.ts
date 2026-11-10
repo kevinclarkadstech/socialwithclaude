@@ -13,7 +13,7 @@ const privatePost = mockPost({
 const publicPost = mockPost();
 
 describe("getFeedQuery", () => {
-    it("leaves out blocked users, and posts the caller may not see", async () => {
+    it("leaves out blocked users, and posts the caller can't see", async () => {
         const getPosts = mock(async () => ({ items: [privatePost, publicPost], nextCursor: "next" }));
         const caller = mockCaller({ blockList: { blocking: ["01JAAAAAAAAAAAAAAAAAAAAAA3"], blockedBy: ["01JAAAAAAAAAAAAAAAAAAAAAA4"] } });
         const result = await getFeedQuery({
@@ -35,10 +35,10 @@ describe("getPostByIdQuery", () => {
         context: testContext,
         dependencies: { getCallingUser: async () => mockCaller(), getPostById: async () => post },
     });
-    it("is not found for a post the caller may not see", async () => {
+    it("is not found for a post the caller can't see", async () => {
         expect(await run(privatePost)).toMatchObject({ ok: false, error: { type: "not-found" } });
     });
-    it("returns a post the caller may see", async () => {
+    it("returns a post the caller can see", async () => {
         expect(await run(publicPost)).toEqual({ ok: true, value: { post: publicPost } });
     });
 });

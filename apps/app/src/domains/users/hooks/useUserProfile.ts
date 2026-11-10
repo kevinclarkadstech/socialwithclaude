@@ -9,7 +9,7 @@ export type UserProfileStatus = 'loading' | 'ready' | 'not-found' | 'failed';
 
 /**
  * A profile and how it looks to the signed-in user. Reloads when they sign
- * in or out, or their block list changes, since both change what they may see.
+ * in or out, or their block list changes, since both change what they can see.
  */
 export function useUserProfile({ username }: { username: string | null }) {
   const [profile, setProfile] = useState<GetUserProfileQueryOutput | null>(null);

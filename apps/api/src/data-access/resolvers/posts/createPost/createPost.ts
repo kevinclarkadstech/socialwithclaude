@@ -1,8 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import type { Post, PostMedia } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { toPost } from "../../../mappers/posts";
-import { selectPosts } from "../../../selects/selectPosts";
+import { getPostById } from "../getPostById/getPostById";
 import { syncPostMedia } from "../syncPostMedia/syncPostMedia";
 
 /**
@@ -32,7 +31,7 @@ export async function createPost({ id, userId, content, media }: {
             .set({ numPosts: sql`${schema.userProfiles.numPosts} + 1` })
             .where(eq(schema.userProfiles.userId, userId));
 
-        const [row] = await selectPosts(tx, userId).where(eq(schema.posts.id, id));
-        return toPost(row!);
+        // Just written, so it exists.
+        return (await getPostById({ id, viewerId: userId }, tx))!;
     });
 }

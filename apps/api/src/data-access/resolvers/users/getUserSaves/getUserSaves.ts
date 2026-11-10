@@ -1,13 +1,11 @@
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import type { Page } from "@myapp/shared/common";
 import type { UserSave } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { toPost, toPostComment } from "../../../mappers/posts";
-import { toChatMessage } from "../../../mappers/chats";
 import { toPage } from "../../../paging";
-import { selectPosts } from "../../../selects/selectPosts";
-import { selectPostComments } from "../../../selects/selectPostComments";
-import { selectChatMessages } from "../../../selects/selectChatMessages";
+import { getPostCommentsByIds } from "../../posts/getPostCommentsByIds/getPostCommentsByIds";
+import { getPostsByIds } from "../../posts/getPostsByIds/getPostsByIds";
+import { getChatMessagesByIds } from "../../chats/getChatMessagesByIds/getChatMessagesByIds";
 
 const s = schema.userSaves;
 // The saved item's id, whichever type it is.
@@ -45,14 +43,14 @@ export async function getUserSaves({ userId, cursor, limit }: {
     const postIds = idsOf("postId");
     const postCommentIds = idsOf("postCommentId");
     const chatMessageIds = idsOf("chatMessageId");
-    const [postRows, postCommentRows, chatMessageRows] = await Promise.all([
-        postIds.length ? selectPosts(db, userId).where(inArray(schema.posts.id, postIds)) : [],
-        postCommentIds.length ? selectPostComments(db, userId).where(inArray(schema.postComments.id, postCommentIds)) : [],
-        chatMessageIds.length ? selectChatMessages(db, userId).where(inArray(schema.chatMessages.id, chatMessageIds)) : [],
+    const [savedPosts, savedComments, savedMessages] = await Promise.all([
+        getPostsByIds({ ids: postIds, viewerId: userId }),
+        getPostCommentsByIds({ ids: postCommentIds, viewerId: userId }),
+        getChatMessagesByIds({ ids: chatMessageIds, viewerId: userId }),
     ]);
-    const posts = new Map(postRows.map((row) => [row.post.id, toPost(row)]));
-    const postComments = new Map(postCommentRows.map((row) => [row.comment.id, toPostComment(row)]));
-    const chatMessages = new Map(chatMessageRows.map((row) => [row.message.id, toChatMessage(row)]));
+    const posts = new Map(savedPosts.map((post) => [post.id, post]));
+    const postComments = new Map(savedComments.map((comment) => [comment.id, comment]));
+    const chatMessages = new Map(savedMessages.map((message) => [message.id, message]));
 
     const items = page.items.flatMap(({ save }): UserSave[] => {
         const fields = { userId: save.userId, createdAt: save.createdAt.toISOString() };
