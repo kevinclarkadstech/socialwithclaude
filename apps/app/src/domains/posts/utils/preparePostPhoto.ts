@@ -1,7 +1,7 @@
 import { maxPhotoAspectRatio, postPhotoSizes, type PostMedia } from '@myapp/shared/domains';
 import { newId } from '../../../lib/ids';
-import type { DisplayPhoto } from '../../../lib/images/displayPhoto';
-import { renderPhotoSizes, type RenderedPhoto } from '../../../lib/images/renderPhotoSizes';
+import type { DisplayPhoto } from '../../../lib/photos/displayPhoto';
+import { renderPhotoSizes, type RenderedPhoto } from '../../../lib/photos/renderPhotoSizes';
 
 /** A photo picked for a post, resized and ready to upload when the post is sent. */
 export interface PreparedPostPhoto {

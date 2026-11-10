@@ -3,7 +3,7 @@ import type { Post, PostMedia } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toPost } from "../../../mappers/posts";
 import { selectPosts } from "../../../selects/selectPosts";
-import { syncPostMedia } from "../../../post-media";
+import { syncPostMedia } from "../syncPostMedia/syncPostMedia";
 
 /**
  * Creates a post with the client's `id` and puts the photos on it, and counts

@@ -1,4 +1,4 @@
-import type { DisplayPhoto } from '../../../lib/images/displayPhoto';
+import type { DisplayPhoto } from '../../../lib/photos/displayPhoto';
 
 interface PhotoViewerState {
   photos: DisplayPhoto[];

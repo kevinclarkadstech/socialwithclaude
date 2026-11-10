@@ -4,10 +4,10 @@ import { fail, succeed } from "../../../utils/result";
 import { authorizationError, validationError } from "../../../error-handling";
 import { requireCallerWithProfile } from "../../../logic/authorization/requireCaller";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
-import { maxImageUploadBytes } from "../../../common/images/constants";
-import { ImageContentTypeSchema } from "../../../common/images/types";
+import { maxPhotoUploadBytes } from "../../../common/photos/constants";
+import { PhotoContentTypeSchema } from "../../../common/photos/types";
 import { maxPostPhotos, postPhotoSizes } from "../constants";
-import { postPhotoKey } from "../utils/postPhotoKeys";
+import { photoKey } from "../../../common/photos/utils";
 import { canUpdatePost } from "../../../logic/authorization/posts/canUpdatePost";
 import type { Post } from "../types/post";
 import type { GetCallingUser } from "../../users/types/calling-user";
@@ -21,8 +21,8 @@ export const CreatePostMediaUploadsMutationInputSchema = z.object({
         // One file per size in postPhotoSizes (by the longer side), resized on the device.
         files: z.array(z.object({
             size: z.int().positive(),
-            contentType: ImageContentTypeSchema,
-            contentLength: z.int().positive().max(maxImageUploadBytes),
+            contentType: PhotoContentTypeSchema,
+            contentLength: z.int().positive().max(maxPhotoUploadBytes),
         })).min(1),
     })).min(1).max(maxPostPhotos),
 });
@@ -31,7 +31,7 @@ export type CreatePostMediaUploadsMutationInput = z.infer<typeof CreatePostMedia
 
 export const CreatePostMediaUploadsMutationOutputSchema = z.object({
     // A presigned PUT per file. Storage refuses an upload whose Content-Type or size differs from what was declared.
-    uploads: z.array(z.object({ mediaId: z.ulid(), size: z.int(), url: z.url(), contentType: ImageContentTypeSchema })),
+    uploads: z.array(z.object({ mediaId: z.ulid(), size: z.int(), url: z.url(), contentType: PhotoContentTypeSchema })),
 });
 
 export type CreatePostMediaUploadsMutationOutput = z.infer<typeof CreatePostMediaUploadsMutationOutputSchema>;
@@ -90,12 +90,14 @@ export const createPostMediaUploadsMutation: Mutation<{ input: CreatePostMediaUp
     }
 
     const userId = allowed.value.userId;
+    // Signing is local (no network), so this all succeeds or, on an unexpected error, all fails: the app then
+    // marks the batch failed and retrying asks for fresh URLs. The uploads themselves succeed or fail one by one.
     const uploads = await Promise.all(input.media.flatMap((media) => media.files.map(async (file) => ({
         mediaId: media.mediaId,
         size: file.size,
         contentType: file.contentType,
         url: await dependencies.createUploadUrl({
-            key: postPhotoKey({ userId, postId: input.postId, mediaId: media.mediaId, size: file.size }),
+            key: photoKey({ userId, parentId: input.postId, photoId: media.mediaId, size: file.size }),
             contentType: file.contentType,
             contentLength: file.contentLength,
         }),

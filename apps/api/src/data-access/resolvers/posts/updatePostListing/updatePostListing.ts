@@ -3,7 +3,7 @@ import type { ListingCondition, ListingPrice, ListingStatus, Post, PostMedia } f
 import { db, schema } from "../../../db";
 import { toPost } from "../../../mappers/posts";
 import { selectPosts } from "../../../selects/selectPosts";
-import { syncPostMedia } from "../../../post-media";
+import { syncPostMedia } from "../syncPostMedia/syncPostMedia";
 
 export type UpdatePostListingArgs = {
     id: string;

@@ -1,9 +1,9 @@
 import { describe, expect, it, mock } from "bun:test";
 import { mockCaller, mockPost, now, userId2 } from "../../../testing/fixtures";
 import { silentLogger, testContext } from "../../../testing/context";
-import { mockJpeg } from "../../../testing/images";
+import { mockJpeg } from "../../../testing/photos";
 import type { PostMedia } from "../types/post-media";
-import { publishPostPhotos } from "../utils/publishPostPhotos";
+import { publishPostPhotos } from "../logic/publishPostPhotos";
 import { createPostMediaUploadsMutation } from "./createPostMediaUploadsMutation";
 import { createPostMutation } from "./createPostMutation";
 import { deletePostMutation } from "./deletePostMutation";
@@ -117,7 +117,7 @@ describe("publishPostPhotos", () => {
         expect(await result).toEqual([{ id: mediaId, width: 960, height: 1280 }]);
     });
 
-    it("leaves out a photo that's missing, mis-sized, mismatched, too thin or not an image, publishing the rest", async () => {
+    it("leaves out a photo that's missing, mis-sized, mismatched, too thin or not a photo, publishing the rest", async () => {
         for (const bad of [
             { [key(second, 640)]: null },
             { [key(second, 640)]: mockJpeg(600, 450) },

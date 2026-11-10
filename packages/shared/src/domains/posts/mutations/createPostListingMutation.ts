@@ -1,12 +1,13 @@
 import z from "zod";
 import type { Mutation } from "../../../types/mutation";
 import { fail, succeed } from "../../../utils/result";
-import { conflictError, validationError } from "../../../error-handling";
+import { conflictError } from "../../../error-handling";
 import { requireCallerWithProfile } from "../../../logic/authorization/requireCaller";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { PostSchema, type Post } from "../types/post";
-import { hasUniqueMedia, savedPostMedia } from "../utils/postMedia";
+import { savedPostMedia } from "../logic/postMedia";
+import { validatePostMedia } from "../validation/validatePostMedia";
 import { maxPostPhotos } from "../constants";
 import { PostMediaSchema, type PostMedia } from "../types/post-media";
 import { ListingPriceSchema, PostListingFieldsSchema, type ListingCondition, type ListingPrice } from "../types/post-listing";
@@ -72,8 +73,9 @@ export const createPostListingMutation: Mutation<{ input: CreatePostListingMutat
         logger.warn("Listing id already used", { postId: input.id, callerId: userId });
         return fail(conflictError("Id is already used"));
     }
-    if (!hasUniqueMedia(input.media)) {
-        return fail(validationError("The same photo is in there twice"));
+    const valid = validatePostMedia(input);
+    if (!valid.ok) {
+        return valid;
     }
 
     const published = input.media.length > 0

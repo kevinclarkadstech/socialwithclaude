@@ -3,7 +3,7 @@ import type { Post, PostMedia } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toPost } from "../../../mappers/posts";
 import { selectPosts } from "../../../selects/selectPosts";
-import { syncPostMedia } from "../../../post-media";
+import { syncPostMedia } from "../syncPostMedia/syncPostMedia";
 
 /**
  * Changes a post's content, as `userId`, and makes its photos exactly

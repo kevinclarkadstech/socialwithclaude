@@ -3,7 +3,7 @@ import { chevronBack, chevronForward } from 'ionicons/icons';
 import { useRef, useState } from 'react';
 import { Photo } from '../../../../common/components/Photo/Photo';
 import { openPhotoViewer } from '../../../../common/components/PhotoViewer/photoViewerStore';
-import type { DisplayPhoto } from '../../../../lib/images/displayPhoto';
+import type { DisplayPhoto } from '../../../../lib/photos/displayPhoto';
 import { feedAspectRatio } from '../../utils/postPhotoUrl';
 import './PostPhotoCarousel.css';
 

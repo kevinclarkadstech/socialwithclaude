@@ -6,7 +6,8 @@ import { canDeletePost } from "../../../logic/authorization/posts/canDeletePost"
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { PostSchema, type Post } from "../types/post";
-import { postPhotoKeys } from "../utils/postPhotoKeys";
+import { photoKeys } from "../../../common/photos/utils";
+import { postPhotoSizes } from "../constants";
 
 export const DeletePostMutationInputSchema = PostSchema.pick({ id: true });
 
@@ -45,7 +46,7 @@ export const deletePostMutation: Mutation<{ input: DeletePostMutationInput, outp
     // Its photos go with it (their addresses only reached people shown the post).
     if (deleted && post.media.length > 0) {
         await dependencies.deleteMedia({
-            keys: post.media.flatMap((item) => postPhotoKeys({ userId: post.createdBy, postId: post.id, mediaId: item.id })),
+            keys: post.media.flatMap((item) => photoKeys({ userId: post.createdBy, parentId: post.id, photoId: item.id, sizes: postPhotoSizes })),
         });
     }
     return succeed();

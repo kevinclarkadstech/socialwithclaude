@@ -1,15 +1,17 @@
 import z from "zod";
 import type { Mutation } from "../../../types/mutation";
 import { fail, succeed } from "../../../utils/result";
-import { notFoundError, validationError } from "../../../error-handling";
+import { notFoundError } from "../../../error-handling";
 import { canUpdatePost } from "../../../logic/authorization/posts/canUpdatePost";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { PostSchema, type Post } from "../types/post";
-import { hasUniqueMedia, newPostMedia, removedPostMedia, savedPostMedia } from "../utils/postMedia";
+import { newPostMedia, removedPostMedia, savedPostMedia } from "../logic/postMedia";
+import { validatePostMedia } from "../validation/validatePostMedia";
 import { maxPostPhotos } from "../constants";
 import { PostMediaSchema, type PostMedia } from "../types/post-media";
-import { postPhotoKeys } from "../utils/postPhotoKeys";
+import { photoKeys } from "../../../common/photos/utils";
+import { postPhotoSizes } from "../constants";
 import {
     ListingPriceSchema,
     PostListingFieldsSchema,
@@ -70,8 +72,9 @@ export const updatePostListingMutation: Mutation<{ input: UpdatePostListingMutat
         return allowed;
     }
 
-    if (!hasUniqueMedia(input.media)) {
-        return fail(validationError("The same photo is in there twice"));
+    const valid = validatePostMedia(input);
+    if (!valid.ok) {
+        return valid;
     }
     // New photos were uploaded as they were picked: publish them now (any that can't be are left off).
     const added = newPostMedia({ current: post.media, media: input.media });
@@ -94,7 +97,7 @@ export const updatePostListingMutation: Mutation<{ input: UpdatePostListingMutat
     // The photos taken off it are gone for good (their addresses only reached people shown the post).
     if (removed.length > 0) {
         await dependencies.deleteMedia({
-            keys: removed.flatMap((item) => postPhotoKeys({ userId: post.createdBy, postId: post.id, mediaId: item.id })),
+            keys: removed.flatMap((item) => photoKeys({ userId: post.createdBy, parentId: post.id, photoId: item.id, sizes: postPhotoSizes })),
         });
     }
 

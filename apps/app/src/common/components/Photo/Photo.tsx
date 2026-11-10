@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import type { DisplayPhoto } from '../../../lib/images/displayPhoto';
-import { thumbHashDataUrl } from '../../../lib/images/thumbHash';
+import type { DisplayPhoto } from '../../../lib/photos/displayPhoto';
+import { thumbHashDataUrl } from '../../../lib/photos/thumbHash';
 import './Photo.css';
 
 interface PhotoProps {
@@ -9,13 +9,15 @@ interface PhotoProps {
   sizes: string;
   /** "cover" fills the box (cropping); "contain" shows the whole photo. */
   fit?: 'cover' | 'contain';
+  /** "lazy" (the default) loads it once it's near the screen; "eager" straight away, e.g. for one that's always in view. */
+  loading?: 'lazy' | 'eager';
 }
 
 /**
  * A photo filling its box: a blurry placeholder (its ThumbHash) until it has
- * loaded, lazily, once it's near the screen.
+ * loaded (lazily by default, once it's near the screen).
  */
-export function Photo({ photo, sizes, fit = 'cover' }: PhotoProps) {
+export function Photo({ photo, sizes, fit = 'cover', loading = 'lazy' }: PhotoProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const placeholder = photo.placeholder ? thumbHashDataUrl(photo.placeholder) : null;
 
@@ -26,7 +28,7 @@ export function Photo({ photo, sizes, fit = 'cover' }: PhotoProps) {
         srcSet={photo.srcSet}
         sizes={photo.srcSet ? sizes : undefined}
         alt={photo.caption ?? ''}
-        loading="lazy"
+        loading={loading}
         decoding="async"
         data-loaded={String(isLoaded)}
         onLoad={() => setIsLoaded(true)}

@@ -1,7 +1,7 @@
 import { IonButton, IonButtons, IonContent, IonHeader, IonIcon, IonModal, IonTitle, IonToolbar } from '@ionic/react';
 import { chevronBack, chevronForward, close } from 'ionicons/icons';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { thumbHashDataUrl } from '../../../lib/images/thumbHash';
+import { thumbHashDataUrl } from '../../../lib/photos/thumbHash';
 import { closePhotoViewer, photoViewerStore } from './photoViewerStore';
 import './PhotoViewer.css';
 

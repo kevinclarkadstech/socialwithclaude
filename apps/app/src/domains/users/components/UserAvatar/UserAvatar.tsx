@@ -2,7 +2,7 @@ import { IonAvatar } from '@ionic/react';
 import type { UserProfileSummary } from '@myapp/shared/domains';
 import { useState } from 'react';
 import { initials } from '../../../../common/formatters/names';
-import { profileImageUrl, profileImageWidthFor } from '../../utils/profileImageUrl';
+import { profilePhotoUrl, profilePhotoWidthFor } from '../../utils/profilePhotoUrl';
 import { userHue } from '../../utils/userHue';
 import './UserAvatar.css';
 
@@ -18,7 +18,7 @@ interface UserAvatarProps {
  * their id. The initials show while it loads, and stay if they have no photo.
  */
 export function UserAvatar({ user, size = 40, slot, className }: UserAvatarProps) {
-  const src = profileImageUrl({ user, kind: 'avatar', width: profileImageWidthFor({ kind: 'avatar', displayWidth: size }) });
+  const src = profilePhotoUrl({ user, kind: 'avatar', width: profilePhotoWidthFor({ kind: 'avatar', displayWidth: size }) });
   // Which src failed (rather than a flag), so a new photo is tried again.
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null);

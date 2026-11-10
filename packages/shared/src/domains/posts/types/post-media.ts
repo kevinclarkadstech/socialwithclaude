@@ -1,6 +1,6 @@
 import z from "zod";
 import { BaseUserCreatedEntitySchema } from "../../../common/types/base-user-created-entity";
-import { ImagePlaceholderSchema } from "../../../common/images/types";
+import { PhotoPlaceholderSchema } from "../../../common/photos/types";
 
 /** A photo's caption (optional). */
 export const PhotoCaptionSchema = z.string().trim().max(300);
@@ -18,7 +18,7 @@ export const PostMediaSchema = BaseUserCreatedEntitySchema.extend({
     width: z.int().positive(),
     height: z.int().positive(),
     // A ThumbHash to show while it loads.
-    placeholder: ImagePlaceholderSchema.nullable(),
+    placeholder: PhotoPlaceholderSchema.nullable(),
 });
 
 export type PostMedia = z.infer<typeof PostMediaSchema>;

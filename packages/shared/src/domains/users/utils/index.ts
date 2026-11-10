@@ -1,1 +1,1 @@
-export { profileImageHeight, profileImageKey, profileImageUploadKey } from "./profileImageKeys";
+export { profilePhotoHeight, profilePhotoKey, profilePhotoUploadKey } from "./profilePhotoKeys";

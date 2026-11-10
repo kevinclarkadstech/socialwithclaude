@@ -6,10 +6,12 @@ import { canUpdatePost } from "../../../logic/authorization/posts/canUpdatePost"
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import { PostSchema, type Post } from "../types/post";
-import { hasPostContent, hasUniqueMedia, newPostMedia, removedPostMedia, savedPostMedia } from "../utils/postMedia";
+import { newPostMedia, removedPostMedia, savedPostMedia } from "../logic/postMedia";
+import { hasPostContent, validatePostMedia } from "../validation/validatePostMedia";
 import { maxPostPhotos } from "../constants";
 import { PostMediaSchema, type PostMedia } from "../types/post-media";
-import { postPhotoKeys } from "../utils/postPhotoKeys";
+import { photoKeys } from "../../../common/photos/utils";
+import { postPhotoSizes } from "../constants";
 
 export const UpdatePostMutationInputSchema = PostSchema.pick({ id: true, content: true }).extend({
     // All its photos: ones it has, and new ones uploaded first (createPostMediaUploadsMutation).
@@ -54,11 +56,9 @@ export const updatePostMutation: Mutation<{ input: UpdatePostMutationInput, outp
         return allowed;
     }
 
-    if (!hasPostContent(input)) {
-        return fail(validationError("Write something or add a photo"));
-    }
-    if (!hasUniqueMedia(input.media)) {
-        return fail(validationError("The same photo is in there twice"));
+    const valid = validatePostMedia(input);
+    if (!valid.ok) {
+        return valid;
     }
     // New photos were uploaded as they were picked: publish them now (any that can't be are left off).
     const added = newPostMedia({ current: post.media, media: input.media });
@@ -85,7 +85,7 @@ export const updatePostMutation: Mutation<{ input: UpdatePostMutationInput, outp
     // The photos taken off it are gone for good (their addresses only reached people shown the post).
     if (removed.length > 0) {
         await dependencies.deleteMedia({
-            keys: removed.flatMap((item) => postPhotoKeys({ userId: post.createdBy, postId: post.id, mediaId: item.id })),
+            keys: removed.flatMap((item) => photoKeys({ userId: post.createdBy, parentId: post.id, photoId: item.id, sizes: postPhotoSizes })),
         });
     }
 

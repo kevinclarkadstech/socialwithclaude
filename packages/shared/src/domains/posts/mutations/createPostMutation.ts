@@ -8,7 +8,8 @@ import type { GetCallingUser } from "../../users/types/calling-user";
 import { maxPostPhotos } from "../constants";
 import { PostSchema, type Post } from "../types/post";
 import { PostMediaSchema, type PostMedia } from "../types/post-media";
-import { hasPostContent, hasUniqueMedia, savedPostMedia } from "../utils/postMedia";
+import { savedPostMedia } from "../logic/postMedia";
+import { hasPostContent, validatePostMedia } from "../validation/validatePostMedia";
 
 export const CreatePostMutationInputSchema = PostSchema.pick({ id: true, content: true }).extend({
     // Its photos, each uploaded first (createPostMediaUploadsMutation) under this post's id. The server sets
@@ -25,7 +26,7 @@ export type CreatePostMutationOutput = z.infer<typeof CreatePostMutationOutputSc
 /**
  * Creates a post: text, photos or both. Its photos were uploaded as they
  * were picked; they're published now, and any that can't be (missing or not
- * a usable image) are left off, which the app warns about. `id` is generated
+ * a usable photo) are left off, which the app warns about. `id` is generated
  * by the client; retrying with it returns the post created the first time.
  */
 export const createPostMutation: Mutation<{ input: CreatePostMutationInput, output: CreatePostMutationOutput }, {
@@ -66,11 +67,9 @@ export const createPostMutation: Mutation<{ input: CreatePostMutationInput, outp
         return fail(conflictError("Id is already used"));
     }
 
-    if (!hasPostContent(input)) {
-        return fail(validationError("Write something or add a photo"));
-    }
-    if (!hasUniqueMedia(input.media)) {
-        return fail(validationError("The same photo is in there twice"));
+    const valid = validatePostMedia(input);
+    if (!valid.ok) {
+        return valid;
     }
 
     const published = input.media.length > 0

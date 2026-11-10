@@ -1,0 +1,1 @@
+export { publishUploadedPhotos } from "./publishUploadedPhotos";
