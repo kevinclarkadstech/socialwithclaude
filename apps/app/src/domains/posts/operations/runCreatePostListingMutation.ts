@@ -13,8 +13,11 @@ export function runCreatePostListingMutation(listing: CreatePostListingMutationI
     dependencies: {
       getCallingUser,
       getPostById: postFromStoreOrApi,
-      // The API takes the caller from the session, so userId isn't sent.
-      createPostListing: ({ userId, ...input }) => fromApi(api.postListings.createListing.mutate(input)),
+      // The API publishes the uploaded photos for real; here they're taken as they are.
+      publishPostPhotos: async ({ media }) => media.map(({ id, width, height }) => ({ id, width, height })),
+      // The API takes the caller from the session, so userId isn't sent; photos go as chosen, in order.
+      createPostListing: ({ userId, media, ...input }) =>
+        fromApi(api.postListings.createListing.mutate({ ...input, media })),
     },
   });
 }

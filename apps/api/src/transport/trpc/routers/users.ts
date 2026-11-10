@@ -1,11 +1,11 @@
 import {
     AcceptFollowRequestMutationInputSchema,
-    ConfirmProfileImageUploadMutationInputSchema,
-    CreateProfileImageUploadMutationInputSchema,
-    RemoveProfileImageMutationInputSchema,
-    confirmProfileImageUploadMutation,
-    createProfileImageUploadMutation,
-    removeProfileImageMutation,
+    ConfirmProfilePhotoUploadMutationInputSchema,
+    CreateProfilePhotoUploadMutationInputSchema,
+    RemoveProfilePhotoMutationInputSchema,
+    confirmProfilePhotoUploadMutation,
+    createProfilePhotoUploadMutation,
+    removeProfilePhotoMutation,
     BlockUserMutationInputSchema,
     CreateUserSaveMutationInputSchema,
     DeleteUserSaveMutationInputSchema,
@@ -59,7 +59,7 @@ import {
     updateUserProfile,
     updateUserSettings,
 } from "../../../data-access";
-import { createUploadUrl, deleteMedia, deleteUploads, putMedia, readUpload } from "../../../domains/media/storage";
+import { createUploadUrl, deleteMedia, deleteUploads, putMedia, readUpload } from "../../../storage";
 import { procedure, router } from "../trpc";
 
 export const usersRouter = router({
@@ -79,24 +79,24 @@ export const usersRouter = router({
         }),
     ),
 
-    createProfileImageUpload: procedure.input(CreateProfileImageUploadMutationInputSchema).mutation(({ ctx, input }) =>
-        createProfileImageUploadMutation({
+    createProfilePhotoUpload: procedure.input(CreateProfilePhotoUploadMutationInputSchema).mutation(({ ctx, input }) =>
+        createProfilePhotoUploadMutation({
             input,
             context: { logger: ctx.logger },
             dependencies: { getCallingUser: ctx.getCallingUser, createUploadUrl },
         }),
     ),
 
-    confirmProfileImageUpload: procedure.input(ConfirmProfileImageUploadMutationInputSchema).mutation(({ ctx, input }) =>
-        confirmProfileImageUploadMutation({
+    confirmProfilePhotoUpload: procedure.input(ConfirmProfilePhotoUploadMutationInputSchema).mutation(({ ctx, input }) =>
+        confirmProfilePhotoUploadMutation({
             input,
             context: { logger: ctx.logger },
             dependencies: { getCallingUser: ctx.getCallingUser, readUpload, putMedia, deleteUploads, touchUserProfile },
         }),
     ),
 
-    removeProfileImage: procedure.input(RemoveProfileImageMutationInputSchema).mutation(({ ctx, input }) =>
-        removeProfileImageMutation({
+    removeProfilePhoto: procedure.input(RemoveProfilePhotoMutationInputSchema).mutation(({ ctx, input }) =>
+        removeProfilePhotoMutation({
             input,
             context: { logger: ctx.logger },
             dependencies: { getCallingUser: ctx.getCallingUser, deleteMedia, touchUserProfile },

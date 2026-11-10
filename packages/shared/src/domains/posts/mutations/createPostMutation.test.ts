@@ -9,12 +9,13 @@ const post = mockPost();
 function run({ created, existing }: { created: Post | null; existing: Post | null }) {
     const createPost = mock(async () => created);
     const result = createPostMutation({
-        input: { id: post.id, content: post.content },
+        input: { id: post.id, content: post.content, media: [] },
         context: testContext,
         dependencies: {
             getCallingUser: async () => mockCaller(),
             isPostingEnabled: () => true,
             getPostById: async () => existing,
+            publishPostPhotos: async () => [],
             createPost,
         },
     });

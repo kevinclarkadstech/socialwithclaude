@@ -1,4 +1,5 @@
 import {
+    CreatePostMediaUploadsMutationInputSchema,
     CreatePostMutationInputSchema,
     DeletePostMutationInputSchema,
     GetFeedQueryInputSchema,
@@ -6,6 +7,7 @@ import {
     GetUserPostsQueryInputSchema,
     ReportPostMutationInputSchema,
     UpdatePostMutationInputSchema,
+    createPostMediaUploadsMutation,
     createPostMutation,
     deletePostMutation,
     getFeedQuery,
@@ -26,6 +28,8 @@ import {
     getUserProfileByUsername,
     updatePost,
 } from "../../../data-access";
+import { createUploadUrl, deleteMedia } from "../../../storage";
+import { publishPostPhotosWith } from "../../../storage/postPhotos";
 import { procedure, router } from "../trpc";
 
 export const postsRouter = router({
@@ -49,7 +53,21 @@ export const postsRouter = router({
                 getCallingUser: ctx.getCallingUser,
                 isPostingEnabled: () => ctx.featureFlagStore.isEnabled("usersCanPost"),
                 getPostById,
+                publishPostPhotos: publishPostPhotosWith(ctx.logger),
                 createPost,
+            },
+        }),
+    ),
+
+    createPostMediaUploads: procedure.input(CreatePostMediaUploadsMutationInputSchema).mutation(({ ctx, input }) =>
+        createPostMediaUploadsMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: {
+                getCallingUser: ctx.getCallingUser,
+                isPostingEnabled: () => ctx.featureFlagStore.isEnabled("usersCanPost"),
+                getPostById,
+                createUploadUrl,
             },
         }),
     ),
@@ -58,7 +76,7 @@ export const postsRouter = router({
         updatePostMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, updatePost },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, publishPostPhotos: publishPostPhotosWith(ctx.logger), deleteMedia, updatePost },
         }),
     ),
 
@@ -66,7 +84,7 @@ export const postsRouter = router({
         deletePostMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, deletePost },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, deletePost, deleteMedia },
         }),
     ),
 

@@ -1,13 +1,15 @@
 import { eq, sql } from "drizzle-orm";
-import type { ListingCondition, ListingPrice, Post } from "@myapp/shared/domains";
+import type { ListingCondition, ListingPrice, Post, PostMedia } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toPost } from "../../../mappers/posts";
 import { selectPosts } from "../../../selects/selectPosts";
+import { syncPostMedia } from "../syncPostMedia/syncPostMedia";
 
 export type CreatePostListingArgs = {
     id: string;
     userId: string;
     content: string;
+    media: PostMedia[];
     title: string;
     description: string;
     condition: ListingCondition;
@@ -15,10 +17,10 @@ export type CreatePostListingArgs = {
 } & ListingPrice;
 
 /**
- * Creates a post with the client's `id`, and its listing details, and counts
+ * Creates a post with the client's `id`, its listing details and photos, and counts
  * it on the author's profile (as a post, and as a listing). Null if the id is already used.
  */
-export async function createPostListing({ id, userId, content, ...listing }: CreatePostListingArgs): Promise<Post | null> {
+export async function createPostListing({ id, userId, content, media, ...listing }: CreatePostListingArgs): Promise<Post | null> {
     return db.transaction(async (tx) => {
         const [post] = await tx
             .insert(schema.posts)
@@ -41,6 +43,8 @@ export async function createPostListing({ id, userId, content, ...listing }: Cre
                 priceCents: listing.type === "fixed" ? listing.priceCents : null,
                 createdAt: post.createdAt,
             });
+
+        await syncPostMedia(tx, { postId: id, media });
 
         await tx
             .update(schema.userProfiles)

@@ -37,8 +37,12 @@ export function isRetryable(error: unknown): boolean {
 
 /** A message to show for a failure. */
 export function errorMessage(error: unknown): string {
-  if (error instanceof AppErrorThrown || error instanceof TRPCClientError) {
+  if (error instanceof AppErrorThrown) {
     return error.message;
+  }
+  if (error instanceof TRPCClientError) {
+    // Without an error code the API didn't answer properly (a proxy or crash page), so its text isn't for people.
+    return apiErrorCode(error) === undefined ? 'Something went wrong on our end. Try again.' : error.message;
   }
   if (error instanceof TypeError) {
     return "Couldn't reach the server. Check your connection and try again.";

@@ -17,6 +17,8 @@ export function runDeletePostMutation({ id }: { id: string }) {
         await fromApi(api.posts.deletePost.mutate({ id }));
         return true;
       },
+      // The API deletes the post's photo files.
+      deleteMedia: async () => {},
     },
   });
 }

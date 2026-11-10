@@ -24,7 +24,7 @@ export const ServerConfigSchema = z.object({
     STORAGE_SECRET_ACCESS_KEY: z.string(),
     // Private: presigned uploads land here, and are processed before anything is public.
     STORAGE_UPLOADS_BUCKET: z.string(),
-    // Public: processed images, served from STORAGE_MEDIA_PUBLIC_URL.
+    // Public: processed photos, served from STORAGE_MEDIA_PUBLIC_URL.
     STORAGE_MEDIA_BUCKET: z.string(),
     STORAGE_MEDIA_PUBLIC_URL: z.url(),
 });

@@ -2,13 +2,13 @@ import { IonButton, IonIcon } from '@ionic/react';
 import type { GetUserProfileQueryOutput } from '@myapp/shared/domains';
 import { camera, ellipsisHorizontal, lockClosed, shareOutline } from 'ionicons/icons';
 import { useState, type CSSProperties } from 'react';
-import { ImageCropModal } from '../../../media/components/ImageCropModal/ImageCropModal';
+import { PhotoCropModal } from '../../../../common/components/PhotoCropModal/PhotoCropModal';
 import { displayName } from '../../../../common/formatters/names';
-import { profileImageUrl, profileImageWidthFor } from '../../utils/profileImageUrl';
+import { profilePhotoUrl, profilePhotoWidthFor } from '../../utils/profilePhotoUrl';
 import { userHue } from '../../utils/userHue';
 import { UserAvatar } from '../UserAvatar/UserAvatar';
 import { useProfileHeader } from './useProfileHeader';
-import { useProfileImageEditor } from './useProfileImageEditor';
+import { useProfilePhotoEditor } from './useProfilePhotoEditor';
 import './ProfileHeader.css';
 
 interface ProfileHeaderProps {
@@ -28,12 +28,12 @@ const counts = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFr
  */
 export function ProfileHeader({ profile, isOwn, onProfileChange, onEdit }: ProfileHeaderProps) {
   const { follow, unfollow, unblock, openMenu, share } = useProfileHeader({ profile, onProfileChange });
-  const imageEditor = useProfileImageEditor({ profile, onProfileChange });
+  const photoEditor = useProfilePhotoEditor({ profile, onProfileChange });
   const { followStatus, hasBlocked } = profile.viewer;
-  const coverSrc = profileImageUrl({
+  const coverSrc = profilePhotoUrl({
     user: profile,
     kind: 'cover',
-    width: profileImageWidthFor({ kind: 'cover', displayWidth: Math.min(window.innerWidth, 640) }),
+    width: profilePhotoWidthFor({ kind: 'cover', displayWidth: Math.min(window.innerWidth, 640) }),
   });
   // Which src failed, so a new cover is tried again.
   const [failedCoverSrc, setFailedCoverSrc] = useState<string | null>(null);
@@ -46,7 +46,7 @@ export function ProfileHeader({ profile, isOwn, onProfileChange, onEdit }: Profi
           <img className="profile-header__cover-photo" src={coverSrc} alt="" decoding="async" onError={() => setFailedCoverSrc(coverSrc)} />
         )}
         {isOwn && (
-          <IonButton size="small" className="profile-header__edit-cover" onClick={() => imageEditor.openMenu('cover')}>
+          <IonButton size="small" className="profile-header__edit-cover" onClick={() => photoEditor.openMenu('cover')}>
             <IonIcon slot="icon-only" icon={camera} aria-hidden="true" />
             <span className="visually-hidden">Change cover photo</span>
           </IonButton>
@@ -57,7 +57,7 @@ export function ProfileHeader({ profile, isOwn, onProfileChange, onEdit }: Profi
         <div className="profile-header__avatar-wrap">
           <UserAvatar user={profile} size={88} className="profile-header__avatar" />
           {isOwn && (
-            <IonButton size="small" className="profile-header__edit-avatar" onClick={() => imageEditor.openMenu('avatar')}>
+            <IonButton size="small" className="profile-header__edit-avatar" onClick={() => photoEditor.openMenu('avatar')}>
               <IonIcon slot="icon-only" icon={camera} aria-hidden="true" />
               <span className="visually-hidden">Change profile photo</span>
             </IonButton>
@@ -130,15 +130,15 @@ export function ProfileHeader({ profile, isOwn, onProfileChange, onEdit }: Profi
       </dl>
       {isOwn && (
         <>
-          <input ref={imageEditor.fileInputRef} type="file" accept="image/*" hidden onChange={imageEditor.onPhotoChosen} />
-          <ImageCropModal
-            isOpen={imageEditor.crop !== null}
-            imageUrl={imageEditor.crop?.imageUrl ?? null}
-            title={imageEditor.crop?.title ?? ''}
-            aspectRatio={imageEditor.crop?.aspectRatio ?? 1}
-            shape={imageEditor.crop?.shape}
-            onCancel={imageEditor.cancel}
-            onConfirm={imageEditor.save}
+          <input ref={photoEditor.fileInputRef} type="file" accept="image/*" hidden onChange={photoEditor.onPhotoChosen} />
+          <PhotoCropModal
+            isOpen={photoEditor.crop !== null}
+            photoUrl={photoEditor.crop?.photoUrl ?? null}
+            title={photoEditor.crop?.title ?? ''}
+            aspectRatio={photoEditor.crop?.aspectRatio ?? 1}
+            shape={photoEditor.crop?.shape}
+            onCancel={photoEditor.cancel}
+            onConfirm={photoEditor.save}
           />
         </>
       )}

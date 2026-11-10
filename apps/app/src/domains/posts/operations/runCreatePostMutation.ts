@@ -15,7 +15,10 @@ export function runCreatePostMutation(post: CreatePostMutationInput) {
       // Only the server knows the feature flag; it refuses if posting is off.
       isPostingEnabled: () => true,
       getPostById: postFromStoreOrApi,
-      createPost: ({ id, content }) => fromApi(api.posts.createPost.mutate({ id, content })),
+      // The API publishes the uploaded photos for real; here they're taken as they are.
+      publishPostPhotos: async ({ media }) => media.map(({ id, width, height }) => ({ id, width, height })),
+      createPost: ({ id, content, media }) =>
+        fromApi(api.posts.createPost.mutate({ id, content, media })),
     },
   });
 }

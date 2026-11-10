@@ -1,0 +1,27 @@
+.pending-post-card__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pending-post-card__status ion-spinner {
+  width: 18px;
+  height: 18px;
+}
+
+/* Still sending: a little faded, so it reads as not posted yet. */
+.pending-post-card[data-status='sending'] .post-card__body,
+.pending-post-card[data-status='sending'] .post-photo-carousel {
+  opacity: 0.75;
+}
+
+.pending-post-card[data-status='failed'] {
+  border-color: var(--ion-color-danger);
+}
+
+.pending-post-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 4px 12px 12px;
+}

@@ -15,6 +15,7 @@ function post(id: string, overrides: Partial<Post> = {}): Post {
     numComments: 0,
     numShares: 0,
     numReactions: 0,
+    media: [],
     creator,
     viewer: { hasSaved: false, followsCreator: false },
     createdBy: creator.userId,

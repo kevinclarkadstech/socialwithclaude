@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { BaseUserCreatedEntitySchema } from "../../../common/types/base-user-created-entity";
 import { PostListingSchema } from "./post-listing";
+import { PostMediaSchema } from "./post-media";
 import { UserProfileSummarySchema } from "../../users/types/user-profile-summary";
 import { ProfileVisibilitySchema } from "../../users/types/user-settings";
 
@@ -15,6 +16,8 @@ export const PostSchema = BaseUserCreatedEntitySchema.extend({
     numShares: z.int().min(0),
     numReactions: z.int().min(0),
     listing: PostListingSchema.optional(),
+    // Its photos, in order (none for a text-only post).
+    media: z.array(PostMediaSchema),
     // Who wrote it, and who may see their posts (for canViewPost).
     creator: UserProfileSummarySchema.extend({
         profileVisibility: ProfileVisibilitySchema,

@@ -8,6 +8,7 @@ import {
   IonModal,
   IonSegment,
   IonSegmentButton,
+  IonSpinner,
   IonTextarea,
   IonTitle,
   IonToggle,
@@ -17,6 +18,7 @@ import { listingConditions, listingPriceTypes, listingStatuses, type Post } from
 import type { FormEvent } from 'react';
 import { listingConditionLabels, listingStatusLabels, listingTypeLabels } from '../../../../common/formatters/listings';
 import { useComposeListing } from '../../hooks/useComposeListing';
+import { PostPhotosField } from '../PostPhotosField/PostPhotosField';
 import '../../../../common/styles/modal-form.css';
 import './ComposeListingModal.css';
 
@@ -29,7 +31,7 @@ interface ComposeListingModalProps {
 
 /** Listing something for sale, or editing one of your listings (including marking it sold). */
 export function ComposeListingModal({ isOpen, post, onDismiss }: ComposeListingModalProps) {
-  const { fields, set, errors, isBusy, reset, submit } = useComposeListing({ post, onDismiss });
+  const { fields, set, errors, photos, isBusy, canSubmit, reset, submit } = useComposeListing({ post, onDismiss });
 
   function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -45,14 +47,19 @@ export function ComposeListingModal({ isOpen, post, onDismiss }: ComposeListingM
           </IonButtons>
           <IonTitle>{post ? 'Edit listing' : 'New listing'}</IonTitle>
           <IonButtons slot="end">
-            <IonButton strong disabled={isBusy} onClick={() => void submit()}>
-              {post ? 'Save' : 'List'}
+            <IonButton strong disabled={!canSubmit} onClick={() => void submit()}>
+              {isBusy ? <IonSpinner name="dots" aria-label="Saving" /> : post ? 'Save' : 'List'}
             </IonButton>
           </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
         <form className="modal-form" onSubmit={onSubmit}>
+          <div className="compose-listing__group">
+            <IonLabel className="compose-listing__label">Photos</IonLabel>
+            <PostPhotosField photos={photos} />
+          </div>
+
           <IonInput
             label="Title"
             labelPlacement="stacked"

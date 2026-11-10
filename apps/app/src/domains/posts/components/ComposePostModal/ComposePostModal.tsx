@@ -4,12 +4,15 @@ import {
   IonContent,
   IonHeader,
   IonModal,
+  IonSpinner,
   IonTextarea,
   IonTitle,
   IonToolbar,
 } from '@ionic/react';
 import type { Post } from '@myapp/shared/domains';
 import { useComposePost } from '../../hooks/useComposePost';
+import { PostPhotosField } from '../PostPhotosField/PostPhotosField';
+import './ComposePostModal.css';
 
 const MAX_LENGTH = 2000;
 
@@ -20,9 +23,9 @@ interface ComposePostModalProps {
   onDismiss: () => void;
 }
 
-/** Writing a new post, or editing one of yours. */
+/** Writing a new post (text, photos or both), or editing one of yours. */
 export function ComposePostModal({ isOpen, post, onDismiss }: ComposePostModalProps) {
-  const { content, setContent, canSubmit, reset, submit } = useComposePost({ post, onDismiss });
+  const { content, setContent, photos, isBusy, canSubmit, reset, submit } = useComposePost({ post, onDismiss });
 
   return (
     <IonModal isOpen={isOpen} onWillPresent={reset} onDidDismiss={onDismiss}>
@@ -34,7 +37,7 @@ export function ComposePostModal({ isOpen, post, onDismiss }: ComposePostModalPr
           <IonTitle>{post ? 'Edit post' : 'New post'}</IonTitle>
           <IonButtons slot="end">
             <IonButton strong disabled={!canSubmit} onClick={() => void submit()}>
-              {post ? 'Save' : 'Post'}
+              {isBusy ? <IonSpinner name="dots" aria-label="Saving" /> : post ? 'Save' : 'Post'}
             </IonButton>
           </IonButtons>
         </IonToolbar>
@@ -51,6 +54,9 @@ export function ComposePostModal({ isOpen, post, onDismiss }: ComposePostModalPr
           value={content}
           onIonInput={(event) => setContent(event.detail.value ?? '')}
         />
+        <div className="compose-post__photos">
+          <PostPhotosField photos={photos} />
+        </div>
       </IonContent>
     </IonModal>
   );

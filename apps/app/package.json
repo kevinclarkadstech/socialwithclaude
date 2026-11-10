@@ -28,6 +28,7 @@
     "react-dom": "19.0.0",
     "react-easy-crop": "6.2.4",
     "react-router": "^8.5.0",
+    "thumbhash": "0.1.1",
     "ulid": "^3"
   },
   "devDependencies": {

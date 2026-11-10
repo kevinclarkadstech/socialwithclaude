@@ -1,8 +1,11 @@
 import type { ListingCondition, ListingPrice, ListingStatus, ListingType, Post } from '@myapp/shared/domains';
 import { useState } from 'react';
-import { createPostListing } from '../actions/createPostListing';
+import { newId } from '../../../lib/ids';
+import { publishPost } from '../actions/publishPost';
+import { warnAboutDroppedPhotos } from '../utils/droppedPhotosWarning';
 import { updatePostListing } from '../actions/updatePostListing';
 import { parsePriceCents, priceFieldValue } from '../listingPrices';
+import { usePostPhotos } from './usePostPhotos';
 
 /** What's wrong with the form, by field, after trying to submit. */
 interface ListingFormErrors {
@@ -13,7 +16,9 @@ interface ListingFormErrors {
 
 /**
  * Listing something for sale, or editing `post` (a listing): the fields as
- * typed, checking them, and saving. The description is also the post's
+ * typed, its photos (uploaded as they're picked), checking them, and saving.
+ * A new listing is sent in the background (it shows at the top straight
+ * away); an edit saves before closing. The description is also the post's
  * text in the feed. Text is trimmed only when it's sent.
  */
 export function useComposeListing({ post, onDismiss }: { post?: Post; onDismiss: () => void }) {
@@ -25,7 +30,10 @@ export function useComposeListing({ post, onDismiss }: { post?: Post; onDismiss:
   const [condition, setCondition] = useState<ListingCondition>('used');
   const [status, setStatus] = useState<ListingStatus>('available');
   const [errors, setErrors] = useState<ListingFormErrors>({});
+  const [postId, setPostId] = useState('');
   const [isBusy, setIsBusy] = useState(false);
+  const photos = usePostPhotos();
+  const canSubmit = !isBusy && !photos.isBusy && !photos.hasFailed;
 
   /** Starts from the listing's details when editing, or a blank form. */
   function reset() {
@@ -38,6 +46,9 @@ export function useComposeListing({ post, onDismiss }: { post?: Post; onDismiss:
     setCondition(listing?.condition ?? 'used');
     setStatus(listing?.status ?? 'available');
     setErrors({});
+    const id = post?.id ?? newId();
+    setPostId(id);
+    photos.reset({ id, media: post?.media });
   }
 
   /** The price as the API takes it, or null if a fixed price isn't a valid amount. */
@@ -74,12 +85,17 @@ export function useComposeListing({ post, onDismiss }: { post?: Post; onDismiss:
       isNegotiable: priced.type === 'fixed' && isNegotiable,
       ...priced,
     };
+    if (!post) {
+      publishPost({ id: postId, content: { kind: 'listing', listing: fields }, photos: photos.handOff() });
+      onDismiss();
+      return;
+    }
     setIsBusy(true);
     try {
-      const result = post
-        ? await updatePostListing({ ...fields, id: post.id, status })
-        : await createPostListing(fields);
+      const media = photos.media;
+      const result = await updatePostListing({ ...fields, id: post.id, status, media });
       if (result.ok) {
+        warnAboutDroppedPhotos({ sent: media, saved: result.value });
         onDismiss();
       }
     } finally {
@@ -116,7 +132,9 @@ export function useComposeListing({ post, onDismiss }: { post?: Post; onDismiss:
       setStatus,
     },
     errors,
+    photos,
     isBusy,
+    canSubmit,
     reset,
     submit,
   };
