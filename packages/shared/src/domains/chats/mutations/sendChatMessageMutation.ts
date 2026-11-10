@@ -6,13 +6,13 @@ import { canSendChatMessage } from "../../../logic/authorization/chats/canSendCh
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
 import type { ChatMember } from "../types/chat-member";
-import { ChatMessageSchema, type ChatMessage } from "../types/chat-message";
+import { ChatMessageSchema, ChatMessageViewSchema, type ChatMessageView } from "../types/chat-message";
 
 export const SendChatMessageMutationInputSchema = ChatMessageSchema.pick({ id: true, chatId: true, content: true });
 
 export type SendChatMessageMutationInput = z.infer<typeof SendChatMessageMutationInputSchema>;
 
-export const SendChatMessageMutationOutputSchema = ChatMessageSchema;
+export const SendChatMessageMutationOutputSchema = ChatMessageViewSchema;
 
 export type SendChatMessageMutationOutput = z.infer<typeof SendChatMessageMutationOutputSchema>;
 
@@ -20,8 +20,8 @@ export type SendChatMessageMutationOutput = z.infer<typeof SendChatMessageMutati
 export const sendChatMessageMutation: Mutation<{ input: SendChatMessageMutationInput, output: SendChatMessageMutationOutput }, {
     getCallingUser: GetCallingUser;
     getChatMembers: (args: { chatId: string }) => Promise<ChatMember[]>;
-    getChatMessageById: (args: { id: string; viewerId: string | null }) => Promise<ChatMessage | null>;
-    createChatMessage: (args: { id: string; chatId: string; userId: string; content: string }) => Promise<ChatMessage | null>;
+    getChatMessageViewById: (args: { id: string; viewerId: string | null }) => Promise<ChatMessageView | null>;
+    createChatMessage: (args: { id: string; chatId: string; userId: string; content: string }) => Promise<ChatMessageView | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     const members = await dependencies.getChatMembers({ chatId: input.chatId });
@@ -38,7 +38,7 @@ export const sendChatMessageMutation: Mutation<{ input: SendChatMessageMutationI
 
     const message = await dependencies.createChatMessage({ ...input, userId: allowed.value.userId });
     if (!message) {
-        const existing = await dependencies.getChatMessageById({ id: input.id, viewerId: caller?.userId ?? null });
+        const existing = await dependencies.getChatMessageViewById({ id: input.id, viewerId: caller?.userId ?? null });
         if (existing && existing.createdBy === allowed.value.userId) {
             // A retry of a create that already worked.
             logger.info("Message already created", { chatMessageId: input.id, callerId: allowed.value.userId });

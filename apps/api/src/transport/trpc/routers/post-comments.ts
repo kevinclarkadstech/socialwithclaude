@@ -18,9 +18,9 @@ import {
     createPostCommentReport,
     deletePostComment,
     deletePostCommentVote,
-    getPostById,
-    getPostCommentById,
-    getPostComments,
+    getPostViewById,
+    getPostCommentViewById,
+    getPostCommentViews,
     setPostCommentVote,
     updatePostComment,
 } from "../../../data-access";
@@ -28,14 +28,14 @@ import { procedure, router } from "../trpc";
 
 export const postCommentsRouter = router({
     getPostComments: procedure.input(GetPostCommentsQueryInputSchema).query(({ ctx, input }) =>
-        getPostCommentsQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getPostComments } }),
+        getPostCommentsQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentViews } }),
     ),
 
     createPostComment: procedure.input(CreatePostCommentMutationInputSchema).mutation(({ ctx, input }) =>
         createPostCommentMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, getPostCommentById, createPostComment },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostViewById, getPostCommentViewById, createPostComment },
         }),
     ),
 
@@ -43,7 +43,7 @@ export const postCommentsRouter = router({
         updatePostCommentMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentById, updatePostComment },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentViewById, updatePostComment },
         }),
     ),
 
@@ -51,7 +51,7 @@ export const postCommentsRouter = router({
         deletePostCommentMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentById, deletePostComment },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentViewById, deletePostComment },
         }),
     ),
 
@@ -59,7 +59,7 @@ export const postCommentsRouter = router({
         setPostCommentVoteMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentById, setPostCommentVote, deletePostCommentVote },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentViewById, setPostCommentVote, deletePostCommentVote },
         }),
     ),
 
@@ -67,7 +67,7 @@ export const postCommentsRouter = router({
         reportPostCommentMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentById, createPostCommentReport },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentViewById, createPostCommentReport },
         }),
     ),
 });

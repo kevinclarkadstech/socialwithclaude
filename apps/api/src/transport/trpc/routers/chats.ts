@@ -23,8 +23,8 @@ import {
     createDirectChat,
     deleteChatMessage,
     getChatMembers,
-    getChatMessageById,
-    getChatMessages,
+    getChatMessageViewById,
+    getChatMessageViews,
     getUserChats,
     getUserProfileByUsername,
     markChatRead,
@@ -53,7 +53,7 @@ export const chatsRouter = router({
         getChatMessagesQuery({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getChatMembers, getChatMessages },
+            dependencies: { getCallingUser: ctx.getCallingUser, getChatMembers, getChatMessageViews },
         }),
     ),
 
@@ -61,7 +61,7 @@ export const chatsRouter = router({
         sendChatMessageMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getChatMembers, getChatMessageById, createChatMessage },
+            dependencies: { getCallingUser: ctx.getCallingUser, getChatMembers, getChatMessageViewById, createChatMessage },
         }),
     ),
 
@@ -69,7 +69,7 @@ export const chatsRouter = router({
         updateChatMessageMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getChatMessageById, updateChatMessage },
+            dependencies: { getCallingUser: ctx.getCallingUser, getChatMessageViewById, updateChatMessage },
         }),
     ),
 
@@ -77,7 +77,7 @@ export const chatsRouter = router({
         deleteChatMessageMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getChatMessageById, deleteChatMessage },
+            dependencies: { getCallingUser: ctx.getCallingUser, getChatMessageViewById, deleteChatMessage },
         }),
     ),
 

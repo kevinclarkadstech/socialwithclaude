@@ -22,7 +22,9 @@ import {
     createPostReport,
     deletePost,
     getPostById,
-    getPosts,
+    getPostMediaByPostId,
+    getPostViewById,
+    getPostViews,
     getProfileVisibility,
     getUserFollowStatus,
     getUserProfileByUsername,
@@ -34,15 +36,15 @@ import { procedure, router } from "../trpc";
 
 export const postsRouter = router({
     getPostById: procedure.input(GetPostByIdQueryInputSchema).query(({ ctx, input }) =>
-        getPostByIdQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getPostById } }),
+        getPostByIdQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getPostViewById } }),
     ),
 
     getFeed: procedure.input(GetFeedQueryInputSchema).query(({ ctx, input }) =>
-        getFeedQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getPosts } }),
+        getFeedQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getPostViews } }),
     ),
 
     getUserPosts: procedure.input(GetUserPostsQueryInputSchema).query(({ ctx, input }) =>
-        getUserPostsQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, getProfileVisibility, getUserFollowStatus, getPosts } }),
+        getUserPostsQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, getProfileVisibility, getUserFollowStatus, getPostViews } }),
     ),
 
     createPost: procedure.input(CreatePostMutationInputSchema).mutation(({ ctx, input }) =>
@@ -52,7 +54,7 @@ export const postsRouter = router({
             dependencies: {
                 getCallingUser: ctx.getCallingUser,
                 isPostingEnabled: () => ctx.featureFlagStore.isEnabled("usersCanPost"),
-                getPostById,
+                getPostViewById,
                 publishPostPhotos: publishPostPhotosWith(ctx.logger),
                 createPost,
             },
@@ -76,7 +78,14 @@ export const postsRouter = router({
         updatePostMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, publishPostPhotos: publishPostPhotosWith(ctx.logger), deleteMedia, updatePost },
+            dependencies: {
+                getCallingUser: ctx.getCallingUser,
+                getPostById,
+                getPostMediaByPostId,
+                publishPostPhotos: publishPostPhotosWith(ctx.logger),
+                deleteMedia,
+                updatePost,
+            },
         }),
     ),
 
@@ -84,7 +93,7 @@ export const postsRouter = router({
         deletePostMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, deletePost, deleteMedia },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, getPostMediaByPostId, deletePost, deleteMedia },
         }),
     ),
 
@@ -92,7 +101,7 @@ export const postsRouter = router({
         reportPostMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, createPostReport },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostViewById, createPostReport },
         }),
     ),
 });

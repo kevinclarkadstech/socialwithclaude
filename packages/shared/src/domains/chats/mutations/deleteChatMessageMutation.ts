@@ -5,7 +5,7 @@ import { notFoundError } from "../../../error-handling";
 import { canDeleteChatMessage } from "../../../logic/authorization/chats/canDeleteChatMessage";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
-import { ChatMessageSchema, type ChatMessage } from "../types/chat-message";
+import { ChatMessageSchema, type ChatMessageView } from "../types/chat-message";
 
 export const DeleteChatMessageMutationInputSchema = ChatMessageSchema.pick({ id: true });
 
@@ -18,11 +18,11 @@ export type DeleteChatMessageMutationOutput = z.infer<typeof DeleteChatMessageMu
 /** Deletes a message for everyone. */
 export const deleteChatMessageMutation: Mutation<{ input: DeleteChatMessageMutationInput, output: DeleteChatMessageMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getChatMessageById: (args: { id: string; viewerId: string | null }) => Promise<ChatMessage | null>;
+    getChatMessageViewById: (args: { id: string; viewerId: string | null }) => Promise<ChatMessageView | null>;
     deleteChatMessage: (args: { id: string; userId: string }) => Promise<boolean>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const message = await dependencies.getChatMessageById({ id: input.id, viewerId: caller?.userId ?? null });
+    const message = await dependencies.getChatMessageViewById({ id: input.id, viewerId: caller?.userId ?? null });
     if (!message) {
         logger.info("Message to delete not found", { chatMessageId: input.id });
         return fail(notFoundError("Message not found"));

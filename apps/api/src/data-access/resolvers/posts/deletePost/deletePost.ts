@@ -1,6 +1,6 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db, schema } from "../../../db";
-import { deletePostMedia } from "../deletePostMedia/deletePostMedia";
+import { deletePostMedia } from "../../../internal/posts/deletePostMedia/deletePostMedia";
 
 /**
  * Soft deletes a post, as `userId`, and takes it off its author's counts

@@ -11,8 +11,8 @@ import {
     userFeedbackCategories,
     userFeedbackStatuses,
     userFollowStatuses,
-    type Post,
-    type PostComment,
+    type PostView,
+    type PostCommentView,
 } from "@myapp/shared/domains";
 import { newId } from "./new-id";
 
@@ -332,7 +332,7 @@ export const postReports = pgTable("post_reports", {
     reason: text("reason", { enum: asEnum(reportReasons) }).notNull(),
     details: text("details"),
     status: text("status", { enum: asEnum(reportStatuses) }).notNull().default("open"),
-    snapshot: jsonb("snapshot").$type<Omit<Post, "viewer">>().notNull(),
+    snapshot: jsonb("snapshot").$type<Omit<PostView, "viewer">>().notNull(),
     ...auditFields(),
 }, (t) => [
     uniqueIndex("post_reports_created_by_post_id_idx").on(t.createdBy, t.postId),
@@ -353,7 +353,7 @@ export const postCommentReports = pgTable("post_comment_reports", {
     reason: text("reason", { enum: asEnum(reportReasons) }).notNull(),
     details: text("details"),
     status: text("status", { enum: asEnum(reportStatuses) }).notNull().default("open"),
-    snapshot: jsonb("snapshot").$type<Omit<PostComment, "viewer">>().notNull(),
+    snapshot: jsonb("snapshot").$type<Omit<PostCommentView, "viewer">>().notNull(),
     ...auditFields(),
 }, (t) => [
     uniqueIndex("post_comment_reports_created_by_post_comment_id_idx").on(t.createdBy, t.postCommentId),

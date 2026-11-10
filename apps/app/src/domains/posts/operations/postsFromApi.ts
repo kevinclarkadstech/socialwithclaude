@@ -11,12 +11,18 @@ export async function fetchPostById(id: string) {
   return found?.post ?? null;
 }
 
-/** For mutations' getPostById dependency: the post as shown, else from the API. */
+/** For mutations' getPostViewById and getPostById dependencies: the post as shown, else from the API. */
 export async function postFromStoreOrApi({ id }: { id: string }) {
   return postStore.getItem(id) ?? fetchPostById(id);
 }
 
-/** For mutations' getPostCommentById dependency: only comments on screen get edited, voted on or reported. */
+/** For mutations' getPostMediaByPostId dependency: the post's photos as shown, else from the API. */
+export async function mediaFromStoreOrApi({ postId }: { postId: string }) {
+  const post = await postFromStoreOrApi({ id: postId });
+  return post?.media ?? [];
+}
+
+/** For mutations' getPostCommentViewById dependency: only comments on screen get edited, voted on or reported. */
 export async function commentFromStore({ id }: { id: string }) {
   return postCommentStore.getItem(id) ?? null;
 }

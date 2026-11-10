@@ -45,7 +45,7 @@ export type CreatePostMediaUploadsMutationOutput = z.infer<typeof CreatePostMedi
 export const createPostMediaUploadsMutation: Mutation<{ input: CreatePostMediaUploadsMutationInput, output: CreatePostMediaUploadsMutationOutput }, {
     getCallingUser: GetCallingUser;
     isPostingEnabled: () => boolean;
-    getPostById: (args: { id: string; viewerId: string | null }) => Promise<Post | null>;
+    getPostById: (args: { id: string }) => Promise<Post | null>;
     createUploadUrl: (args: { key: string; contentType: string; contentLength: number }) => Promise<string>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
@@ -64,7 +64,7 @@ export const createPostMediaUploadsMutation: Mutation<{ input: CreatePostMediaUp
     }
 
     // Photos for a post that exists already only go to one the caller can edit.
-    const post = await dependencies.getPostById({ id: input.postId, viewerId: allowed.value.userId });
+    const post = await dependencies.getPostById({ id: input.postId });
     if (post) {
         const canEdit = canUpdatePost({ caller, post });
         if (!canEdit.ok) {

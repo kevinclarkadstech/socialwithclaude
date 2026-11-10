@@ -12,7 +12,7 @@ export function runGetPostCommentsQuery({ postId, cursor }: { postId: string; cu
     context: { logger },
     dependencies: {
       getCallingUser,
-      getPostComments: ({ postId, order, cursor, limit }) =>
+      getPostCommentViews: ({ postId, order, cursor, limit }) =>
         withRetry(() => fromApi(api.postComments.getPostComments.query({ postId, order, cursor, limit }))),
     },
   });

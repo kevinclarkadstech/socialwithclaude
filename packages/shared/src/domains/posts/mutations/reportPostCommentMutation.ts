@@ -5,7 +5,7 @@ import { notFoundError } from "../../../error-handling";
 import { canReportPostComment } from "../../../logic/authorization/posts/canReportPostComment";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
-import type { PostComment } from "../types/post-comment";
+import type { PostCommentView } from "../types/post-comment";
 import { PostCommentReportSchema, type PostCommentReport } from "../types/post-comment-report";
 import type { ReportReason } from "../types/report";
 
@@ -28,18 +28,18 @@ export type ReportPostCommentMutationOutput = z.infer<typeof ReportPostCommentMu
  */
 export const reportPostCommentMutation: Mutation<{ input: ReportPostCommentMutationInput, output: ReportPostCommentMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getPostCommentById: (args: { id: string; viewerId: string | null }) => Promise<PostComment | null>;
+    getPostCommentViewById: (args: { id: string; viewerId: string | null }) => Promise<PostCommentView | null>;
     createPostCommentReport: (args: {
         id: string;
         userId: string;
         postCommentId: string;
         reason: ReportReason;
         details: string | null;
-        snapshot: Omit<PostComment, "viewer">;
+        snapshot: Omit<PostCommentView, "viewer">;
     }) => Promise<PostCommentReport>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const comment = await dependencies.getPostCommentById({ id: input.postCommentId, viewerId: caller?.userId ?? null });
+    const comment = await dependencies.getPostCommentViewById({ id: input.postCommentId, viewerId: caller?.userId ?? null });
     if (!comment) {
         logger.info("Comment to report not found", { postCommentId: input.postCommentId });
         return fail(notFoundError("Comment not found"));

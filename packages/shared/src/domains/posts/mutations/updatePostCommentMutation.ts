@@ -5,24 +5,24 @@ import { notFoundError } from "../../../error-handling";
 import { canUpdatePostComment } from "../../../logic/authorization/posts/canUpdatePostComment";
 import { logDisallowedResult } from "../../../logic/authorization/logDisallowedResult";
 import type { GetCallingUser } from "../../users/types/calling-user";
-import { PostCommentSchema, type PostComment } from "../types/post-comment";
+import { PostCommentSchema, PostCommentViewSchema, type PostCommentView } from "../types/post-comment";
 
 export const UpdatePostCommentMutationInputSchema = PostCommentSchema.pick({ id: true, content: true });
 
 export type UpdatePostCommentMutationInput = z.infer<typeof UpdatePostCommentMutationInputSchema>;
 
-export const UpdatePostCommentMutationOutputSchema = PostCommentSchema;
+export const UpdatePostCommentMutationOutputSchema = PostCommentViewSchema;
 
 export type UpdatePostCommentMutationOutput = z.infer<typeof UpdatePostCommentMutationOutputSchema>;
 
 /** Changes a comment's content. */
 export const updatePostCommentMutation: Mutation<{ input: UpdatePostCommentMutationInput, output: UpdatePostCommentMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getPostCommentById: (args: { id: string; viewerId: string | null }) => Promise<PostComment | null>;
-    updatePostComment: (args: { id: string; userId: string; content: string }) => Promise<PostComment | null>;
+    getPostCommentViewById: (args: { id: string; viewerId: string | null }) => Promise<PostCommentView | null>;
+    updatePostComment: (args: { id: string; userId: string; content: string }) => Promise<PostCommentView | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const comment = await dependencies.getPostCommentById({ id: input.id, viewerId: caller?.userId ?? null });
+    const comment = await dependencies.getPostCommentViewById({ id: input.id, viewerId: caller?.userId ?? null });
     if (!comment) {
         logger.info("Comment to update not found", { postCommentId: input.id });
         return fail(notFoundError("Comment not found"));

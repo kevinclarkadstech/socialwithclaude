@@ -1,7 +1,7 @@
 import z from "zod";
-import { PostSchema } from "../../posts/types/post";
-import { PostCommentSchema } from "../../posts/types/post-comment";
-import { ChatMessageSchema } from "../../chats/types/chat-message";
+import { PostViewSchema } from "../../posts/types/post";
+import { PostCommentViewSchema } from "../../posts/types/post-comment";
+import { ChatMessageViewSchema } from "../../chats/types/chat-message";
 
 export const UserSaveTypeSchema = z.enum(["post", "postComment", "chatMessage"]);
 
@@ -14,15 +14,15 @@ const UserSaveFieldsSchema = z.object({
 export const UserSaveSchema = z.discriminatedUnion("type", [
     UserSaveFieldsSchema.extend({
         type: z.literal(UserSaveTypeSchema.enum.post),
-        post: PostSchema,
+        post: PostViewSchema,
     }),
     UserSaveFieldsSchema.extend({
         type: z.literal(UserSaveTypeSchema.enum.postComment),
-        postComment: PostCommentSchema,
+        postComment: PostCommentViewSchema,
     }),
     UserSaveFieldsSchema.extend({
         type: z.literal(UserSaveTypeSchema.enum.chatMessage),
-        chatMessage: ChatMessageSchema,
+        chatMessage: ChatMessageViewSchema,
     }),
 ]);
 

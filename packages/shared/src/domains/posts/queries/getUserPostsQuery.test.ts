@@ -14,7 +14,7 @@ function run({ caller = mockCaller(), visibility = "public", follow = null, type
     follow?: UserFollow["status"] | null;
     type?: UserPostsType;
 }) {
-    const getPosts = mock(async () => ({ items: [mockPost({ createdBy: userId2 })], nextCursor: null }));
+    const getPostViews = mock(async () => ({ items: [mockPost({ createdBy: userId2 })], nextCursor: null }));
     const result = getUserPostsQuery({
         input: { username: target.username, type, cursor: null, limit: 20 },
         context: testContext,
@@ -23,10 +23,10 @@ function run({ caller = mockCaller(), visibility = "public", follow = null, type
             getUserProfileByUsername: async () => target,
             getProfileVisibility: async () => visibility,
             getUserFollowStatus: async () => follow,
-            getPosts,
+            getPostViews,
         },
     });
-    return { result, getPosts };
+    return { result, getPostViews };
 }
 
 describe("getUserPostsQuery", () => {
@@ -35,9 +35,9 @@ describe("getUserPostsQuery", () => {
         ["posts", undefined],
         ["listings", true],
     ] as const)("type %s asks for isListing %s", async (type, isListing) => {
-        const { result, getPosts } = run({ type });
+        const { result, getPostViews } = run({ type });
         expect((await result).ok).toBe(true);
-        expect(getPosts).toHaveBeenCalledWith(expect.objectContaining({ createdBy: userId2, isListing }));
+        expect(getPostViews).toHaveBeenCalledWith(expect.objectContaining({ createdBy: userId2, isListing }));
     });
 
     it("refuses a followers-only profile until the follow is accepted", async () => {

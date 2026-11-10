@@ -5,7 +5,7 @@ import {
     searchUserProfilesQuery,
 } from "@myapp/shared/domains";
 
-import { searchPosts, searchUserProfiles } from "../../../data-access";
+import { searchPostViews, searchUserProfiles } from "../../../data-access";
 import { procedure, router } from "../trpc";
 
 export const searchRouter = router({
@@ -14,6 +14,6 @@ export const searchRouter = router({
     ),
 
     posts: procedure.input(SearchPostsQueryInputSchema).query(({ ctx, input }) =>
-        searchPostsQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, searchPosts } }),
+        searchPostsQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, searchPostViews } }),
     ),
 });

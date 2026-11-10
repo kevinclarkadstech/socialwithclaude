@@ -1,9 +1,9 @@
-import type { PostComment } from '@myapp/shared/domains';
+import type { PostCommentView } from '@myapp/shared/domains';
 import { describe, expect, it } from 'vitest';
 import { nextVote, withVote } from './commentVotes';
 
 const creator = { userId: '01JAAAAAAAAAAAAAAAAAAAAAA1', username: 'sam_k', firstName: null, lastName: null, updatedAt: '2026-11-06T12:00:00.000Z' };
-const comment = (vote: 1 | -1 | null, numUpVotes: number, numDownVotes: number): PostComment => ({
+const comment = (vote: 1 | -1 | null, numUpVotes: number, numDownVotes: number): PostCommentView => ({
   id: '01JCCCCCCCCCCCCCCCCCCCCCC1',
   postId: '01JBBBBBBBBBBBBBBBBBBBBBB1',
   content: 'Nice',

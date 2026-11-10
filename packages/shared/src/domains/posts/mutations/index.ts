@@ -1,5 +1,4 @@
 export * from './createPostCommentMutation';
-export * from './createPostListingMutation';
 export * from './createPostMutation';
 export * from './deletePostCommentMutation';
 export * from './deletePostMutation';
@@ -7,6 +6,5 @@ export * from './reportPostCommentMutation';
 export * from './reportPostMutation';
 export * from './setPostCommentVoteMutation';
 export * from './updatePostCommentMutation';
-export * from './updatePostListingMutation';
 export * from './updatePostMutation';
 export * from './createPostMediaUploadsMutation';

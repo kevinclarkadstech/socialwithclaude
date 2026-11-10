@@ -13,7 +13,7 @@ export function runGetPostListingsQuery({ status, cursor }: { status: ListingSta
     dependencies: {
       getCallingUser,
       // The API works out what the viewer sees, so viewerId isn't sent.
-      getPostListings: ({ status, cursor, limit }) =>
+      getListingPostViews: ({ status, cursor, limit }) =>
         withRetry(() => fromApi(api.postListings.getListings.query({ status, cursor, limit }))),
     },
   });

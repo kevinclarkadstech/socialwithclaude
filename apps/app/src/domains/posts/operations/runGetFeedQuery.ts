@@ -13,7 +13,7 @@ export function runGetFeedQuery({ cursor }: { cursor: string | null }) {
     dependencies: {
       getCallingUser,
       // The API works out what the viewer sees, so viewerId isn't sent.
-      getPosts: ({ cursor, limit }) => withRetry(() => fromApi(api.posts.getFeed.query({ cursor, limit }))),
+      getPostViews: ({ cursor, limit }) => withRetry(() => fromApi(api.posts.getFeed.query({ cursor, limit }))),
     },
   });
 }

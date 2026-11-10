@@ -1,11 +1,10 @@
-import type { CreatePostListingMutationInput } from '@myapp/shared/domains';
+import type { CreatePostMutationInput } from '@myapp/shared/domains';
 import type { PreparedPostPhoto } from './utils/preparePostPhoto';
 
-/** Omit for each kind of price in turn (a plain Omit would merge them and lose which fields go with which). */
-type ListingFields = CreatePostListingMutationInput extends infer T ? (T extends unknown ? Omit<T, 'id' | 'media'> : never) : never;
-
-/** What's being posted: a post's text, or a listing's details. */
-export type PendingPostContent = { kind: 'post'; content: string } | { kind: 'listing'; listing: ListingFields };
+/** What's being posted: a post's text, or a listing's text (its description) and details. */
+export type PendingPostContent =
+  | { kind: 'post'; content: string }
+  | { kind: 'listing'; content: string; listing: NonNullable<CreatePostMutationInput['listing']> };
 
 /**
  * A post or listing being sent: shown at the top of the feed straight away

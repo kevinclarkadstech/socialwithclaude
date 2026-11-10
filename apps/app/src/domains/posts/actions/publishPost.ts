@@ -1,5 +1,4 @@
 import { runOrToast } from '../../../lib/api/runOrToast';
-import { runCreatePostListingMutation } from '../operations/runCreatePostListingMutation';
 import { runCreatePostMutation } from '../operations/runCreatePostMutation';
 import { emitPostCreated } from '../postEvents';
 import { pendingPostStore, type PendingPost } from '../pendingPostStore';
@@ -44,11 +43,8 @@ async function send(id: string) {
 
   const caller = await getCallingUser();
   const media = pending.photos.map(({ photo, caption }) => preparedPostMedia(photo, { postId: id, userId: caller?.userId ?? '', caption }));
-  const result = await runOrToast(() =>
-    pending.content.kind === 'post'
-      ? runCreatePostMutation({ id, content: pending.content.content, media })
-      : runCreatePostListingMutation({ ...pending.content.listing, id, media }),
-  );
+  const listing = pending.content.kind === 'listing' ? pending.content.listing : undefined;
+  const result = await runOrToast(() => runCreatePostMutation({ id, content: pending.content.content, media, listing }));
 
   if (!result.ok) {
     pendingPostStore.update(id, { status: 'failed', error: result.error.message ?? "Couldn't post" });

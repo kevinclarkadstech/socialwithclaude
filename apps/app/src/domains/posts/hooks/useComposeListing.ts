@@ -1,9 +1,9 @@
-import type { ListingCondition, ListingPrice, ListingStatus, ListingType, Post } from '@myapp/shared/domains';
+import type { ListingCondition, ListingPrice, ListingStatus, ListingType, PostView } from '@myapp/shared/domains';
 import { useState } from 'react';
 import { newId } from '../../../lib/ids';
 import { publishPost } from '../actions/publishPost';
 import { warnAboutDroppedPhotos } from '../utils/droppedPhotosWarning';
-import { updatePostListing } from '../actions/updatePostListing';
+import { updatePost } from '../actions/updatePost';
 import { parsePriceCents, priceFieldValue } from '../listingPrices';
 import { usePostPhotos } from './usePostPhotos';
 
@@ -21,7 +21,7 @@ interface ListingFormErrors {
  * away); an edit saves before closing. The description is also the post's
  * text in the feed. Text is trimmed only when it's sent.
  */
-export function useComposeListing({ post, onDismiss }: { post?: Post; onDismiss: () => void }) {
+export function useComposeListing({ post, onDismiss }: { post?: PostView; onDismiss: () => void }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priceType, setPriceType] = useState<ListingType>('fixed');
@@ -75,25 +75,25 @@ export function useComposeListing({ post, onDismiss }: { post?: Post; onDismiss:
       return;
     }
 
-    const fields = {
+    // One text for both: the listing's description and the post's text in the feed.
+    const content = description.trim();
+    const listing = {
       title: title.trim(),
-      // One text for both: the listing's description and the post's text in the feed.
-      description: description.trim(),
-      content: description.trim(),
+      description: content,
       condition,
       // Only a fixed price can be negotiable.
       isNegotiable: priced.type === 'fixed' && isNegotiable,
       ...priced,
     };
     if (!post) {
-      publishPost({ id: postId, content: { kind: 'listing', listing: fields }, photos: photos.handOff() });
+      publishPost({ id: postId, content: { kind: 'listing', content, listing }, photos: photos.handOff() });
       onDismiss();
       return;
     }
     setIsBusy(true);
     try {
       const media = photos.media;
-      const result = await updatePostListing({ ...fields, id: post.id, status, media });
+      const result = await updatePost({ id: post.id, content, media, listing: { ...listing, status } });
       if (result.ok) {
         warnAboutDroppedPhotos({ sent: media, saved: result.value });
         onDismiss();

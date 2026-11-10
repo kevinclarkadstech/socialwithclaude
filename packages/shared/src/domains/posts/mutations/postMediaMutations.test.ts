@@ -147,7 +147,7 @@ describe("photos on posts", () => {
             dependencies: {
                 getCallingUser: async () => caller,
                 isPostingEnabled: () => true,
-                getPostById: async () => null,
+                getPostViewById: async () => null,
                 publishPostPhotos,
                 createPost,
             },
@@ -206,7 +206,14 @@ describe("photos on posts", () => {
         const result = await updatePostMutation({
             input: { id: post.id, content: "Edited", media: [field(mediaId), field(kept, "Kept")] },
             context: testContext,
-            dependencies: { getCallingUser: async () => caller, getPostById: async () => existing, publishPostPhotos, deleteMedia, updatePost },
+            dependencies: {
+                getCallingUser: async () => caller,
+                getPostById: async () => existing,
+                getPostMediaByPostId: async () => existing.media,
+                publishPostPhotos,
+                deleteMedia,
+                updatePost,
+            },
         });
         expect(result).toMatchObject({ ok: true });
         expect(publishPostPhotos).toHaveBeenCalledWith({ userId, postId: post.id, media: [field(mediaId)] });
@@ -226,7 +233,8 @@ describe("photos on posts", () => {
             context: testContext,
             dependencies: {
                 getCallingUser: async () => caller,
-                getPostById: async () => mockPost({ media: [onPost(mediaId)] }),
+                getPostById: async () => mockPost(),
+                getPostMediaByPostId: async () => [onPost(mediaId)],
                 deletePost: async () => true,
                 deleteMedia,
             },
