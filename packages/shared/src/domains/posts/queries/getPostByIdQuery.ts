@@ -19,7 +19,7 @@ export const GetPostByIdQueryOutputSchema = z.object({
 
 export type GetPostByIdQueryOutput = z.infer<typeof GetPostByIdQueryOutputSchema>;
 
-/** A post (or listing). Not found if it doesn't exist, was deleted, or the caller may not see it (canViewPost). */
+/** A post (or listing). Not found if it doesn't exist, was deleted, or the caller can't see it (canViewPost). */
 export const getPostByIdQuery: Query<{ input: GetPostByIdQueryInput, output: GetPostByIdQueryOutput }, {
     getCallingUser: GetCallingUser;
     getPostById: (args: { id: string; viewerId: string | null }) => Promise<Post | null>;

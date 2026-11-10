@@ -1,8 +1,7 @@
 import { eq } from "drizzle-orm";
 import type { ChatMessage } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { toChatMessage } from "../../../mappers/chats";
-import { selectChatMessages } from "../../../selects/selectChatMessages";
+import { getChatMessageById } from "../getChatMessageById/getChatMessageById";
 
 /**
  * Sends a message with the client's `id`, and marks the chat as having a new
@@ -29,7 +28,7 @@ export async function createChatMessage({ id, chatId, userId, content }: {
             .set({ lastMessageAt: created.createdAt })
             .where(eq(schema.chats.id, chatId));
 
-        const [row] = await selectChatMessages(tx, userId).where(eq(schema.chatMessages.id, id));
-        return toChatMessage(row!);
+        // Just written, so it exists.
+        return (await getChatMessageById({ id, viewerId: userId }, tx))!;
     });
 }

@@ -12,7 +12,7 @@ export const canReportPost: AuthorizationCheck<{ caller: CallingUser | null; pos
     if (!hasProfile(caller)) {
         return disallow("profile-required");
     }
-    // Only posts the caller may see (not across a block, not a private profile they don't follow).
+    // Only posts the caller can see (not across a block, not a private profile they don't follow).
     const viewable = canViewPost({ caller, post });
     if (!viewable.ok) {
         return viewable;

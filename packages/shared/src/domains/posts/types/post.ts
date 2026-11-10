@@ -18,7 +18,7 @@ export const PostSchema = BaseUserCreatedEntitySchema.extend({
     listing: PostListingSchema.optional(),
     // Its photos, in order (none for a text-only post).
     media: z.array(PostMediaSchema),
-    // Who wrote it, and who may see their posts (for canViewPost).
+    // Who wrote it, and who can see their posts (for canViewPost).
     creator: UserProfileSummarySchema.extend({
         profileVisibility: ProfileVisibilitySchema,
     }),

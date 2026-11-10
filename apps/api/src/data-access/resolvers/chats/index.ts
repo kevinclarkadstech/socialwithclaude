@@ -5,6 +5,7 @@ export { deleteChatMessage } from './deleteChatMessage/deleteChatMessage';
 export { getChatMembers } from './getChatMembers/getChatMembers';
 export { getChatMessageById } from './getChatMessageById/getChatMessageById';
 export { getChatMessages } from './getChatMessages/getChatMessages';
+export { getChatMessagesByIds } from './getChatMessagesByIds/getChatMessagesByIds';
 export { getUserChats } from './getUserChats/getUserChats';
 export { markChatRead } from './markChatRead/markChatRead';
 export { updateChatMessage } from './updateChatMessage/updateChatMessage';

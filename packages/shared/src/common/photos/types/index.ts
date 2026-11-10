@@ -1,7 +1,7 @@
 import z from "zod";
 import { maxPhotoPlaceholderLength } from "../constants";
 
-/** The photo formats uploads may be in: WebP, or JPEG where the device can't encode WebP. */
+/** The photo formats uploads can be in: WebP, or JPEG where the device can't encode WebP. */
 export const PhotoFormatSchema = z.enum(["webp", "jpeg"]);
 export type PhotoFormat = z.infer<typeof PhotoFormatSchema>;
 

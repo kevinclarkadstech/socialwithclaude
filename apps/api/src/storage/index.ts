@@ -4,7 +4,7 @@ import { serverConfig } from "../config";
 /**
  * Object storage through the S3 API, with requests signed by aws4fetch (plain
  * fetch, so it runs on Node and on Workers alike). Cloudflare R2 in
- * production, Garage locally. Infrastructure only: what may be uploaded, and
+ * production, Garage locally. Infrastructure only: what can be uploaded, and
  * by whom, is decided in the shared mutations.
  */
 const client = new AwsClient({

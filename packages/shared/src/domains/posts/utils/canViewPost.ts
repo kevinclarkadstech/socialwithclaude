@@ -4,7 +4,7 @@ import type { AuthorizationCheck } from "../../../logic/authorization/allowDisal
 import { canViewUserPosts } from "../../../logic/authorization/users/canViewUserPosts";
 
 /**
- * Whether the caller may see a post: the same rule as its creator's
+ * Whether the caller can see a post: the same rule as its creator's
  * profile (canViewUserPosts), from what the post carries about its creator.
  */
 export const canViewPost: AuthorizationCheck<{
@@ -18,7 +18,7 @@ export const canViewPost: AuthorizationCheck<{
         followStatus: post.viewer.followsCreator ? "following" : "none",
     });
 
-/** The posts in `posts` the caller may see (see canViewPost). */
+/** The posts in `posts` the caller can see (see canViewPost). */
 export function viewablePosts<P extends Pick<Post, "createdBy" | "creator" | "viewer">>({ caller, posts }: {
     caller: CallingUser | null;
     posts: P[];

@@ -18,7 +18,7 @@ export const GetFeedQueryOutputSchema = z.object({
 
 export type GetFeedQueryOutput = z.infer<typeof GetFeedQueryOutputSchema>;
 
-/** Every post and listing, newest first. Only what the caller may see (canViewPost). */
+/** Every post and listing, newest first. Only what the caller can see (canViewPost). */
 export const getFeedQuery: Query<{ input: GetFeedQueryInput, output: GetFeedQueryOutput }, {
     getCallingUser: GetCallingUser;
     getPosts: (args: { excludedCreatorIds: string[]; viewerId: string | null; cursor?: string | null; limit: number }) => Promise<Page<Post>>;

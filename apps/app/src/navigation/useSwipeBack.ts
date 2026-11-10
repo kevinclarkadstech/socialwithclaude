@@ -3,7 +3,7 @@ import { createGesture, getIonPageElement, type GestureDetail } from '@ionic/rea
 import { startSwipeBackTransition, swipeBackEnabled, type SwipeBackTransition } from './transition';
 
 export interface SwipeBackOptions {
-  /** Whether a swipe may start right now (active tab, has a page to go back to, not animating). */
+  /** Whether a swipe can start right now (active tab, has a page to go back to, not animating). */
   canStart: () => boolean;
   /** Stack wrappers for the page underneath (entering) and the top page (leaving). */
   getPages: () => { entering: HTMLElement; leaving: HTMLElement } | null;

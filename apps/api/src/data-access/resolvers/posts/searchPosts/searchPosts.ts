@@ -1,10 +1,9 @@
 import { and, desc, ilike, isNull, notInArray, or, sql } from "drizzle-orm";
 import type { Page } from "@myapp/shared/common";
 import type { Post } from "@myapp/shared/domains";
-import { db, schema } from "../../../db";
-import { toPost } from "../../../mappers/posts";
+import { schema } from "../../../db";
 import { toPage } from "../../../paging";
-import { selectPosts } from "../../../selects/selectPosts";
+import { readPosts } from "../readPosts/readPosts";
 
 /** Posts whose content (or listing title) contains `query`, case-insensitive, newest first. */
 export async function searchPosts({ excludedCreatorIds = [], query, viewerId, cursor, limit }: {
@@ -16,16 +15,18 @@ export async function searchPosts({ excludedCreatorIds = [], query, viewerId, cu
     limit: number;
 }): Promise<Page<Post>> {
     const pattern = `%${query.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
-    const rows = await selectPosts(db, viewerId)
-        .where(and(
+    const posts = await readPosts({
+        viewerId,
+        where: and(
             isNull(schema.posts.deletedAt),
             excludedCreatorIds.length ? notInArray(schema.posts.createdBy, excludedCreatorIds) : undefined,
             or(ilike(schema.posts.content, pattern), ilike(schema.postListings.title, pattern)),
             cursor
                 ? sql`(${schema.posts.createdAt}, ${schema.posts.id}) < (select created_at, id from posts where id = ${cursor})`
                 : undefined,
-        ))
-        .orderBy(desc(schema.posts.createdAt), desc(schema.posts.id))
-        .limit(limit + 1);
-    return toPage(rows.map(toPost), limit, (post) => post.id);
+        ),
+        orderBy: [desc(schema.posts.createdAt), desc(schema.posts.id)],
+        limit: limit + 1,
+    });
+    return toPage(posts, limit, (post) => post.id);
 }

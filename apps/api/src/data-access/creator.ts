@@ -1,4 +1,4 @@
-import { schema } from "../db";
+import { schema } from "./db";
 
 /** The creator's profile summary, from a join on user_profiles. */
 export const creatorFields = {
