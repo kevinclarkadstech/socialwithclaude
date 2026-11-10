@@ -5,7 +5,7 @@ import { logger } from '../../../lib/logger';
 import { getCallingUser } from '../../users/callingUserStore';
 import { postFromStoreOrApi } from './postsFromApi';
 
-/** Creates a post. `id` comes from newId(), so a retry returns the first post rather than a second. */
+/** Creates a post, or a listing when `listing` is given. `id` comes from newId(), so a retry returns the first post rather than a second. */
 export function runCreatePostMutation(post: CreatePostMutationInput) {
   return createPostMutation({
     input: post,
@@ -17,8 +17,8 @@ export function runCreatePostMutation(post: CreatePostMutationInput) {
       getPostViewById: postFromStoreOrApi,
       // The API publishes the uploaded photos for real; here they're taken as they are.
       publishPostPhotos: async ({ media }) => media.map(({ id, width, height }) => ({ id, width, height })),
-      createPost: ({ id, content, media }) =>
-        fromApi(api.posts.createPost.mutate({ id, content, media })),
+      // The API takes the caller from the session, so userId isn't sent.
+      createPost: ({ userId, ...input }) => fromApi(api.posts.createPost.mutate(input)),
     },
   });
 }

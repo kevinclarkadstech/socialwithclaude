@@ -6,7 +6,7 @@ import { toPage } from "../../../paging";
 import { findPostViews } from "../findPostViews/findPostViews";
 
 /** Listings, newest first, as `viewerId` sees them; only those with `status` if given. */
-export async function getPostListings({ excludedCreatorIds = [], status, viewerId, cursor, limit }: {
+export async function getListingPostViews({ excludedCreatorIds = [], status, viewerId, cursor, limit }: {
     // Creators whose posts are left out.
     excludedCreatorIds?: string[];
     status?: ListingStatus;

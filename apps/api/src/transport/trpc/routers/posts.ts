@@ -21,6 +21,8 @@ import {
     createPost,
     createPostReport,
     deletePost,
+    getPostById,
+    getPostMediaByPostId,
     getPostViewById,
     getPostViews,
     getProfileVisibility,
@@ -66,7 +68,7 @@ export const postsRouter = router({
             dependencies: {
                 getCallingUser: ctx.getCallingUser,
                 isPostingEnabled: () => ctx.featureFlagStore.isEnabled("usersCanPost"),
-                getPostViewById,
+                getPostById,
                 createUploadUrl,
             },
         }),
@@ -76,7 +78,14 @@ export const postsRouter = router({
         updatePostMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostViewById, publishPostPhotos: publishPostPhotosWith(ctx.logger), deleteMedia, updatePost },
+            dependencies: {
+                getCallingUser: ctx.getCallingUser,
+                getPostById,
+                getPostMediaByPostId,
+                publishPostPhotos: publishPostPhotosWith(ctx.logger),
+                deleteMedia,
+                updatePost,
+            },
         }),
     ),
 
@@ -84,7 +93,7 @@ export const postsRouter = router({
         deletePostMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostViewById, deletePost, deleteMedia },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, getPostMediaByPostId, deletePost, deleteMedia },
         }),
     ),
 

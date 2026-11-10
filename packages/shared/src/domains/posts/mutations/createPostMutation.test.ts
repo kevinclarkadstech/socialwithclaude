@@ -43,3 +43,23 @@ describe("createPostMutation", () => {
         expect(await result).toMatchObject({ ok: false, error: { type: "conflict" } });
     });
 });
+
+describe("createPostMutation for a listing", () => {
+    it("passes the listing's details on to be saved with the post", async () => {
+        const listing = { title: "Bookshelf", description: "Solid wood", condition: "used" as const, isNegotiable: false, type: "fixed" as const, priceCents: 2500 };
+        const createPost = mock(async () => post);
+        const result = await createPostMutation({
+            input: { id: post.id, content: "Solid wood", media: [], listing },
+            context: testContext,
+            dependencies: {
+                getCallingUser: async () => mockCaller(),
+                isPostingEnabled: () => true,
+                getPostViewById: async () => null,
+                publishPostPhotos: async () => [],
+                createPost,
+            },
+        });
+        expect(result).toMatchObject({ ok: true });
+        expect(createPost).toHaveBeenCalledWith(expect.objectContaining({ listing }));
+    });
+});

@@ -29,7 +29,7 @@ export function PendingPostCard({ pending }: PendingPostCardProps) {
   }
   const photos = pending.photos.map(({ photo, caption }) => preparedDisplayPhoto(photo, caption));
   const listing = pending.content.kind === 'listing' ? pending.content.listing : null;
-  const text = listing ? listing.description : pending.content.kind === 'post' ? pending.content.content : '';
+  const text = pending.content.content;
   const isFailed = pending.status === 'failed';
 
   return (

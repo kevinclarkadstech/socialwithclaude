@@ -3,7 +3,7 @@ import { api } from '../../../lib/api/trpc';
 import { fromApi } from '../../../lib/api/results';
 import { logger } from '../../../lib/logger';
 import { getCallingUser } from '../../users/callingUserStore';
-import { postFromStoreOrApi } from './postsFromApi';
+import { mediaFromStoreOrApi, postFromStoreOrApi } from './postsFromApi';
 
 /** Deletes a post. Only its author can. */
 export function runDeletePostMutation({ id }: { id: string }) {
@@ -12,7 +12,8 @@ export function runDeletePostMutation({ id }: { id: string }) {
     context: { logger },
     dependencies: {
       getCallingUser,
-      getPostViewById: postFromStoreOrApi,
+      getPostById: postFromStoreOrApi,
+      getPostMediaByPostId: mediaFromStoreOrApi,
       deletePost: async ({ id }) => {
         await fromApi(api.posts.deletePost.mutate({ id }));
         return true;
