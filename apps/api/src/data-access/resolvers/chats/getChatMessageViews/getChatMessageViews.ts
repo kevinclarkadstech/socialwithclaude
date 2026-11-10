@@ -3,7 +3,7 @@ import type { Page } from "@myapp/shared/common";
 import type { ChatMessageView } from "@myapp/shared/domains";
 import { schema } from "../../../db";
 import { toPage } from "../../../paging";
-import { findChatMessageViews } from "../findChatMessageViews/findChatMessageViews";
+import { findChatMessageViews } from "../../../internal/chats/findChatMessageViews/findChatMessageViews";
 
 /** A chat's messages, newest first, as `viewerId` sees them; only those sent after `after` if given. */
 export async function getChatMessageViews({ chatId, viewerId, after, cursor, limit }: {

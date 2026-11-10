@@ -3,7 +3,7 @@ import type { Page } from "@myapp/shared/common";
 import type { PostCommentView } from "@myapp/shared/domains";
 import { schema } from "../../../db";
 import { toPage } from "../../../paging";
-import { findPostCommentViews } from "../findPostCommentViews/findPostCommentViews";
+import { findPostCommentViews } from "../../../internal/posts/findPostCommentViews/findPostCommentViews";
 
 /** A post's comments, oldest or newest first, as `viewerId` sees them. */
 export async function getPostCommentViews({ postId, viewerId, order, cursor, limit }: {

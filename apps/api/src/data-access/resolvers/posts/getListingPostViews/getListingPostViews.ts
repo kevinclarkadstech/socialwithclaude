@@ -3,7 +3,7 @@ import type { Page } from "@myapp/shared/common";
 import type { ListingStatus, PostView } from "@myapp/shared/domains";
 import { schema } from "../../../db";
 import { toPage } from "../../../paging";
-import { findPostViews } from "../findPostViews/findPostViews";
+import { findPostViews } from "../../../internal/posts/findPostViews/findPostViews";
 
 /** Listings, newest first, as `viewerId` sees them; only those with `status` if given. */
 export async function getListingPostViews({ excludedCreatorIds = [], status, viewerId, cursor, limit }: {

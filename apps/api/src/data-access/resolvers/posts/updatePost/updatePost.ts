@@ -2,7 +2,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import type { PostMedia, PostView, UpdatePostMutationInput } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { getPostViewById } from "../getPostViewById/getPostViewById";
-import { syncPostMedia } from "../syncPostMedia/syncPostMedia";
+import { syncPostMedia } from "../../../internal/posts/syncPostMedia/syncPostMedia";
 
 /**
  * Changes a post's content, as `userId`, makes its photos exactly `media`,

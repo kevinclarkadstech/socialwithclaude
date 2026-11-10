@@ -3,7 +3,7 @@ import type { Page } from "@myapp/shared/common";
 import type { PostView } from "@myapp/shared/domains";
 import { schema } from "../../../db";
 import { toPage } from "../../../paging";
-import { findPostViews } from "../findPostViews/findPostViews";
+import { findPostViews } from "../../../internal/posts/findPostViews/findPostViews";
 
 /** Posts whose content (or listing title) contains `query`, case-insensitive, newest first. */
 export async function searchPostViews({ excludedCreatorIds = [], query, viewerId, cursor, limit }: {

@@ -2,7 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import type { CreatePostMutationInput, PostMedia, PostView } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { getPostViewById } from "../getPostViewById/getPostViewById";
-import { syncPostMedia } from "../syncPostMedia/syncPostMedia";
+import { syncPostMedia } from "../../../internal/posts/syncPostMedia/syncPostMedia";
 
 /**
  * Creates a post with the client's `id`, with its photos and, for a listing,
