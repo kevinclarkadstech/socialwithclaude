@@ -13,7 +13,7 @@ import { createAppFeatureFlagStore, type AppFeatureFlagStore } from "./shared/fe
 import { trpcServer } from "@hono/trpc-server";
 import { db, isDatabaseReachable } from "./data-access/db";
 import { cache, isCacheReachable } from "./cache";
-import { createRedisRateLimiter, limitAuthRequests, type RateLimiter } from "./rate-limiting";
+import { createRedisRateLimiter, limitAuthRequestsMiddleware, type RateLimiter } from "./rate-limiting";
 import { appRouter, createContext } from "./transport/trpc";
 import { trpcOnErrorFunction } from "./error-handling";
 
@@ -40,7 +40,7 @@ const featureFlagStore = createAppFeatureFlagStore({ flagsOrLoader: { usersCanPo
 const featureFlagsLoaded = featureFlagStore.initialize();
 
 // Where rate limits are counted. On Cloudflare Workers this would be built per request from the
-// rate-limit bindings in c.env instead (see rate-limiting/RateLimiter.ts); nothing else changes.
+// rate-limit bindings in c.env instead (see rate-limiting/types.ts); nothing else changes.
 const rateLimiter = createRedisRateLimiter({ cache });
 
 const app = new Hono<AppHonoEnv>()
@@ -91,7 +91,7 @@ const app = new Hono<AppHonoEnv>()
         const [database, cacheReachable] = await Promise.all([isDatabaseReachable(), isCacheReachable()]);
         return c.json({ ok: database, database, cache: cacheReachable }, database ? 200 : 503);
     })
-    .use("/api/auth/*", limitAuthRequests)
+    .use("/api/auth/*", limitAuthRequestsMiddleware)
     .on(["POST", "GET"], "/api/auth/*", (c) => c.get("auth").handler(c.req.raw))
     // Only tRPC needs the caller; better-auth reads its own session.
     .use("/api/trpc/*", async (c, next) => {

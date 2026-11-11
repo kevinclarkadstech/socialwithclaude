@@ -1,6 +1,7 @@
 import type { MiddlewareHandler } from "hono";
 import type { AppHonoEnv } from "../index";
-import { tooManyRequestsMessage, type RateLimitDecision } from "./RateLimiter";
+import { tooManyRequestsMessage } from "./tooManyRequestsMessage";
+import type { RateLimitDecision } from "./types";
 import { rateLimitRules } from "./rules";
 
 /**
@@ -9,7 +10,7 @@ import { rateLimitRules } from "./rules";
  * A refused request gets a 429 with Retry-After, in the shape better-auth's
  * client reads ({ message }).
  */
-export const limitAuthRequests: MiddlewareHandler<AppHonoEnv> = async (c, next) => {
+export const limitAuthRequestsMiddleware: MiddlewareHandler<AppHonoEnv> = async (c, next) => {
     const ip = c.get("clientIp");
     const rateLimiter = c.get("rateLimiter");
     const checks: Promise<RateLimitDecision>[] = [rateLimiter.consume({ rule: rateLimitRules.auth, key: ip })];

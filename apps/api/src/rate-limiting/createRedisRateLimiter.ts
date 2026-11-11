@@ -1,6 +1,6 @@
 import type { Cache } from "../cache";
 import { rootLogger } from "../observability";
-import type { RateLimiter } from "./RateLimiter";
+import type { RateLimiter } from "./types";
 
 /**
  * Rate limits counted in Redis (the cache), shared by every API instance: a
