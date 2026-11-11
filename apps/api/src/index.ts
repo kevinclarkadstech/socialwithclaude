@@ -12,8 +12,8 @@ import { nativeAppOrigins, serverConfig } from "./config";
 import { createAppFeatureFlagStore, type AppFeatureFlagStore } from "./shared/feature-flags";
 import { trpcServer } from "@hono/trpc-server";
 import { db, isDatabaseReachable } from "./data-access/db";
-import { isRedisReachable } from "./redis";
-import { limitAuthRequests } from "./rate-limiting/limitAuthRequests";
+import { cache, isCacheReachable } from "./cache";
+import { createRedisRateLimiter, limitAuthRequests, type RateLimiter } from "./rate-limiting";
 import { appRouter, createContext } from "./transport/trpc";
 import { trpcOnErrorFunction } from "./error-handling";
 
@@ -28,6 +28,7 @@ export type AppHonoEnv = Env & {
         session: Auth["$Infer"]["Session"]["session"] | null
         /** The caller's IP address, from CLIENT_IP_HEADER ("unknown" without one). */
         clientIp: string;
+        rateLimiter: RateLimiter;
     },
     Bindings: object;
 }
@@ -38,6 +39,10 @@ const auth = createAuthInstance(db);
 const featureFlagStore = createAppFeatureFlagStore({ flagsOrLoader: { usersCanPost: true } });
 const featureFlagsLoaded = featureFlagStore.initialize();
 
+// Where rate limits are counted. On Cloudflare Workers this would be built per request from the
+// rate-limit bindings in c.env instead (see rate-limiting/RateLimiter.ts); nothing else changes.
+const rateLimiter = createRedisRateLimiter({ cache });
+
 const app = new Hono<AppHonoEnv>()
     .use(contextStorage())
     .use(requestId())
@@ -46,6 +51,7 @@ const app = new Hono<AppHonoEnv>()
         c.set("featureFlagStore", featureFlagStore);
         c.set("auth", auth);
         c.set("clientIp", clientIp(c.req.header(serverConfig.CLIENT_IP_HEADER)));
+        c.set("rateLimiter", rateLimiter);
         const logger = rootLogger.child({ requestId: c.get("requestId") });
         c.set("logger", logger);
         const start = performance.now();
@@ -80,10 +86,10 @@ const app = new Hono<AppHonoEnv>()
     }))
     // Liveness: the process is up.
     .get("/api/health", (c) => c.json({ ok: true }))
-    // Readiness: it can serve requests. The database is required; Redis only turns rate limiting off.
+    // Readiness: it can serve requests. The database is required; without the cache, rate limiting is off.
     .get("/api/ready", async (c) => {
-        const [database, redis] = await Promise.all([isDatabaseReachable(), isRedisReachable()]);
-        return c.json({ ok: database, database, redis }, database ? 200 : 503);
+        const [database, cacheReachable] = await Promise.all([isDatabaseReachable(), isCacheReachable()]);
+        return c.json({ ok: database, database, cache: cacheReachable }, database ? 200 : 503);
     })
     .use("/api/auth/*", limitAuthRequests)
     .on(["POST", "GET"], "/api/auth/*", (c) => c.get("auth").handler(c.req.raw))

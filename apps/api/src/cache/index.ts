@@ -3,11 +3,12 @@ import { serverConfig } from "../config";
 import { rootLogger } from "../observability";
 
 /**
- * The shared Redis connection (rate-limit counters). It reconnects on its own;
- * while it's down, commands fail straight away rather than queueing, so the
- * API carries on without it (see rate-limiting).
+ * The shared cache: a Redis connection, used for rate-limit counters (see
+ * rate-limiting/createRedisRateLimiter). It reconnects on its own; while it's
+ * down, commands fail straight away rather than queueing, so the API carries
+ * on without it.
  */
-export const redis = createClient({
+export const cache = createClient({
     url: serverConfig.REDIS_URL,
     disableOfflineQueue: true,
     socket: {
@@ -17,22 +18,24 @@ export const redis = createClient({
 });
 
 let lastErrorLoggedAt = 0;
-redis.on("error", (err: unknown) => {
+cache.on("error", (err: unknown) => {
     // A dropped connection errors on every reconnect attempt: log it at most once a minute.
     if (Date.now() - lastErrorLoggedAt > 60_000) {
         lastErrorLoggedAt = Date.now();
-        rootLogger.error("Redis connection error", { err });
+        rootLogger.error("Cache connection error", { err });
     }
 });
 
-redis.connect().catch(() => {
+cache.connect().catch(() => {
     // Logged by the error handler above; the client keeps retrying.
 });
 
-/** Whether Redis answers, for the readiness check. */
-export async function isRedisReachable(): Promise<boolean> {
+export type Cache = typeof cache;
+
+/** Whether the cache answers, for the readiness check. */
+export async function isCacheReachable(): Promise<boolean> {
     try {
-        await redis.ping();
+        await cache.ping();
         return true;
     } catch {
         return false;
@@ -40,8 +43,8 @@ export async function isRedisReachable(): Promise<boolean> {
 }
 
 /** Closes the connection on shutdown. */
-export async function closeRedis() {
-    if (redis.isOpen) {
-        await redis.close();
+export async function closeCache() {
+    if (cache.isOpen) {
+        await cache.close();
     }
 }
