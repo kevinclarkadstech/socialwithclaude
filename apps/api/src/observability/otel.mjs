@@ -1,6 +1,10 @@
+import { existsSync } from 'node:fs';
 import { loadEnvFile } from 'node:process';
-// Load the environment variables before initializing OpenTelemetry
-loadEnvFile('./.env.local');
+// Locally, load .env.local before initializing OpenTelemetry. In production the environment is set
+// by the platform and there's no file (loading a missing one throws, so the API wouldn't start).
+if (process.env.NODE_ENV !== 'production' && existsSync('./.env.local')) {
+    loadEnvFile('./.env.local');
+}
 import { NodeSDK } from '@opentelemetry/sdk-node'
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node'
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto'
@@ -8,7 +12,6 @@ import { resourceFromAttributes } from '@opentelemetry/resources'
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions'
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 import { BatchLogRecordProcessor, ConsoleLogRecordExporter, SimpleLogRecordProcessor } from '@opentelemetry/sdk-logs';
-import { logs } from "@opentelemetry/api-logs";
 
 const isProduction = process.env.NODE_ENV === 'production';
 const localUI = new Set((process.env.OTEL_LOCAL_UI || '').split(','));
@@ -57,11 +60,11 @@ const otelSdk = new NodeSDK({
     )],
 })
 
+// Flush on shutdown, but don't exit: the server's own SIGTERM handling closes connections and then exits.
 process.once('SIGTERM', () => {
     otelSdk.shutdown()
         .then(() => console.log('OTel SDK terminated'))
-        .catch((error) => console.log('Error terminating OTel SDK', error))
-        .finally(() => process.exit(0));
+        .catch((error) => console.log('Error terminating OTel SDK', error));
 });
 
 otelSdk.start();
