@@ -1,1 +1,1 @@
-export * from './getMySessionsQuery';
+export * from './getMySessionsQuery/getMySessionsQuery';

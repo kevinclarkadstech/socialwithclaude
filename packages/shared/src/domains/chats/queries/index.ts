@@ -1,2 +1,2 @@
-export * from './getChatMessagesQuery';
-export * from './getMyChatsQuery';
+export * from './getChatMessagesQuery/getChatMessagesQuery';
+export * from './getMyChatsQuery/getMyChatsQuery';
