@@ -1,7 +1,7 @@
 import type { CallingUser } from "../../users/types/calling-user";
 import type { PostView } from "../types/post";
-import type { AuthorizationCheck } from "../../../logic/authorization/allowDisallow";
-import { canViewUserPosts } from "../../../logic/authorization/users/canViewUserPosts";
+import type { AuthorizationCheck } from "../../../common/authorization/allowDisallow/allowDisallow";
+import { canViewUserPosts } from "../../users/authorization/canViewUserPosts/canViewUserPosts";
 
 /**
  * Whether the caller can see a post: the same rule as its creator's

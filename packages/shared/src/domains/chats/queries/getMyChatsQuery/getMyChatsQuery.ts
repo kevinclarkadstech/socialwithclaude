@@ -2,8 +2,8 @@ import z from "zod";
 import type { Query } from "../../../../types/query";
 import { succeed } from "../../../../utils/result";
 import { PageInputSchema, type Page } from "../../../../common/types/page";
-import { requireCallerWithProfile } from "../../../../logic/authorization/requireCaller";
-import { logDisallowedResult } from "../../../../logic/authorization/logDisallowedResult";
+import { requireCallerWithProfile } from "../../../../common/authorization/requireCaller/requireCaller";
+import { logDisallowedResult } from "../../../../common/authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
 import { ChatSchema, type Chat } from "../../types/chat";
 

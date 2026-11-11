@@ -5,3 +5,4 @@ export * from './mutations';
 export * from './utils';
 export * from './logic';
 export * from './validation';
+export * from './authorization';
