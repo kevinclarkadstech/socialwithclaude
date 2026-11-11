@@ -1,8 +1,8 @@
 import z from "zod";
 import type { Query } from "../../../../types/query";
 import { succeed } from "../../../../utils/result";
-import { requireCaller } from "../../../../logic/authorization/requireCaller";
-import { logDisallowedResult } from "../../../../logic/authorization/logDisallowedResult";
+import { requireCaller } from "../../../../common/authorization/requireCaller/requireCaller";
+import { logDisallowedResult } from "../../../../common/authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
 import { UserSessionSchema, type UserSession } from "../../../users/types/user-session";
 

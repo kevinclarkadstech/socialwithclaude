@@ -1,5 +1,4 @@
-import type { CallingUser, PostCommentView } from '@myapp/shared/domains';
-import { canDeletePostComment, canUpdatePostComment } from '@myapp/shared/logic/authorization';
+import { canDeletePostComment, canUpdatePostComment, type CallingUser, type PostCommentView } from '@myapp/shared/domains';
 import { askForReport } from '../../../../common/prompts/askForReport';
 import { askForText, chooseFrom, confirm } from '../../../../lib/prompts';
 import { deletePostComment } from '../../actions/deletePostComment';

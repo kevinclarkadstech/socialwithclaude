@@ -2,8 +2,8 @@ import z from "zod";
 import type { Mutation } from "../../../../types/mutation";
 import { fail, succeed } from "../../../../utils/result";
 import { notFoundError } from "../../../../error-handling";
-import { canDeletePostComment } from "../../../../logic/authorization/posts/canDeletePostComment";
-import { logDisallowedResult } from "../../../../logic/authorization/logDisallowedResult";
+import { canDeletePostComment } from "../../authorization/canDeletePostComment/canDeletePostComment";
+import { logDisallowedResult } from "../../../../common/authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
 import { PostCommentSchema, type PostCommentView } from "../../types/post-comment";
 

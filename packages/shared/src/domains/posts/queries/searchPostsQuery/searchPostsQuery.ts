@@ -1,7 +1,7 @@
 import z from "zod";
 import type { Query } from "../../../../types/query";
 import { succeed } from "../../../../utils/result";
-import { blockedEitherWay } from "../../../../logic/authorization/conditions";
+import { blockedEitherWay } from "../../../../common/authorization/conditions/conditions";
 import { viewablePosts } from "../../utils/canViewPost";
 import { PageInputSchema, type Page } from "../../../../common/types/page";
 import { PostViewSchema, type PostView } from "../../types/post";

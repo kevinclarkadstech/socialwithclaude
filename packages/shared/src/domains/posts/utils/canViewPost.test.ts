@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { mockCaller, mockPost, userId2 } from "../../../testing/fixtures";
-import { canCommentOnPost, canReportPost } from "../../../logic/authorization/posts";
+import { canCommentOnPost, canReportPost } from "../authorization";
 import { canViewPost, viewablePosts } from "./canViewPost";
 
 const theirs = (profileVisibility: "public" | "followers", followsCreator = false) =>

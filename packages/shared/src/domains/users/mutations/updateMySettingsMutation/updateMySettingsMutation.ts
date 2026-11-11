@@ -2,8 +2,8 @@ import z from "zod";
 import type { Mutation } from "../../../../types/mutation";
 import { fail, succeed } from "../../../../utils/result";
 import { notFoundError } from "../../../../error-handling";
-import { requireCallerWithProfile } from "../../../../logic/authorization/requireCaller";
-import { logDisallowedResult } from "../../../../logic/authorization/logDisallowedResult";
+import { requireCallerWithProfile } from "../../../../common/authorization/requireCaller/requireCaller";
+import { logDisallowedResult } from "../../../../common/authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../types/calling-user";
 import { UserSettingsSchema, type UserSettings } from "../../types/user-settings";
 

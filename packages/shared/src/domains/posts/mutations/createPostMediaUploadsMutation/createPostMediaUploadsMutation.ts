@@ -2,13 +2,13 @@ import z from "zod";
 import type { Mutation } from "../../../../types/mutation";
 import { fail, succeed } from "../../../../utils/result";
 import { authorizationError, validationError } from "../../../../error-handling";
-import { requireCallerWithProfile } from "../../../../logic/authorization/requireCaller";
-import { logDisallowedResult } from "../../../../logic/authorization/logDisallowedResult";
+import { requireCallerWithProfile } from "../../../../common/authorization/requireCaller/requireCaller";
+import { logDisallowedResult } from "../../../../common/authorization/logDisallowedResult/logDisallowedResult";
 import { maxPhotoUploadBytes } from "../../../../common/photos/constants";
 import { PhotoContentTypeSchema } from "../../../../common/photos/types";
 import { maxPostPhotos, postPhotoSizes } from "../../constants";
 import { photoKey } from "../../../../common/photos/utils";
-import { canUpdatePost } from "../../../../logic/authorization/posts/canUpdatePost";
+import { canUpdatePost } from "../../authorization/canUpdatePost/canUpdatePost";
 import type { Post } from "../../types/post";
 import type { GetCallingUser } from "../../../users/types/calling-user";
 

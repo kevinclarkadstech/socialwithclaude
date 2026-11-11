@@ -1,5 +1,4 @@
-import type { PostView } from '@myapp/shared/domains';
-import { canDeletePost, canUpdatePost } from '@myapp/shared/logic/authorization';
+import { canDeletePost, canUpdatePost, type PostView } from '@myapp/shared/domains';
 import { useState } from 'react';
 import { askForReport } from '../../../../common/prompts/askForReport';
 import { useRequireSignIn } from '../../../../common/hooks/useRequireSignIn';
