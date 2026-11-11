@@ -37,6 +37,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      # Vitest and jsdom run on Node (jsdom 31 needs 22.22.2+ or 24.15+), so pin it rather than take the runner's.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.2
