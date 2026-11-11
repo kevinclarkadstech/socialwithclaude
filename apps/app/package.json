@@ -34,7 +34,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@testing-library/dom": ">=7.21.4",
-    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.9",
     "@types/react": "19.3.0",
@@ -46,12 +46,12 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.7",
     "globals": "^17.14.0",
-    "jsdom": "^22.1.0",
+    "jsdom": "^31.0.0",
     "terser": "^5.51.2",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.2",
     "vite": "^8.3.8",
-    "vitest": "~4.0.18"
+    "vitest": "^5.1.0"
   },
   "description": "An Ionic project"
 }
