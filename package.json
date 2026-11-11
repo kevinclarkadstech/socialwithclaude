@@ -10,11 +10,11 @@
         "dev": "concurrently -n api,web -c green,blue \"bun run --cwd apps/api dev\" \"bun run --cwd apps/app dev\""
     },
     "devDependencies": {
-        "@types/bun": "^1.4.0",
-        "concurrently": "^10.0.5",
+        "@types/bun": "^1.4.4",
+        "concurrently": "^10.0.7",
         "typescript": "^6.0.3"
     },
     "dependencies": {
-        "zod": "^4.5.4"
+        "zod": "^4.6.7"
     }
 }
