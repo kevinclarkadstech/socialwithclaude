@@ -8,6 +8,14 @@
 # These are local-only values, not secrets. Production uses Cloudflare R2 (see apps/api/.env.example).
 set -euo pipefail
 
+# Git Bash on Windows rewrites arguments that look like paths (/garage) into Windows paths before
+# they reach docker, which breaks every command run in the container. Turn that off; elsewhere it
+# does nothing.
+export MSYS_NO_PATHCONV=1
+
+# Say which step failed, rather than stopping silently (most commands' output is hidden).
+trap 'echo "init.sh failed at line $LINENO: $BASH_COMMAND" >&2' ERR
+
 ACCESS_KEY_ID="${STORAGE_ACCESS_KEY_ID:-GK0123456789abcdef01234567}"
 SECRET_ACCESS_KEY="${STORAGE_SECRET_ACCESS_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}"
 UPLOADS_BUCKET="${STORAGE_UPLOADS_BUCKET:-myapp-uploads-dev}"
@@ -19,7 +27,9 @@ ORIGINS=(${UPLOAD_ORIGINS:-http://localhost:5173 capacitor://localhost https://l
 garage() { docker compose exec -T -e RUST_LOG=warn garage /garage "$@"; }
 
 echo "Layout…"
-if garage layout show 2>/dev/null | grep -q "No nodes currently have a role"; then
+# Check Garage answers first: a failure inside the `if` below would otherwise just skip the step.
+layout=$(garage layout show)
+if grep -q "No nodes currently have a role" <<<"$layout"; then
   node_id=$(garage status | awk '/HEALTHY NODES/ { getline; getline; print $1 }')
   garage layout assign -z dc1 -c 1G "$node_id" >/dev/null
   garage layout apply --version 1 >/dev/null
