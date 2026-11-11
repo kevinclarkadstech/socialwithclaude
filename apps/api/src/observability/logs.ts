@@ -19,9 +19,6 @@ export const rootLogger: AppLogger = createLogger({
             span_id: spanContext.spanId,
             // The SDK's spans have a name; the API's Span interface doesn't expose it.
             spanName: (activeSpan as Partial<{ name: string }>).name,
-            // New Relic log-trace correlation looks for these dotted keys
-            "trace.id": spanContext.traceId,
-            "span.id": spanContext.spanId,
         };
     }
 });
