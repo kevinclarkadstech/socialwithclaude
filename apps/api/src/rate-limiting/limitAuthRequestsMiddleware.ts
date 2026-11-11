@@ -1,7 +1,8 @@
-import { createHash } from "node:crypto";
 import type { MiddlewareHandler } from "hono";
 import type { AppHonoEnv } from "../index";
-import { consumeRateLimit, rateLimitRules, tooManyRequestsMessage, type RateLimitDecision } from "./index";
+import { tooManyRequestsMessage } from "./tooManyRequestsMessage";
+import type { RateLimitDecision } from "./types";
+import { rateLimitRules } from "./rules";
 
 /**
  * Rate limits for /api/auth: everything per IP address, and tighter limits on
@@ -9,25 +10,26 @@ import { consumeRateLimit, rateLimitRules, tooManyRequestsMessage, type RateLimi
  * A refused request gets a 429 with Retry-After, in the shape better-auth's
  * client reads ({ message }).
  */
-export const limitAuthRequests: MiddlewareHandler<AppHonoEnv> = async (c, next) => {
+export const limitAuthRequestsMiddleware: MiddlewareHandler<AppHonoEnv> = async (c, next) => {
     const ip = c.get("clientIp");
-    const checks: Promise<RateLimitDecision>[] = [consumeRateLimit({ rule: rateLimitRules.auth, key: ip })];
+    const rateLimiter = c.get("rateLimiter");
+    const checks: Promise<RateLimitDecision>[] = [rateLimiter.consume({ rule: rateLimitRules.auth, key: ip })];
 
     if (c.req.method === "POST" && c.req.path === "/api/auth/email-otp/send-verification-otp") {
-        checks.push(consumeRateLimit({ rule: rateLimitRules.sendCodeByIp, key: ip }));
+        checks.push(rateLimiter.consume({ rule: rateLimitRules.sendCodeByIp, key: ip }));
         // Read from a copy: better-auth reads the request itself.
         const body: unknown = await c.req.raw.clone().json().catch(() => null);
         const email = typeof body === "object" && body !== null && "email" in body && typeof body.email === "string"
             ? body.email.trim().toLowerCase()
             : null;
         if (email) {
-            // Hashed, so Redis doesn't hold email addresses.
-            const emailKey = createHash("sha256").update(email).digest("hex");
-            checks.push(consumeRateLimit({ rule: rateLimitRules.sendCodeByEmail, key: emailKey }));
+            // Hashed, so the store doesn't hold email addresses.
+            const emailKey = await sha256Hex(email);
+            checks.push(rateLimiter.consume({ rule: rateLimitRules.sendCodeByEmail, key: emailKey }));
         }
     }
     if (c.req.method === "POST" && c.req.path === "/api/auth/sign-in/email-otp") {
-        checks.push(consumeRateLimit({ rule: rateLimitRules.signInWithCode, key: ip }));
+        checks.push(rateLimiter.consume({ rule: rateLimitRules.signInWithCode, key: ip }));
     }
 
     const decisions = await Promise.all(checks);
@@ -40,3 +42,9 @@ export const limitAuthRequests: MiddlewareHandler<AppHonoEnv> = async (c, next) 
     }
     await next();
 };
+
+/** Web Crypto, so it runs on Node and Workers alike. */
+async function sha256Hex(text: string): Promise<string> {
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}

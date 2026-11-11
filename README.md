@@ -47,15 +47,15 @@ The API talks to storage through the S3 API, so production uses R2 with no code 
 3. **Configure the API.** Fill in the `STORAGE_*` variables in its environment. `apps/api/.env.example` shows each one with an R2 example. Create an R2 API token with read and write access to both buckets for the key ID and secret.
 4. **Configure the app.** Build it with `VITE_MEDIA_URL` set to the media bucket's public address, matching `STORAGE_MEDIA_PUBLIC_URL`.
 
-### Redis
+### Cache (Redis)
 
-The API keeps its rate-limit counters in Redis, so the limits hold across instances. Any Redis 7 works, e.g. Upstash.
+The API's cache is Redis. For now it only holds rate-limit counters, so the limits hold across instances. Any Redis 7 works, e.g. Upstash. (Rate limiting goes through a `RateLimiter` interface, so on Cloudflare Workers it could use Workers rate-limit bindings instead; see `apps/api/src/rate-limiting/types.ts`.)
 
 - Set `REDIS_URL`, e.g. `rediss://default:<password>@<host>:6379`.
 - Set `CLIENT_IP_HEADER` to the header your proxy or CDN puts the caller's IP address in, e.g. `cf-connecting-ip` behind Cloudflare. The default is `x-forwarded-for`. Rate limits per IP trust this header, so the API must only be reachable through that proxy.
-- If Redis goes down, the API keeps serving with rate limiting off and logs it. `/api/ready` reports `redis: false`.
+- If Redis goes down, the API keeps serving with rate limiting off and logs it. `/api/ready` reports `cache: false`.
 
 ### Health checks
 
 - `GET /api/health`: liveness. The process is up.
-- `GET /api/ready`: readiness. It returns 503 when the database can't be reached, and also reports whether Redis can.
+- `GET /api/ready`: readiness. It returns 503 when the database can't be reached, and also reports whether the cache can.
