@@ -1,12 +1,16 @@
-import { z } from 'zod';
-import path from 'node:path';
-import dotenv from 'dotenv';
+import { z } from "zod";
+import path from "node:path";
+import dotenv from "dotenv";
 
 export const ServerConfigSchema = z.object({
-    DATABASE_URL: z.string(),
-    BETTER_AUTH_SECRET: z.string(),
+    DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
+    // Signs sessions and tokens: a long random string (e.g. `openssl rand -base64 32`).
+    BETTER_AUTH_SECRET: z.string().min(32).refine(
+        (secret) => process.env.NODE_ENV !== "production" || secret !== "change-me-to-a-long-random-string",
+        "Set a real secret, not the one from .env.example",
+    ),
     // The API's own public URL (better-auth builds its callback URLs from it).
-    BETTER_AUTH_URL: z.string(),
+    BETTER_AUTH_URL: z.url(),
     // The web app's origin: allowed by CORS and trusted by better-auth.
     WEB_APP_URL: z.url(),
     // Social sign-in. Each provider is turned on only when its id and secret are set.
@@ -36,16 +40,14 @@ export const ServerConfigSchema = z.object({
  */
 export const nativeAppOrigins = ["capacitor://localhost", "https://localhost"];
 
+/** The validated environment. Locally it's read from apps/api/.env.local; a missing or bad value stops startup, naming it. */
 export const serverConfig = (() => {
-    if (process.env.NODE_ENV !== 'production') {
-        const serverEnvPath = path.resolve(process.cwd(), './.env.local');
-        console.log(serverEnvPath)
-        dotenv.config({
-            path: serverEnvPath
-        });
-
-        // Optional: Log it to your terminal to ensure it's pointing to the right place
-        console.log(`[Nitro] Loaded local server environment from: ${serverEnvPath}`);
+    if (process.env.NODE_ENV !== "production") {
+        dotenv.config({ path: path.resolve(process.cwd(), "./.env.local"), quiet: true });
     }
-    return ServerConfigSchema.parse(process.env)
+    const parsed = ServerConfigSchema.safeParse(process.env);
+    if (!parsed.success) {
+        throw new Error(`Invalid API environment:\n${z.prettifyError(parsed.error)}`);
+    }
+    return parsed.data;
 })();

@@ -29,19 +29,18 @@ const mapAppError = t.middleware(async ({ next }) => {
         if (!result.ok) {
             const cause = result.error.cause;
             if (cause instanceof ZodError) {
-                // map here to AppError 
+                // Input that failed its schema: a validation error, with the details by field.
                 throw new AppTrpcError({
                     code: "BAD_REQUEST",
                     message: "Invalid input",
                 }, z.treeifyError(cause));
             }
 
-            // Return actual error result because I don't know why this threw 
+            // Anything else: a deliberate TRPCError, or an unexpected throw (onError logs it; errorFormatter hides it from the client).
             return result;
         } else {
-            // TODO in the rare case a query or mutation is returned without a Result<Value> wrapper, probably need to make sure this is logged
+            // Every procedure returns a Result; one that doesn't throws here and is logged below as unexpected.
             const validatedResult = ResultSchema.parse(result.data);
-            // returns Result<Value> without error and it's value
             if (validatedResult.ok) {
                 return {
                     ...result,
@@ -49,13 +48,11 @@ const mapAppError = t.middleware(async ({ next }) => {
                     data: validatedResult,
                 };
             }
-            const appTrpcError = appErrorToTrpcError(validatedResult.error);
-
-            // could also just throw appTrpcError
+            // A failed Result becomes the matching tRPC error (403, 404, …).
             return {
                 ...result,
                 ok: false,
-                error: appTrpcError,
+                error: appErrorToTrpcError(validatedResult.error),
             }
 
         }
