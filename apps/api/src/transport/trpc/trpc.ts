@@ -4,6 +4,7 @@ import type { TRPCContext } from "./context";
 import z, { ZodError } from "zod";
 import { ResultSchema } from "@myapp/shared/types/result";
 import { appErrorToTrpcError, AppTrpcError } from "../../error-handling";
+import { consumeRateLimit, rateLimitRules, tooManyRequestsMessage } from "../../rate-limiting";
 
 const t = initTRPC.context<TRPCContext>().create({
     /**
@@ -74,5 +75,17 @@ const mapAppError = t.middleware(async ({ next }) => {
     }
 });
 
+/** Queries and mutations each have a per-caller limit; a refused call is a 429 TOO_MANY_REQUESTS. */
+const rateLimit = t.middleware(async ({ ctx, type, path, next }) => {
+    const rule = type === "query" ? rateLimitRules.queries : rateLimitRules.mutations;
+    const decision = await consumeRateLimit({ rule, key: ctx.rateLimitKey });
+    if (!decision.allowed) {
+        ctx.logger.warn("Request rate limited", { path, rule: rule.name, retryAfterSeconds: decision.retryAfterSeconds });
+        ctx.resHeaders.set("Retry-After", String(decision.retryAfterSeconds));
+        throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: tooManyRequestsMessage(decision) });
+    }
+    return next();
+});
+
 export const router = t.router;
-export const procedure = t.procedure.use(mapAppError);
+export const procedure = t.procedure.use(rateLimit).use(mapAppError);

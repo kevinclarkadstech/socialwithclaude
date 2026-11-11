@@ -31,6 +31,11 @@ export const ServerConfigSchema = z.object({
     // Public: processed photos, served from STORAGE_MEDIA_PUBLIC_URL.
     STORAGE_MEDIA_BUCKET: z.string(),
     STORAGE_MEDIA_PUBLIC_URL: z.url(),
+    // Redis, for rate-limit counters shared by every API instance. Locally: Redis from docker-compose.
+    REDIS_URL: z.url({ protocol: /^rediss?$/ }),
+    // The header the load balancer or CDN puts the caller's IP address in (rate limits by IP use it),
+    // e.g. cf-connecting-ip on Cloudflare. Without a proxy in front, callers could set it themselves.
+    CLIENT_IP_HEADER: z.string().default("x-forwarded-for"),
 });
 
 /**
