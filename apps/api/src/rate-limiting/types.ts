@@ -12,7 +12,7 @@ export type RateLimitDecision = { allowed: true } | { allowed: false; retryAfter
  * store behind it can change. It's picked once, in src/index.ts, and put on
  * each request's context:
  *
- * - createRedisRateLimiter: counters in the cache (Redis), shared by every instance.
+ * - createCacheRateLimiter: counters in the cache (Redis today), shared by every instance.
  * - On Cloudflare Workers, a rate limiter over the Workers rate-limit bindings
  *   (env.X.limit({ key }) → { success }) would implement the same interface,
  *   built per request from c.env. Each rule becomes a binding configured in

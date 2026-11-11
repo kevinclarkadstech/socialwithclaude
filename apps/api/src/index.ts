@@ -12,8 +12,8 @@ import { nativeAppOrigins, serverConfig } from "./config";
 import { createAppFeatureFlagStore, type AppFeatureFlagStore } from "./shared/feature-flags";
 import { trpcServer } from "@hono/trpc-server";
 import { db, isDatabaseReachable } from "./data-access/db";
-import { cache, isCacheReachable } from "./cache";
-import { createRedisRateLimiter, limitAuthRequestsMiddleware, type RateLimiter } from "./rate-limiting";
+import { cache } from "./cache";
+import { createCacheRateLimiter, limitAuthRequestsMiddleware, type RateLimiter } from "./rate-limiting";
 import { appRouter, createContext } from "./transport/trpc";
 import { trpcOnErrorFunction } from "./error-handling";
 
@@ -41,7 +41,7 @@ const featureFlagsLoaded = featureFlagStore.initialize();
 
 // Where rate limits are counted. On Cloudflare Workers this would be built per request from the
 // rate-limit bindings in c.env instead (see rate-limiting/types.ts); nothing else changes.
-const rateLimiter = createRedisRateLimiter({ cache });
+const rateLimiter = createCacheRateLimiter({ cache });
 
 const app = new Hono<AppHonoEnv>()
     .use(contextStorage())
@@ -88,7 +88,7 @@ const app = new Hono<AppHonoEnv>()
     .get("/api/health", (c) => c.json({ ok: true }))
     // Readiness: it can serve requests. The database is required; without the cache, rate limiting is off.
     .get("/api/ready", async (c) => {
-        const [database, cacheReachable] = await Promise.all([isDatabaseReachable(), isCacheReachable()]);
+        const [database, cacheReachable] = await Promise.all([isDatabaseReachable(), cache.isReachable()]);
         return c.json({ ok: database, database, cache: cacheReachable }, database ? 200 : 503);
     })
     .use("/api/auth/*", limitAuthRequestsMiddleware)
