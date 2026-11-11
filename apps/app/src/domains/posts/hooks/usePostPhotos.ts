@@ -35,7 +35,7 @@ export function usePostPhotos() {
   const [photos, setPhotos] = useState<ComposerPhoto[]>([]);
   const [initial, setInitial] = useState<string>('[]');
   // The post they're for: uploads go under its id.
-  const postId = useRef('');
+  const [postId, setPostId] = useState('');
   // Resizing several big photos at once is heavy on a phone, so picks are handled one after another.
   const queue = useRef<Promise<unknown>>(Promise.resolve());
 
@@ -61,7 +61,7 @@ export function usePostPhotos() {
     for (const photo of photos) {
       release(photo);
     }
-    postId.current = id;
+    setPostId(id);
     setPhotos(media.map((item) => ({
       key: item.id,
       kind: 'published',
@@ -77,7 +77,7 @@ export function usePostPhotos() {
     for (const { key } of batch) {
       update(key, { status: 'uploading' });
     }
-    const result = await runOrToast(() => uploadPostPhotos({ postId: postId.current, photos: batch.map(({ prepared }) => prepared) }));
+    const result = await runOrToast(() => uploadPostPhotos({ postId, photos: batch.map(({ prepared }) => prepared) }));
     for (const { key, prepared } of batch) {
       const uploaded = result.ok && result.value.uploadedIds.includes(prepared.mediaId);
       update(key, { status: uploaded ? 'ready' : 'failed' });
@@ -148,7 +148,7 @@ export function usePostPhotos() {
       return [{ ...photo.media, caption }];
     }
     if (photo.status === 'ready' && photo.prepared) {
-      return [preparedPostMedia(photo.prepared, { postId: postId.current, userId, caption })];
+      return [preparedPostMedia(photo.prepared, { postId, userId, caption })];
     }
     return [];
   });

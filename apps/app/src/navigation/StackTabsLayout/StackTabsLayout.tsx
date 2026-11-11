@@ -97,24 +97,21 @@ const TabPane = memo(function TabPane({ tab, sharedRoutes, active, entries }: Ta
   const [transition, setTransition] = useState<PaneTransition | null>(null);
   const [exiting, setExiting] = useState<StackEntry | null>(null);
   // Set when a swipe already animated the pop, so the resulting stack change doesn't animate again.
-  const swipedBack = useRef(false);
+  const [swipedBack, setSwipedBack] = useState(false);
 
   // Plan the transition while rendering so the leaving page is never unmounted
   // or hidden before the animation has a chance to start.
   const [prev, setPrev] = useState({ entries, active });
   if (prev.entries !== entries || prev.active !== active) {
     setPrev({ entries, active });
+    setSwipedBack(false);
     // Only animate within a tab that was already showing, not on tab switches.
-    const plan = planTransition(prev.entries, entries, prev.active && active && !swipedBack.current);
+    const plan = planTransition(prev.entries, entries, prev.active && active && !swipedBack);
     if (plan) {
       setTransition(plan.transition);
       setExiting(plan.exiting);
     }
   }
-
-  useLayoutEffect(() => {
-    swipedBack.current = false;
-  }, [entries]);
 
   const findWrapper = useCallback(
     (id: string) =>
@@ -134,7 +131,7 @@ const TabPane = memo(function TabPane({ tab, sharedRoutes, active, entries }: Ta
         return entering && leaving ? { entering, leaving } : null;
       },
       onSwipedBack: () => {
-        swipedBack.current = true;
+        setSwipedBack(true);
         goBack();
       },
     };

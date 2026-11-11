@@ -10,44 +10,51 @@ import { usePost } from './usePost';
  */
 export function usePostDetail(postId: string) {
   const post = usePost(postId);
-  const [isLoading, setIsLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [request, setRequest] = useState<PostRequest>(() => startRequest(postId));
+  // Another post starts over (set while rendering, so it never shows the last post's state).
+  if (request.postId !== postId) {
+    setRequest(startRequest(postId));
+  }
 
   useEffect(() => {
     let cancelled = false;
-    setIsLoading(true);
+    const finish = (change: Partial<PostRequest>) => {
+      if (!cancelled) {
+        setRequest((current) => (current.postId === postId ? { ...current, ...change, isLoading: false } : current));
+      }
+    };
     runGetPostByIdQuery({ postId })
       .then((result) => {
-        if (cancelled) {
-          return;
-        }
         if (result.ok) {
-          postStore.setItems([result.value.post]);
+          if (!cancelled) {
+            postStore.setItems([result.value.post]);
+          }
+          finish({});
         } else if (result.error.type === 'not-found') {
-          setNotFound(true);
+          finish({ notFound: true });
         } else {
-          setError(result.error.message ?? "Couldn't load this post");
+          finish({ error: result.error.message ?? "Couldn't load this post" });
         }
       })
       .catch((caught: unknown) => {
-        if (!cancelled) {
-          if (apiErrorCode(caught) === 'NOT_FOUND') {
-            setNotFound(true);
-          } else {
-            setError(errorMessage(caught));
-          }
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
+        finish(apiErrorCode(caught) === 'NOT_FOUND' ? { notFound: true } : { error: errorMessage(caught) });
       });
     return () => {
       cancelled = true;
     };
   }, [postId]);
 
+  const { isLoading, notFound, error } = request;
   return { post, isLoading: isLoading && !post, notFound: notFound || (!isLoading && !post && !error), error };
+}
+
+interface PostRequest {
+  postId: string;
+  isLoading: boolean;
+  notFound: boolean;
+  error: string | null;
+}
+
+function startRequest(postId: string): PostRequest {
+  return { postId, isLoading: true, notFound: false, error: null };
 }
