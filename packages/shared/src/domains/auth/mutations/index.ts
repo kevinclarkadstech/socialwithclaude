@@ -1,3 +1,3 @@
-export * from './revokeOtherSessionsMutation';
-export * from './revokeSessionMutation';
-export * from './signOutMutation';
+export * from './revokeOtherSessionsMutation/revokeOtherSessionsMutation';
+export * from './revokeSessionMutation/revokeSessionMutation';
+export * from './signOutMutation/signOutMutation';
