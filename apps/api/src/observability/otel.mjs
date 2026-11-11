@@ -17,35 +17,31 @@ import { BatchSpanProcessor } from '@opentelemetry/sdk-trace';
 const isProduction = process.env.NODE_ENV === 'production';
 const localUI = new Set((process.env.OTEL_LOCAL_UI || '').split(','));
 
-// Traces: New Relic in production; locally Jaeger from docker-compose when OTEL_LOCAL_UI includes
-// "jaeger" (UI at http://localhost:16686), otherwise none. With no exporter given, the SDK would
-// default to OTLP at localhost:4318, so "none" is an empty list of span processors.
-const traceExporter = isProduction
-    ? new OTLPTraceExporter({
-        url: process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || "https://otlp.nr-data.net:4318/v1/traces",
-        headers: {
-            "api-key": process.env.NEW_RELIC_LICENSE_KEY || "",
-        },
-    })
-    : localUI.has('jaeger')
+/**
+ * Where to send a signal (TRACES or LOGS): the standard OTLP variables, e.g.
+ * OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_EXPORTER_OTLP_HEADERS, or the per-signal
+ * OTEL_EXPORTER_OTLP_TRACES_ENDPOINT / _HEADERS. Any OTLP backend works (Sentry,
+ * Grafana, a collector); the exporters read these variables themselves.
+ */
+const hasOtlpEndpoint = (signal) =>
+    Boolean(process.env[`OTEL_EXPORTER_OTLP_${signal}_ENDPOINT`] || process.env.OTEL_EXPORTER_OTLP_ENDPOINT);
+
+// Traces: to the configured OTLP endpoint; else locally to Jaeger from docker-compose when
+// OTEL_LOCAL_UI includes "jaeger" (UI at http://localhost:16686); else nowhere. (With no span
+// processors given, the SDK would default to OTLP at localhost:4318, so "nowhere" is an empty list.)
+const traceExporter = hasOtlpEndpoint('TRACES')
+    ? new OTLPTraceExporter()
+    : !isProduction && localUI.has('jaeger')
         ? new OTLPTraceExporter({ url: 'http://localhost:4318/v1/traces' })
         : null;
 const spanProcessors = traceExporter ? [new BatchSpanProcessor({ exporter: traceExporter })] : [];
 
-const logExporter = isProduction
-    ? new OTLPLogExporter({
-        url: process.env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT || "https://otlp.nr-data.net:4318/v1/logs",
-        headers: {
-            "api-key": process.env.NEW_RELIC_LICENSE_KEY || "",
-        },
-    })
-    : new ConsoleLogRecordExporter();
-
-
-
-const logRecordProcessors = isProduction
-    ? [new BatchLogRecordProcessor({ exporter: logExporter })]
-    : [new SimpleLogRecordProcessor({ exporter: logExporter })]
+// OTel logs: to the configured OTLP endpoint; else to the console locally; else nowhere.
+const logRecordProcessors = hasOtlpEndpoint('LOGS')
+    ? [new BatchLogRecordProcessor({ exporter: new OTLPLogExporter() })]
+    : isProduction
+        ? []
+        : [new SimpleLogRecordProcessor({ exporter: new ConsoleLogRecordExporter() })];
 
 const otelSdk = new NodeSDK({
     resource: resourceFromAttributes({
