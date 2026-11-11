@@ -70,6 +70,8 @@ export function createAuthInstance(db: Database) {
                 storeOTP: "hashed",
             }),
         ],
+        // Off: the API's own Redis-backed limits cover /api/auth (better-auth's are in memory, per instance).
+        rateLimit: { enabled: false },
         advanced: {
             database: {
                 // ULIDs, like every other id in the app.

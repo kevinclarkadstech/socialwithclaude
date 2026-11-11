@@ -3,13 +3,17 @@ import { Hono, type Context, type Env } from "hono";
 import { cors } from "hono/cors";
 import { requestId } from "hono/request-id";
 import { contextStorage } from "hono/context-storage";
+import { secureHeaders } from "hono/secure-headers";
+import { bodyLimit } from "hono/body-limit";
 import type { AppLogger } from "@myapp/shared/observability";
 import { rootLogger } from "./observability/logs";
 import { createAuthInstance } from "./auth";
 import { nativeAppOrigins, serverConfig } from "./config";
 import { createAppFeatureFlagStore, type AppFeatureFlagStore } from "./shared/feature-flags";
 import { trpcServer } from "@hono/trpc-server";
-import { db } from "./data-access/db";
+import { db, isDatabaseReachable } from "./data-access/db";
+import { isRedisReachable } from "./redis";
+import { limitAuthRequests } from "./rate-limiting/limitAuthRequests";
 import { appRouter, createContext } from "./transport/trpc";
 import { trpcOnErrorFunction } from "./error-handling";
 
@@ -22,6 +26,8 @@ export type AppHonoEnv = Env & {
         auth: Auth;
         user: Auth["$Infer"]["Session"]["user"] | null
         session: Auth["$Infer"]["Session"]["session"] | null
+        /** The caller's IP address, from CLIENT_IP_HEADER ("unknown" without one). */
+        clientIp: string;
     },
     Bindings: object;
 }
@@ -39,6 +45,7 @@ const app = new Hono<AppHonoEnv>()
         await featureFlagsLoaded;
         c.set("featureFlagStore", featureFlagStore);
         c.set("auth", auth);
+        c.set("clientIp", clientIp(c.req.header(serverConfig.CLIENT_IP_HEADER)));
         const logger = rootLogger.child({ requestId: c.get("requestId") });
         c.set("logger", logger);
         const start = performance.now();
@@ -50,6 +57,11 @@ const app = new Hono<AppHonoEnv>()
             durationMs: Math.round(performance.now() - start),
         });
     })
+    // The API only serves JSON: nothing in it should run, load or be framed.
+    .use(secureHeaders({
+        contentSecurityPolicy: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] },
+        xFrameOptions: "DENY",
+    }))
     .use(
         "/*",
         cors({
@@ -61,7 +73,19 @@ const app = new Hono<AppHonoEnv>()
             credentials: true,
         }),
     )
+    // Requests are small JSON: photos go straight to storage, not through the API.
+    .use("/api/*", bodyLimit({
+        maxSize: 100 * 1024,
+        onError: (c) => c.json({ message: "Request is too large" }, 413),
+    }))
+    // Liveness: the process is up.
     .get("/api/health", (c) => c.json({ ok: true }))
+    // Readiness: it can serve requests. The database is required; Redis only turns rate limiting off.
+    .get("/api/ready", async (c) => {
+        const [database, redis] = await Promise.all([isDatabaseReachable(), isRedisReachable()]);
+        return c.json({ ok: database, database, redis }, database ? 200 : 503);
+    })
+    .use("/api/auth/*", limitAuthRequests)
     .on(["POST", "GET"], "/api/auth/*", (c) => c.get("auth").handler(c.req.raw))
     // Only tRPC needs the caller; better-auth reads its own session.
     .use("/api/trpc/*", async (c, next) => {
@@ -84,6 +108,11 @@ const app = new Hono<AppHonoEnv>()
         c.get("logger").error(err.message, { err });
         return c.json({ message: "Something went wrong" }, 500);
     });
+
+/** The first address in the header (a proxy chain lists the original caller first). */
+function clientIp(header: string | undefined): string {
+    return header?.split(",")[0]?.trim() || "unknown";
+}
 
 export default app;
 

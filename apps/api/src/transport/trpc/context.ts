@@ -28,6 +28,8 @@ export function createContext(opts: FetchCreateContextFnOptions, c: Context<AppH
         resHeaders: opts.resHeaders,
         getCallingUser,
         logger: c.get("logger"),
+        /** Who rate limits count against: the signed-in user, else the IP address. */
+        rateLimitKey: user ? `user:${user.id}` : `ip:${c.get("clientIp")}`,
         featureFlagStore: c.get("featureFlagStore"),
     };
 }
