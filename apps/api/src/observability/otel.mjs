@@ -8,7 +8,6 @@ import { resourceFromAttributes } from '@opentelemetry/resources'
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions'
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 import { BatchLogRecordProcessor, ConsoleLogRecordExporter, SimpleLogRecordProcessor } from '@opentelemetry/sdk-logs';
-import { logs } from "@opentelemetry/api-logs";
 
 const isProduction = process.env.NODE_ENV === 'production';
 const localUI = new Set((process.env.OTEL_LOCAL_UI || '').split(','));
