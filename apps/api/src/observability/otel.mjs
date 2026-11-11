@@ -12,23 +12,25 @@ import { resourceFromAttributes } from '@opentelemetry/resources'
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions'
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 import { BatchLogRecordProcessor, ConsoleLogRecordExporter, SimpleLogRecordProcessor } from '@opentelemetry/sdk-logs';
+import { BatchSpanProcessor } from '@opentelemetry/sdk-trace';
 
 const isProduction = process.env.NODE_ENV === 'production';
 const localUI = new Set((process.env.OTEL_LOCAL_UI || '').split(','));
 
-// console.log('loicalUI', localUI);
-// console.log('isProduction', isProduction)
-
+// Traces: New Relic in production; locally Jaeger from docker-compose when OTEL_LOCAL_UI includes
+// "jaeger" (UI at http://localhost:16686), otherwise none. With no exporter given, the SDK would
+// default to OTLP at localhost:4318, so "none" is an empty list of span processors.
 const traceExporter = isProduction
     ? new OTLPTraceExporter({
-        url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || "https://otlp.nr-data.net:4318/v1/traces",
+        url: process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || "https://otlp.nr-data.net:4318/v1/traces",
         headers: {
             "api-key": process.env.NEW_RELIC_LICENSE_KEY || "",
         },
     })
     : localUI.has('jaeger')
         ? new OTLPTraceExporter({ url: 'http://localhost:4318/v1/traces' })
-        : undefined; //new ConsoleSpanExporter()
+        : null;
+const spanProcessors = traceExporter ? [new BatchSpanProcessor({ exporter: traceExporter })] : [];
 
 const logExporter = isProduction
     ? new OTLPLogExporter({
@@ -50,7 +52,10 @@ const otelSdk = new NodeSDK({
         [ATTR_SERVICE_NAME]: process.env.OTEL_SERVICE_NAME || "my-nitro-app",
         [ATTR_SERVICE_VERSION]: "1.0.0",
     }),
-    // traceExporter,
+    spanProcessors,
+    // No metrics yet. Without this the SDK sets up a default OTLP metrics exporter to localhost:4318,
+    // which has nothing to send to and holds up shutdown by several seconds trying.
+    metricReaders: [],
     logRecordProcessors,
     instrumentations: [getNodeAutoInstrumentations(
         {
