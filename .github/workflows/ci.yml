@@ -17,6 +17,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      # The built API runs on Node (see the start script), so the smoke test does too.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.2
@@ -30,6 +34,11 @@ jobs:
         run: bun run --cwd apps/api typecheck
       - name: Lint API
         run: bun run --cwd apps/api lint
+      - name: Build API
+        run: bun run --cwd apps/api build
+      # Starts the build and checks responses keep their status (a Nitro release turned errors into 200s).
+      - name: Smoke test API
+        run: bun run --cwd apps/api smoke
 
   # The Ionic app (web and Capacitor share one build).
   app:
