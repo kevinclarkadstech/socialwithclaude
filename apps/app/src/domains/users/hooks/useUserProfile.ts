@@ -19,35 +19,63 @@ export function useUserProfile({ username }: { username: string | null }) {
     ? `${callingUser.userId}:${callingUser.blockList.blocking.join(',')}:${callingUser.blockList.blockedBy.join(',')}`
     : 'signed-out';
 
-  const load = useCallback(async () => {
+  // A different profile starts from a spinner (set while rendering, so the last one never flashes).
+  const [shownUsername, setShownUsername] = useState(username);
+  if (shownUsername !== username) {
+    setShownUsername(username);
+    setProfile(null);
+    setStatus('loading');
+  }
+
+  const apply = useCallback((loaded: LoadedProfile) => {
+    if (loaded.profile !== undefined) {
+      setProfile(loaded.profile);
+    }
+    setStatus(loaded.status);
+  }, []);
+
+  // Loads again when who's asking changes (viewerKey), since that's part of the answer.
+  // A response for a profile that's no longer shown is dropped.
+  useEffect(() => {
     if (!username) {
       return;
     }
-    try {
-      const result = await runGetUserProfileQuery({ username });
-      if (!result.ok) {
-        setProfile(null);
-        setStatus(result.error.type === 'not-found' ? 'not-found' : 'failed');
-        return;
+    let cancelled = false;
+    void loadProfile(username).then((loaded) => {
+      if (!cancelled) {
+        apply(loaded);
       }
-      setProfile(result.value);
-      setStatus('ready');
-    } catch (error) {
-      logger.warn("Couldn't load a profile", { username, error: errorMessage(error) });
-      setStatus('failed');
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [username, viewerKey, apply]);
+
+  const reload = useCallback(async () => {
+    if (!username) {
+      return;
     }
-  }, [username]);
+    apply(await loadProfile(username));
+  }, [username, apply]);
 
-  // A different profile starts from a spinner…
-  useEffect(() => {
-    setProfile(null);
-    setStatus('loading');
-  }, [username]);
+  return { profile, status, reload, setProfile };
+}
 
-  // …and loads again when who's asking changes (viewerKey), since that's part of the answer.
-  useEffect(() => {
-    void load();
-  }, [load, viewerKey]);
+interface LoadedProfile {
+  /** Undefined when the request itself failed: what's shown stays. */
+  profile?: GetUserProfileQueryOutput | null;
+  status: UserProfileStatus;
+}
 
-  return { profile, status, reload: load, setProfile };
+async function loadProfile(username: string): Promise<LoadedProfile> {
+  try {
+    const result = await runGetUserProfileQuery({ username });
+    if (!result.ok) {
+      return { profile: null, status: result.error.type === 'not-found' ? 'not-found' : 'failed' };
+    }
+    return { profile: result.value, status: 'ready' };
+  } catch (error) {
+    logger.warn("Couldn't load a profile", { username, error: errorMessage(error) });
+    return { status: 'failed' };
+  }
 }

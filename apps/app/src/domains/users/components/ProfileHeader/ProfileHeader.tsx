@@ -28,7 +28,7 @@ const counts = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFr
  */
 export function ProfileHeader({ profile, isOwn, onProfileChange, onEdit }: ProfileHeaderProps) {
   const { follow, unfollow, unblock, openMenu, share } = useProfileHeader({ profile, onProfileChange });
-  const photoEditor = useProfilePhotoEditor({ profile, onProfileChange });
+  const { fileInputRef, crop, openMenu: openPhotoMenu, onPhotoChosen, cancel, save } = useProfilePhotoEditor({ profile, onProfileChange });
   const { followStatus, hasBlocked } = profile.viewer;
   const coverSrc = profilePhotoUrl({
     user: profile,
@@ -46,7 +46,7 @@ export function ProfileHeader({ profile, isOwn, onProfileChange, onEdit }: Profi
           <img className="profile-header__cover-photo" src={coverSrc} alt="" decoding="async" onError={() => setFailedCoverSrc(coverSrc)} />
         )}
         {isOwn && (
-          <IonButton size="small" className="profile-header__edit-cover" onClick={() => photoEditor.openMenu('cover')}>
+          <IonButton size="small" className="profile-header__edit-cover" onClick={() => openPhotoMenu('cover')}>
             <IonIcon slot="icon-only" icon={camera} aria-hidden="true" />
             <span className="visually-hidden">Change cover photo</span>
           </IonButton>
@@ -57,7 +57,7 @@ export function ProfileHeader({ profile, isOwn, onProfileChange, onEdit }: Profi
         <div className="profile-header__avatar-wrap">
           <UserAvatar user={profile} size={88} className="profile-header__avatar" />
           {isOwn && (
-            <IonButton size="small" className="profile-header__edit-avatar" onClick={() => photoEditor.openMenu('avatar')}>
+            <IonButton size="small" className="profile-header__edit-avatar" onClick={() => openPhotoMenu('avatar')}>
               <IonIcon slot="icon-only" icon={camera} aria-hidden="true" />
               <span className="visually-hidden">Change profile photo</span>
             </IonButton>
@@ -130,15 +130,15 @@ export function ProfileHeader({ profile, isOwn, onProfileChange, onEdit }: Profi
       </dl>
       {isOwn && (
         <>
-          <input ref={photoEditor.fileInputRef} type="file" accept="image/*" hidden onChange={photoEditor.onPhotoChosen} />
+          <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={onPhotoChosen} />
           <PhotoCropModal
-            isOpen={photoEditor.crop !== null}
-            photoUrl={photoEditor.crop?.photoUrl ?? null}
-            title={photoEditor.crop?.title ?? ''}
-            aspectRatio={photoEditor.crop?.aspectRatio ?? 1}
-            shape={photoEditor.crop?.shape}
-            onCancel={photoEditor.cancel}
-            onConfirm={photoEditor.save}
+            isOpen={crop !== null}
+            photoUrl={crop?.photoUrl ?? null}
+            title={crop?.title ?? ''}
+            aspectRatio={crop?.aspectRatio ?? 1}
+            shape={crop?.shape}
+            onCancel={cancel}
+            onConfirm={save}
           />
         </>
       )}
