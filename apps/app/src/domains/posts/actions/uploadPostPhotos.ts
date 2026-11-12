@@ -1,5 +1,5 @@
 import { succeed } from '@myapp/shared/utils';
-import { mapWithConcurrency } from '../../../lib/async/mapWithConcurrency';
+import { mapWithConcurrency } from '../../../utils';
 import { uploadToStorage } from '../../../lib/photos/uploadToStorage';
 import { runCreatePostMediaUploadsMutation } from '../operations/runCreatePostMediaUploadsMutation';
 import type { PreparedPostPhoto } from '../utils/preparePostPhoto';

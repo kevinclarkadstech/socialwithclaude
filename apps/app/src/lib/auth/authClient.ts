@@ -1,7 +1,7 @@
 import { createAuthClient } from 'better-auth/client';
 import { emailOTPClient } from 'better-auth/client/plugins';
 import { config } from '../config';
-import { isNativePlatform } from '../../navigation';
+import { isNativePlatform } from '../../utils';
 import { sessionToken } from './sessionToken';
 
 /** better-auth's client: sends and checks sign-in codes, and signs out. */

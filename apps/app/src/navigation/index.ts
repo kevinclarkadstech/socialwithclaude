@@ -1,7 +1,5 @@
-export { StackTabNavigationProvider as TabNavigationProvider } from './StackTabNavigationProvider/StackTabNavigationProvider';
-export { StackTabsLayout as TabsLayout } from './StackTabsLayout/StackTabsLayout';
-export { useTabNavigation } from './TabNavigationContext';
-export { usePageContext, useTabHref } from './PageContext';
-export { BackButton } from './BackButton/BackButton';
-export { isNativePlatform } from './platform';
-export type { TabDefinition, StackEntry } from './stacks';
+export { StackTabNavigationProvider as TabNavigationProvider } from './providers/StackTabNavigationProvider/StackTabNavigationProvider';
+export { StackTabsLayout as TabsLayout } from './components/StackTabsLayout/StackTabsLayout';
+export { usePageContext, useTabHref, useTabNavigation } from './contexts';
+export { BackButton } from './components';
+export type { TabDefinition, StackEntry } from './types';

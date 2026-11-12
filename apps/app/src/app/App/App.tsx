@@ -3,7 +3,6 @@ import { IonApp, IonSplitPane, setupIonicReact } from '@ionic/react';
 import { TabNavigationProvider, TabsLayout } from '../../navigation';
 import { rootRoutes, sharedRoutes, tabs } from '../routes';
 import { Sidebar } from '../Sidebar/Sidebar';
-import { SignInGate } from '../SignInGate/SignInGate';
 import { PhotoViewer } from '../../common/components/PhotoViewer/PhotoViewer';
 
 /* Core CSS required for Ionic components to work properly */
@@ -46,21 +45,19 @@ export function App() {
   return (
     <IonApp>
       <BrowserRouter>
-        <SignInGate>
-          <TabNavigationProvider tabs={tabs} sharedRoutes={sharedRoutes} rootRoutes={rootRoutes}>
-            {/* A sidebar on wide screens ("lg" and up), the tab bar below that. */}
-            <IonSplitPane when="lg" contentId="main" className="app-split-pane">
-              <Sidebar contentId="main" />
-              <div id="main" className="ion-page app-main">
-                <Routes>
-                  <Route path="/" element={<Navigate to={tabs[0].path} replace />} />
-                  <Route path="*" element={<TabsLayout />} />
-                </Routes>
-              </div>
-            </IonSplitPane>
-          </TabNavigationProvider>
-          <PhotoViewer />
-        </SignInGate>
+        <TabNavigationProvider tabs={tabs} sharedRoutes={sharedRoutes} rootRoutes={rootRoutes}>
+          {/* A sidebar on wide screens ("lg" and up), the tab bar below that. */}
+          <IonSplitPane when="lg" contentId="main" className="app-split-pane">
+            <Sidebar contentId="main" />
+            <div id="main" className="ion-page app-main">
+              <Routes>
+                <Route path="/" element={<Navigate to={tabs[0].path} replace />} />
+                <Route path="*" element={<TabsLayout />} />
+              </Routes>
+            </div>
+          </IonSplitPane>
+        </TabNavigationProvider>
+        <PhotoViewer />
       </BrowserRouter>
     </IonApp>
   );

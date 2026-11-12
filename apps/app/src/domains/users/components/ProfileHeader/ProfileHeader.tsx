@@ -3,7 +3,7 @@ import type { GetUserProfileQueryOutput } from '@myapp/shared/domains';
 import { camera, ellipsisHorizontal, lockClosed, shareOutline } from 'ionicons/icons';
 import { useState, type CSSProperties } from 'react';
 import { PhotoCropModal } from '../../../../common/components/PhotoCropModal/PhotoCropModal';
-import { displayName } from '../../../../common/formatters/names';
+import { displayName } from '../../../../utils/formatters/names';
 import { profilePhotoUrl, profilePhotoWidthFor } from '../../utils/profilePhotoUrl';
 import { userHue } from '../../utils/userHue';
 import { UserAvatar } from '../UserAvatar/UserAvatar';

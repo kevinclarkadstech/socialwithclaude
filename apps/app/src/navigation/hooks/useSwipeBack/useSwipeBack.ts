@@ -1,6 +1,6 @@
 import { useEffect, type RefObject } from 'react';
 import { createGesture, getIonPageElement, type GestureDetail } from '@ionic/react';
-import { startSwipeBackTransition, swipeBackEnabled, type SwipeBackTransition } from './transition';
+import { startSwipeBackTransition, swipeBackEnabled, type SwipeBackTransition } from '../../utils/transitions';
 
 export interface SwipeBackOptions {
   /** Whether a swipe can start right now (active tab, has a page to go back to, not animating). */

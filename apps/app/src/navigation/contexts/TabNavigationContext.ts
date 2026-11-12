@@ -1,6 +1,6 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import type { RouteObject } from 'react-router';
-import type { StackEntry, TabDefinition } from './stacks';
+import type { StackEntry, TabDefinition } from '../types';
 
 export interface TabNavigationProviderProps {
   tabs: TabDefinition[];

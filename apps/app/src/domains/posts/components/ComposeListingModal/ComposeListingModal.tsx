@@ -16,7 +16,7 @@ import {
 } from '@ionic/react';
 import { listingConditions, listingPriceTypes, listingStatuses, type PostView } from '@myapp/shared/domains';
 import type { FormEvent } from 'react';
-import { listingConditionLabels, listingStatusLabels, listingTypeLabels } from '../../../../common/formatters/listings';
+import { listingConditionLabels, listingStatusLabels, listingTypeLabels } from '../../../../utils/formatters/listings';
 import { useComposeListing } from '../../hooks/useComposeListing';
 import { PostPhotosField } from '../PostPhotosField/PostPhotosField';
 import '../../../../common/styles/modal-form.css';

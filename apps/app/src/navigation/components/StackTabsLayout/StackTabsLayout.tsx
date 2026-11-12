@@ -1,13 +1,13 @@
 import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useLocation, useRoutes, type Location, type RouteObject } from 'react-router';
 import { getIonPageElement } from '@ionic/react';
-import { useTabNavigation } from '../TabNavigationContext';
-import { PageContext } from '../PageContext';
+import { useTabNavigation } from '../../contexts/TabNavigationContext';
+import { PageContext } from '../../contexts/PageContext';
 import { TabBar } from '../TabBar/TabBar';
-import { tabRoutes } from '../tabRoutes';
-import type { StackEntry, TabDefinition } from '../stacks';
-import { animationsEnabled, runPageTransition, type TransitionDirection } from '../transition';
-import { useSwipeBack, type SwipeBackOptions } from '../useSwipeBack';
+import { createTabRoutes } from '../../utils/createTabRoutes';
+import type { StackEntry, TabDefinition } from '../../types';
+import { animationsEnabled, runPageTransition, type TransitionDirection } from '../../utils/transitions';
+import { useSwipeBack, type SwipeBackOptions } from '../../hooks/useSwipeBack/useSwipeBack';
 import './StackTabsLayout.css';
 
 /**
@@ -33,20 +33,20 @@ export function StackTabsLayout() {
     <>
       {/* The tabs stay mounted under a root route, so their stacks and scroll positions survive. */}
       <div className={onRootRoute ? 'ion-page tabs-layout tabs-layout-covered' : 'ion-page tabs-layout'}>
-      <div className="tabs-layout-panes">
-        {tabs
-          .filter((tab) => visitedTabs.includes(tab.id))
-          .map((tab) => (
-            <TabPane
-              key={tab.id}
-              tab={tab}
-              sharedRoutes={sharedRoutes}
-              active={tab.id === activeTab}
-              entries={stacks[tab.id]}
-            />
-          ))}
-      </div>
-      <TabBar />
+        <div className="tabs-layout-panes">
+          {tabs
+            .filter((tab) => visitedTabs.includes(tab.id))
+            .map((tab) => (
+              <TabPane
+                key={tab.id}
+                tab={tab}
+                sharedRoutes={sharedRoutes}
+                active={tab.id === activeTab}
+                entries={stacks[tab.id]}
+              />
+            ))}
+        </div>
+        <TabBar />
       </div>
       {onRootRoute && <PageContext.Provider value={rootPageContext}>{rootPage}</PageContext.Provider>}
     </>
@@ -90,7 +90,7 @@ function planTransition(
 
 /** One tab's stack. Every page in the stack stays mounted; only the top one is shown. */
 const TabPane = memo(function TabPane({ tab, sharedRoutes, active, entries }: TabPaneProps) {
-  const routes = useMemo(() => tabRoutes(tab, sharedRoutes), [tab, sharedRoutes]);
+  const routes = useMemo(() => createTabRoutes(tab, sharedRoutes), [tab, sharedRoutes]);
 
   const { goBack } = useTabNavigation();
   const paneRef = useRef<HTMLDivElement>(null);

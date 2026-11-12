@@ -1,5 +1,5 @@
 import { SecureStorage } from '@aparajita/capacitor-secure-storage';
-import { isNativePlatform } from '../../navigation';
+import { isNativePlatform } from '../../utils';
 
 const KEY = 'session-token';
 
