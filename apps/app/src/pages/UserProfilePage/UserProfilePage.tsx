@@ -20,7 +20,7 @@ import type { GetUserProfileQueryOutput, UserPostsType } from '@myapp/shared/dom
 import { ellipsisHorizontal, lockClosedOutline } from 'ionicons/icons';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { displayName } from '../../common/formatters/names';
+import { displayName } from '../../utils/formatters/names';
 import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
 import { chooseFrom } from '../../lib/prompts';
 import { BackButton, useTabHref } from '../../navigation';

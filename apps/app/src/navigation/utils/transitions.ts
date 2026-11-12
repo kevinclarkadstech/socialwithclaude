@@ -6,7 +6,7 @@ import {
   type Animation,
   type TransitionOptions,
 } from '@ionic/react';
-import { isIOS, isNativePlatform } from './platform';
+import { isIOS, isNativePlatform } from '../../utils';
 
 export type TransitionDirection = 'forward' | 'back';
 

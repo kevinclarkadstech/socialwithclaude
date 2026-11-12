@@ -1,8 +1,8 @@
 import { IonButton, IonIcon, IonItem, IonLabel } from '@ionic/react';
 import { arrowDown, arrowDownOutline, arrowUp, arrowUpOutline, ellipsisHorizontal } from 'ionicons/icons';
 import { UserAvatar } from '../../../users/components/UserAvatar/UserAvatar';
-import { timeAgo } from '../../../../common/formatters/dates';
-import { displayName } from '../../../../common/formatters/names';
+import { timeAgo } from '../../../../utils/formatters/dates';
+import { displayName } from '../../../../utils/formatters/names';
 import { setPostCommentVote } from '../../actions/setPostCommentVote';
 import { nextVote } from '../../commentVotes';
 import { usePostComment } from '../../hooks/usePostComment';

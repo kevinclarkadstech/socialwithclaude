@@ -1,8 +1,8 @@
 import { IonButton, IonCard, IonCardContent, IonIcon, IonLabel, IonNote, IonSpinner, IonToolbar } from '@ionic/react';
 import { alertCircle } from 'ionicons/icons';
-import { displayName } from '../../../../common/formatters/names';
-import { listingPrice } from '../../../../common/formatters/prices';
-import { listingConditionLabels } from '../../../../common/formatters/listings';
+import { displayName } from '../../../../utils/formatters/names';
+import { listingPrice } from '../../../../utils/formatters/prices';
+import { listingConditionLabels } from '../../../../utils/formatters/listings';
 import { useCallingUser } from '../../../users/hooks/useCallingUser';
 import { UserAvatar } from '../../../users/components/UserAvatar/UserAvatar';
 import { discardPendingPost, retryPendingPost } from '../../actions/publishPost';

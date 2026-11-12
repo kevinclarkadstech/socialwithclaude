@@ -1,6 +1,6 @@
 import type { GetUserProfileQueryOutput } from '@myapp/shared/domains';
 import { useRequireSignIn } from '../../../../common/hooks/useRequireSignIn';
-import { displayName } from '../../../../common/formatters/names';
+import { displayName } from '../../../../utils/formatters/names';
 import { config } from '../../../../lib/config';
 import { chooseFrom, confirm } from '../../../../lib/prompts';
 import { shareLink } from '../../../../lib/share';

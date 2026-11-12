@@ -20,7 +20,7 @@ import {
 import { listingStatuses, type ListingStatus } from '@myapp/shared/domains';
 import { add } from 'ionicons/icons';
 import { useState } from 'react';
-import { listingStatusLabels } from '../../common/formatters/listings';
+import { listingStatusLabels } from '../../utils/formatters/listings';
 import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
 import { AccountButton } from '../../domains/users/components/AccountButton/AccountButton';
 import { ComposeListingModal } from '../../domains/posts/components/ComposeListingModal/ComposeListingModal';

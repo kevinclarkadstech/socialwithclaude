@@ -12,10 +12,10 @@ import {
 import { bookmark, bookmarkOutline, chatbubbleOutline } from 'ionicons/icons';
 import { useNavigate } from 'react-router';
 import { UserAvatar } from '../../../users/components/UserAvatar/UserAvatar';
-import { timeAgo } from '../../../../common/formatters/dates';
-import { displayName } from '../../../../common/formatters/names';
-import { listingPrice } from '../../../../common/formatters/prices';
-import { listingConditionLabels, listingStatusLabels } from '../../../../common/formatters/listings';
+import { timeAgo } from '../../../../utils/formatters/dates';
+import { displayName } from '../../../../utils/formatters/names';
+import { listingPrice } from '../../../../utils/formatters/prices';
+import { listingConditionLabels, listingStatusLabels } from '../../../../utils/formatters/listings';
 import { useRequireSignIn } from '../../../../common/hooks/useRequireSignIn';
 import { usePost } from '../../hooks/usePost';
 import { useSavePost } from '../../hooks/useSavePost';

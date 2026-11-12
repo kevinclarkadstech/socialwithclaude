@@ -1,12 +1,12 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useNavigationType, NavigationType, type RouteObject } from 'react-router';
 import { NavContext, type BackButtonEvent, type NavContextState, type RouterDirection } from '@ionic/react';
-import { applyLocation, createInitialState, hrefOf, tabIdForPath, withIntent } from '../stacks';
+import { applyLocation, createInitialState, hrefOf, tabIdForPath, withIntent } from '../../utils/stacks';
 import {
   TabNavigationContext,
   type TabNavigationContextValue,
   type TabNavigationProviderProps as Props,
-} from '../TabNavigationContext';
+} from '../../contexts/TabNavigationContext';
 
 const NO_ROUTES: RouteObject[] = [];
 
