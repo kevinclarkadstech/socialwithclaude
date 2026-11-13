@@ -1,7 +1,7 @@
 import type { CallingUser } from "../../../users/types/calling-user";
 import type { ChatMember } from "../../types/chat-member";
-import { allow, disallow, type AuthorizationCheck } from "../../../../common/authorization/allowDisallow/allowDisallow";
-import { hasProfile, isChatMember, isSignedIn } from "../../../../common/authorization/conditions/conditions";
+import { allow, disallow, type AuthorizationCheck } from "../../../../authorization/allowDisallow/allowDisallow";
+import { hasProfile, isChatMember, isSignedIn } from "../../../../authorization/conditions/conditions";
 
 /**
  * Only a chat's members can see it (its messages, read state, deleting it

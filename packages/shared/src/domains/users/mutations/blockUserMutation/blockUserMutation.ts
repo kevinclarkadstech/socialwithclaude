@@ -3,7 +3,7 @@ import type { Mutation } from "../../../../types/mutation";
 import { fail, succeed } from "../../../../utils/result";
 import { notFoundError } from "../../../../error-handling";
 import { canBlockUser } from "../../authorization/canBlockUser/canBlockUser";
-import { logDisallowedResult } from "../../../../common/authorization/logDisallowedResult/logDisallowedResult";
+import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../types/calling-user";
 import { UserBlockSchema, type UserBlock } from "../../types/user-block";
 import { UserProfileSchema, type UserProfile } from "../../types/user-profile";

@@ -1,9 +1,9 @@
 import { describe, expect, it, mock } from "bun:test";
-import type { AppLogger } from "../../../observability";
-import { mockCaller, mockPost, mockProfile, userId2 } from "../../../testing/fixtures";
+import type { AppLogger } from "../../observability";
+import { mockCaller, mockPost, mockProfile, userId2 } from "../../testing/fixtures";
 import { logDisallowedResult } from "./logDisallowedResult";
-import { canUpdatePost } from "../../../domains/posts/authorization/canUpdatePost/canUpdatePost";
-import { canFollowUser } from "../../../domains/users/authorization/canFollowUser/canFollowUser";
+import { canUpdatePost } from "../../domains/posts/authorization/canUpdatePost/canUpdatePost";
+import { canFollowUser } from "../../domains/users/authorization/canFollowUser/canFollowUser";
 
 function spyLogger() {
     const logger = {

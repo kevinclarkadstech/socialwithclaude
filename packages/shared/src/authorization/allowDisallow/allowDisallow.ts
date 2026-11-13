@@ -1,6 +1,6 @@
-import { createAppError } from "../../../error-handling";
-import type { CallingUser, CallingUserWithProfile } from "../../../domains/users/types/calling-user";
-import type { Result } from "../../../types/result";
+import { createAppError } from "../../error-handling";
+import type { CallingUser, CallingUserWithProfile } from "../../domains/users/types/calling-user";
+import type { Result } from "../../types/result";
 import { disallowedReasons, type DisallowedReason } from "../disallowedReasons/disallowedReasons";
 
 /** What a check returns: the caller it allowed (narrowed), or why not. */

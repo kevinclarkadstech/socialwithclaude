@@ -1,6 +1,6 @@
 import z from "zod";
-import { BaseUserCreatedEntitySchema } from "../../../common/types/base-user-created-entity";
-import { PhotoPlaceholderSchema } from "../../../common/photos/types";
+import { BaseUserCreatedEntitySchema } from "../../../types/base-user-created-entity";
+import { PhotoPlaceholderSchema } from "../../../media/types";
 
 /** A photo's caption (optional). */
 export const PhotoCaptionSchema = z.string().trim().max(300);

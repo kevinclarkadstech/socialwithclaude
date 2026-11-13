@@ -1,5 +1,5 @@
 import z from "zod";
-import { BaseEntityFieldsSchema } from "../../../common/types/base-entity-fields";
+import { BaseEntityFieldsSchema } from "../../../types/base-entity-fields";
 
 export const ProfileVisibilitySchema = z.enum(["public", "followers"]);
 

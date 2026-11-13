@@ -1,7 +1,7 @@
 import type { CallingUser } from "../../types/calling-user";
 import type { UserProfile } from "../../types/user-profile";
-import { allow, disallow, type AuthorizationCheck } from "../../../../common/authorization/allowDisallow/allowDisallow";
-import { hasBlocked, hasProfile, isBlockedBy, isSelf, isSignedIn } from "../../../../common/authorization/conditions/conditions";
+import { allow, disallow, type AuthorizationCheck } from "../../../../authorization/allowDisallow/allowDisallow";
+import { hasBlocked, hasProfile, isBlockedBy, isSelf, isSignedIn } from "../../../../authorization/conditions/conditions";
 
 /** Anyone who has finished sign-up can follow (or ask to follow) someone else, unless either has blocked the other. */
 export const canFollowUser: AuthorizationCheck<{ caller: CallingUser | null; target: UserProfile }> = ({ caller, target }) => {

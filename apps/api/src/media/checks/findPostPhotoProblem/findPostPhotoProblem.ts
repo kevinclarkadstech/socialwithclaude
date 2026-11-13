@@ -1,4 +1,4 @@
-import { longSideDimensions } from "@myapp/shared/common/photos";
+import { longSideDimensions } from "@myapp/shared/media";
 import { maxPhotoAspectRatio, postPhotoSizes } from "@myapp/shared/domains";
 import type { UploadedPhotoFile } from "../../types";
 

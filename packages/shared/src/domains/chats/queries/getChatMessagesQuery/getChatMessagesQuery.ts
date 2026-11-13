@@ -1,9 +1,9 @@
 import z from "zod";
 import type { Query } from "../../../../types/query";
 import { succeed } from "../../../../utils/result";
-import { PageInputSchema, type Page } from "../../../../common/types/page";
+import { PageInputSchema, type Page } from "../../../../types/page";
 import { canViewChat } from "../../authorization/canViewChat/canViewChat";
-import { logDisallowedResult } from "../../../../common/authorization/logDisallowedResult/logDisallowedResult";
+import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
 import { ChatSchema } from "../../types/chat";
 import type { ChatMember } from "../../types/chat-member";

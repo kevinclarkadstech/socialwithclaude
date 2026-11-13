@@ -1,7 +1,7 @@
 import z from "zod";
 import type { Query } from "../../../../types/query";
 import { succeed } from "../../../../utils/result";
-import { PageInputSchema, type Page } from "../../../../common/types/page";
+import { PageInputSchema, type Page } from "../../../../types/page";
 import { PostCommentViewSchema, type PostCommentView } from "../../types/post-comment";
 import type { GetCallingUser } from "../../../users/types/calling-user";
 

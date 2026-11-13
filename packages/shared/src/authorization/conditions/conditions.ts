@@ -1,5 +1,5 @@
-import type { ChatMember } from "../../../domains/chats/types/chat-member";
-import type { CallingUser, CallingUserWithProfile } from "../../../domains/users/types/calling-user";
+import type { ChatMember } from "../../domains/chats/types/chat-member";
+import type { CallingUser, CallingUserWithProfile } from "../../domains/users/types/calling-user";
 
 /** Someone is signed in. */
 export const isSignedIn = (caller: CallingUser | null): caller is CallingUser => caller !== null;

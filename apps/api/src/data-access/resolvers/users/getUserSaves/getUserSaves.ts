@@ -1,5 +1,5 @@
 import { and, desc, eq, sql } from "drizzle-orm";
-import type { Page } from "@myapp/shared/common";
+import type { Page } from "@myapp/shared/types";
 import type { UserSave } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toPage } from "../../../paging";

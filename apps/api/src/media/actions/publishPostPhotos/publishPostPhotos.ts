@@ -1,4 +1,4 @@
-import { photoKey, photoKeys } from "@myapp/shared/common/photos";
+import { photoKey, photoKeys } from "@myapp/shared/media";
 import { postPhotoSizes } from "@myapp/shared/domains";
 import type { AppLogger } from "@myapp/shared/observability";
 import type { Storage } from "../../../storage";

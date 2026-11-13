@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { mockCaller } from "../../../testing/fixtures";
+import { mockCaller } from "../../testing/fixtures";
 import { requireCaller, requireCallerWithProfile } from "./requireCaller";
 
 describe("requireCaller", () => {

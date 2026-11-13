@@ -1,4 +1,4 @@
-import type { AppError } from "../../../error-handling";
+import type { AppError } from "../../error-handling";
 
 /**
  * Every reason a check can disallow something, with the error it fails

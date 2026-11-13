@@ -3,7 +3,7 @@ import type { Query } from "../../../../types/query";
 import { fail, succeed } from "../../../../utils/result";
 import { notFoundError } from "../../../../error-handling";
 import { canViewPost } from "../../utils/canViewPost";
-import { logDisallowedResult } from "../../../../common/authorization/logDisallowedResult/logDisallowedResult";
+import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
 import { PostViewSchema, type PostView } from "../../types/post";
 

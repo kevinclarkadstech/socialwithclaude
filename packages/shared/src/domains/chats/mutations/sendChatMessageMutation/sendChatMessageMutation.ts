@@ -3,7 +3,7 @@ import type { Mutation } from "../../../../types/mutation";
 import { fail, succeed } from "../../../../utils/result";
 import { conflictError } from "../../../../error-handling";
 import { canSendChatMessage } from "../../authorization/canSendChatMessage/canSendChatMessage";
-import { logDisallowedResult } from "../../../../common/authorization/logDisallowedResult/logDisallowedResult";
+import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
 import type { ChatMember } from "../../types/chat-member";
 import { ChatMessageSchema, ChatMessageViewSchema, type ChatMessageView } from "../../types/chat-message";

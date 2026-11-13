@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BaseUserCreatedEntitySchema } from "../../../common/types/base-user-created-entity";
+import { BaseUserCreatedEntitySchema } from "../../../types/base-user-created-entity";
 import { UserProfileSummarySchema } from "../../users/types/user-profile-summary";
 
 /** A chat message as stored (one row of chat_messages); created_by is the sender. What mutations take and save. */

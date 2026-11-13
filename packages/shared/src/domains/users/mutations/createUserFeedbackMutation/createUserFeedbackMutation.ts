@@ -2,8 +2,8 @@ import z from "zod";
 import type { Mutation } from "../../../../types/mutation";
 import { fail, succeed } from "../../../../utils/result";
 import { conflictError } from "../../../../error-handling";
-import { requireCallerWithProfile } from "../../../../common/authorization/requireCaller/requireCaller";
-import { logDisallowedResult } from "../../../../common/authorization/logDisallowedResult/logDisallowedResult";
+import { requireCallerWithProfile } from "../../../../authorization/requireCaller/requireCaller";
+import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../types/calling-user";
 import { UserFeedbackSchema, type UserFeedback } from "../../types/user-feedback";
 

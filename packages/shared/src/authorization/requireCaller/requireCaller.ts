@@ -1,4 +1,4 @@
-import type { CallingUser } from "../../../domains/users/types/calling-user";
+import type { CallingUser } from "../../domains/users/types/calling-user";
 import { allow, disallow, type AuthorizationCheck } from "../allowDisallow/allowDisallow";
 import { hasProfile, isSignedIn } from "../conditions/conditions";
 

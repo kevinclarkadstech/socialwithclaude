@@ -3,7 +3,7 @@ import type { Mutation } from "../../../../types/mutation";
 import { fail, succeed } from "../../../../utils/result";
 import { conflictError, notFoundError } from "../../../../error-handling";
 import { canCommentOnPost } from "../../authorization/canCommentOnPost/canCommentOnPost";
-import { logDisallowedResult } from "../../../../common/authorization/logDisallowedResult/logDisallowedResult";
+import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
 import type { PostView } from "../../types/post";
 import { PostCommentSchema, PostCommentViewSchema, type PostCommentView } from "../../types/post-comment";

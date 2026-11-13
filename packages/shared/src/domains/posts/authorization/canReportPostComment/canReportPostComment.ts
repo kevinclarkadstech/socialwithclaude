@@ -1,7 +1,7 @@
 import type { CallingUser } from "../../../users/types/calling-user";
 import type { PostCommentView } from "../../types/post-comment";
-import { allow, disallow, type AuthorizationCheck } from "../../../../common/authorization/allowDisallow/allowDisallow";
-import { hasProfile, isSignedIn } from "../../../../common/authorization/conditions/conditions";
+import { allow, disallow, type AuthorizationCheck } from "../../../../authorization/allowDisallow/allowDisallow";
+import { hasProfile, isSignedIn } from "../../../../authorization/conditions/conditions";
 
 /** Anyone who has finished sign-up can report a comment. */
 export const canReportPostComment: AuthorizationCheck<{ caller: CallingUser | null; comment: PostCommentView }> = ({ caller }) => {
