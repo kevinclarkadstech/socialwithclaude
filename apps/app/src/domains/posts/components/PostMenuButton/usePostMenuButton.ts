@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { askForReport } from '../../../../common/prompts/askForReport';
 import { useRequireSignIn } from '../../../../common/hooks/useRequireSignIn';
 import { chooseFrom, confirm } from '../../../../lib/prompts';
-import { useCallingUser } from '../../../users/hooks/useCallingUser/useCallingUser';
+import { useCallingUser } from '../../../users';
 import { deletePost } from '../../actions/deletePost/deletePost';
 import { reportPost } from '../../actions/reportPost/reportPost';
 

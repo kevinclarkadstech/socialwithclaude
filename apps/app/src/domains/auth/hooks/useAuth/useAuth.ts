@@ -1,8 +1,7 @@
 import { authClient } from '../../../../lib/auth/authClient';
 import { sessionToken } from '../../../../lib/auth/sessionToken';
-import { callingUserStore, refreshCallingUser } from '../../../users/callingUserStore';
-import { postCommentStore } from '../../../posts/postCommentStore';
-import { postStore } from '../../../posts/postStore';
+import { callingUserStore, refreshCallingUser } from '../../../users';
+import { postCommentStore, postStore } from '../../../posts';
 
 const codeErrors: Record<string, string> = {
   INVALID_OTP: "That code isn't right. Check it and try again.",

@@ -11,7 +11,7 @@ import {
 } from '@ionic/react';
 import { bookmark, bookmarkOutline, chatbubbleOutline } from 'ionicons/icons';
 import { useNavigate } from 'react-router';
-import { UserAvatar } from '../../../users/components/UserAvatar/UserAvatar';
+import { UserAvatar } from '../../../users';
 import { timeAgo } from '../../../../utils/formatters/dates';
 import { displayName } from '../../../../utils/formatters/names';
 import { listingPrice } from '../../../../utils/formatters/prices';

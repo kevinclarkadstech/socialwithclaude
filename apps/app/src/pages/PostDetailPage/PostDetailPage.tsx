@@ -14,13 +14,9 @@ import {
 } from '@ionic/react';
 import { useParams } from 'react-router';
 import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
-import { usePostComments } from '../../domains/posts/hooks/usePostComments/usePostComments';
-import { usePostDetail } from '../../domains/posts/hooks/usePostDetail/usePostDetail';
-import { useCallingUser } from '../../domains/users/hooks/useCallingUser/useCallingUser';
+import { CommentComposer, CommentItem, PostCard, usePostComments, usePostDetail } from '../../domains/posts';
+import { useCallingUser } from '../../domains/users';
 import { BackButton, useTabNavigation } from '../../navigation';
-import { CommentComposer } from '../../domains/posts/components/CommentComposer/CommentComposer';
-import { CommentItem } from '../../domains/posts/components/CommentItem/CommentItem';
-import { PostCard } from '../../domains/posts/components/PostCard/PostCard';
 import '../../common/styles/pages.css';
 
 /** A post on its own page (/<tab>/posts/:postId), with its comments. Reading comments needs sign-in. */

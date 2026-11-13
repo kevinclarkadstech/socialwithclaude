@@ -2,7 +2,7 @@ import { deletePostMutation } from '@myapp/shared/domains';
 import { api } from '../../../../lib/api/trpc';
 import { fromApi } from '../../../../lib/api/results';
 import { logger } from '../../../../lib/logger';
-import { getCallingUser } from '../../../users/callingUserStore';
+import { getCallingUser } from '../../../users';
 import { mediaFromStoreOrApi, postFromStoreOrApi } from '../postsFromApi/postsFromApi';
 
 /** Deletes a post. Only its author can. */

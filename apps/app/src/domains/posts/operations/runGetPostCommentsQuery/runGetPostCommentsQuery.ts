@@ -3,7 +3,7 @@ import { api } from '../../../../lib/api/trpc';
 import { fromApi } from '../../../../lib/api/results';
 import { withRetry } from '../../../../lib/api/withRetry';
 import { logger } from '../../../../lib/logger';
-import { getCallingUser } from '../../../users/callingUserStore';
+import { getCallingUser } from '../../../users';
 
 /** A page of a post's comments, oldest first. */
 export function runGetPostCommentsQuery({ postId, cursor }: { postId: string; cursor: string | null }) {

@@ -2,7 +2,7 @@ import { IonContent, IonIcon, IonItem, IonLabel, IonList, IonMenu } from '@ionic
 import { logInOutline, personCircleOutline } from 'ionicons/icons';
 import { useLocation } from 'react-router';
 import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
-import { useCallingUser } from '../../domains/users/hooks/useCallingUser/useCallingUser';
+import { useCallingUser } from '../../domains/users';
 import { useTabNavigation } from '../../navigation';
 import './Sidebar.css';
 

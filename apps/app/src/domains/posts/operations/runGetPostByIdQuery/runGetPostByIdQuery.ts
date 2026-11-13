@@ -1,6 +1,6 @@
 import { getPostByIdQuery } from '@myapp/shared/domains';
 import { logger } from '../../../../lib/logger';
-import { getCallingUser } from '../../../users/callingUserStore';
+import { getCallingUser } from '../../../users';
 import { fetchPostById } from '../postsFromApi/postsFromApi';
 
 /** One post, fresh from the API. Fails with not-found if it doesn't exist or was deleted. */

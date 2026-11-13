@@ -3,7 +3,7 @@ import { api } from '../../../../lib/api/trpc';
 import { fromApi } from '../../../../lib/api/results';
 import { withRetry } from '../../../../lib/api/withRetry';
 import { logger } from '../../../../lib/logger';
-import { getCallingUser } from '../../../users/callingUserStore';
+import { getCallingUser } from '../../../users';
 
 /** A page of listings, newest first; only those with `status` if given. */
 export function runGetPostListingsQuery({ status, cursor }: { status: ListingStatus | null; cursor: string | null }) {

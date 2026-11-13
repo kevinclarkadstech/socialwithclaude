@@ -2,8 +2,7 @@ import type { PostView } from '@myapp/shared/domains';
 import { errorMessage } from '../../../../lib/api/errors';
 import { orThrow } from '../../../../lib/api/results';
 import { showErrorToast } from '../../../../lib/toasts';
-import { runCreateUserSaveMutation } from '../../../users/operations/runCreateUserSaveMutation/runCreateUserSaveMutation';
-import { runDeleteUserSaveMutation } from '../../../users/operations/runDeleteUserSaveMutation/runDeleteUserSaveMutation';
+import { runCreateUserSaveMutation, runDeleteUserSaveMutation } from '../../../users';
 import { postStore } from '../../postStore';
 
 /** Saves or unsaves a post. Every list showing it updates right away, and it's undone if the request fails. */

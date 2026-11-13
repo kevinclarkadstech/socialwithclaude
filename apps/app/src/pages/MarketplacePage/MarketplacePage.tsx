@@ -22,11 +22,8 @@ import { add } from 'ionicons/icons';
 import { useState } from 'react';
 import { listingStatusLabels } from '../../utils/formatters/listings';
 import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
-import { AccountButton } from '../../domains/users/components/AccountButton/AccountButton';
-import { ComposeListingModal } from '../../domains/posts/components/ComposeListingModal/ComposeListingModal';
-import { PendingPosts } from '../../domains/posts/components/PendingPosts/PendingPosts';
-import { PostCard } from '../../domains/posts/components/PostCard/PostCard';
-import { useListings } from '../../domains/posts/hooks/useListings/useListings';
+import { AccountButton } from '../../domains/users';
+import { ComposeListingModal, PendingPosts, PostCard, useListings } from '../../domains/posts';
 import '../../common/styles/pages.css';
 
 const ALL = 'all';
