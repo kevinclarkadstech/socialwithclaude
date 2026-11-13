@@ -1,4 +1,4 @@
-import type { RateLimitRule } from "./types";
+import type { RateLimitRule } from "../types";
 
 export const rateLimitRules = {
     /** Everything under /api/auth, per IP address. */

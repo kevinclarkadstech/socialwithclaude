@@ -24,3 +24,8 @@ export type RateLimitDecision = { allowed: true } | { allowed: false; retryAfter
 export interface RateLimiter {
     consume(args: { rule: RateLimitRule; key: string }): Promise<RateLimitDecision>;
 }
+
+/** The outcome of checkProcedureRateLimit: a refusal carries what the transport needs to answer with. */
+export type ProcedureRateLimitCheck =
+    | { allowed: true }
+    | { allowed: false; ruleName: string; retryAfterSeconds: number; message: string };

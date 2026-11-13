@@ -1,28 +1,9 @@
-import { initTRPC, TRPCError } from "@trpc/server";
-
-import type { TRPCContext } from "./context";
+import { TRPCError } from "@trpc/server";
 import z, { ZodError } from "zod";
 import { ResultSchema } from "@myapp/shared/types/result";
 import { appErrorToTrpcError, AppTrpcError } from "../../error-handling";
-import { rateLimitRules, tooManyRequestsMessage } from "../../rate-limiting";
-
-const t = initTRPC.context<TRPCContext>().create({
-    /**
-     * Unexpected errors (a thrown exception, a failed query) can carry SQL,
-     * query params or other users' data in their message and stack. The
-     * client gets a generic message instead; onError logs the original.
-     */
-    errorFormatter: ({ shape, error }) => {
-        if (error.code !== "INTERNAL_SERVER_ERROR") {
-            return shape;
-        }
-        return {
-            ...shape,
-            message: "Something went wrong",
-            data: { ...shape.data, stack: undefined },
-        };
-    },
-});
+import { t } from "./init/init";
+import { rateLimit } from "./middleware/rateLimit/rateLimit";
 
 const mapAppError = t.middleware(async ({ next }) => {
     const result = await next();
@@ -73,18 +54,6 @@ const mapAppError = t.middleware(async ({ next }) => {
             error: new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Unexpected error", cause: error }),
         }
     }
-});
-
-/** Queries and mutations each have a per-caller limit; a refused call is a 429 TOO_MANY_REQUESTS. */
-const rateLimit = t.middleware(async ({ ctx, type, path, next }) => {
-    const rule = type === "query" ? rateLimitRules.queries : rateLimitRules.mutations;
-    const decision = await ctx.rateLimiter.consume({ rule, key: ctx.rateLimitKey });
-    if (!decision.allowed) {
-        ctx.logger.warn("Request rate limited", { path, rule: rule.name, retryAfterSeconds: decision.retryAfterSeconds });
-        ctx.resHeaders.set("Retry-After", String(decision.retryAfterSeconds));
-        throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: tooManyRequestsMessage(decision) });
-    }
-    return next();
 });
 
 export const router = t.router;

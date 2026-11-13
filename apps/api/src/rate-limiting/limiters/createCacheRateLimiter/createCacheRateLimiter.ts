@@ -1,6 +1,6 @@
-import type { Cache } from "../cache";
-import { rootLogger } from "../observability";
-import type { RateLimiter } from "./types";
+import type { Cache } from "../../../cache";
+import { rootLogger } from "../../../observability";
+import type { RateLimiter } from "../../types";
 
 /**
  * Rate limits counted in the cache, so every API instance shares them: a fixed

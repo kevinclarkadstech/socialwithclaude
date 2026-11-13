@@ -1,8 +1,9 @@
 import type { MiddlewareHandler } from "hono";
-import type { AppHonoEnv } from "../index";
-import { tooManyRequestsMessage } from "./tooManyRequestsMessage";
-import type { RateLimitDecision } from "./types";
-import { rateLimitRules } from "./rules";
+import type { AppHonoEnv } from "../../../index";
+import { tooManyRequestsMessage } from "../../utils/tooManyRequestsMessage/tooManyRequestsMessage";
+import type { RateLimitDecision } from "../../types";
+import { rateLimitRules } from "../../constants";
+import { sha256Hex } from "../../utils/sha256Hex/sha256Hex";
 
 /**
  * Rate limits for /api/auth: everything per IP address, and tighter limits on
@@ -42,9 +43,3 @@ export const limitAuthRequestsMiddleware: MiddlewareHandler<AppHonoEnv> = async 
     }
     await next();
 };
-
-/** Web Crypto, so it runs on Node and Workers alike. */
-async function sha256Hex(text: string): Promise<string> {
-    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-    return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
-}

@@ -1,5 +1,4 @@
 export * from "./types";
-export * from "./rules";
-export * from "./tooManyRequestsMessage";
-export * from "./createCacheRateLimiter";
-export * from "./limitAuthRequestsMiddleware";
+export { createCacheRateLimiter } from "./limiters/createCacheRateLimiter/createCacheRateLimiter";
+export { limitAuthRequestsMiddleware } from "./middleware/limitAuthRequestsMiddleware/limitAuthRequestsMiddleware";
+export { checkProcedureRateLimit } from "./checks/checkProcedureRateLimit/checkProcedureRateLimit";
