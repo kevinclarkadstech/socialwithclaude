@@ -59,7 +59,8 @@ import {
     updateUserProfile,
     updateUserSettings,
 } from "../../../data-access";
-import { createUploadUrl, deleteMedia, deleteUploads, putMedia, readUpload } from "../../../storage";
+import { publishProfilePhoto } from "../../../media";
+import { storage } from "../../../storage";
 import { procedure, router } from "../trpc";
 
 export const usersRouter = router({
@@ -83,7 +84,7 @@ export const usersRouter = router({
         createProfilePhotoUploadMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, createUploadUrl },
+            dependencies: { getCallingUser: ctx.getCallingUser, createUploadUrl: storage.createUploadUrl },
         }),
     ),
 
@@ -91,7 +92,11 @@ export const usersRouter = router({
         confirmProfilePhotoUploadMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, readUpload, putMedia, deleteUploads, touchUserProfile },
+            dependencies: {
+                getCallingUser: ctx.getCallingUser,
+                publishProfilePhoto: (args) => publishProfilePhoto({ ...args, storage }),
+                touchUserProfile,
+            },
         }),
     ),
 
@@ -99,7 +104,7 @@ export const usersRouter = router({
         removeProfilePhotoMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, deleteMedia, touchUserProfile },
+            dependencies: { getCallingUser: ctx.getCallingUser, deleteMedia: storage.deleteMedia, touchUserProfile },
         }),
     ),
 

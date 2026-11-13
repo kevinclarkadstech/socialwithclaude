@@ -1,10 +1,5 @@
-import type { PhotoFormat } from "../types";
+import type { PhotoInfo } from "../../types";
 
-export interface PhotoInfo {
-    format: PhotoFormat;
-    width: number;
-    height: number;
-}
 
 const readUint16 = (bytes: Uint8Array, at: number) => (bytes[at]! << 8) | bytes[at + 1]!;
 const readUint16LE = (bytes: Uint8Array, at: number) => bytes[at]! | (bytes[at + 1]! << 8);

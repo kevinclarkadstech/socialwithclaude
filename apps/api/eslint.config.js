@@ -11,5 +11,9 @@ export default defineConfig([
     languageOptions: {
       globals: globals.node,
     },
+    rules: {
+      // A leading _ marks a parameter as deliberately unused (e.g. typed mock arguments in tests).
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    },
   },
 ])

@@ -34,6 +34,8 @@ jobs:
         run: bun run --cwd apps/api typecheck
       - name: Lint API
         run: bun run --cwd apps/api lint
+      - name: Test API
+        run: bun run --cwd apps/api test
       - name: Build API
         run: bun run --cwd apps/api build
       # Starts the build and checks responses keep their status (a Nitro release turned errors into 200s).
