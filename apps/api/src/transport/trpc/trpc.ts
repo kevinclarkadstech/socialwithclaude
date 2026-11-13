@@ -1,9 +1,28 @@
-import { TRPCError } from "@trpc/server";
+import { initTRPC, TRPCError } from "@trpc/server";
+
+import type { TRPCContext } from "./context";
 import z, { ZodError } from "zod";
 import { ResultSchema } from "@myapp/shared/types/result";
 import { appErrorToTrpcError, AppTrpcError } from "../../error-handling";
-import { t } from "./init/init";
-import { rateLimit } from "./middleware/rateLimit/rateLimit";
+import { limitProcedureCallsMiddleware } from "../../rate-limiting";
+
+const t = initTRPC.context<TRPCContext>().create({
+    /**
+     * Unexpected errors (a thrown exception, a failed query) can carry SQL,
+     * query params or other users' data in their message and stack. The
+     * client gets a generic message instead; onError logs the original.
+     */
+    errorFormatter: ({ shape, error }) => {
+        if (error.code !== "INTERNAL_SERVER_ERROR") {
+            return shape;
+        }
+        return {
+            ...shape,
+            message: "Something went wrong",
+            data: { ...shape.data, stack: undefined },
+        };
+    },
+});
 
 const mapAppError = t.middleware(async ({ next }) => {
     const result = await next();
@@ -55,6 +74,8 @@ const mapAppError = t.middleware(async ({ next }) => {
         }
     }
 });
+
+const rateLimit = t.middleware(limitProcedureCallsMiddleware);
 
 export const router = t.router;
 export const procedure = t.procedure.use(rateLimit).use(mapAppError);
