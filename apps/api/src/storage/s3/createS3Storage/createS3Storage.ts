@@ -18,11 +18,10 @@ export function createS3Storage({ endpoint, region, accessKeyId, secretAccessKey
     mediaBucket: string;
 }): Storage {
     const client = new AwsClient({ accessKeyId, secretAccessKey, service: "s3", region });
-    const objectUrl = (bucket: string, key: string) => generateObjectUrl({ endpoint, bucket, key });
 
     return {
         async createUploadUrl({ key, contentType, contentLength, expiresInSeconds = 600 }) {
-            const url = objectUrl(uploadsBucket, key);
+            const url = generateObjectUrl({ endpoint, bucket: uploadsBucket, key });
             url.searchParams.set("X-Amz-Expires", String(expiresInSeconds));
             const signed = await client.sign(
                 new Request(url.toString(), {
@@ -34,7 +33,7 @@ export function createS3Storage({ endpoint, region, accessKeyId, secretAccessKey
             return signed.url;
         },
         async readUpload({ key }) {
-            const response = await client.fetch(objectUrl(uploadsBucket, key).toString());
+            const response = await client.fetch(generateObjectUrl({ endpoint, bucket: uploadsBucket, key }).toString());
             if (response.status === 404) {
                 return null;
             }
@@ -47,7 +46,7 @@ export function createS3Storage({ endpoint, region, accessKeyId, secretAccessKey
             await Promise.all(keys.map((key) => deleteObject({ client, endpoint, bucket: uploadsBucket, key })));
         },
         async putMedia({ key, bytes, contentType }) {
-            const response = await client.fetch(objectUrl(mediaBucket, key).toString(), {
+            const response = await client.fetch(generateObjectUrl({ endpoint, bucket: mediaBucket, key }).toString(), {
                 method: "PUT",
                 body: new Uint8Array(bytes),
                 headers: { "Content-Type": contentType, "Cache-Control": "public, max-age=31536000, immutable" },
