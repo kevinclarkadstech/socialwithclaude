@@ -17,7 +17,7 @@ import {
 import { listingConditions, listingPriceTypes, listingStatuses, type PostView } from '@myapp/shared/domains';
 import type { FormEvent } from 'react';
 import { listingConditionLabels, listingStatusLabels, listingTypeLabels } from '../../../../utils/formatters/listings';
-import { useComposeListing } from '../../hooks/useComposeListing';
+import { useComposeListing } from '../../hooks/useComposeListing/useComposeListing';
 import { PostPhotosField } from '../PostPhotosField/PostPhotosField';
 import '../../../../common/styles/modal-form.css';
 import './ComposeListingModal.css';

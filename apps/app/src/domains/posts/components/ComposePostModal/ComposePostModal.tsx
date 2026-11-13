@@ -10,7 +10,7 @@ import {
   IonToolbar,
 } from '@ionic/react';
 import type { PostView } from '@myapp/shared/domains';
-import { useComposePost } from '../../hooks/useComposePost';
+import { useComposePost } from '../../hooks/useComposePost/useComposePost';
 import { PostPhotosField } from '../PostPhotosField/PostPhotosField';
 import './ComposePostModal.css';
 

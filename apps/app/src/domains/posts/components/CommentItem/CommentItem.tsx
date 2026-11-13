@@ -3,10 +3,10 @@ import { arrowDown, arrowDownOutline, arrowUp, arrowUpOutline, ellipsisHorizonta
 import { UserAvatar } from '../../../users/components/UserAvatar/UserAvatar';
 import { timeAgo } from '../../../../utils/formatters/dates';
 import { displayName } from '../../../../utils/formatters/names';
-import { setPostCommentVote } from '../../actions/setPostCommentVote';
+import { setPostCommentVote } from '../../actions/setPostCommentVote/setPostCommentVote';
 import { nextVote } from '../../commentVotes';
-import { usePostComment } from '../../hooks/usePostComment';
-import { useCallingUser } from '../../../users/hooks/useCallingUser';
+import { usePostComment } from '../../hooks/usePostComment/usePostComment';
+import { useCallingUser } from '../../../users/hooks/useCallingUser/useCallingUser';
 import { AuthorLink } from '../AuthorLink/AuthorLink';
 import { openCommentMenu } from './openCommentMenu';
 import './CommentItem.css';

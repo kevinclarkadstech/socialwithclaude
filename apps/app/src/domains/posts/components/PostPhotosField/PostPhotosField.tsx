@@ -9,7 +9,7 @@ import {
 import { maxPhotoCaptionLength, maxPostPhotos } from '@myapp/shared/domains';
 import { alertCircle, closeOutline, imagesOutline } from 'ionicons/icons';
 import { useRef } from 'react';
-import type { PostPhotos } from '../../hooks/usePostPhotos';
+import type { PostPhotos } from '../../hooks/usePostPhotos/usePostPhotos';
 import './PostPhotosField.css';
 
 interface PostPhotosFieldProps {

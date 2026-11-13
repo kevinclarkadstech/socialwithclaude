@@ -4,10 +4,10 @@ import { displayName } from '../../../../utils/formatters/names';
 import { config } from '../../../../lib/config';
 import { chooseFrom, confirm } from '../../../../lib/prompts';
 import { shareLink } from '../../../../lib/share';
-import { blockUser } from '../../actions/blockUser';
-import { followUser } from '../../actions/followUser';
-import { unblockUser } from '../../actions/unblockUser';
-import { unfollowUser } from '../../actions/unfollowUser';
+import { blockUser } from '../../actions/blockUser/blockUser';
+import { followUser } from '../../actions/followUser/followUser';
+import { unblockUser } from '../../actions/unblockUser/unblockUser';
+import { unfollowUser } from '../../actions/unfollowUser/unfollowUser';
 
 /**
  * A profile header's actions: follow (asking first to sign in), unfollow or

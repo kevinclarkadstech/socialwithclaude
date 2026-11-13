@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { Photo } from '../../../../common/components/Photo/Photo';
 import { openPhotoViewer } from '../../../../common/components/PhotoViewer/photoViewerStore';
 import type { DisplayPhoto } from '../../../../lib/photos/displayPhoto';
-import { feedAspectRatio } from '../../utils/postPhotoUrl';
+import { feedAspectRatio } from '../../utils/postPhotoUrl/postPhotoUrl';
 import './PostPhotoCarousel.css';
 
 interface PostPhotoCarouselProps {

@@ -3,8 +3,8 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { showMenu } from '../../../../lib/prompts';
 import { showErrorToast } from '../../../../lib/toasts';
 import type { CropArea } from '../../../../lib/photos/renderCroppedPhotos';
-import { changeProfilePhoto } from '../../actions/changeProfilePhoto';
-import { removeProfilePhoto } from '../../actions/removeProfilePhoto';
+import { changeProfilePhoto } from '../../actions/changeProfilePhoto/changeProfilePhoto';
+import { removeProfilePhoto } from '../../actions/removeProfilePhoto/removeProfilePhoto';
 
 const labels: Record<ProfilePhotoKind, string> = { avatar: 'photo', cover: 'cover photo' };
 

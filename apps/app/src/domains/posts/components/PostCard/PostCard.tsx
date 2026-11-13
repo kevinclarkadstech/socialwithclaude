@@ -17,14 +17,14 @@ import { displayName } from '../../../../utils/formatters/names';
 import { listingPrice } from '../../../../utils/formatters/prices';
 import { listingConditionLabels, listingStatusLabels } from '../../../../utils/formatters/listings';
 import { useRequireSignIn } from '../../../../common/hooks/useRequireSignIn';
-import { usePost } from '../../hooks/usePost';
-import { useSavePost } from '../../hooks/useSavePost';
+import { usePost } from '../../hooks/usePost/usePost';
+import { useSavePost } from '../../hooks/useSavePost/useSavePost';
 import { useTabHref } from '../../../../navigation';
 import { AuthorLink } from '../AuthorLink/AuthorLink';
 import { PostMenuButton } from '../PostMenuButton/PostMenuButton';
 import { PostPhotoCarousel } from '../PostPhotoCarousel/PostPhotoCarousel';
 import { PostPhotoGrid } from '../PostPhotoGrid/PostPhotoGrid';
-import { toDisplayPhotos } from '../../utils/postPhotoUrl';
+import { toDisplayPhotos } from '../../utils/postPhotoUrl/postPhotoUrl';
 import './PostCard.css';
 
 interface PostCardProps {
