@@ -16,6 +16,7 @@ import { cache } from "./cache";
 import { createCacheRateLimiter, limitAuthRequestsMiddleware, type RateLimiter } from "./rate-limiting";
 import { appRouter, createContext } from "./transport/trpc";
 import { trpcOnErrorFunction } from "./error-handling";
+import { assertCanNotify } from "./notifications";
 
 type Auth = ReturnType<typeof createAuthInstance>;
 
@@ -32,6 +33,9 @@ export type AppHonoEnv = Env & {
     },
     Bindings: object;
 }
+
+// Fail at startup, not on the first sign-in, when notifications can't be sent (e.g. no email provider in production).
+assertCanNotify();
 
 const auth = createAuthInstance(db);
 

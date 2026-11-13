@@ -4,7 +4,7 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 
 import { newId, schema, type Database } from "../data-access/db";
 import { nativeAppOrigins, serverConfig } from "../config";
-import { assertCanNotify, sendOtp } from "../notifications";
+import { sendOtp } from "../notifications";
 import { rootLogger } from "../observability";
 
 const {
@@ -28,8 +28,6 @@ const apple = APPLE_CLIENT_ID && APPLE_CLIENT_SECRET
  * new users up), or Google / Apple when configured.
  */
 export function createAuthInstance(db: Database) {
-    assertCanNotify();
-
     return betterAuth({
         secret: serverConfig.BETTER_AUTH_SECRET,
         baseURL: serverConfig.BETTER_AUTH_URL,
