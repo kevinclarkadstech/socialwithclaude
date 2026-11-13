@@ -1,5 +1,5 @@
 import type { CreatePostMutationInput } from '@myapp/shared/domains';
-import type { PreparedPostPhoto } from './utils/preparePostPhoto';
+import type { PreparedPostPhoto } from './utils/preparePostPhoto/preparePostPhoto';
 
 /** What's being posted: a post's text, or a listing's text (its description) and details. */
 export type PendingPostContent =

@@ -2,8 +2,8 @@ import { IonAvatar } from '@ionic/react';
 import type { UserProfileSummary } from '@myapp/shared/domains';
 import { useState } from 'react';
 import { initials } from '../../../../utils/formatters/names';
-import { profilePhotoUrl, profilePhotoWidthFor } from '../../utils/profilePhotoUrl';
-import { userHue } from '../../utils/userHue';
+import { profilePhotoUrl, profilePhotoWidthFor } from '../../utils/profilePhotoUrl/profilePhotoUrl';
+import { userHue } from '../../utils/userHue/userHue';
 import './UserAvatar.css';
 
 interface UserAvatarProps {

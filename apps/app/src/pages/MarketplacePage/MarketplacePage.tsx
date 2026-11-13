@@ -26,7 +26,7 @@ import { AccountButton } from '../../domains/users/components/AccountButton/Acco
 import { ComposeListingModal } from '../../domains/posts/components/ComposeListingModal/ComposeListingModal';
 import { PendingPosts } from '../../domains/posts/components/PendingPosts/PendingPosts';
 import { PostCard } from '../../domains/posts/components/PostCard/PostCard';
-import { useListings } from '../../domains/posts/hooks/useListings';
+import { useListings } from '../../domains/posts/hooks/useListings/useListings';
 import '../../common/styles/pages.css';
 
 const ALL = 'all';

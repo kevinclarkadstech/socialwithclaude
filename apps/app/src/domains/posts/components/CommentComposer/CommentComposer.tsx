@@ -1,7 +1,7 @@
 import { IonButton, IonButtons, IonFooter, IonIcon, IonTextarea, IonToolbar } from '@ionic/react';
 import { send } from 'ionicons/icons';
 import { useState } from 'react';
-import { createPostComment } from '../../actions/createPostComment';
+import { createPostComment } from '../../actions/createPostComment/createPostComment';
 import './CommentComposer.css';
 
 /** Writing a comment, pinned to the bottom of the post page. */

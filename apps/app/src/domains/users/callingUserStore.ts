@@ -3,7 +3,7 @@ import { orThrow } from '../../lib/api/results';
 import { errorMessage } from '../../lib/api/errors';
 import { logger } from '../../lib/logger';
 import { showErrorToast } from '../../lib/toasts';
-import { runGetMeQuery } from './operations/runGetMeQuery';
+import { runGetMeQuery } from './operations/runGetMeQuery/runGetMeQuery';
 
 export interface CallingUserState {
   /** False until the first load finishes. */

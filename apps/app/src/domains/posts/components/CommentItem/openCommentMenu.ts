@@ -1,9 +1,9 @@
 import { canDeletePostComment, canUpdatePostComment, type CallingUser, type PostCommentView } from '@myapp/shared/domains';
 import { askForReport } from '../../../../common/prompts/askForReport';
 import { askForText, chooseFrom, confirm } from '../../../../lib/prompts';
-import { deletePostComment } from '../../actions/deletePostComment';
-import { reportPostComment } from '../../actions/reportPostComment';
-import { updatePostComment } from '../../actions/updatePostComment';
+import { deletePostComment } from '../../actions/deletePostComment/deletePostComment';
+import { reportPostComment } from '../../actions/reportPostComment/reportPostComment';
+import { updatePostComment } from '../../actions/updatePostComment/updatePostComment';
 
 async function edit(comment: PostCommentView) {
   const content = await askForText({ header: 'Edit comment', value: comment.content, confirmText: 'Save' });

@@ -1,7 +1,7 @@
 import { IonButton, IonButtons, IonContent, IonHeader, IonInput, IonModal, IonTextarea, IonTitle, IonToolbar } from '@ionic/react';
 import type { UserProfile } from '@myapp/shared/domains';
 import type { FormEvent } from 'react';
-import { useEditProfile } from '../../hooks/useEditProfile';
+import { useEditProfile } from '../../hooks/useEditProfile/useEditProfile';
 import '../../../../common/styles/modal-form.css';
 
 interface EditProfileModalProps {

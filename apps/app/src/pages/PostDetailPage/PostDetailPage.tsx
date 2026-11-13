@@ -14,9 +14,9 @@ import {
 } from '@ionic/react';
 import { useParams } from 'react-router';
 import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
-import { usePostComments } from '../../domains/posts/hooks/usePostComments';
-import { usePostDetail } from '../../domains/posts/hooks/usePostDetail';
-import { useCallingUser } from '../../domains/users/hooks/useCallingUser';
+import { usePostComments } from '../../domains/posts/hooks/usePostComments/usePostComments';
+import { usePostDetail } from '../../domains/posts/hooks/usePostDetail/usePostDetail';
+import { useCallingUser } from '../../domains/users/hooks/useCallingUser/useCallingUser';
 import { BackButton, useTabNavigation } from '../../navigation';
 import { CommentComposer } from '../../domains/posts/components/CommentComposer/CommentComposer';
 import { CommentItem } from '../../domains/posts/components/CommentItem/CommentItem';

@@ -3,9 +3,9 @@ import { useState } from 'react';
 import { askForReport } from '../../../../common/prompts/askForReport';
 import { useRequireSignIn } from '../../../../common/hooks/useRequireSignIn';
 import { chooseFrom, confirm } from '../../../../lib/prompts';
-import { useCallingUser } from '../../../users/hooks/useCallingUser';
-import { deletePost } from '../../actions/deletePost';
-import { reportPost } from '../../actions/reportPost';
+import { useCallingUser } from '../../../users/hooks/useCallingUser/useCallingUser';
+import { deletePost } from '../../actions/deletePost/deletePost';
+import { reportPost } from '../../actions/reportPost/reportPost';
 
 /**
  * A post's "more" menu: edit and delete for your own posts, report for

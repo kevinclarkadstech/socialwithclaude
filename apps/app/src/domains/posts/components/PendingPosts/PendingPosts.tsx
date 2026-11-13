@@ -1,5 +1,5 @@
 import type { PendingPostContent } from '../../pendingPostStore';
-import { usePendingPosts } from '../../hooks/usePendingPosts';
+import { usePendingPosts } from '../../hooks/usePendingPosts/usePendingPosts';
 import { PendingPostCard } from '../PendingPostCard/PendingPostCard';
 
 interface PendingPostsProps {

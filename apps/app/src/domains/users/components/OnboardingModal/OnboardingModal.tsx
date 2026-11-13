@@ -10,7 +10,7 @@ import {
   IonToolbar,
 } from '@ionic/react';
 import type { FormEvent } from 'react';
-import { useOnboardingFlow } from '../../hooks/useOnboardingFlow';
+import { useOnboardingFlow } from '../../hooks/useOnboardingFlow/useOnboardingFlow';
 import '../../../../common/styles/modal-form.css';
 
 interface OnboardingModalProps {

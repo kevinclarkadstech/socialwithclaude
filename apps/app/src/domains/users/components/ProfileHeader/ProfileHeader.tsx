@@ -4,8 +4,8 @@ import { camera, ellipsisHorizontal, lockClosed, shareOutline } from 'ionicons/i
 import { useState, type CSSProperties } from 'react';
 import { PhotoCropModal } from '../../../../common/components/PhotoCropModal/PhotoCropModal';
 import { displayName } from '../../../../utils/formatters/names';
-import { profilePhotoUrl, profilePhotoWidthFor } from '../../utils/profilePhotoUrl';
-import { userHue } from '../../utils/userHue';
+import { profilePhotoUrl, profilePhotoWidthFor } from '../../utils/profilePhotoUrl/profilePhotoUrl';
+import { userHue } from '../../utils/userHue/userHue';
 import { UserAvatar } from '../UserAvatar/UserAvatar';
 import { useProfileHeader } from './useProfileHeader';
 import { useProfilePhotoEditor } from './useProfilePhotoEditor';

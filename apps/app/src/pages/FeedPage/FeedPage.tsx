@@ -18,7 +18,7 @@ import { add } from 'ionicons/icons';
 import { useState } from 'react';
 import { AccountButton } from '../../domains/users/components/AccountButton/AccountButton';
 import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
-import { useFeed } from '../../domains/posts/hooks/useFeed';
+import { useFeed } from '../../domains/posts/hooks/useFeed/useFeed';
 import { ComposePostModal } from '../../domains/posts/components/ComposePostModal/ComposePostModal';
 import { PendingPosts } from '../../domains/posts/components/PendingPosts/PendingPosts';
 import { PostCard } from '../../domains/posts/components/PostCard/PostCard';

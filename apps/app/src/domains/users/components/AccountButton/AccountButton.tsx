@@ -1,5 +1,5 @@
 import { IonButton } from '@ionic/react';
-import { useCallingUser } from '../../hooks/useCallingUser';
+import { useCallingUser } from '../../hooks/useCallingUser/useCallingUser';
 import { useRequireSignIn } from '../../../../common/hooks/useRequireSignIn';
 import { UserAvatar } from '../UserAvatar/UserAvatar';
 
