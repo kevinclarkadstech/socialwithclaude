@@ -1,4 +1,4 @@
-import type { PhotoFormat } from "../types";
+import type { PhotoFormat } from "@myapp/shared/common/photos";
 
 const readUint16 = (bytes: Uint8Array, at: number) => (bytes[at]! << 8) | bytes[at + 1]!;
 const readUint32LE = (bytes: Uint8Array, at: number) =>

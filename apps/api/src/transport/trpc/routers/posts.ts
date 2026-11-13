@@ -30,8 +30,8 @@ import {
     getUserProfileByUsername,
     updatePost,
 } from "../../../data-access";
-import { createUploadUrl, deleteMedia } from "../../../storage";
-import { publishPostPhotosWith } from "../../../storage/postPhotos";
+import { publishPostPhotos } from "../../../media";
+import { storage } from "../../../storage";
 import { procedure, router } from "../trpc";
 
 export const postsRouter = router({
@@ -55,7 +55,7 @@ export const postsRouter = router({
                 getCallingUser: ctx.getCallingUser,
                 isPostingEnabled: () => ctx.featureFlagStore.isEnabled("usersCanPost"),
                 getPostViewById,
-                publishPostPhotos: publishPostPhotosWith(ctx.logger),
+                publishPostPhotos: (args) => publishPostPhotos({ ...args, storage, logger: ctx.logger }),
                 createPost,
             },
         }),
@@ -69,7 +69,7 @@ export const postsRouter = router({
                 getCallingUser: ctx.getCallingUser,
                 isPostingEnabled: () => ctx.featureFlagStore.isEnabled("usersCanPost"),
                 getPostById,
-                createUploadUrl,
+                createUploadUrl: storage.createUploadUrl,
             },
         }),
     ),
@@ -82,8 +82,8 @@ export const postsRouter = router({
                 getCallingUser: ctx.getCallingUser,
                 getPostById,
                 getPostMediaByPostId,
-                publishPostPhotos: publishPostPhotosWith(ctx.logger),
-                deleteMedia,
+                publishPostPhotos: (args) => publishPostPhotos({ ...args, storage, logger: ctx.logger }),
+                deleteMedia: storage.deleteMedia,
                 updatePost,
             },
         }),
@@ -93,7 +93,7 @@ export const postsRouter = router({
         deletePostMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, getPostMediaByPostId, deletePost, deleteMedia },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, getPostMediaByPostId, deletePost, deleteMedia: storage.deleteMedia },
         }),
     ),
 

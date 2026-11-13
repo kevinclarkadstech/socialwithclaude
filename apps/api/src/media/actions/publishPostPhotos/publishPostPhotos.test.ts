@@ -1,23 +1,23 @@
 import { describe, expect, it, mock } from "bun:test";
-import { mockCaller, mockPost } from "../../../testing/fixtures";
-import { silentLogger } from "../../../testing/context";
-import { mockJpeg } from "../../../testing/photos";
-import { mediaId, postPhotoKey, secondMediaId } from "../../../testing/postMedia";
+import { mockJpeg, silentLogger } from "../../testing";
 import { publishPostPhotos } from "./publishPostPhotos";
 
-const userId = mockCaller().userId;
-const post = mockPost();
+const userId = "01JAAAAAAAAAAAAAAAAAAAAAA1";
+const postId = "01JBBBBBBBBBBBBBBBBBBBBBB1";
+const mediaId = "01JMMMMMMMMMMMMMMMMMMMMMM1";
+const secondMediaId = "01JMMMMMMMMMMMMMMMMMMMMMM2";
+const postPhotoKey = (id: string, size: number) => `${userId}/${postId}/${id}-${size}`;
 
 describe("publishPostPhotos", () => {
     function publish(uploads: Record<string, Uint8Array | null>, ids = [mediaId]) {
         const putMedia = mock(async (_args: { key: string; bytes: Uint8Array; contentType: string }) => {});
         const deleteUploads = mock(async (_args: { keys: string[] }) => {});
         const result = publishPostPhotos({
-            userId,
-            postId: post.id,
-            media: ids.map((id) => ({ id })),
-            logger: silentLogger,
             storage: { readUpload: async ({ key: uploadKey }) => uploads[uploadKey] ?? null, putMedia, deleteUploads },
+            logger: silentLogger,
+            userId,
+            postId,
+            media: ids.map((id) => ({ id })),
         });
         return { result, putMedia, deleteUploads };
     }
