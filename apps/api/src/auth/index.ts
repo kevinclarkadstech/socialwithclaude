@@ -4,7 +4,7 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 
 import { newId, schema, type Database } from "../data-access/db";
 import { nativeAppOrigins, serverConfig } from "../config";
-import { assertEmailCanBeSent, sendSignInCode } from "../email";
+import { assertCanNotify, sendOtp } from "../notifications";
 import { rootLogger } from "../observability";
 
 const {
@@ -28,7 +28,7 @@ const apple = APPLE_CLIENT_ID && APPLE_CLIENT_SECRET
  * new users up), or Google / Apple when configured.
  */
 export function createAuthInstance(db: Database) {
-    assertEmailCanBeSent();
+    assertCanNotify();
 
     return betterAuth({
         secret: serverConfig.BETTER_AUTH_SECRET,
@@ -59,7 +59,7 @@ export function createAuthInstance(db: Database) {
             emailOTP({
                 // Not awaited, so how long sending takes doesn't reveal whether the email has an account.
                 sendVerificationOTP: async (data) => {
-                    sendSignInCode(data).catch((err: unknown) => {
+                    sendOtp({ email: data.email, code: data.otp, type: data.type }).catch((err: unknown) => {
                         rootLogger.error("Couldn't send a sign-in code", { err, type: data.type });
                     });
                 },
