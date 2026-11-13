@@ -1,7 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './app/App/App';
-import { refreshCallingUser } from './domains/users/callingUserStore';
+import { refreshCallingUser } from './domains/users';
 import { sessionToken } from './lib/auth/sessionToken';
 import { onForeground } from './lib/foreground';
 import { logger } from './lib/logger';

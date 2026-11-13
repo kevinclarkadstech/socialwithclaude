@@ -3,8 +3,7 @@ import { api } from '../../../../lib/api/trpc';
 import { fromApi } from '../../../../lib/api/results';
 import { withRetry } from '../../../../lib/api/withRetry';
 import { logger } from '../../../../lib/logger';
-import { getCallingUser } from '../../../users/callingUserStore';
-import { followStatusFrom } from '../../../users/operations/profileFromApi/profileFromApi';
+import { followStatusFrom, getCallingUser } from '../../../users';
 
 /** A page of `profile`'s posts or listings, newest first. The profile on screen supplies who can see them. */
 export function runGetUserPostsQuery({ profile, type, cursor }: {

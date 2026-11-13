@@ -3,6 +3,7 @@ import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
+import { domainBoundaries } from './eslint-rules/domainBoundaries.js'
 
 export default tseslint.config(
   { ignores: ['dist', 'cypress.config.ts'] },
@@ -28,6 +29,12 @@ export default tseslint.config(
       'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
       'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
     },
+  },
+  {
+    // Each domain is used from outside only through its index.ts (see eslint-rules/domainBoundaries.js).
+    files: ['src/**/*.{ts,tsx}'],
+    plugins: { local: { rules: { 'domain-boundaries': domainBoundaries } } },
+    rules: { 'local/domain-boundaries': 'error' },
   },
   {
     // Named exports only in the app's code: one name per thing, everywhere it's imported.

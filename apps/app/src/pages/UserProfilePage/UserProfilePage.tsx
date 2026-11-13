@@ -24,14 +24,9 @@ import { displayName } from '../../utils/formatters/names';
 import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
 import { chooseFrom } from '../../lib/prompts';
 import { BackButton, useTabHref } from '../../navigation';
-import { useAuth } from '../../domains/auth/hooks/useAuth/useAuth';
-import { applyCreatorChange } from '../../domains/posts/utils/applyCreatorChange/applyCreatorChange';
-import { PostCard } from '../../domains/posts/components/PostCard/PostCard';
-import { useUserPosts } from '../../domains/posts/hooks/useUserPosts/useUserPosts';
-import { EditProfileModal } from '../../domains/users/components/EditProfileModal/EditProfileModal';
-import { ProfileHeader } from '../../domains/users/components/ProfileHeader/ProfileHeader';
-import { useCallingUser } from '../../domains/users/hooks/useCallingUser/useCallingUser';
-import { useUserProfile } from '../../domains/users/hooks/useUserProfile/useUserProfile';
+import { useAuth } from '../../domains/auth';
+import { applyCreatorChange, PostCard, useUserPosts } from '../../domains/posts';
+import { EditProfileModal, ProfileHeader, useCallingUser, useUserProfile } from '../../domains/users';
 import '../../common/styles/pages.css';
 import './UserProfilePage.css';
 

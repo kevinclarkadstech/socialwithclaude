@@ -5,7 +5,7 @@ import { pendingPostStore, type PendingPost } from '../../pendingPostStore';
 import { postStore } from '../../postStore';
 import { warnAboutDroppedPhotos } from '../../utils/droppedPhotosWarning/droppedPhotosWarning';
 import { preparedPostMedia } from '../../utils/preparePostPhoto/preparePostPhoto';
-import { getCallingUser } from '../../../users/callingUserStore';
+import { getCallingUser } from '../../../users';
 
 /**
  * Posts something new (a post or a listing) without making anyone wait: it

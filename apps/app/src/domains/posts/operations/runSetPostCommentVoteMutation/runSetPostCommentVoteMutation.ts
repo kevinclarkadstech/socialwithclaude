@@ -2,7 +2,7 @@ import { setPostCommentVoteMutation, type SetPostCommentVoteMutationInput } from
 import { api } from '../../../../lib/api/trpc';
 import { fromApi } from '../../../../lib/api/results';
 import { logger } from '../../../../lib/logger';
-import { getCallingUser } from '../../../users/callingUserStore';
+import { getCallingUser } from '../../../users';
 import { commentFromStore } from '../postsFromApi/postsFromApi';
 
 /** Makes the caller's vote on a comment up (1), down (-1) or none (null). */

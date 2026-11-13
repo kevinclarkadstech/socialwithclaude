@@ -2,7 +2,7 @@ import { updatePostMutation, type UpdatePostMutationInput } from '@myapp/shared/
 import { api } from '../../../../lib/api/trpc';
 import { fromApi } from '../../../../lib/api/results';
 import { logger } from '../../../../lib/logger';
-import { getCallingUser } from '../../../users/callingUserStore';
+import { getCallingUser } from '../../../users';
 import { mediaFromStoreOrApi, postFromStoreOrApi } from '../postsFromApi/postsFromApi';
 
 /** Changes a post's text and photos (and a listing's details). Only its author can (checked here, then by the API). */

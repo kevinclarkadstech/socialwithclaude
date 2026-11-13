@@ -6,7 +6,7 @@ import { uploadPostPhotos } from '../../actions/uploadPostPhotos/uploadPostPhoto
 import type { PendingPost } from '../../pendingPostStore';
 import { postPhotoUrl } from '../../utils/postPhotoUrl/postPhotoUrl';
 import { preparedPostMedia, preparePostPhoto, type PreparedPostPhoto } from '../../utils/preparePostPhoto/preparePostPhoto';
-import { callingUserStore } from '../../../users/callingUserStore';
+import { callingUserStore } from '../../../users';
 
 /** A photo in the composer: one already on the post, or one picked now (being resized, uploading, ready, or failed). */
 export type ComposerPhoto =

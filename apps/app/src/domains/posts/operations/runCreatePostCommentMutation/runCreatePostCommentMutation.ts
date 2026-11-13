@@ -2,7 +2,7 @@ import { createPostCommentMutation, type CreatePostCommentMutationInput } from '
 import { api } from '../../../../lib/api/trpc';
 import { fromApi } from '../../../../lib/api/results';
 import { logger } from '../../../../lib/logger';
-import { getCallingUser } from '../../../users/callingUserStore';
+import { getCallingUser } from '../../../users';
 import { commentFromStore, postFromStoreOrApi } from '../postsFromApi/postsFromApi';
 
 /** Comments on a post. `id` comes from newId(), so a retry returns the first comment. */

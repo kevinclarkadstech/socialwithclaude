@@ -2,7 +2,7 @@ import { reportPostMutation, type ReportPostMutationInput } from '@myapp/shared/
 import { api } from '../../../../lib/api/trpc';
 import { fromApi } from '../../../../lib/api/results';
 import { logger } from '../../../../lib/logger';
-import { getCallingUser } from '../../../users/callingUserStore';
+import { getCallingUser } from '../../../users';
 import { postFromStoreOrApi } from '../postsFromApi/postsFromApi';
 
 /** Reports a post. The API keeps a snapshot of it. */
