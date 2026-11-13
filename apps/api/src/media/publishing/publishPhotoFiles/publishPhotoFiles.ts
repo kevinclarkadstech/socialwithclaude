@@ -1,4 +1,4 @@
-import { photoContentTypes } from "@myapp/shared/common/photos";
+import { photoContentTypes } from "@myapp/shared/media";
 import type { Storage } from "../../../storage";
 import { stripPhotoMetadata } from "../../photos/stripPhotoMetadata/stripPhotoMetadata";
 import type { UploadedPhotoFile } from "../../types";

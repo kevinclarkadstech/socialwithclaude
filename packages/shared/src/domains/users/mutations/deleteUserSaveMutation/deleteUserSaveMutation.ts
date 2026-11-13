@@ -1,8 +1,8 @@
 import z from "zod";
 import type { Mutation } from "../../../../types/mutation";
 import { succeed } from "../../../../utils/result";
-import { requireCallerWithProfile } from "../../../../common/authorization/requireCaller/requireCaller";
-import { logDisallowedResult } from "../../../../common/authorization/logDisallowedResult/logDisallowedResult";
+import { requireCallerWithProfile } from "../../../../authorization/requireCaller/requireCaller";
+import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../types/calling-user";
 import { UserSaveTypeSchema, type UserSaveType } from "../../types/user-save";
 

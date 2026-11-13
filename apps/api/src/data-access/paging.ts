@@ -1,4 +1,4 @@
-import type { Page } from "@myapp/shared/common";
+import type { Page } from "@myapp/shared/types";
 
 /**
  * Turns `limit + 1` fetched rows into a page: if the extra row came back

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BaseUserCreatedEntitySchema } from "../../../common/types/base-user-created-entity";
+import { BaseUserCreatedEntitySchema } from "../../../types/base-user-created-entity";
 
 /**
  * A private conversation. Only 1:1 chats for now: `createdBy` started it and

@@ -3,7 +3,7 @@ import type { Mutation } from "../../../../types/mutation";
 import { fail, succeed } from "../../../../utils/result";
 import { notFoundError, validationError } from "../../../../error-handling";
 import { canUpdatePost } from "../../authorization/canUpdatePost/canUpdatePost";
-import { logDisallowedResult } from "../../../../common/authorization/logDisallowedResult/logDisallowedResult";
+import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
 import { PostSchema, PostViewSchema, type Post, type PostView } from "../../types/post";
 import { newPostMedia, removedPostMedia, savedPostMedia } from "../../logic/postMedia";
@@ -11,7 +11,7 @@ import { hasPostContent, validatePostMedia } from "../../validation/validatePost
 import { maxPostPhotos } from "../../constants";
 import { PostMediaSchema, type PostMedia } from "../../types/post-media";
 import { ListingPriceSchema, PostListingFieldsSchema } from "../../types/post-listing";
-import { photoKeys } from "../../../../common/photos/utils";
+import { photoKeys } from "../../../../media/utils";
 import { postPhotoSizes } from "../../constants";
 
 export const UpdatePostMutationInputSchema = PostSchema.pick({ id: true, content: true }).extend({

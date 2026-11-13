@@ -1,4 +1,4 @@
-import { longSideDimensions, photoKey } from '@myapp/shared/common/photos';
+import { longSideDimensions, photoKey } from '@myapp/shared/media';
 import { postPhotoSizes, type PostMedia } from '@myapp/shared/domains';
 import { config } from '../../../../lib/config';
 import type { DisplayPhoto } from '../../../../lib/photos/displayPhoto';

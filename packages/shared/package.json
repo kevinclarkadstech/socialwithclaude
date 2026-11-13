@@ -4,16 +4,15 @@
   "version": "0.0.1",
   "type": "module",
   "exports": {
-    "./common": "./src/common/types/index.ts",
-    "./common/photos": "./src/common/photos/index.ts",
+    "./authorization": "./src/authorization/index.ts",
+    "./media": "./src/media/index.ts",
     "./domains": "./src/domains/index.ts",
     "./domains/*": "./src/domains/*/index.ts",
     "./types": "./src/types/index.ts",
     "./types/*": "./src/types/*.ts",
     "./utils": "./src/utils/index.ts",
     "./observability": "./src/observability/index.ts",
-    "./error-handling": "./src/error-handling/index.ts",
-    "./common/authorization": "./src/common/authorization/index.ts"
+    "./error-handling": "./src/error-handling/index.ts"
   },
   "devDependencies": {
     "typescript": "~6"

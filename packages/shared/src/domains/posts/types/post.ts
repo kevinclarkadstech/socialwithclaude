@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BaseUserCreatedEntitySchema } from "../../../common/types/base-user-created-entity";
+import { BaseUserCreatedEntitySchema } from "../../../types/base-user-created-entity";
 import { PostListingSchema } from "./post-listing";
 import { PostMediaSchema } from "./post-media";
 import { UserProfileSummarySchema } from "../../users/types/user-profile-summary";

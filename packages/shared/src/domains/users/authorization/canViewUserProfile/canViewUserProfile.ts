@@ -1,7 +1,7 @@
 import type { CallingUser } from "../../types/calling-user";
 import type { UserProfile } from "../../types/user-profile";
-import { allow, disallow, type AuthorizationCheck } from "../../../../common/authorization/allowDisallow/allowDisallow";
-import { isBlockedBy } from "../../../../common/authorization/conditions/conditions";
+import { allow, disallow, type AuthorizationCheck } from "../../../../authorization/allowDisallow/allowDisallow";
+import { isBlockedBy } from "../../../../authorization/conditions/conditions";
 
 /**
  * Anyone can see a profile (its header: name, about, counts), signed in or

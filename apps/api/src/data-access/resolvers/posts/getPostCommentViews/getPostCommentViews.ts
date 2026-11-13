@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
-import type { Page } from "@myapp/shared/common";
+import type { Page } from "@myapp/shared/types";
 import type { PostCommentView } from "@myapp/shared/domains";
 import { schema } from "../../../db";
 import { toPage } from "../../../paging";

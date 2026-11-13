@@ -1,4 +1,4 @@
-import type { PhotoFormat } from "@myapp/shared/common/photos";
+import type { PhotoFormat } from "@myapp/shared/media";
 
 export interface PhotoInfo {
     format: PhotoFormat;

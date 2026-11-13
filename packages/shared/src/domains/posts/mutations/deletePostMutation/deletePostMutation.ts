@@ -3,11 +3,11 @@ import type { Mutation } from "../../../../types/mutation";
 import { fail, succeed } from "../../../../utils/result";
 import { notFoundError } from "../../../../error-handling";
 import { canDeletePost } from "../../authorization/canDeletePost/canDeletePost";
-import { logDisallowedResult } from "../../../../common/authorization/logDisallowedResult/logDisallowedResult";
+import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
 import { PostSchema, type Post } from "../../types/post";
 import type { PostMedia } from "../../types/post-media";
-import { photoKeys } from "../../../../common/photos/utils";
+import { photoKeys } from "../../../../media/utils";
 import { postPhotoSizes } from "../../constants";
 
 export const DeletePostMutationInputSchema = PostSchema.pick({ id: true });

@@ -1,7 +1,7 @@
 import type { CallingUser } from "../../types/calling-user";
 import type { UserProfile } from "../../types/user-profile";
-import { allow, disallow, type AuthorizationCheck } from "../../../../common/authorization/allowDisallow/allowDisallow";
-import { hasProfile, isSelf, isSignedIn } from "../../../../common/authorization/conditions/conditions";
+import { allow, disallow, type AuthorizationCheck } from "../../../../authorization/allowDisallow/allowDisallow";
+import { hasProfile, isSelf, isSignedIn } from "../../../../authorization/conditions/conditions";
 
 /** Anyone who has finished sign-up can block someone else. */
 export const canBlockUser: AuthorizationCheck<{ caller: CallingUser | null; target: UserProfile }> = ({ caller, target }) => {

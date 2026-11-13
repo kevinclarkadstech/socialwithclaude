@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BaseUserCreatedEntitySchema } from "../../../common/types/base-user-created-entity";
+import { BaseUserCreatedEntitySchema } from "../../../types/base-user-created-entity";
 import { PostCommentViewSchema } from "./post-comment";
 import { ReportReasonSchema, ReportStatusSchema } from "./report";
 

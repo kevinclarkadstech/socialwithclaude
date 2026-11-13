@@ -1,5 +1,5 @@
-import type { AppError } from "../../../error-handling";
-import type { AppLogger } from "../../../observability";
+import type { AppError } from "../../error-handling";
+import type { AppLogger } from "../../observability";
 import { disallowedReasons, type DisallowedReason } from "../disallowedReasons/disallowedReasons";
 
 /**

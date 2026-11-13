@@ -1,7 +1,7 @@
 import type { CallingUser } from "../../../users/types/calling-user";
 import type { ChatMessageView } from "../../types/chat-message";
-import { allow, disallow, type AuthorizationCheck } from "../../../../common/authorization/allowDisallow/allowDisallow";
-import { hasProfile, isCreator, isSignedIn } from "../../../../common/authorization/conditions/conditions";
+import { allow, disallow, type AuthorizationCheck } from "../../../../authorization/allowDisallow/allowDisallow";
+import { hasProfile, isCreator, isSignedIn } from "../../../../authorization/conditions/conditions";
 
 /** Only the sender can edit a message. */
 export const canUpdateChatMessage: AuthorizationCheck<{ caller: CallingUser | null; message: ChatMessageView }> = ({ caller, message }) => {

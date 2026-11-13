@@ -1,4 +1,4 @@
-import type { Page } from '@myapp/shared/common';
+import type { Page } from '@myapp/shared/types';
 import type { Result } from '@myapp/shared/types';
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { errorMessage } from '../api/errors';

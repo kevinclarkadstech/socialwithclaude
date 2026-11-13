@@ -2,8 +2,8 @@ import type { CallingUser } from "../../types/calling-user";
 import type { ViewerFollowStatus } from "../../types/user-follow";
 import type { UserProfile } from "../../types/user-profile";
 import type { ProfileVisibility } from "../../types/user-settings";
-import { allow, disallow, type AuthorizationCheck } from "../../../../common/authorization/allowDisallow/allowDisallow";
-import { hasBlocked, isBlockedBy, isSelf } from "../../../../common/authorization/conditions/conditions";
+import { allow, disallow, type AuthorizationCheck } from "../../../../authorization/allowDisallow/allowDisallow";
+import { hasBlocked, isBlockedBy, isSelf } from "../../../../authorization/conditions/conditions";
 
 /**
  * Who can see a user's posts and listings on their profile: everyone for a

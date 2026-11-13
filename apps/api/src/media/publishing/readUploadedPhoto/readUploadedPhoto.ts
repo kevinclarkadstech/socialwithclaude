@@ -1,4 +1,4 @@
-import { maxPhotoUploadBytes } from "@myapp/shared/common/photos";
+import { maxPhotoUploadBytes } from "@myapp/shared/media";
 import type { Storage } from "../../../storage";
 import type { ReadUploadedPhotoResult, UploadedPhotoFile } from "../../types";
 import { inspectPhoto } from "../../photos/inspectPhoto/inspectPhoto";

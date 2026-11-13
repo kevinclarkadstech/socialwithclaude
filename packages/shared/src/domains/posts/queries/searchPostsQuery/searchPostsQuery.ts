@@ -1,9 +1,9 @@
 import z from "zod";
 import type { Query } from "../../../../types/query";
 import { succeed } from "../../../../utils/result";
-import { blockedEitherWay } from "../../../../common/authorization/conditions/conditions";
+import { blockedEitherWay } from "../../../../authorization/conditions/conditions";
 import { viewablePosts } from "../../utils/canViewPost";
-import { PageInputSchema, type Page } from "../../../../common/types/page";
+import { PageInputSchema, type Page } from "../../../../types/page";
 import { PostViewSchema, type PostView } from "../../types/post";
 import type { GetCallingUser } from "../../../users/types/calling-user";
 

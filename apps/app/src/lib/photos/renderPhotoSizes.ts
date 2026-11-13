@@ -1,4 +1,4 @@
-import { longSideDimensions } from '@myapp/shared/common/photos';
+import { longSideDimensions } from '@myapp/shared/media';
 import { drawScaled, encodePhoto, type EncodedPhotoType } from './canvas';
 import { thumbHashOf } from './thumbHash';
 

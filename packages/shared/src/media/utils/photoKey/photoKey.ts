@@ -6,7 +6,3 @@
  */
 export const photoKey = ({ userId, parentId, photoId, size }: { userId: string; parentId: string; photoId: string; size: number }) =>
     `${userId}/${parentId}/${photoId}-${size}`;
-
-/** The keys of every size of a photo. */
-export const photoKeys = ({ userId, parentId, photoId, sizes }: { userId: string; parentId: string; photoId: string; sizes: readonly number[] }) =>
-    sizes.map((size) => photoKey({ userId, parentId, photoId, size }));
