@@ -40,7 +40,7 @@ const featureFlagStore = createAppFeatureFlagStore({ flagsOrLoader: { usersCanPo
 const featureFlagsLoaded = featureFlagStore.initialize();
 
 // Where rate limits are counted. On Cloudflare Workers this would be built per request from the
-// rate-limit bindings in c.env instead (see rate-limiting/types.ts); nothing else changes.
+// rate-limit bindings in c.env instead (see rate-limiting/types/index.ts); nothing else changes.
 const rateLimiter = createCacheRateLimiter({ cache });
 
 const app = new Hono<AppHonoEnv>()

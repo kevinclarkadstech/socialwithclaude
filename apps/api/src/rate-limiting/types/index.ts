@@ -24,3 +24,4 @@ export type RateLimitDecision = { allowed: true } | { allowed: false; retryAfter
 export interface RateLimiter {
     consume(args: { rule: RateLimitRule; key: string }): Promise<RateLimitDecision>;
 }
+
