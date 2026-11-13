@@ -1,13 +1,8 @@
-import { emailSender } from "./delivery/emailSender";
-
 /**
- * Notifications: what the API tells people, and how. Callers say what happened
- * (sendSignInCodeEmail); what each email says lives in templates/, and how it's
- * delivered in delivery/.
+ * Notifications: what the API tells people, and how. Only actions/ is public:
+ * callers say what happened (sendOtp) and never pick a channel. Each channel
+ * (email/, later push/) has its own delivery/ (how it's sent) and templates/
+ * (what each message says).
  */
-export { sendSignInCodeEmail } from "./sendSignInCodeEmail";
-
-/** Throws in production while emails can't really be sent (called at startup, so a deploy fails early). */
-export function assertEmailCanBeSent() {
-    emailSender.assertCanSend();
-}
+export { assertCanNotify } from "./actions/assertCanNotify/assertCanNotify";
+export { sendOtp } from "./actions/sendOtp/sendOtp";

@@ -1,10 +1,10 @@
-import { rootLogger } from "../../observability";
-import type { EmailSender } from "./types";
+import { rootLogger } from "../../../../observability";
+import type { EmailSender } from "../types";
 
 /**
  * For local development: logs each email instead of sending it, so you can
- * read sign-in codes in the API's log. It refuses to run in production, where
- * emails would go nowhere and their contents (sign-in codes) must never be logged.
+ * read one-time codes in the API's log. It refuses to run in production, where
+ * emails would go nowhere and their contents (one-time codes) must never be logged.
  */
 export function createConsoleEmailSender(): EmailSender {
     return {
@@ -13,7 +13,7 @@ export function createConsoleEmailSender(): EmailSender {
         },
         assertCanSend() {
             if (process.env.NODE_ENV === "production") {
-                throw new Error("No email provider is configured, so emails (sign-in codes) can't be sent");
+                throw new Error("No email provider is configured, so emails (one-time codes) can't be sent");
             }
         },
     };

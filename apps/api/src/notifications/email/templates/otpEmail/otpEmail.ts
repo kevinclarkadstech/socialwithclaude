@@ -1,7 +1,7 @@
-import type { EmailMessage } from "../delivery/types";
+import type { EmailMessage } from "../../delivery/types";
 
 /** better-auth's reasons for sending a one-time code. */
-export type SignInCodeType = "sign-in" | "email-verification" | "forget-password" | (string & {});
+export type OtpType = "sign-in" | "email-verification" | "forget-password" | (string & {});
 
 const subjects: Record<string, string> = {
     "sign-in": "Your sign-in code",
@@ -10,7 +10,7 @@ const subjects: Record<string, string> = {
 };
 
 /** The email with a one-time code: what it says, as text and HTML. */
-export function signInCodeEmail({ code, type }: { code: string; type: SignInCodeType }): Omit<EmailMessage, "to"> {
+export function otpEmail({ code, type }: { code: string; type: OtpType }): Omit<EmailMessage, "to"> {
     const subject = subjects[type] ?? subjects["sign-in"]!;
     return {
         subject,
