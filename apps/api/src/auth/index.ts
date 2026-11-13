@@ -4,7 +4,7 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 
 import { newId, schema, type Database } from "../data-access/db";
 import { nativeAppOrigins, serverConfig } from "../config";
-import { assertEmailCanBeSent, sendSignInCode } from "../email";
+import { assertEmailCanBeSent, sendSignInCodeEmail } from "../notifications";
 import { rootLogger } from "../observability";
 
 const {
@@ -59,7 +59,7 @@ export function createAuthInstance(db: Database) {
             emailOTP({
                 // Not awaited, so how long sending takes doesn't reveal whether the email has an account.
                 sendVerificationOTP: async (data) => {
-                    sendSignInCode(data).catch((err: unknown) => {
+                    sendSignInCodeEmail({ email: data.email, code: data.otp, type: data.type }).catch((err: unknown) => {
                         rootLogger.error("Couldn't send a sign-in code", { err, type: data.type });
                     });
                 },
