@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import type { Chat } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { toChat } from "../../../mappers/chats";
+import { toChat } from "../../../mappers/chats/toChat/toChat";
 
 /**
  * Starts a 1:1 chat between `userId` and `receiverId` with the client's

@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import type { ChatMember } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { toChatMember } from "../../../mappers/chats";
+import { toChatMember } from "../../../mappers/chats/toChatMember/toChatMember";
 
 /**
  * Deletes a chat for `userId` only: messages so far are hidden for them.

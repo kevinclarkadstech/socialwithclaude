@@ -1,7 +1,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { PostCommentVote, PostCommentVoteValue } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { toPostCommentVote } from "../../../mappers/posts";
+import { toPostCommentVote } from "../../../mappers/posts/toPostCommentVote/toPostCommentVote";
 
 /**
  * Sets `userId`'s vote on a comment (up or down), replacing any earlier vote,

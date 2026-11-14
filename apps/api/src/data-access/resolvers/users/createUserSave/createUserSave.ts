@@ -1,7 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import type { UserSaveType } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { saveTargetValues } from "../../../save-targets";
+import { saveTargetValues } from "../../../internal/users/saveTargetValues/saveTargetValues";
 
 /** Saves a post, comment or chat message for `userId`. False if it was already saved. */
 export async function createUserSave({ userId, type, id }: {

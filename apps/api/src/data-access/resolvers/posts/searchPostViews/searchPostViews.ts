@@ -2,7 +2,7 @@ import { and, desc, ilike, isNull, notInArray, or, sql } from "drizzle-orm";
 import type { Page } from "@myapp/shared/types";
 import type { PostView } from "@myapp/shared/domains";
 import { schema } from "../../../db";
-import { toPage } from "../../../paging";
+import { toPage } from "../../../utils/toPage/toPage";
 import { findPostViews } from "../../../internal/posts/findPostViews/findPostViews";
 
 /** Posts whose content (or listing title) contains `query`, case-insensitive, newest first. */

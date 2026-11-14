@@ -1,5 +1,5 @@
 import { serverConfig } from "../config";
-import { createRedisCache } from "./createRedisCache";
+import { createRedisCache } from "./redis/createRedisCache/createRedisCache";
 import type { Cache } from "./types";
 
 export type { Cache } from "./types";

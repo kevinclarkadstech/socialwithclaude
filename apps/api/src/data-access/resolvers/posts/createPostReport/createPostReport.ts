@@ -1,6 +1,6 @@
 import type { PostView, PostReport, ReportReason } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { toPostReport } from "../../../mappers/posts";
+import { toPostReport } from "../../../mappers/posts/toPostReport/toPostReport";
 
 /**
  * Reports a post, keeping `snapshot` (the post as it is now). Reporting the

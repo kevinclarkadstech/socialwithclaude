@@ -1,6 +1,6 @@
 import type { UserFeedback } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { toUserFeedback } from "../../../mappers/users";
+import { toUserFeedback } from "../../../mappers/users/toUserFeedback/toUserFeedback";
 
 /** Stores feedback with the client's `id`. Null if the id is already used. */
 export async function createUserFeedback(

@@ -1,7 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import type { UserSaveType } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { saveTargetColumns } from "../../../save-targets";
+import { saveTargetColumns } from "../../../constants";
 
 /** Unsaves a post, comment or chat message for `userId`. False if it wasn't saved. */
 export async function deleteUserSave({ userId, type, id }: {

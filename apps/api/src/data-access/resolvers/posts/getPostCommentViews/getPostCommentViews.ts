@@ -2,7 +2,7 @@ import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import type { Page } from "@myapp/shared/types";
 import type { PostCommentView } from "@myapp/shared/domains";
 import { schema } from "../../../db";
-import { toPage } from "../../../paging";
+import { toPage } from "../../../utils/toPage/toPage";
 import { findPostCommentViews } from "../../../internal/posts/findPostCommentViews/findPostCommentViews";
 
 /** A post's comments, oldest or newest first, as `viewerId` sees them. */

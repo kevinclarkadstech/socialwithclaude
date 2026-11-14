@@ -1,6 +1,6 @@
 import type { UserProfile } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { toUserProfile } from "../../../mappers/users";
+import { toUserProfile } from "../../../mappers/users/toUserProfile/toUserProfile";
 
 /** Completes sign-up: creates the user's profile and default settings. */
 export async function createUserProfile(profile: Pick<UserProfile, "userId" | "username" | "firstName" | "lastName" | "about">): Promise<UserProfile> {

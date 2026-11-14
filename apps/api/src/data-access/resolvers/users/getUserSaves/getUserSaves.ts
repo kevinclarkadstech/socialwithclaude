@@ -2,7 +2,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import type { Page } from "@myapp/shared/types";
 import type { UserSave } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { toPage } from "../../../paging";
+import { toPage } from "../../../utils/toPage/toPage";
 import { getPostCommentViewsByIds } from "../../posts/getPostCommentViewsByIds/getPostCommentViewsByIds";
 import { getPostViewsByIds } from "../../posts/getPostViewsByIds/getPostViewsByIds";
 import { getChatMessageViewsByIds } from "../../chats/getChatMessageViewsByIds/getChatMessageViewsByIds";

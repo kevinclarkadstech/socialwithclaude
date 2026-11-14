@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { db, schema } from "../../../db";
-import { adjustFollowCounts } from "../../../follow-counts";
+import { adjustFollowCounts } from "../../../internal/users/adjustFollowCounts/adjustFollowCounts";
 
 /** Unfollows a user, or cancels a follow request. False if there was neither. */
 export async function unfollowUser({ followerId, followingId }: {

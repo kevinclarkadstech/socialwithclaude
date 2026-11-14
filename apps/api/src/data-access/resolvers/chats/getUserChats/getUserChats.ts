@@ -2,8 +2,8 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import type { Page } from "@myapp/shared/types";
 import type { Chat } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { toChat } from "../../../mappers/chats";
-import { toPage } from "../../../paging";
+import { toChat } from "../../../mappers/chats/toChat/toChat";
+import { toPage } from "../../../utils/toPage/toPage";
 
 /** The chats `userId` is a member of, newest first. */
 export async function getUserChats({ userId, cursor, limit }: {
