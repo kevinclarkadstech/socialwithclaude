@@ -15,7 +15,7 @@ interface AuthorLinkProps {
 export function AuthorLink({ username, children, slot, enabled = true }: AuthorLinkProps) {
   const navigate = useNavigate();
   const tabHref = useTabHref();
-  const href = tabHref(`users/${username}`);
+  const href = tabHref(`profile/${username}`);
 
   if (!enabled) {
     return <span slot={slot}>{children}</span>;

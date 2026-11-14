@@ -124,6 +124,6 @@ export function useProfileHeader({ profile, onProfileChange }: {
       }
       void openMenu();
     },
-    share: () => shareLink({ title: displayName(profile), url: `${config.publicUrl}/users/${profile.username}` }),
+    share: () => shareLink({ title: displayName(profile), url: `${config.publicUrl}/profile/${profile.username}` }),
   };
 }

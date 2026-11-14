@@ -19,13 +19,12 @@ export const tabs: TabDefinition[] = [
 /** Pages that open on top of whichever tab you're in, e.g. /feed/posts/123. */
 export const sharedRoutes: RouteObject[] = [
   { path: 'posts/:postId', element: <PostDetailPage /> },
-  { path: 'users/:username', element: <UserProfilePage /> },
+  { path: 'profile/:username', element: <UserProfilePage /> },
 ];
 
 
 /** Top-level pages outside the tabs. They open over the tabs, without the tab bar. */
 export const rootRoutes: RouteObject[] = [
-  { path: '/me', element: <UserProfilePage /> },
   { path: '/settings', element: <SettingsPage /> },
-  { path: '/users/:username', element: <ProfileLinkRedirect /> },
+  { path: '/profile/:username', element: <ProfileLinkRedirect /> },
 ];

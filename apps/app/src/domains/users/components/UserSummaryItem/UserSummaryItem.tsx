@@ -9,7 +9,7 @@ import './UserSummaryItem.css';
 /** A person in a list: avatar, name and @username (links to their profile), with buttons at the end. */
 export function UserSummaryItem({ user, children }: { user: UserProfileSummary; children?: ReactNode }) {
   const navigate = useNavigate();
-  const href = `/users/${user.username}`;
+  const href = `/profile/${user.username}`;
   // Without a name, the name is already @username.
   const hasName = Boolean(user.firstName || user.lastName);
 
