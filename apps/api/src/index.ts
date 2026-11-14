@@ -6,7 +6,6 @@ import { contextStorage } from "hono/context-storage";
 import { secureHeaders } from "hono/secure-headers";
 import { bodyLimit } from "hono/body-limit";
 import type { AppLogger } from "@myapp/shared/observability";
-import { rootLogger } from "./observability/logs";
 import { createAuthInstance } from "./auth";
 import { nativeAppOrigins, serverConfig } from "./config";
 import { createAppFeatureFlagStore, type AppFeatureFlagStore } from "./shared/feature-flags";
@@ -17,7 +16,7 @@ import { createCacheRateLimiter, limitAuthRequestsMiddleware, type RateLimiter }
 import { appRouter, createContext } from "./transport/trpc";
 import { trpcOnErrorFunction } from "./error-handling";
 import { assertCanNotify } from "./notifications";
-import { errorReporter } from "./error-reporting";
+import { errorReporter, rootLogger } from "./observability";
 
 type Auth = ReturnType<typeof createAuthInstance>;
 

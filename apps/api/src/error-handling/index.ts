@@ -2,8 +2,7 @@ import { type AppError } from '@myapp/shared/error-handling'
 import { TRPCError, type TRPC_ERROR_CODE_KEY, } from '@trpc/server';
 import { trpcServer } from "@hono/trpc-server";
 import { getContext } from 'hono/context-storage';
-import { rootLogger } from '../observability';
-import { errorReporter } from '../error-reporting';
+import { errorReporter, rootLogger } from '../observability';
 import type { AppHonoEnv } from '../index';
 
 export class AppTrpcError extends TRPCError {
