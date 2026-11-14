@@ -4,6 +4,7 @@ import { fromApi } from '../../../../lib/api/results';
 import { withRetry } from '../../../../lib/api/withRetry';
 import { logger } from '../../../../lib/logger';
 import { getCallingUser } from '../../../users';
+import { postFromStoreOrApi } from '../postsFromApi/postsFromApi';
 
 /** A page of a post's comments, oldest first. */
 export function runGetPostCommentsQuery({ postId, cursor }: { postId: string; cursor: string | null }) {
@@ -12,6 +13,7 @@ export function runGetPostCommentsQuery({ postId, cursor }: { postId: string; cu
     context: { logger },
     dependencies: {
       getCallingUser,
+      getPostViewById: postFromStoreOrApi,
       getPostCommentViews: ({ postId, order, cursor, limit }) =>
         withRetry(() => fromApi(api.postComments.getPostComments.query({ postId, order, cursor, limit }))),
     },
