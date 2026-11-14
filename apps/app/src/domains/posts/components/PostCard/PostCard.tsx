@@ -11,12 +11,13 @@ import {
 } from '@ionic/react';
 import { bookmark, bookmarkOutline, chatbubbleOutline } from 'ionicons/icons';
 import { useNavigate } from 'react-router';
-import { UserAvatar } from '../../../users';
+import { canSaveItem, canUnsaveItem, canViewPostComments } from '@myapp/shared/domains';
+import { useCallingUser, UserAvatar } from '../../../users';
 import { timeAgo } from '../../../../utils/formatters/dates';
 import { displayName } from '../../../../utils/formatters/names';
 import { listingPrice } from '../../../../utils/formatters/prices';
 import { listingConditionLabels, listingStatusLabels } from '../../../../utils/formatters/listings';
-import { useRequireSignIn } from '../../../../common/hooks/useRequireSignIn';
+import { disallowedActions } from '../../../../common/events/disallowedActions/disallowedActions';
 import { usePost } from '../../hooks/usePost/usePost';
 import { useSavePost } from '../../hooks/useSavePost/useSavePost';
 import { useTabHref } from '../../../../navigation';
@@ -44,7 +45,7 @@ interface PostCardProps {
  */
 export function PostCard({ postId, linkToPost = true, linkToAuthor = true, onDeleted }: PostCardProps) {
   const post = usePost(postId);
-  const requireSignIn = useRequireSignIn();
+  const { callingUser } = useCallingUser();
   const { setSaved } = useSavePost();
   const navigate = useNavigate();
   const tabHref = useTabHref();
@@ -54,6 +55,9 @@ export function PostCard({ postId, linkToPost = true, linkToAuthor = true, onDel
     return null;
   }
   const { creator, listing, viewer } = post;
+  const viewCommentsCheck = canViewPostComments({ caller: callingUser, post });
+  const saveCheck = viewer.hasSaved ? canUnsaveItem({ caller: callingUser }) : canSaveItem({ caller: callingUser });
+  const toggleSaved = () => void setSaved(post, !viewer.hasSaved);
 
   return (
     <IonCard className="post-card">
@@ -113,7 +117,13 @@ export function PostCard({ postId, linkToPost = true, linkToAuthor = true, onDel
           size="small"
           color="medium"
           disabled={!linkToPost}
-          onClick={() => requireSignIn(openPost)}
+          onClick={() => {
+            if (!viewCommentsCheck.ok) {
+              disallowedActions.emit({ error: viewCommentsCheck.error, action: openPost });
+              return;
+            }
+            openPost();
+          }}
         >
           <IonIcon slot="start" icon={chatbubbleOutline} aria-hidden="true" />
           <span className="visually-hidden">Comments, </span>
@@ -124,7 +134,13 @@ export function PostCard({ postId, linkToPost = true, linkToAuthor = true, onDel
           size="small"
           color={viewer.hasSaved ? 'primary' : 'medium'}
           data-saved={String(viewer.hasSaved)}
-          onClick={() => requireSignIn(() => void setSaved(post, !viewer.hasSaved))}
+          onClick={() => {
+            if (!saveCheck.ok) {
+              disallowedActions.emit({ error: saveCheck.error, action: toggleSaved });
+              return;
+            }
+            toggleSaved();
+          }}
         >
           <IonIcon slot="start" icon={viewer.hasSaved ? bookmark : bookmarkOutline} aria-hidden="true" />
           {/* Text rather than aria-label: Ionic copies aria-label to its inner button only once. */}

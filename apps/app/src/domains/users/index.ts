@@ -6,6 +6,7 @@
 // Components
 export { AccountButton } from './components/AccountButton/AccountButton';
 export { EditProfileModal } from './components/EditProfileModal/EditProfileModal';
+export { OnboardingModal } from './components/OnboardingModal/OnboardingModal';
 export { ProfileHeader } from './components/ProfileHeader/ProfileHeader';
 export { UserAvatar } from './components/UserAvatar/UserAvatar';
 

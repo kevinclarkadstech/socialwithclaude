@@ -2,7 +2,6 @@ import z from "zod";
 import type { Mutation } from "../../../../types/mutation";
 import { fail, succeed } from "../../../../utils/result";
 import { authorizationError, conflictError, validationError } from "../../../../error-handling";
-import { requireCallerWithProfile } from "../../../../authorization/requireCaller/requireCaller";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
 import { maxPostPhotos } from "../../constants";
@@ -11,6 +10,7 @@ import { PostMediaSchema, type PostMedia } from "../../types/post-media";
 import { ListingPriceSchema, PostListingFieldsSchema } from "../../types/post-listing";
 import { savedPostMedia } from "../../logic/postMedia";
 import { hasPostContent, validatePostMedia } from "../../validation/validatePostMedia";
+import { canCreatePost } from "../../authorization/canCreatePost/canCreatePost";
 
 export const CreatePostMutationInputSchema = PostSchema.pick({ id: true, content: true }).extend({
     // Its photos, each uploaded first (createPostMediaUploadsMutation) under this post's id. The server sets
@@ -44,7 +44,7 @@ export const createPostMutation: Mutation<{ input: CreatePostMutationInput, outp
     createPost: (args: { id: string; userId: string; content: string; media: PostMedia[]; listing?: CreatePostMutationInput["listing"] }) => Promise<PostView | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCallerWithProfile({ caller });
+    const allowed = canCreatePost({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

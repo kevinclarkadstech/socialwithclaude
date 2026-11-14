@@ -1,9 +1,14 @@
+import { useEffect, useRef, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
 import { IonApp, IonSplitPane, setupIonicReact } from '@ionic/react';
 import { TabNavigationProvider, TabsLayout } from '../../navigation';
 import { rootRoutes, sharedRoutes, tabs } from '../routes';
 import { Sidebar } from '../Sidebar/Sidebar';
 import { PhotoViewer } from '../../common/components/PhotoViewer/PhotoViewer';
+import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
+import { SignInModal } from '../../domains/auth';
+import { callingUserStore, OnboardingModal, useCallingUser } from '../../domains/users';
+import { showErrorToast } from '../../lib/toasts';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -41,7 +46,80 @@ import './App.css';
 // No ripples: a pressed state is enough. Page transitions still follow the platform (see navigation/transition.ts).
 setupIonicReact({ mode: 'md', rippleEffect: false });
 
+type OpenModal = 'none' | 'signIn' | 'onboarding';
+
+/**
+ * The app shell. It shows nothing until it knows who's signed in, so every
+ * can* check runs with the real caller. Actions a check refuses arrive
+ * through disallowedActions: signed out, the sign-in modal opens; signed in
+ * without a profile, onboarding. Signing in to a new account goes on to
+ * onboarding. Once the user has a profile, the action they were trying to do runs.
+ */
 export function App() {
+  const { isLoaded } = useCallingUser();
+  const [openModal, setOpenModal] = useState<OpenModal>('none');
+  // What the user was trying to do when they were asked to sign in.
+  const pendingAction = useRef<(() => void) | null>(null);
+  // What to do once the sign-in modal has finished closing.
+  const afterSignIn = useRef<'onboarding' | 'done' | null>(null);
+
+  useEffect(
+    () =>
+      disallowedActions.subscribe(({ error, action }) => {
+        const reason = error.metadata?.reason;
+        if (reason === 'not-signed-in' || reason === 'profile-required') {
+          pendingAction.current = action ?? null;
+          setOpenModal(reason === 'not-signed-in' ? 'signIn' : 'onboarding');
+          return;
+        }
+        void showErrorToast(error.message ?? "You can't do that");
+      }),
+    [],
+  );
+
+  function runPendingAction() {
+    const action = pendingAction.current;
+    pendingAction.current = null;
+    action?.();
+  }
+
+  function signedIn() {
+    afterSignIn.current = callingUserStore.get().callingUser?.profile ? 'done' : 'onboarding';
+    setOpenModal('none');
+  }
+
+  // Opening onboarding only after sign-in has closed keeps the two modals from animating over each other.
+  function signInDismissed() {
+    const next = afterSignIn.current;
+    afterSignIn.current = null;
+    if (next === 'onboarding') {
+      setOpenModal('onboarding');
+      return;
+    }
+    if (next === 'done') {
+      runPendingAction();
+      return;
+    }
+    // Cancelled: the action doesn't run.
+    pendingAction.current = null;
+    setOpenModal('none');
+  }
+
+  function onboarded() {
+    setOpenModal('none');
+    runPendingAction();
+  }
+
+  function onboardingDismissed() {
+    // "Later": the action needs a profile, so it doesn't run. (After onboarded, it has already run.)
+    pendingAction.current = null;
+    setOpenModal('none');
+  }
+
+  if (!isLoaded) {
+    return <IonApp />;
+  }
+
   return (
     <IonApp>
       <BrowserRouter>
@@ -58,6 +136,18 @@ export function App() {
           </IonSplitPane>
         </TabNavigationProvider>
         <PhotoViewer />
+        <SignInModal
+          isOpen={openModal === 'signIn'}
+          onSignedIn={signedIn}
+          onCancel={() => setOpenModal('none')}
+          onDidDismiss={signInDismissed}
+        />
+        <OnboardingModal
+          isOpen={openModal === 'onboarding'}
+          onDone={onboarded}
+          onCancel={() => setOpenModal('none')}
+          onDidDismiss={onboardingDismissed}
+        />
       </BrowserRouter>
     </IonApp>
   );

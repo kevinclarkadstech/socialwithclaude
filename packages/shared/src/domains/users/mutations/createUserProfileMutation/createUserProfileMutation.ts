@@ -2,10 +2,10 @@ import z from "zod";
 import type { Mutation } from "../../../../types/mutation";
 import { fail, succeed } from "../../../../utils/result";
 import { conflictError } from "../../../../error-handling";
-import { requireCaller } from "../../../../authorization/requireCaller/requireCaller";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../types/calling-user";
 import { UserProfileSchema, type UserProfile } from "../../types/user-profile";
+import { canCreateUserProfile } from "../../authorization/canCreateUserProfile/canCreateUserProfile";
 
 export const CreateUserProfileMutationInputSchema = UserProfileSchema.pick({
     username: true,
@@ -31,7 +31,7 @@ export const createUserProfileMutation: Mutation<{ input: CreateUserProfileMutat
     createUserProfile: (args: Pick<UserProfile, "userId" | "username" | "firstName" | "lastName" | "about">) => Promise<UserProfile>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCaller({ caller });
+    const allowed = canCreateUserProfile({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,
@@ -39,12 +39,6 @@ export const createUserProfileMutation: Mutation<{ input: CreateUserProfileMutat
             details: { action: "create-user-profile", callerId: caller?.userId },
         });
         return allowed;
-    }
-
-    if (allowed.value.profile) {
-        // The UI only offers sign-up to users without a profile.
-        logger.warn("User already has a profile", { callerId: allowed.value.userId });
-        return fail(conflictError("Profile already exists"));
     }
 
     const existingProfile = await dependencies.getUserProfileByUsername({ username: input.username });

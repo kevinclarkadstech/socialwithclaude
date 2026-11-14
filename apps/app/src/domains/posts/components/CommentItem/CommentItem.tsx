@@ -1,4 +1,5 @@
 import { IonButton, IonIcon, IonItem, IonLabel } from '@ionic/react';
+import { canVoteOnPostComment } from '@myapp/shared/domains';
 import { arrowDown, arrowDownOutline, arrowUp, arrowUpOutline, ellipsisHorizontal } from 'ionicons/icons';
 import { useCallingUser, UserAvatar } from '../../../users';
 import { timeAgo } from '../../../../utils/formatters/dates';
@@ -8,6 +9,7 @@ import { nextVote } from '../../commentVotes';
 import { usePostComment } from '../../hooks/usePostComment/usePostComment';
 import { AuthorLink } from '../AuthorLink/AuthorLink';
 import { openCommentMenu } from './openCommentMenu';
+import { disallowedActions } from '../../../../common/events/disallowedActions/disallowedActions';
 import './CommentItem.css';
 
 /** One comment: who and when, the text, up/down votes, and a menu (edit and delete yours, report others'). */
@@ -20,10 +22,16 @@ export function CommentItem({ commentId }: { commentId: string }) {
   }
   const { id, creator, viewer } = comment;
   const edited = comment.updatedAt !== comment.createdAt;
+  const voteCheck = canVoteOnPostComment({ caller: callingUser, comment });
 
   /** Tapping the vote you already gave removes it; otherwise it becomes your vote. */
   function vote(tapped: 1 | -1) {
-    void setPostCommentVote({ postCommentId: id, value: nextVote(viewer.vote, tapped) });
+    const action = () => void setPostCommentVote({ postCommentId: id, value: nextVote(viewer.vote, tapped) });
+    if (!voteCheck.ok) {
+      disallowedActions.emit({ error: voteCheck.error, action });
+      return;
+    }
+    action();
   }
 
   return (

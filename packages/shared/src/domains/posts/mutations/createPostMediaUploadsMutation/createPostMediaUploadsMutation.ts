@@ -2,7 +2,6 @@ import z from "zod";
 import type { Mutation } from "../../../../types/mutation";
 import { fail, succeed } from "../../../../utils/result";
 import { authorizationError, validationError } from "../../../../error-handling";
-import { requireCallerWithProfile } from "../../../../authorization/requireCaller/requireCaller";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import { maxPhotoUploadBytes } from "../../../../media/constants";
 import { PhotoContentTypeSchema } from "../../../../media/types";
@@ -11,6 +10,7 @@ import { photoKey } from "../../../../media/utils";
 import { canUpdatePost } from "../../authorization/canUpdatePost/canUpdatePost";
 import type { Post } from "../../types/post";
 import type { GetCallingUser } from "../../../users/types/calling-user";
+import { canCreatePost } from "../../authorization/canCreatePost/canCreatePost";
 
 export const CreatePostMediaUploadsMutationInputSchema = z.object({
     // The post they're for: a new one (its id made by the app) or one of the caller's being edited.
@@ -49,7 +49,7 @@ export const createPostMediaUploadsMutation: Mutation<{ input: CreatePostMediaUp
     createUploadUrl: (args: { key: string; contentType: string; contentLength: number }) => Promise<string>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCallerWithProfile({ caller });
+    const allowed = canCreatePost({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

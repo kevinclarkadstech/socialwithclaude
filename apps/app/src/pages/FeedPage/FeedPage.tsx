@@ -16,16 +16,19 @@ import {
 } from '@ionic/react';
 import { add } from 'ionicons/icons';
 import { useState } from 'react';
-import { AccountButton } from '../../domains/users';
-import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
+import { canCreatePost } from '@myapp/shared/domains';
+import { AccountButton, useCallingUser } from '../../domains/users';
+import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
 import { ComposePostModal, PendingPosts, PostCard, useFeed } from '../../domains/posts';
 import '../../common/styles/pages.css';
 
 /** The Feed tab: everyone's posts and listings, newest first. Readable signed out. */
 export function FeedPage() {
   const { ids: postIds, isLoading, error, hasMore, loadMore, refresh } = useFeed();
-  const requireSignIn = useRequireSignIn();
+  const { callingUser } = useCallingUser();
+  const createPostCheck = canCreatePost({ caller: callingUser });
   const [isComposing, setIsComposing] = useState(false);
+  const compose = () => setIsComposing(true);
 
   return (
     <IonPage>
@@ -60,7 +63,16 @@ export function FeedPage() {
         </IonInfiniteScroll>
 
         <IonFab slot="fixed" vertical="bottom" horizontal="end">
-          <IonFabButton aria-label="New post" onClick={() => requireSignIn(() => setIsComposing(true))}>
+          <IonFabButton
+            aria-label="New post"
+            onClick={() => {
+              if (!createPostCheck.ok) {
+                disallowedActions.emit({ error: createPostCheck.error, action: compose });
+                return;
+              }
+              compose();
+            }}
+          >
             <IonIcon icon={add} aria-hidden="true" />
           </IonFabButton>
         </IonFab>

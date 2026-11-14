@@ -2,10 +2,10 @@ import z from "zod";
 import type { Mutation } from "../../../../types/mutation";
 import { fail, succeed } from "../../../../utils/result";
 import { notFoundError } from "../../../../error-handling";
-import { requireCallerWithProfile } from "../../../../authorization/requireCaller/requireCaller";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../types/calling-user";
 import { UserProfileSchema, type UserProfile } from "../../types/user-profile";
+import { canUnblockUser } from "../../authorization/canUnblockUser/canUnblockUser";
 
 export const UnblockUserMutationInputSchema = UserProfileSchema.pick({ username: true });
 
@@ -22,7 +22,7 @@ export const unblockUserMutation: Mutation<{ input: UnblockUserMutationInput, ou
     unblockUser: (args: { userId: string; blockedUserId: string }) => Promise<boolean>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCallerWithProfile({ caller });
+    const allowed = canUnblockUser({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

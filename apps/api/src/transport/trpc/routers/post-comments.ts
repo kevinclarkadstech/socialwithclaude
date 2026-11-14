@@ -28,7 +28,7 @@ import { procedure, router } from "../trpc";
 
 export const postCommentsRouter = router({
     getPostComments: procedure.input(GetPostCommentsQueryInputSchema).query(({ ctx, input }) =>
-        getPostCommentsQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentViews } }),
+        getPostCommentsQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getPostViewById, getPostCommentViews } }),
     ),
 
     createPostComment: procedure.input(CreatePostCommentMutationInputSchema).mutation(({ ctx, input }) =>

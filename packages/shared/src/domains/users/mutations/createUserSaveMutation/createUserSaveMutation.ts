@@ -1,10 +1,10 @@
 import z from "zod";
 import type { Mutation } from "../../../../types/mutation";
 import { succeed } from "../../../../utils/result";
-import { requireCallerWithProfile } from "../../../../authorization/requireCaller/requireCaller";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../types/calling-user";
 import { UserSaveTypeSchema, type UserSaveType } from "../../types/user-save";
+import { canSaveItem } from "../../authorization/canSaveItem/canSaveItem";
 
 export const CreateUserSaveMutationInputSchema = z.object({
     type: UserSaveTypeSchema,
@@ -23,7 +23,7 @@ export const createUserSaveMutation: Mutation<{ input: CreateUserSaveMutationInp
     createUserSave: (args: { userId: string; type: UserSaveType; id: string }) => Promise<boolean>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCallerWithProfile({ caller });
+    const allowed = canSaveItem({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

@@ -1,4 +1,14 @@
+export { canAcceptFollowRequest } from './canAcceptFollowRequest/canAcceptFollowRequest';
 export { canBlockUser } from './canBlockUser/canBlockUser';
+export { canCreateUserProfile } from './canCreateUserProfile/canCreateUserProfile';
+export { canDenyFollowRequest } from './canDenyFollowRequest/canDenyFollowRequest';
 export { canFollowUser } from './canFollowUser/canFollowUser';
+export { canSaveItem } from './canSaveItem/canSaveItem';
+export { canSendFeedback } from './canSendFeedback/canSendFeedback';
+export { canUnblockUser } from './canUnblockUser/canUnblockUser';
+export { canUnfollowUser } from './canUnfollowUser/canUnfollowUser';
+export { canUnsaveItem } from './canUnsaveItem/canUnsaveItem';
+export { canUpdateMyProfile } from './canUpdateMyProfile/canUpdateMyProfile';
+export { canUpdateMySettings } from './canUpdateMySettings/canUpdateMySettings';
 export { canViewUserPosts } from './canViewUserPosts/canViewUserPosts';
 export { canViewUserProfile } from './canViewUserProfile/canViewUserProfile';

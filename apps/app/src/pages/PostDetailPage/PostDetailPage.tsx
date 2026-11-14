@@ -13,7 +13,8 @@ import {
   IonToolbar,
 } from '@ionic/react';
 import { useParams } from 'react-router';
-import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
+import { canCommentOnPost, canViewPostComments } from '@myapp/shared/domains';
+import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
 import { CommentComposer, CommentItem, PostCard, usePostComments, usePostDetail } from '../../domains/posts';
 import { useCallingUser } from '../../domains/users';
 import { BackButton, useTabNavigation } from '../../navigation';
@@ -24,9 +25,9 @@ export function PostDetailPage() {
   const { postId = '' } = useParams();
   const { post, isLoading, notFound, error } = usePostDetail(postId);
   const { callingUser } = useCallingUser();
-  const requireSignIn = useRequireSignIn();
   const { goBack } = useTabNavigation();
-  const canReadComments = Boolean(callingUser?.profile);
+  const viewCommentsCheck = post ? canViewPostComments({ caller: callingUser, post }) : null;
+  const canReadComments = viewCommentsCheck?.ok ?? false;
   const comments = usePostComments(postId, { enabled: canReadComments && Boolean(post) });
 
   return (
@@ -70,7 +71,14 @@ export function PostDetailPage() {
               </IonList>
             ) : (
               <div className="page-message">
-                <IonButton fill="outline" onClick={() => requireSignIn()}>
+                <IonButton
+                  fill="outline"
+                  onClick={() => {
+                    if (viewCommentsCheck && !viewCommentsCheck.ok) {
+                      disallowedActions.emit({ error: viewCommentsCheck.error });
+                    }
+                  }}
+                >
                   Sign in to read and write comments
                 </IonButton>
               </div>
@@ -85,7 +93,7 @@ export function PostDetailPage() {
           </>
         )}
       </IonContent>
-      {post && canReadComments && <CommentComposer postId={post.id} />}
+      {post && canCommentOnPost({ caller: callingUser, post }).ok && <CommentComposer postId={post.id} />}
     </IonPage>
   );
 }

@@ -1,13 +1,13 @@
 import z from "zod";
 import type { Mutation } from "../../../../types/mutation";
 import { succeed } from "../../../../utils/result";
-import { requireCallerWithProfile } from "../../../../authorization/requireCaller/requireCaller";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import { profilePhotoWidths } from "../../constants";
 import { ProfilePhotoKindSchema } from "../../types/profile-photo";
 import { profilePhotoKey } from "../../utils/profilePhotoKeys";
 import type { GetCallingUser } from "../../types/calling-user";
 import { UserProfileSchema, type UserProfile } from "../../types/user-profile";
+import { canUpdateMyProfile } from "../../authorization/canUpdateMyProfile/canUpdateMyProfile";
 
 export const RemoveProfilePhotoMutationInputSchema = z.object({ kind: ProfilePhotoKindSchema });
 
@@ -27,7 +27,7 @@ export const removeProfilePhotoMutation: Mutation<{ input: RemoveProfilePhotoMut
     touchUserProfile: (args: { userId: string }) => Promise<UserProfile>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCallerWithProfile({ caller });
+    const allowed = canUpdateMyProfile({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

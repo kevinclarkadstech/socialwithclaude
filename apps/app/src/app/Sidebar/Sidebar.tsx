@@ -1,7 +1,8 @@
 import { IonContent, IonIcon, IonItem, IonLabel, IonList, IonMenu } from '@ionic/react';
 import { logInOutline, personCircleOutline } from 'ionicons/icons';
 import { useLocation } from 'react-router';
-import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
+import { requireCallerWithProfile } from '@myapp/shared/authorization';
+import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
 import { useCallingUser } from '../../domains/users';
 import { useTabNavigation } from '../../navigation';
 import './Sidebar.css';
@@ -10,7 +11,8 @@ import './Sidebar.css';
 export function Sidebar({ contentId }: { contentId: string }) {
   const { tabs, activeTab, onRootRoute, switchTab } = useTabNavigation();
   const { callingUser } = useCallingUser();
-  const requireSignIn = useRequireSignIn();
+  // Signed in with a profile; otherwise its error opens sign-in or onboarding.
+  const signedUpCheck = requireCallerWithProfile({ caller: callingUser });
   const { pathname } = useLocation();
 
   return (
@@ -31,7 +33,7 @@ export function Sidebar({ contentId }: { contentId: string }) {
             </IonItem>
           ))}
 
-          {callingUser?.profile ? (
+          {signedUpCheck.ok ? (
             <IonItem
               button
               detail={false}
@@ -42,7 +44,12 @@ export function Sidebar({ contentId }: { contentId: string }) {
               <IonLabel>Profile</IonLabel>
             </IonItem>
           ) : (
-            <IonItem button detail={false} className="sidebar__item" onClick={() => requireSignIn()}>
+            <IonItem
+              button
+              detail={false}
+              className="sidebar__item"
+              onClick={() => disallowedActions.emit({ error: signedUpCheck.error })}
+            >
               <IonIcon slot="start" icon={logInOutline} aria-hidden="true" />
               <IonLabel>{callingUser ? 'Finish sign-up' : 'Sign in'}</IonLabel>
             </IonItem>

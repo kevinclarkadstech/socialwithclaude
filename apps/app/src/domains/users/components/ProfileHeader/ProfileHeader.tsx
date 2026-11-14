@@ -70,7 +70,7 @@ export function ProfileHeader({ profile, isOwn, onProfileChange, onEdit }: Profi
             </IonButton>
           )}
           {!isOwn && hasBlocked && (
-            <IonButton fill="outline" onClick={() => void unblock()}>
+            <IonButton fill="outline" onClick={unblock}>
               Unblock
             </IonButton>
           )}
@@ -80,7 +80,7 @@ export function ProfileHeader({ profile, isOwn, onProfileChange, onEdit }: Profi
             </IonButton>
           )}
           {!isOwn && !hasBlocked && followStatus !== 'none' && (
-            <IonButton fill="outline" data-follow-status={followStatus} onClick={() => void unfollow()}>
+            <IonButton fill="outline" data-follow-status={followStatus} onClick={unfollow}>
               {followStatus === 'following' ? 'Following' : 'Requested'}
             </IonButton>
           )}
