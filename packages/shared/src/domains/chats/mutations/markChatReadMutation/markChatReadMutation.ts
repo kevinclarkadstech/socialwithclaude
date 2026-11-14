@@ -18,7 +18,8 @@ export type MarkChatReadMutationOutput = z.infer<typeof MarkChatReadMutationOutp
 /** Marks everything in a chat as read for the caller. */
 export const markChatReadMutation: Mutation<{ input: MarkChatReadMutationInput, output: MarkChatReadMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getChatMembers: (args: { chatId: string }) => Promise<ChatMember[]>;
+    // Only who's in the chat is used.
+    getChatMembers: (args: { chatId: string }) => Promise<Pick<ChatMember, "userId">[]>;
     markChatRead: (args: { chatId: string; userId: string }) => Promise<ChatMember | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const members = await dependencies.getChatMembers({ chatId: input.chatId });

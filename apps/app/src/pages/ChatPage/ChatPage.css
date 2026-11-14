@@ -1,0 +1,17 @@
+.chat-page__messages {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.chat-page__messages > ion-button {
+  align-self: center;
+}
+
+.chat-page__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: inherit;
+  text-decoration: none;
+}
