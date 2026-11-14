@@ -47,9 +47,9 @@ import {
     denyUserFollowRequest,
     followUser,
     getProfileVisibility,
-    getUserBlocks,
+    getUserBlockViews,
     getUserFollowStatus,
-    getUserFollowRequests,
+    getUserFollowRequestViews,
     getUserProfileByUsername,
     getUserSaves,
     getUserSettings,
@@ -128,7 +128,7 @@ export const usersRouter = router({
         getMyFollowRequestsQuery({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getUserFollowRequests },
+            dependencies: { getCallingUser: ctx.getCallingUser, getUserFollowRequestViews },
         }),
     ),
 
@@ -168,7 +168,7 @@ export const usersRouter = router({
         getMyBlockedUsersQuery({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getUserBlocks },
+            dependencies: { getCallingUser: ctx.getCallingUser, getUserBlockViews },
         }),
     ),
 

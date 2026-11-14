@@ -1,20 +1,23 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import type { Page } from "@myapp/shared/types";
-import type { UserBlock } from "@myapp/shared/domains";
+import type { UserBlockView } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
+import { creatorFields } from "../../../constants";
+import { toCreator } from "../../../mappers/users/toCreator/toCreator";
 import { toUserBlock } from "../../../mappers/users/toUserBlock/toUserBlock";
 import { toPage } from "../../../utils/toPage/toPage";
 
-/** Users `userId` has blocked, most recent first. The cursor is the last blocked user's id. */
-export async function getUserBlocks({ userId, cursor, limit }: {
+/** Users `userId` has blocked, most recent first, each with their profile. The cursor is the last blocked user's id. */
+export async function getUserBlockViews({ userId, cursor, limit }: {
     userId: string;
     cursor?: string | null;
     limit: number;
-}): Promise<Page<UserBlock>> {
+}): Promise<Page<UserBlockView>> {
     const t = schema.userBlocks;
     const rows = await db
-        .select()
+        .select({ block: t, blockedUser: creatorFields })
         .from(t)
+        .innerJoin(schema.userProfiles, eq(schema.userProfiles.userId, t.blockedUserId))
         .where(and(
             eq(t.userId, userId),
             cursor
@@ -23,5 +26,6 @@ export async function getUserBlocks({ userId, cursor, limit }: {
         ))
         .orderBy(desc(t.createdAt), desc(t.blockedUserId))
         .limit(limit + 1);
-    return toPage(rows.map(toUserBlock), limit, (block) => block.blockedUserId);
+    const views = rows.map(({ block, blockedUser }) => ({ ...toUserBlock(block), blockedUser: toCreator(blockedUser) }));
+    return toPage(views, limit, (view) => view.blockedUserId);
 }

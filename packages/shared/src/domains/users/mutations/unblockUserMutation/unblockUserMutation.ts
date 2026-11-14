@@ -18,7 +18,8 @@ export type UnblockUserMutationOutput = z.infer<typeof UnblockUserMutationOutput
 /** Unblocking a user who isn't blocked succeeds. */
 export const unblockUserMutation: Mutation<{ input: UnblockUserMutationInput, output: UnblockUserMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getUserProfileByUsername: (args: { username: string }) => Promise<UserProfile | null>;
+    // Only the id is used, so a profile summary will do.
+    getUserProfileByUsername: (args: { username: string }) => Promise<Pick<UserProfile, "userId"> | null>;
     unblockUser: (args: { userId: string; blockedUserId: string }) => Promise<boolean>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();

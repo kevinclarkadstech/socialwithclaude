@@ -19,7 +19,8 @@ export type DenyFollowRequestMutationOutput = z.infer<typeof DenyFollowRequestMu
 /** Denies `username`'s pending request. They aren't told: it keeps looking pending to them. */
 export const denyFollowRequestMutation: Mutation<{ input: DenyFollowRequestMutationInput, output: DenyFollowRequestMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getUserProfileByUsername: (args: { username: string }) => Promise<UserProfile | null>;
+    // Only the id is used, so a profile summary will do.
+    getUserProfileByUsername: (args: { username: string }) => Promise<Pick<UserProfile, "userId"> | null>;
     denyUserFollowRequest: (args: { userId: string; followerId: string }) => Promise<UserFollow | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
