@@ -5,6 +5,7 @@ import { errorMessage } from '../../../../lib/api/errors';
 import { runOrToast } from '../../../../lib/api/runOrToast';
 import { newId } from '../../../../lib/ids';
 import { showErrorToast } from '../../../../lib/toasts';
+import { usePolling } from '../../../../lib/usePolling';
 import { useCallingUser } from '../../../users';
 import { runDeleteChatMessageMutation } from '../../operations/runDeleteChatMessageMutation/runDeleteChatMessageMutation';
 import { runGetChatMessagesQuery } from '../../operations/runGetChatMessagesQuery/runGetChatMessagesQuery';
@@ -22,9 +23,10 @@ export type ChatMessagesStatus = 'loading' | 'ready' | 'failed';
  * request), marks the chat read when something new from the other person is
  * shown, and sends, edits and deletes your messages. A message you send shows
  * straight away; if it fails it stays, marked, to retry. Its id is made here,
- * so a retry can't send it twice.
+ * so a retry can't send it twice. While `isShown`, it checks for new
+ * messages (and edits and deletes) every few seconds.
  */
-export function useChatMessages(chat: ChatView | null) {
+export function useChatMessages(chat: ChatView | null, { isShown }: { isShown: boolean }) {
   const { callingUser } = useCallingUser();
   const [messages, setMessages] = useState<ShownChatMessage[]>([]);
   const [status, setStatus] = useState<ChatMessagesStatus>('loading');
@@ -73,6 +75,8 @@ export function useChatMessages(chat: ChatView | null) {
       cancelled = true;
     };
   }, [chat, applyNewest]);
+
+  usePolling(() => refresh(), { intervalMs: 4000, enabled: isShown && chat !== null && status === 'ready' });
 
   /** Checks for new messages (and edits and deletes) without losing what's shown. */
   async function refresh() {

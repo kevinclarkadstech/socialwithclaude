@@ -16,12 +16,15 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/react';
-import type { GetUserProfileQueryOutput, UserPostsType } from '@myapp/shared/domains';
+import { canCreateDirectChat, type GetUserProfileQueryOutput, type UserPostsType } from '@myapp/shared/domains';
 import { ellipsisHorizontal, lockClosedOutline } from 'ionicons/icons';
 import { useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { displayName } from '../../utils/formatters/names';
 import { chooseFrom } from '../../lib/prompts';
+import { runOrToast } from '../../lib/api/runOrToast';
+import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
+import { runGetOrCreateDirectChatMutation } from '../../domains/chats';
 import { BackButton, useTabHref } from '../../navigation';
 import { useAuth } from '../../domains/auth';
 import { applyCreatorChange, PostCard, useUserPosts } from '../../domains/posts';
@@ -66,6 +69,26 @@ export function UserProfilePage() {
     if (choice === 'sign-out') {
       await signOut();
     }
+  }
+
+  /** Opens your chat with them, starting it if you don't have one, in the Chats tab. */
+  async function message() {
+    if (!profile) {
+      return;
+    }
+    const receiver = profile;
+    const action = async () => {
+      const result = await runOrToast(() => runGetOrCreateDirectChatMutation({ receiver }));
+      if (result.ok) {
+        navigate(`/chats/${result.value.id}`);
+      }
+    };
+    const check = canCreateDirectChat({ caller: callingUser, receiver });
+    if (!check.ok) {
+      disallowedActions.emit({ error: check.error, action: () => void action() });
+      return;
+    }
+    await action();
   }
 
   /** A change to the profile (e.g. a new photo) also shows on its posts and comments already loaded. */
@@ -116,6 +139,7 @@ export function UserProfilePage() {
               isOwn={isOwn}
               onProfileChange={onProfileChange}
               onEdit={() => setIsEditing(true)}
+              onMessage={() => void message()}
             />
 
             <IonSegment
