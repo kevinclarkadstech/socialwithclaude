@@ -1,8 +1,7 @@
 import { definePlugin } from "nitro";
 import { closeDb } from "../../data-access/db";
 import { cache } from "../../cache";
-import { rootLogger } from "../../observability";
-import { errorReporter } from "../../error-reporting";
+import { errorReporter, rootLogger } from "../../observability";
 
 /** On SIGTERM/SIGINT, once the server stops taking requests: close the database pool and the cache, and send any error reports still queued. */
 export default definePlugin((nitroApp) => {

@@ -1,4 +1,4 @@
-import { serverConfig } from "../config";
+import { serverConfig } from "../../config";
 import { createDisabledErrorReporter } from "./disabled/createDisabledErrorReporter/createDisabledErrorReporter";
 import { createSentryErrorReporter } from "./sentry/createSentryErrorReporter/createSentryErrorReporter";
 import type { ErrorReporter } from "./types";
