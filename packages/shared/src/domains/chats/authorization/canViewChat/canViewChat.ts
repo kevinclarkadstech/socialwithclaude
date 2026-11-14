@@ -7,7 +7,7 @@ import { hasProfile, isChatMember, isSignedIn } from "../../../../authorization/
  * Only a chat's members can see it (its messages, read state, deleting it
  * for themselves). Anyone else gets not-found, so chats aren't revealed.
  */
-export const canViewChat: AuthorizationCheck<{ caller: CallingUser | null; members: ChatMember[] }> = ({ caller, members }) => {
+export const canViewChat: AuthorizationCheck<{ caller: CallingUser | null; members: Pick<ChatMember, "userId">[] }> = ({ caller, members }) => {
     if (!isSignedIn(caller)) {
         return disallow("not-signed-in");
     }

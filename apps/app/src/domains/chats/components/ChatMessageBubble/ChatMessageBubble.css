@@ -1,0 +1,64 @@
+.chat-message {
+  display: flex;
+  flex-direction: column;
+  max-width: 78%;
+  margin: 4px 12px;
+}
+
+.chat-message--mine {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.chat-message--theirs {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.chat-message__bubble {
+  padding: 8px 12px;
+  border-radius: 18px;
+  font: inherit;
+  text-align: start;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border: none;
+}
+
+.chat-message--mine .chat-message__bubble {
+  background: var(--ion-color-primary);
+  color: var(--ion-color-primary-contrast);
+  border-end-end-radius: 4px;
+  cursor: pointer;
+}
+
+.chat-message--theirs .chat-message__bubble {
+  background: var(--app-fill);
+  color: var(--ion-text-color);
+  border-end-start-radius: 4px;
+}
+
+.chat-message--sending .chat-message__bubble {
+  opacity: 0.6;
+}
+
+.chat-message--failed .chat-message__bubble {
+  background: var(--ion-color-danger);
+  color: var(--ion-color-danger-contrast);
+}
+
+.chat-message__meta {
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: var(--ion-color-medium);
+}
+
+.chat-message__retry {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--ion-color-danger);
+  text-decoration: underline;
+  cursor: pointer;
+}

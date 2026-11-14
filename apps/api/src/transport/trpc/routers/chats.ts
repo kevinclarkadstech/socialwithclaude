@@ -11,6 +11,8 @@ import {
     deleteChatMessageMutation,
     getChatMessagesQuery,
     getMyChatsQuery,
+    getChatQuery,
+    GetChatQueryInputSchema,
     getOrCreateDirectChatMutation,
     markChatReadMutation,
     sendChatMessageMutation,
@@ -25,7 +27,8 @@ import {
     getChatMembers,
     getChatMessageViewById,
     getChatMessageViews,
-    getUserChats,
+    getUserChatViews,
+    getChatViewById,
     getUserProfileByUsername,
     markChatRead,
     updateChatMessage,
@@ -45,7 +48,15 @@ export const chatsRouter = router({
         getMyChatsQuery({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getUserChats },
+            dependencies: { getCallingUser: ctx.getCallingUser, getUserChatViews },
+        }),
+    ),
+
+    getChat: procedure.input(GetChatQueryInputSchema).query(({ ctx, input }) =>
+        getChatQuery({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: { getCallingUser: ctx.getCallingUser, getChatMembers, getChatViewById },
         }),
     ),
 
