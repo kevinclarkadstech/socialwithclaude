@@ -8,7 +8,6 @@ import { SettingsPage } from '../pages/SettingsPage/SettingsPage';
 import { MarketplacePage } from '../pages/MarketplacePage/MarketplacePage';
 import { UserProfilePage } from '../pages/UserProfilePage/UserProfilePage';
 import type { TabDefinition } from '../navigation';
-import { ProfileLinkRedirect } from './ProfileLinkRedirect/ProfileLinkRedirect';
 
 /** The app's main sections: the bottom tab bar on phones, the sidebar on wide screens. */
 export const tabs: TabDefinition[] = [
@@ -27,5 +26,6 @@ export const sharedRoutes: RouteObject[] = [
 /** Top-level pages outside the tabs. They open over the tabs, without the tab bar. */
 export const rootRoutes: RouteObject[] = [
   { path: '/settings', element: <SettingsPage /> },
-  { path: '/profile/:username', element: <ProfileLinkRedirect /> },
+  // Your profile (from the account button) and shared links: a full page over the tabs.
+  { path: '/profile/:username', element: <UserProfilePage /> },
 ];

@@ -19,7 +19,7 @@ import {
 import type { GetUserProfileQueryOutput, UserPostsType } from '@myapp/shared/domains';
 import { ellipsisHorizontal, lockClosedOutline } from 'ionicons/icons';
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useLocation, useNavigate, useParams } from 'react-router';
 import { displayName } from '../../utils/formatters/names';
 import { chooseFrom } from '../../lib/prompts';
 import { BackButton, useTabHref } from '../../navigation';
@@ -30,7 +30,9 @@ import '../../common/styles/pages.css';
 import './UserProfilePage.css';
 
 /**
- * A profile at /<tab>/profile/:username: its header, then its posts or
+ * A profile, at /profile/:username (a full page: your own, from the
+ * account button, and shared links) or /<tab>/profile/:username (opened
+ * from inside a tab, e.g. a post's author): its header, then its posts or
  * listings, unless the profile is private (and you don't follow it) or
  * blocked. When it's the signed-in user's own, it also offers editing, its
  * photos, Settings and sign-out.
@@ -41,6 +43,7 @@ export function UserProfilePage() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const tabHref = useTabHref();
+  const { pathname } = useLocation();
   const ownUsername = callingUser?.profile?.username ?? null;
   const username = params.username ?? null;
   const isOwn = username !== null && username === ownUsername;
@@ -172,7 +175,8 @@ export function UserProfilePage() {
               applyCreatorChange(saved);
               // A new username is a new URL.
               if (saved.username !== username) {
-                navigate(tabHref(`profile/${saved.username}`), { replace: true });
+                const path = pathname.startsWith('/profile/') ? `/profile/${saved.username}` : tabHref(`profile/${saved.username}`);
+                navigate(path, { replace: true });
                 return;
               }
               void reload();
