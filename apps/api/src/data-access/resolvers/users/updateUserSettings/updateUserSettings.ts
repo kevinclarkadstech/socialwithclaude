@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import type { UserSettings } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { toUserSettings } from "../../../mappers/users";
+import { toUserSettings } from "../../../mappers/users/toUserSettings/toUserSettings";
 
 /** Changes only the settings given. Null until the user has finished sign-up. */
 export async function updateUserSettings({ userId, ...changes }: Pick<UserSettings, "userId"> &

@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import type { UserProfile } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { toUserProfile } from "../../../mappers/users";
+import { toUserProfile } from "../../../mappers/users/toUserProfile/toUserProfile";
 
 /** Postgres's unique_violation: here, the username index. */
 const UNIQUE_VIOLATION = "23505";

@@ -1,6 +1,6 @@
 import type { PostCommentView, PostCommentReport, ReportReason } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { toPostCommentReport } from "../../../mappers/posts";
+import { toPostCommentReport } from "../../../mappers/posts/toPostCommentReport/toPostCommentReport";
 
 /**
  * Reports a comment, keeping `snapshot` (the comment as it is now).

@@ -2,8 +2,8 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import type { Page } from "@myapp/shared/types";
 import type { UserFollow } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { toUserFollow } from "../../../mappers/users";
-import { toPage } from "../../../paging";
+import { toUserFollow } from "../../../mappers/users/toUserFollow/toUserFollow";
+import { toPage } from "../../../utils/toPage/toPage";
 
 /** Pending requests to follow `userId`, newest first. The cursor is the last requester's id. */
 export async function getUserFollowRequests({ userId, cursor, limit }: {

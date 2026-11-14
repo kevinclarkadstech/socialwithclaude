@@ -2,8 +2,9 @@ import { and, eq, sql, type SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import type { PostView, PostMedia } from "@myapp/shared/domains";
 import { db, schema, type Executor } from "../../../db";
-import { creatorFields, toCreator } from "../../../creator";
-import { toPostListing } from "../../../mappers/posts";
+import { creatorFields } from "../../../constants";
+import { toCreator } from "../../../mappers/users/toCreator/toCreator";
+import { toPostListing } from "../../../mappers/posts/toPostListing/toPostListing";
 
 /**
  * Reads posts as `viewerId` sees them: each with its photos (in the order

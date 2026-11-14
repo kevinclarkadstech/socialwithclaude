@@ -2,7 +2,7 @@ import { and, desc, eq, isNotNull, isNull, notInArray, sql } from "drizzle-orm";
 import type { Page } from "@myapp/shared/types";
 import type { ListingStatus, PostView } from "@myapp/shared/domains";
 import { schema } from "../../../db";
-import { toPage } from "../../../paging";
+import { toPage } from "../../../utils/toPage/toPage";
 import { findPostViews } from "../../../internal/posts/findPostViews/findPostViews";
 
 /** Listings, newest first, as `viewerId` sees them; only those with `status` if given. */

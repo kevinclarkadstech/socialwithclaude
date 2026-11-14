@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import type { UserBlock } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { toUserBlock } from "../../../mappers/users";
+import { toUserBlock } from "../../../mappers/users/toUserBlock/toUserBlock";
 
 /** `userId` blocks `blockedUserId`. Blocking again returns the existing block. */
 export async function blockUser({ userId, blockedUserId }: { userId: string; blockedUserId: string }): Promise<UserBlock> {

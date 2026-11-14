@@ -1,5 +1,6 @@
 import { eq, sql } from "drizzle-orm";
-import { schema, type Transaction } from "./db";
+
+import { type Transaction, schema } from "../../../db";
 
 /**
  * Adds `delta` to the follower's following count and the followed user's

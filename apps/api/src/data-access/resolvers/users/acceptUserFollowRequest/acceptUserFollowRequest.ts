@@ -1,8 +1,8 @@
 import { and, eq } from "drizzle-orm";
 import type { UserFollow } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { toUserFollow } from "../../../mappers/users";
-import { adjustFollowCounts } from "../../../follow-counts";
+import { toUserFollow } from "../../../mappers/users/toUserFollow/toUserFollow";
+import { adjustFollowCounts } from "../../../internal/users/adjustFollowCounts/adjustFollowCounts";
 
 /** Accepts `followerId`'s pending request to follow `userId`. Null if there's no pending request. */
 export async function acceptUserFollowRequest({ userId, followerId }: {

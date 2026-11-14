@@ -1,6 +1,6 @@
 import { createClient } from "redis";
-import { rootLogger } from "../observability";
-import type { Cache } from "./types";
+import { rootLogger } from "../../../observability";
+import type { Cache } from "../../types";
 
 /**
  * A Cache over Redis. The connection reconnects on its own; while it's down,
