@@ -18,7 +18,8 @@ export type ClearChatMutationOutput = z.infer<typeof ClearChatMutationOutputSche
 /** Deletes a chat for the caller only: its messages so far are hidden for them. */
 export const clearChatMutation: Mutation<{ input: ClearChatMutationInput, output: ClearChatMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getChatMembers: (args: { chatId: string }) => Promise<ChatMember[]>;
+    // Only who's in the chat is used.
+    getChatMembers: (args: { chatId: string }) => Promise<Pick<ChatMember, "userId">[]>;
     clearChat: (args: { chatId: string; userId: string }) => Promise<ChatMember | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const members = await dependencies.getChatMembers({ chatId: input.chatId });

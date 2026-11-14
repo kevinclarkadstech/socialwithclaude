@@ -25,7 +25,8 @@ export type GetChatMessagesQueryOutput = z.infer<typeof GetChatMessagesQueryOutp
 /** A chat's messages, newest first, minus any from before the caller deleted the chat. */
 export const getChatMessagesQuery: Query<{ input: GetChatMessagesQueryInput, output: GetChatMessagesQueryOutput }, {
     getCallingUser: GetCallingUser;
-    getChatMembers: (args: { chatId: string }) => Promise<ChatMember[]>;
+    // Who's in the chat, and when the caller cleared it (earlier messages are left out).
+    getChatMembers: (args: { chatId: string }) => Promise<Pick<ChatMember, "userId" | "clearedAt">[]>;
     getChatMessageViews: (args: {
         chatId: string;
         viewerId: string | null;

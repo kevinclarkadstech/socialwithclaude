@@ -1,0 +1,30 @@
+.chat-list-item__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  font-size: 0.8rem;
+}
+
+.chat-list-item__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ion-color-primary);
+}
+
+.chat-list-item--unread h3,
+.chat-list-item--unread p {
+  font-weight: 600;
+}
+
+.chat-list-item--unread p {
+  color: var(--ion-text-color);
+}
+
+/* One line of the last message. */
+.chat-list-item p {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

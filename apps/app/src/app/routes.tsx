@@ -1,5 +1,6 @@
 import { chatbubblesOutline, newspaperOutline, storefrontOutline } from 'ionicons/icons';
 import type { RouteObject } from 'react-router';
+import { ChatPage } from '../pages/ChatPage/ChatPage';
 import { ChatsPage } from '../pages/ChatsPage/ChatsPage';
 import { FeedPage } from '../pages/FeedPage/FeedPage';
 import { PostDetailPage } from '../pages/PostDetailPage/PostDetailPage';
@@ -12,7 +13,7 @@ import type { TabDefinition } from '../navigation';
 export const tabs: TabDefinition[] = [
   { id: 'feed', path: '/feed', label: 'Feed', icon: newspaperOutline, element: <FeedPage /> },
   { id: 'marketplace', path: '/marketplace', label: 'Marketplace', icon: storefrontOutline, element: <MarketplacePage /> },
-  { id: 'chats', path: '/chats', label: 'Chats', icon: chatbubblesOutline, element: <ChatsPage /> },
+  { id: 'chats', path: '/chats', label: 'Chats', icon: chatbubblesOutline, element: <ChatsPage />, routes: [{ path: ':chatId', element: <ChatPage /> }] },
 ];
 
 /** Pages that open on top of whichever tab you're in, e.g. /feed/posts/123. */

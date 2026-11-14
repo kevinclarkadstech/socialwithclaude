@@ -14,7 +14,7 @@ export const isCreator = (caller: CallingUser, entity: { createdBy: string }) =>
 export const isSelf = (caller: CallingUser, userId: string) => userId === caller.userId;
 
 /** The caller is one of a chat's `members`. */
-export const isChatMember = (caller: CallingUser, members: ChatMember[]) =>
+export const isChatMember = (caller: CallingUser, members: Pick<ChatMember, "userId">[]) =>
     members.some((member) => member.userId === caller.userId);
 
 /** The caller has blocked `userId`. */

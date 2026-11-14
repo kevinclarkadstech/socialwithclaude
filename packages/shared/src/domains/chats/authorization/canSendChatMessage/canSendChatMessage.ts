@@ -4,7 +4,7 @@ import { allow, disallow, type AuthorizationCheck } from "../../../../authorizat
 import { hasProfile, isChatMember, isSignedIn } from "../../../../authorization/conditions/conditions";
 
 /** Only a chat's members can send messages in it. Anyone else gets not-found. */
-export const canSendChatMessage: AuthorizationCheck<{ caller: CallingUser | null; members: ChatMember[] }> = ({ caller, members }) => {
+export const canSendChatMessage: AuthorizationCheck<{ caller: CallingUser | null; members: Pick<ChatMember, "userId">[] }> = ({ caller, members }) => {
     if (!isSignedIn(caller)) {
         return disallow("not-signed-in");
     }
