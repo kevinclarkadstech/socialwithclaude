@@ -54,7 +54,15 @@ export function UserProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
 
   async function openOwnMenu() {
-    const choice = await chooseFrom({ options: [{ text: 'Sign out', value: 'sign-out' as const }] });
+    const choice = await chooseFrom({
+      options: [
+        { text: 'Settings', value: 'settings' as const },
+        { text: 'Sign out', value: 'sign-out' as const },
+      ],
+    });
+    if (choice === 'settings') {
+      navigate('/settings');
+    }
     if (choice === 'sign-out') {
       await signOut();
     }

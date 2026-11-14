@@ -19,7 +19,8 @@ export type AcceptFollowRequestMutationOutput = z.infer<typeof AcceptFollowReque
 /** Accepts `username`'s pending request to follow the caller. */
 export const acceptFollowRequestMutation: Mutation<{ input: AcceptFollowRequestMutationInput, output: AcceptFollowRequestMutationOutput }, {
     getCallingUser: GetCallingUser;
-    getUserProfileByUsername: (args: { username: string }) => Promise<UserProfile | null>;
+    // Only the id is used, so a profile summary will do.
+    getUserProfileByUsername: (args: { username: string }) => Promise<Pick<UserProfile, "userId"> | null>;
     acceptUserFollowRequest: (args: { userId: string; followerId: string }) => Promise<UserFollow | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();

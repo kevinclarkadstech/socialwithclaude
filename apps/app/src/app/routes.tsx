@@ -3,6 +3,7 @@ import type { RouteObject } from 'react-router';
 import { ChatsPage } from '../pages/ChatsPage/ChatsPage';
 import { FeedPage } from '../pages/FeedPage/FeedPage';
 import { PostDetailPage } from '../pages/PostDetailPage/PostDetailPage';
+import { SettingsPage } from '../pages/SettingsPage/SettingsPage';
 import { MarketplacePage } from '../pages/MarketplacePage/MarketplacePage';
 import { UserProfilePage } from '../pages/UserProfilePage/UserProfilePage';
 import type { TabDefinition } from '../navigation';
@@ -25,5 +26,6 @@ export const sharedRoutes: RouteObject[] = [
 /** Top-level pages outside the tabs. They open over the tabs, without the tab bar. */
 export const rootRoutes: RouteObject[] = [
   { path: '/me', element: <UserProfilePage /> },
+  { path: '/settings', element: <SettingsPage /> },
   { path: '/users/:username', element: <ProfileLinkRedirect /> },
 ];
