@@ -21,7 +21,8 @@ import { ellipsisHorizontal, lockClosedOutline } from 'ionicons/icons';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { displayName } from '../../utils/formatters/names';
-import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
+import { requireCallerWithProfile } from '@myapp/shared/authorization';
+import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
 import { chooseFrom } from '../../lib/prompts';
 import { BackButton, useTabHref } from '../../navigation';
 import { useAuth } from '../../domains/auth';
@@ -38,7 +39,7 @@ import './UserProfilePage.css';
 export function UserProfilePage() {
   const params = useParams<{ username?: string }>();
   const { callingUser, isLoaded } = useCallingUser();
-  const requireSignIn = useRequireSignIn();
+  const signedUpCheck = requireCallerWithProfile({ caller: callingUser });
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const tabHref = useTabHref();
@@ -96,7 +97,11 @@ export function UserProfilePage() {
         {!username && isLoaded && (
           <div className="page-message user-profile__gate">
             <p>{callingUser ? 'Finish signing up to get a profile.' : 'Sign in to see your profile.'}</p>
-            <IonButton onClick={() => requireSignIn()}>{callingUser ? 'Finish sign-up' : 'Sign in'}</IonButton>
+            {!signedUpCheck.ok && (
+              <IonButton onClick={() => disallowedActions.emit({ error: signedUpCheck.error })}>
+                {callingUser ? 'Finish sign-up' : 'Sign in'}
+              </IonButton>
+            )}
           </div>
         )}
         {username && status === 'loading' && (

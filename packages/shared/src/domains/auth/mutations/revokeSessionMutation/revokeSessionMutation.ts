@@ -2,10 +2,10 @@ import z from "zod";
 import type { Mutation } from "../../../../types/mutation";
 import { fail, succeed } from "../../../../utils/result";
 import { notFoundError, validationError } from "../../../../error-handling";
-import { requireCaller } from "../../../../authorization/requireCaller/requireCaller";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
 import { UserSessionSchema, type UserSession } from "../../../users/types/user-session";
+import { canRevokeSession } from "../../authorization/canRevokeSession/canRevokeSession";
 
 export const RevokeSessionMutationInputSchema = UserSessionSchema.pick({ id: true });
 
@@ -22,7 +22,7 @@ export const revokeSessionMutation: Mutation<{ input: RevokeSessionMutationInput
     revokeSessionToken: (token: string) => Promise<void>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCaller({ caller });
+    const allowed = canRevokeSession({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

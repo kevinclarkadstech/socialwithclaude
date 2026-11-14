@@ -2,7 +2,6 @@ import z from "zod";
 import type { Mutation } from "../../../../types/mutation";
 import { fail, succeed } from "../../../../utils/result";
 import { validationError } from "../../../../error-handling";
-import { requireCallerWithProfile } from "../../../../authorization/requireCaller/requireCaller";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import { maxPhotoUploadBytes } from "../../../../media/constants";
 import { PhotoContentTypeSchema } from "../../../../media/types";
@@ -10,6 +9,7 @@ import { profilePhotoWidths } from "../../constants";
 import { ProfilePhotoKindSchema } from "../../types/profile-photo";
 import { profilePhotoUploadKey } from "../../utils/profilePhotoKeys";
 import type { GetCallingUser } from "../../types/calling-user";
+import { canUpdateMyProfile } from "../../authorization/canUpdateMyProfile/canUpdateMyProfile";
 
 export const CreateProfilePhotoUploadMutationInputSchema = z.object({
     kind: ProfilePhotoKindSchema,
@@ -41,7 +41,7 @@ export const createProfilePhotoUploadMutation: Mutation<{ input: CreateProfilePh
     createUploadUrl: (args: { key: string; contentType: string; contentLength: number }) => Promise<string>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCallerWithProfile({ caller });
+    const allowed = canUpdateMyProfile({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

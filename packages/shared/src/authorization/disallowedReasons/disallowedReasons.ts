@@ -8,6 +8,8 @@ export const disallowedReasons = {
     // Routine: expired sessions, onboarding.
     "not-signed-in": { errorType: "authentication", message: "Sign in required", logLevel: "info" },
     "profile-required": { errorType: "authorization", message: "Finish signing up first", logLevel: "info" },
+    // Sign-up is only offered without a profile: likely a client bug or a double submit.
+    "profile-exists": { errorType: "conflict", message: "Profile already exists", logLevel: "warn" },
     // The UI shouldn't allow it: likely a client bug.
     "self": { errorType: "validation", message: "You can't do that to yourself", logLevel: "warn" },
     // The UI never sends these: someone probing, or broken code. Alert on their rate.

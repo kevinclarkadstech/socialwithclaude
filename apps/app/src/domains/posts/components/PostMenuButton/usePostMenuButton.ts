@@ -1,7 +1,7 @@
-import { canDeletePost, canUpdatePost, type PostView } from '@myapp/shared/domains';
+import { canDeletePost, canReportPost, canUpdatePost, type PostView } from '@myapp/shared/domains';
 import { useState } from 'react';
 import { askForReport } from '../../../../common/prompts/askForReport';
-import { useRequireSignIn } from '../../../../common/hooks/useRequireSignIn';
+import { disallowedActions } from '../../../../common/events/disallowedActions/disallowedActions';
 import { chooseFrom, confirm } from '../../../../lib/prompts';
 import { useCallingUser } from '../../../users';
 import { deletePost } from '../../actions/deletePost/deletePost';
@@ -14,11 +14,11 @@ import { reportPost } from '../../actions/reportPost/reportPost';
  */
 export function usePostMenuButton({ post, onDeleted }: { post: PostView; onDeleted?: () => void }) {
   const { callingUser } = useCallingUser();
-  const requireSignIn = useRequireSignIn();
   const [isEditing, setIsEditing] = useState(false);
 
   const canEdit = canUpdatePost({ caller: callingUser, post }).ok;
   const canDelete = canDeletePost({ caller: callingUser, post }).ok;
+  const reportCheck = canReportPost({ caller: callingUser, post });
 
   async function removePost() {
     const confirmed = await confirm({
@@ -58,7 +58,11 @@ export function usePostMenuButton({ post, onDeleted }: { post: PostView; onDelet
       await removePost();
     }
     if (choice === 'report') {
-      requireSignIn(() => void report());
+      if (!reportCheck.ok) {
+        disallowedActions.emit({ error: reportCheck.error, action: () => void report() });
+        return;
+      }
+      await report();
     }
   }
 

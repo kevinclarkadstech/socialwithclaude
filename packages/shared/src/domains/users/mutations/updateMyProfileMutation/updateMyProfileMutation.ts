@@ -2,10 +2,10 @@ import z from "zod";
 import type { Mutation } from "../../../../types/mutation";
 import { fail, succeed } from "../../../../utils/result";
 import { conflictError } from "../../../../error-handling";
-import { requireCallerWithProfile } from "../../../../authorization/requireCaller/requireCaller";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../types/calling-user";
 import { UserProfileSchema, type UserProfile } from "../../types/user-profile";
+import { canUpdateMyProfile } from "../../authorization/canUpdateMyProfile/canUpdateMyProfile";
 
 export const UpdateMyProfileMutationInputSchema = UserProfileSchema.pick({
     username: true,
@@ -31,7 +31,7 @@ export const updateMyProfileMutation: Mutation<{ input: UpdateMyProfileMutationI
     updateUserProfile: (args: Pick<UserProfile, "userId" | "username" | "firstName" | "lastName" | "about">) => Promise<UserProfile | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCallerWithProfile({ caller });
+    const allowed = canUpdateMyProfile({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

@@ -2,10 +2,10 @@ import z from "zod";
 import type { Mutation } from "../../../../types/mutation";
 import { fail, succeed } from "../../../../utils/result";
 import { conflictError } from "../../../../error-handling";
-import { requireCallerWithProfile } from "../../../../authorization/requireCaller/requireCaller";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../types/calling-user";
 import { UserFeedbackSchema, type UserFeedback } from "../../types/user-feedback";
+import { canSendFeedback } from "../../authorization/canSendFeedback/canSendFeedback";
 
 export const CreateUserFeedbackMutationInputSchema = UserFeedbackSchema.pick({
     id: true,
@@ -32,7 +32,7 @@ export const createUserFeedbackMutation: Mutation<{ input: CreateUserFeedbackMut
     createUserFeedback: (args: Pick<UserFeedback, "id" | "userId" | "category" | "message" | "pageUrl" | "userAgent">) => Promise<UserFeedback | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCallerWithProfile({ caller });
+    const allowed = canSendFeedback({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

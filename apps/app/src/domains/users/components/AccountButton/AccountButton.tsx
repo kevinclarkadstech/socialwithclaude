@@ -1,22 +1,27 @@
 import { IonButton } from '@ionic/react';
+import { requireCallerWithProfile } from '@myapp/shared/authorization';
 import { useCallingUser } from '../../hooks/useCallingUser/useCallingUser';
-import { useRequireSignIn } from '../../../../common/hooks/useRequireSignIn';
+import { disallowedActions } from '../../../../common/events/disallowedActions/disallowedActions';
 import { UserAvatar } from '../UserAvatar/UserAvatar';
 
 /** The header's account button: your avatar (opens /me), or "Sign in". */
 export function AccountButton() {
   const { isLoaded, callingUser } = useCallingUser();
-  const requireSignIn = useRequireSignIn();
+  const signedUpCheck = requireCallerWithProfile({ caller: callingUser });
 
   if (!isLoaded) {
     return null;
   }
-  if (callingUser?.profile) {
+  if (signedUpCheck.ok) {
     return (
       <IonButton routerLink="/me" aria-label="Your profile">
-        <UserAvatar user={callingUser.profile} size={32} />
+        <UserAvatar user={signedUpCheck.value.profile} size={32} />
       </IonButton>
     );
   }
-  return <IonButton onClick={() => requireSignIn()}>{callingUser ? 'Finish sign-up' : 'Sign in'}</IonButton>;
+  return (
+    <IonButton onClick={() => disallowedActions.emit({ error: signedUpCheck.error })}>
+      {callingUser ? 'Finish sign-up' : 'Sign in'}
+    </IonButton>
+  );
 }

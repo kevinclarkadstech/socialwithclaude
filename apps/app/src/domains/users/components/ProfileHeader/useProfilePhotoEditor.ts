@@ -1,10 +1,12 @@
-import { profilePhotoAspectRatios, type GetUserProfileQueryOutput, type ProfilePhotoKind } from '@myapp/shared/domains';
+import { canUpdateMyProfile, profilePhotoAspectRatios, type GetUserProfileQueryOutput, type ProfilePhotoKind } from '@myapp/shared/domains';
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { showMenu } from '../../../../lib/prompts';
 import { showErrorToast } from '../../../../lib/toasts';
 import type { CropArea } from '../../../../lib/photos/renderCroppedPhotos';
 import { changeProfilePhoto } from '../../actions/changeProfilePhoto/changeProfilePhoto';
 import { removeProfilePhoto } from '../../actions/removeProfilePhoto/removeProfilePhoto';
+import { useCallingUser } from '../../hooks/useCallingUser/useCallingUser';
+import { disallowedActions } from '../../../../common/events/disallowedActions/disallowedActions';
 
 const labels: Record<ProfilePhotoKind, string> = { avatar: 'photo', cover: 'cover photo' };
 
@@ -16,6 +18,8 @@ export function useProfilePhotoEditor({ profile, onProfileChange }: {
   profile: GetUserProfileQueryOutput;
   onProfileChange: (profile: GetUserProfileQueryOutput) => void;
 }) {
+  const { callingUser } = useCallingUser();
+  const updateProfileCheck = canUpdateMyProfile({ caller: callingUser });
   // The hidden <input type="file">; the menu opens it from inside the tap, as browsers require.
   const fileInputRef = useRef<HTMLInputElement>(null);
   const kindRef = useRef<ProfilePhotoKind>('avatar');
@@ -30,6 +34,10 @@ export function useProfilePhotoEditor({ profile, onProfileChange }: {
   }, [editing]);
 
   function openMenu(kind: ProfilePhotoKind) {
+    if (!updateProfileCheck.ok) {
+      disallowedActions.emit({ error: updateProfileCheck.error });
+      return;
+    }
     kindRef.current = kind;
     void showMenu({
       options: [

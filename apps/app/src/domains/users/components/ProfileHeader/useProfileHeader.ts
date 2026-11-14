@@ -1,5 +1,5 @@
-import type { GetUserProfileQueryOutput } from '@myapp/shared/domains';
-import { useRequireSignIn } from '../../../../common/hooks/useRequireSignIn';
+import { canBlockUser, canFollowUser, canUnblockUser, canUnfollowUser, type GetUserProfileQueryOutput } from '@myapp/shared/domains';
+import { disallowedActions } from '../../../../common/events/disallowedActions/disallowedActions';
 import { displayName } from '../../../../utils/formatters/names';
 import { config } from '../../../../lib/config';
 import { chooseFrom, confirm } from '../../../../lib/prompts';
@@ -8,6 +8,7 @@ import { blockUser } from '../../actions/blockUser/blockUser';
 import { followUser } from '../../actions/followUser/followUser';
 import { unblockUser } from '../../actions/unblockUser/unblockUser';
 import { unfollowUser } from '../../actions/unfollowUser/unfollowUser';
+import { useCallingUser } from '../../hooks/useCallingUser/useCallingUser';
 
 /**
  * A profile header's actions: follow (asking first to sign in), unfollow or
@@ -18,7 +19,14 @@ export function useProfileHeader({ profile, onProfileChange }: {
   profile: GetUserProfileQueryOutput;
   onProfileChange: (profile: GetUserProfileQueryOutput) => void;
 }) {
-  const requireSignIn = useRequireSignIn();
+  const { callingUser } = useCallingUser();
+  const followCheck = canFollowUser({ caller: callingUser, target: profile });
+  const unfollowCheck = canUnfollowUser({ caller: callingUser });
+  const unblockCheck = canUnblockUser({ caller: callingUser });
+  // The menu offers one of the two, so it opens only if that one is allowed.
+  const menuCheck = profile.viewer.hasBlocked
+    ? canUnblockUser({ caller: callingUser })
+    : canBlockUser({ caller: callingUser, target: profile });
 
   async function follow() {
     const result = await followUser({ profile });
@@ -87,10 +95,35 @@ export function useProfileHeader({ profile, onProfileChange }: {
   }
 
   return {
-    follow: () => requireSignIn(() => void follow()),
-    unfollow,
-    unblock: () => unblockUser({ profile }),
-    openMenu: () => requireSignIn(() => void openMenu()),
+    follow: () => {
+      if (!followCheck.ok) {
+        disallowedActions.emit({ error: followCheck.error, action: () => void follow() });
+        return;
+      }
+      void follow();
+    },
+    unfollow: () => {
+      if (!unfollowCheck.ok) {
+        disallowedActions.emit({ error: unfollowCheck.error, action: () => void unfollow() });
+        return;
+      }
+      void unfollow();
+    },
+    unblock: () => {
+      const action = () => void unblockUser({ profile });
+      if (!unblockCheck.ok) {
+        disallowedActions.emit({ error: unblockCheck.error, action });
+        return;
+      }
+      action();
+    },
+    openMenu: () => {
+      if (!menuCheck.ok) {
+        disallowedActions.emit({ error: menuCheck.error, action: () => void openMenu() });
+        return;
+      }
+      void openMenu();
+    },
     share: () => shareLink({ title: displayName(profile), url: `${config.publicUrl}/users/${profile.username}` }),
   };
 }

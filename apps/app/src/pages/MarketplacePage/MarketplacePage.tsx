@@ -17,12 +17,12 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/react';
-import { listingStatuses, type ListingStatus } from '@myapp/shared/domains';
+import { canCreatePost, listingStatuses, type ListingStatus } from '@myapp/shared/domains';
 import { add } from 'ionicons/icons';
 import { useState } from 'react';
 import { listingStatusLabels } from '../../utils/formatters/listings';
-import { useRequireSignIn } from '../../common/hooks/useRequireSignIn';
-import { AccountButton } from '../../domains/users';
+import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
+import { AccountButton, useCallingUser } from '../../domains/users';
 import { ComposeListingModal, PendingPosts, PostCard, useListings } from '../../domains/posts';
 import '../../common/styles/pages.css';
 
@@ -35,8 +35,10 @@ export function MarketplacePage() {
   const { ids: postIds, isLoading, error, hasMore, loadMore, refresh } = useListings({
     status: filter === ALL ? null : filter,
   });
-  const requireSignIn = useRequireSignIn();
+  const { callingUser } = useCallingUser();
+  const createPostCheck = canCreatePost({ caller: callingUser });
   const [isComposing, setIsComposing] = useState(false);
+  const compose = () => setIsComposing(true);
 
   return (
     <IonPage>
@@ -84,7 +86,16 @@ export function MarketplacePage() {
         </IonInfiniteScroll>
 
         <IonFab slot="fixed" vertical="bottom" horizontal="end">
-          <IonFabButton aria-label="New listing" onClick={() => requireSignIn(() => setIsComposing(true))}>
+          <IonFabButton
+            aria-label="New listing"
+            onClick={() => {
+              if (!createPostCheck.ok) {
+                disallowedActions.emit({ error: createPostCheck.error, action: compose });
+                return;
+              }
+              compose();
+            }}
+          >
             <IonIcon icon={add} aria-hidden="true" />
           </IonFabButton>
         </IonFab>

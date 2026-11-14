@@ -1,9 +1,9 @@
 import z from "zod";
 import type { Mutation } from "../../../../types/mutation";
 import { succeed } from "../../../../utils/result";
-import { requireCaller } from "../../../../authorization/requireCaller/requireCaller";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
+import { canRevokeOtherSessions } from "../../authorization/canRevokeOtherSessions/canRevokeOtherSessions";
 
 export const RevokeOtherSessionsMutationInputSchema = z.object({}).default({});
 
@@ -19,7 +19,7 @@ export const revokeOtherSessionsMutation: Mutation<{ input: RevokeOtherSessionsM
     revokeOtherSessions: () => Promise<void>;
 }> = async ({ context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCaller({ caller });
+    const allowed = canRevokeOtherSessions({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

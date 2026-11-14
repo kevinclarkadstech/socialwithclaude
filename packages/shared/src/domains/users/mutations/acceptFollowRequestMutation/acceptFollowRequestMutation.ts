@@ -2,11 +2,11 @@ import z from "zod";
 import type { Mutation } from "../../../../types/mutation";
 import { fail, succeed } from "../../../../utils/result";
 import { notFoundError } from "../../../../error-handling";
-import { requireCallerWithProfile } from "../../../../authorization/requireCaller/requireCaller";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../types/calling-user";
 import { UserProfileSchema, type UserProfile } from "../../types/user-profile";
 import { UserFollowSchema, type UserFollow } from "../../types/user-follow";
+import { canAcceptFollowRequest } from "../../authorization/canAcceptFollowRequest/canAcceptFollowRequest";
 
 export const AcceptFollowRequestMutationInputSchema = UserProfileSchema.pick({ username: true });
 
@@ -23,7 +23,7 @@ export const acceptFollowRequestMutation: Mutation<{ input: AcceptFollowRequestM
     acceptUserFollowRequest: (args: { userId: string; followerId: string }) => Promise<UserFollow | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const allowed = requireCallerWithProfile({ caller });
+    const allowed = canAcceptFollowRequest({ caller });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,
