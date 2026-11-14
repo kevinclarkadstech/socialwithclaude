@@ -17,6 +17,7 @@ import { createCacheRateLimiter, limitAuthRequestsMiddleware, type RateLimiter }
 import { appRouter, createContext } from "./transport/trpc";
 import { trpcOnErrorFunction } from "./error-handling";
 import { assertCanNotify } from "./notifications";
+import { errorReporter } from "./error-reporting";
 
 type Auth = ReturnType<typeof createAuthInstance>;
 
@@ -116,6 +117,10 @@ const app = new Hono<AppHonoEnv>()
     .notFound((c) => c.json({ message: "Not found" }, 404))
     .onError((err, c) => {
         c.get("logger").error(err.message, { err });
+        errorReporter.report({
+            error: err,
+            context: { requestId: c.get("requestId"), userId: c.get("user")?.id, method: c.req.method, path: c.req.path },
+        });
         return c.json({ message: "Something went wrong" }, 500);
     });
 

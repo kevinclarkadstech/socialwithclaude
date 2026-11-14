@@ -1,7 +1,10 @@
 import { type AppError } from '@myapp/shared/error-handling'
 import { TRPCError, type TRPC_ERROR_CODE_KEY, } from '@trpc/server';
 import { trpcServer } from "@hono/trpc-server";
+import { getContext } from 'hono/context-storage';
 import { rootLogger } from '../observability';
+import { errorReporter } from '../error-reporting';
+import type { AppHonoEnv } from '../index';
 
 export class AppTrpcError extends TRPCError {
     public metadata?: Record<string, unknown>;
@@ -50,10 +53,16 @@ export function appErrorToTrpcError(appError: AppError): AppTrpcError {
 
 type OnErrorFn = Parameters<typeof trpcServer>['0']['onError'];
 
-/** Logs unexpected errors with their full details; the client only sees a generic message. */
+/** Logs and reports unexpected errors with their full details; the client only sees a generic message. */
 export const trpcOnErrorFunction: OnErrorFn = ({ error, path, ctx }) => {
     if (error.code !== "INTERNAL_SERVER_ERROR") {
         return;
     }
-    (ctx?.logger ?? rootLogger).error(error.message, { err: error.cause ?? error, path });
+    const cause = error.cause ?? error;
+    (ctx?.logger ?? rootLogger).error(error.message, { err: cause, path });
+    const c = getContext<AppHonoEnv>();
+    errorReporter.report({
+        error: cause,
+        context: { requestId: c.get("requestId"), userId: c.get("user")?.id, method: c.req.method, path: c.req.path, procedure: path },
+    });
 }

@@ -55,6 +55,13 @@ The API's cache is Redis. For now it only holds rate-limit counters, so the limi
 - Set `CLIENT_IP_HEADER` to the header your proxy or CDN puts the caller's IP address in, e.g. `cf-connecting-ip` behind Cloudflare. The default is `x-forwarded-for`. Rate limits per IP trust this header, so the API must only be reachable through that proxy.
 - If Redis goes down, the API keeps serving with rate limiting off and logs it. `/api/ready` reports `cache: false`.
 
+### Error reporting (Sentry)
+
+Unexpected errors (what the client sees as "Something went wrong") are reported to Sentry, along with uncaught exceptions and unhandled rejections. Expected failures (validation, not found, forbidden, rate limited) aren't reported. Traces stay on OpenTelemetry: Sentry sends errors only. (It goes through an `ErrorReporter` interface in `apps/api/src/error-reporting`, so the tracker can be swapped.)
+
+- Set `SENTRY_DSN` from the Sentry project's settings. Optionally set `SENTRY_ENVIRONMENT` (defaults to `NODE_ENV`) and `SENTRY_RELEASE`, e.g. the commit SHA.
+- A report carries the error, its stack, the request id, the procedure, the method and path, and the signed-in user's id. It doesn't carry cookies, headers (other than the user agent), bodies, query parameters, local variables or database query values. The bound values in query error messages are replaced with `[redacted]`.
+
 ### Health checks
 
 - `GET /api/health`: liveness. The process is up.

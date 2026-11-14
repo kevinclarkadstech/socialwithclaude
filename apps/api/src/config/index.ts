@@ -36,6 +36,13 @@ export const ServerConfigSchema = z.object({
     // The header the load balancer or CDN puts the caller's IP address in (rate limits by IP use it),
     // e.g. cf-connecting-ip on Cloudflare. Without a proxy in front, callers could set it themselves.
     CLIENT_IP_HEADER: z.string().default("x-forwarded-for"),
+
+    // Unexpected errors go to Sentry when this is set; without it nothing is reported.
+    SENTRY_DSN: z.url().optional(),
+    // Defaults to NODE_ENV.
+    SENTRY_ENVIRONMENT: z.string().optional(),
+    // e.g. the commit SHA, so Sentry can say which deploy an error started in.
+    SENTRY_RELEASE: z.string().optional(),
 });
 
 /**
