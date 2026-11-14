@@ -1,0 +1,8 @@
+.user-summary-item__link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.user-summary-item__link:hover h3 {
+  text-decoration: underline;
+}

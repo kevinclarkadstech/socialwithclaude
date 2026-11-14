@@ -5,23 +5,23 @@ import { PageInputSchema, type Page } from "../../../../types/page";
 import { requireCallerWithProfile } from "../../../../authorization/requireCaller/requireCaller";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../types/calling-user";
-import { UserFollowSchema, type UserFollow } from "../../types/user-follow";
+import { UserFollowViewSchema, type UserFollowView } from "../../types/user-follow";
 
 export const GetMyFollowRequestsQueryInputSchema = PageInputSchema;
 
 export type GetMyFollowRequestsQueryInput = z.infer<typeof GetMyFollowRequestsQueryInputSchema>;
 
 export const GetMyFollowRequestsQueryOutputSchema = z.object({
-    items: z.array(UserFollowSchema),
+    items: z.array(UserFollowViewSchema),
     nextCursor: z.string().nullable(),
 });
 
 export type GetMyFollowRequestsQueryOutput = z.infer<typeof GetMyFollowRequestsQueryOutputSchema>;
 
-/** Pending requests to follow the caller, newest first. */
+/** Pending requests to follow the caller, newest first, each with who's asking. */
 export const getMyFollowRequestsQuery: Query<{ input: GetMyFollowRequestsQueryInput, output: GetMyFollowRequestsQueryOutput }, {
     getCallingUser: GetCallingUser;
-    getUserFollowRequests: (args: { userId: string; cursor?: string | null; limit: number }) => Promise<Page<UserFollow>>;
+    getUserFollowRequestViews: (args: { userId: string; cursor?: string | null; limit: number }) => Promise<Page<UserFollowView>>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     const allowed = requireCallerWithProfile({ caller });
@@ -34,6 +34,6 @@ export const getMyFollowRequestsQuery: Query<{ input: GetMyFollowRequestsQueryIn
         return allowed;
     }
 
-    const page = await dependencies.getUserFollowRequests({ ...input, userId: allowed.value.userId });
+    const page = await dependencies.getUserFollowRequestViews({ ...input, userId: allowed.value.userId });
     return succeed(page);
 }

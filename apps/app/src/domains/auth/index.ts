@@ -4,6 +4,7 @@
  */
 
 // Components
+export { SessionList } from './components/SessionList/SessionList';
 export { SignInModal } from './components/SignInModal/SignInModal';
 
 // Hooks

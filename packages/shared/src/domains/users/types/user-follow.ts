@@ -1,4 +1,5 @@
 import z from "zod";
+import { UserProfileSummarySchema } from "./user-profile-summary";
 
 export const UserFollowStatusSchema = z.enum(["pending", "accepted", "denied"]);
 
@@ -16,6 +17,13 @@ export const UserFollowSchema = z.object({
 
 export type UserFollowStatus = z.infer<typeof UserFollowStatusSchema>;
 export type UserFollow = z.infer<typeof UserFollowSchema>;
+
+/** A follow (e.g. a pending request) with who's following, to show them. */
+export const UserFollowViewSchema = UserFollowSchema.extend({
+    follower: UserProfileSummarySchema,
+});
+
+export type UserFollowView = z.infer<typeof UserFollowViewSchema>;
 
 /**
  * How a follow looks to the follower. A denied request still shows as

@@ -5,23 +5,23 @@ import { PageInputSchema, type Page } from "../../../../types/page";
 import { requireCallerWithProfile } from "../../../../authorization/requireCaller/requireCaller";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../types/calling-user";
-import { UserBlockSchema, type UserBlock } from "../../types/user-block";
+import { UserBlockViewSchema, type UserBlockView } from "../../types/user-block";
 
 export const GetMyBlockedUsersQueryInputSchema = PageInputSchema;
 
 export type GetMyBlockedUsersQueryInput = z.infer<typeof GetMyBlockedUsersQueryInputSchema>;
 
 export const GetMyBlockedUsersQueryOutputSchema = z.object({
-    items: z.array(UserBlockSchema),
+    items: z.array(UserBlockViewSchema),
     nextCursor: z.string().nullable(),
 });
 
 export type GetMyBlockedUsersQueryOutput = z.infer<typeof GetMyBlockedUsersQueryOutputSchema>;
 
-/** Users the caller has blocked, most recent first. */
+/** Users the caller has blocked, most recent first, each with who they are. */
 export const getMyBlockedUsersQuery: Query<{ input: GetMyBlockedUsersQueryInput, output: GetMyBlockedUsersQueryOutput }, {
     getCallingUser: GetCallingUser;
-    getUserBlocks: (args: { userId: string; cursor?: string | null; limit: number }) => Promise<Page<UserBlock>>;
+    getUserBlockViews: (args: { userId: string; cursor?: string | null; limit: number }) => Promise<Page<UserBlockView>>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     const allowed = requireCallerWithProfile({ caller });
@@ -34,6 +34,6 @@ export const getMyBlockedUsersQuery: Query<{ input: GetMyBlockedUsersQueryInput,
         return allowed;
     }
 
-    const page = await dependencies.getUserBlocks({ ...input, userId: allowed.value.userId });
+    const page = await dependencies.getUserBlockViews({ ...input, userId: allowed.value.userId });
     return succeed(page);
 }

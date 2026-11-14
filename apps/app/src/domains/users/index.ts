@@ -5,8 +5,11 @@
 
 // Components
 export { AccountButton } from './components/AccountButton/AccountButton';
+export { BlockedUserList } from './components/BlockedUserList/BlockedUserList';
 export { EditProfileModal } from './components/EditProfileModal/EditProfileModal';
+export { FollowRequestList } from './components/FollowRequestList/FollowRequestList';
 export { OnboardingModal } from './components/OnboardingModal/OnboardingModal';
+export { PrivacySettings } from './components/PrivacySettings/PrivacySettings';
 export { ProfileHeader } from './components/ProfileHeader/ProfileHeader';
 export { UserAvatar } from './components/UserAvatar/UserAvatar';
 
