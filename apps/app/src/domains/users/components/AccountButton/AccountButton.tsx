@@ -4,7 +4,7 @@ import { useCallingUser } from '../../hooks/useCallingUser/useCallingUser';
 import { disallowedActions } from '../../../../common/events/disallowedActions/disallowedActions';
 import { UserAvatar } from '../UserAvatar/UserAvatar';
 
-/** The header's account button: your avatar (opens /me), or "Sign in". */
+/** The header's account button: your avatar (opens your profile, /profile/:username), or "Sign in". */
 export function AccountButton() {
   const { isLoaded, callingUser } = useCallingUser();
   const signedUpCheck = requireCallerWithProfile({ caller: callingUser });
@@ -14,7 +14,7 @@ export function AccountButton() {
   }
   if (signedUpCheck.ok) {
     return (
-      <IonButton routerLink="/me" aria-label="Your profile">
+      <IonButton routerLink={`/profile/${signedUpCheck.value.profile.username}`} aria-label="Your profile">
         <UserAvatar user={signedUpCheck.value.profile} size={32} />
       </IonButton>
     );

@@ -7,7 +7,7 @@ export interface TabNavigationProviderProps {
   /** Routes (relative paths) that can be opened in any tab, e.g. "items/:id". */
   sharedRoutes?: RouteObject[];
   /**
-   * Top-level routes outside the tabs, e.g. "/me". They open as full pages
+   * Top-level routes outside the tabs, e.g. "/profile/:username". They open as full pages
    * over the tabs, without the tab bar; the tabs stay mounted underneath.
    */
   rootRoutes?: RouteObject[];

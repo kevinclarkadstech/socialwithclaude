@@ -7,7 +7,6 @@ import { SettingsPage } from '../pages/SettingsPage/SettingsPage';
 import { MarketplacePage } from '../pages/MarketplacePage/MarketplacePage';
 import { UserProfilePage } from '../pages/UserProfilePage/UserProfilePage';
 import type { TabDefinition } from '../navigation';
-import { ProfileLinkRedirect } from './ProfileLinkRedirect/ProfileLinkRedirect';
 
 /** The app's main sections: the bottom tab bar on phones, the sidebar on wide screens. */
 export const tabs: TabDefinition[] = [
@@ -19,13 +18,13 @@ export const tabs: TabDefinition[] = [
 /** Pages that open on top of whichever tab you're in, e.g. /feed/posts/123. */
 export const sharedRoutes: RouteObject[] = [
   { path: 'posts/:postId', element: <PostDetailPage /> },
-  { path: 'users/:username', element: <UserProfilePage /> },
+  { path: 'profile/:username', element: <UserProfilePage /> },
 ];
 
 
 /** Top-level pages outside the tabs. They open over the tabs, without the tab bar. */
 export const rootRoutes: RouteObject[] = [
-  { path: '/me', element: <UserProfilePage /> },
   { path: '/settings', element: <SettingsPage /> },
-  { path: '/users/:username', element: <ProfileLinkRedirect /> },
+  // Your profile (from the account button) and shared links: a full page over the tabs.
+  { path: '/profile/:username', element: <UserProfilePage /> },
 ];

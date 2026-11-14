@@ -16,7 +16,6 @@
   width: auto;
 }
 
-.user-profile__gate,
 .user-profile__private {
   flex-direction: column;
   align-items: center;

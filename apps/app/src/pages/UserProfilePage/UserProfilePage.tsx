@@ -19,10 +19,8 @@ import {
 import type { GetUserProfileQueryOutput, UserPostsType } from '@myapp/shared/domains';
 import { ellipsisHorizontal, lockClosedOutline } from 'ionicons/icons';
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useLocation, useNavigate, useParams } from 'react-router';
 import { displayName } from '../../utils/formatters/names';
-import { requireCallerWithProfile } from '@myapp/shared/authorization';
-import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
 import { chooseFrom } from '../../lib/prompts';
 import { BackButton, useTabHref } from '../../navigation';
 import { useAuth } from '../../domains/auth';
@@ -32,20 +30,22 @@ import '../../common/styles/pages.css';
 import './UserProfilePage.css';
 
 /**
- * A profile: /<tab>/users/:username for anyone, and /me for your own. Its
- * header, then its posts or listings, unless the profile is private (and
- * you don't follow it) or blocked.
+ * A profile, at /profile/:username (a full page: your own, from the
+ * account button, and shared links) or /<tab>/profile/:username (opened
+ * from inside a tab, e.g. a post's author): its header, then its posts or
+ * listings, unless the profile is private (and you don't follow it) or
+ * blocked. When it's the signed-in user's own, it also offers editing, its
+ * photos, Settings and sign-out.
  */
 export function UserProfilePage() {
   const params = useParams<{ username?: string }>();
-  const { callingUser, isLoaded } = useCallingUser();
-  const signedUpCheck = requireCallerWithProfile({ caller: callingUser });
+  const { callingUser } = useCallingUser();
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const tabHref = useTabHref();
+  const { pathname } = useLocation();
   const ownUsername = callingUser?.profile?.username ?? null;
-  // /me has no username in the path: it's yours.
-  const username = params.username ?? ownUsername;
+  const username = params.username ?? null;
   const isOwn = username !== null && username === ownUsername;
 
   const { profile, status, reload, setProfile } = useUserProfile({ username });
@@ -101,17 +101,6 @@ export function UserProfilePage() {
           <IonRefresherContent />
         </IonRefresher>
 
-        {/* /me while signed out, or before finishing sign-up. */}
-        {!username && isLoaded && (
-          <div className="page-message user-profile__gate">
-            <p>{callingUser ? 'Finish signing up to get a profile.' : 'Sign in to see your profile.'}</p>
-            {!signedUpCheck.ok && (
-              <IonButton onClick={() => disallowedActions.emit({ error: signedUpCheck.error })}>
-                {callingUser ? 'Finish sign-up' : 'Sign in'}
-              </IonButton>
-            )}
-          </div>
-        )}
         {username && status === 'loading' && (
           <div className="page-message">
             <IonSpinner />
@@ -184,9 +173,10 @@ export function UserProfilePage() {
             onDismiss={() => setIsEditing(false)}
             onSaved={(saved) => {
               applyCreatorChange(saved);
-              // On /<tab>/users/:username, follow a new username; /me follows it already.
-              if (params.username && saved.username !== params.username) {
-                navigate(tabHref(`users/${saved.username}`), { replace: true });
+              // A new username is a new URL.
+              if (saved.username !== username) {
+                const path = pathname.startsWith('/profile/') ? `/profile/${saved.username}` : tabHref(`profile/${saved.username}`);
+                navigate(path, { replace: true });
                 return;
               }
               void reload();
