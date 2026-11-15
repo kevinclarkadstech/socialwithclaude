@@ -15,7 +15,10 @@ export const UnfollowUserMutationOutputSchema = z.null();
 
 export type UnfollowUserMutationOutput = z.infer<typeof UnfollowUserMutationOutputSchema>;
 
-/** Unfollows a user, or cancels a follow request. Succeeds if neither. */
+/**
+ * Unfollows a user, or cancels a follow request. Succeeds if neither. A
+ * denied request stays (denial is permanent), so following again changes nothing.
+ */
 export const unfollowUserMutation: Mutation<{ input: UnfollowUserMutationInput, output: UnfollowUserMutationOutput }, {
     getCallingUser: GetCallingUser;
     getUserProfileByUsername: (args: { username: string }) => Promise<UserProfile | null>;
