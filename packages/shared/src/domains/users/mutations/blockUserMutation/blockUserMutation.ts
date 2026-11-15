@@ -25,9 +25,8 @@ export type BlockUserMutationOutput = z.infer<typeof BlockUserMutationOutputSche
 export const blockUserMutation: Mutation<{ input: BlockUserMutationInput, output: BlockUserMutationOutput }, {
     getCallingUser: GetCallingUser;
     getUserProfileByUsername: (args: { username: string }) => Promise<UserProfile | null>;
+    /** Saves the block and deletes any follow or follow request between the two, either way, in one go. */
     blockUser: (args: { userId: string; blockedUserId: string }) => Promise<UserBlock>;
-    /** Deletes any follow or follow request between the two, either way. */
-    removeFollowsBetween: (args: { userId: string; otherUserId: string }) => Promise<void>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const target = await dependencies.getUserProfileByUsername(input);
     if (!target) {
@@ -47,6 +46,5 @@ export const blockUserMutation: Mutation<{ input: BlockUserMutationInput, output
     }
 
     const block = await dependencies.blockUser({ userId: allowed.value.userId, blockedUserId: target.userId });
-    await dependencies.removeFollowsBetween({ userId: allowed.value.userId, otherUserId: target.userId });
     return succeed(block);
 }

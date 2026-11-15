@@ -16,7 +16,6 @@ export { getUserProfileByUserId } from './getUserProfileByUserId/getUserProfileB
 export { getUserProfileByUsername } from './getUserProfileByUsername/getUserProfileByUsername';
 export { getUserSaves } from './getUserSaves/getUserSaves';
 export { getUserSettings } from './getUserSettings/getUserSettings';
-export { removeFollowsBetween } from './removeFollowsBetween/removeFollowsBetween';
 export { searchUserProfiles } from './searchUserProfiles/searchUserProfiles';
 export { touchUserProfile } from './touchUserProfile/touchUserProfile';
 export { unblockUser } from './unblockUser/unblockUser';
