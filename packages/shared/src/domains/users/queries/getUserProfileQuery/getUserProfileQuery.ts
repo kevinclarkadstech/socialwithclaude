@@ -6,7 +6,7 @@ import { hasBlocked, isSelf } from "../../../../authorization/conditions/conditi
 import { canViewUserPosts } from "../../authorization/canViewUserPosts/canViewUserPosts";
 import { canViewUserProfile } from "../../authorization/canViewUserProfile/canViewUserProfile";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
-import type { GetCallingUser } from "../../types/calling-user";
+import type { GetCallingUserWithBlockList } from "../../types/calling-user";
 import { toViewerFollowStatus, ViewerFollowStatusSchema, type UserFollowStatus } from "../../types/user-follow";
 import { UserProfileSchema, type UserProfile } from "../../types/user-profile";
 import { ProfileVisibilitySchema, type ProfileVisibility } from "../../types/user-settings";
@@ -35,7 +35,7 @@ export type GetUserProfileQueryOutput = z.infer<typeof GetUserProfileQueryOutput
  * Not found if the user doesn't exist, or has blocked the caller.
  */
 export const getUserProfileQuery: Query<{ input: GetUserProfileQueryInput, output: GetUserProfileQueryOutput }, {
-    getCallingUser: GetCallingUser;
+    getCallingUser: GetCallingUserWithBlockList;
     getUserProfileByUsername: (args: { username: string }) => Promise<UserProfile | null>;
     // Null if the user has no settings (which shouldn't happen): treated as followers-only.
     getProfileVisibility: (args: { userId: string }) => Promise<ProfileVisibility | null>;

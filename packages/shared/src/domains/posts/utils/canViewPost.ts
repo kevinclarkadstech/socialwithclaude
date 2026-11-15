@@ -1,4 +1,4 @@
-import type { CallingUser } from "../../users/types/calling-user";
+import type { CallingUserWithBlockList } from "../../users/types/calling-user";
 import type { PostView } from "../types/post";
 import type { AuthorizationCheck } from "../../../authorization/allowDisallow/allowDisallow";
 import { canViewUserPosts } from "../../users/authorization/canViewUserPosts/canViewUserPosts";
@@ -8,9 +8,9 @@ import { canViewUserPosts } from "../../users/authorization/canViewUserPosts/can
  * profile (canViewUserPosts), from what the post carries about its creator.
  */
 export const canViewPost: AuthorizationCheck<{
-    caller: CallingUser | null;
+    caller: CallingUserWithBlockList | null;
     post: Pick<PostView, "createdBy" | "creator" | "viewer">;
-}, CallingUser | null> = ({ caller, post }) =>
+}, CallingUserWithBlockList | null> = ({ caller, post }) =>
     canViewUserPosts({
         caller,
         profile: { userId: post.createdBy },
@@ -20,7 +20,7 @@ export const canViewPost: AuthorizationCheck<{
 
 /** The posts in `posts` the caller can see (see canViewPost). */
 export function viewablePosts<P extends Pick<PostView, "createdBy" | "creator" | "viewer">>({ caller, posts }: {
-    caller: CallingUser | null;
+    caller: CallingUserWithBlockList | null;
     posts: P[];
 }): P[] {
     return posts.filter((post) => canViewPost({ caller, post }).ok);

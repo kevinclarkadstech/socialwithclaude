@@ -45,6 +45,8 @@ export const users = pgTable("users", {
     email: text("email").notNull(),
     emailVerified: boolean("email_verified").notNull().default(false),
     image: text("image"),
+    // Whether sign-up is complete: set with the user_profiles row, so the session lookup says it without reading that table.
+    hasProfile: boolean("has_profile").notNull().default(false),
 }, (t) => [
     uniqueIndex("users_email_lower_idx").on(sql`lower(${t.email})`),
 ]);

@@ -6,7 +6,7 @@ import { viewablePosts } from "../../utils/canViewPost";
 import { PageInputSchema, type Page } from "../../../../types/page";
 import { PostViewSchema, type PostView } from "../../types/post";
 import { ListingStatusSchema, type ListingStatus } from "../../types/post-listing";
-import type { GetCallingUser } from "../../../users/types/calling-user";
+import type { GetCallingUserWithBlockList } from "../../../users/types/calling-user";
 
 export const GetPostListingsQueryInputSchema = PageInputSchema.extend({
     status: ListingStatusSchema.optional(),
@@ -23,7 +23,7 @@ export type GetPostListingsQueryOutput = z.infer<typeof GetPostListingsQueryOutp
 
 /** Listings, newest first; only those with `status` if given. Only what the caller can see (canViewPost). */
 export const getPostListingsQuery: Query<{ input: GetPostListingsQueryInput, output: GetPostListingsQueryOutput }, {
-    getCallingUser: GetCallingUser;
+    getCallingUser: GetCallingUserWithBlockList;
     getListingPostViews: (args: { excludedCreatorIds: string[]; status?: ListingStatus; viewerId: string | null; cursor?: string | null; limit: number }) => Promise<Page<PostView>>;
 }> = async ({ input, dependencies }) => {
     const caller = await dependencies.getCallingUser();

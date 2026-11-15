@@ -1,11 +1,11 @@
 import { describe, expect, it, mock } from "bun:test";
-import type { CallingUser } from "../../../users/types/calling-user";
+import type { CallingUserWithBlockList } from "../../../users/types/calling-user";
 import type { PostView } from "../../types/post";
 import { mockCaller, mockPost, userId2 } from "../../../../testing/fixtures";
 import { testContext } from "../../../../testing/context";
 import { getPostCommentsQuery } from "./getPostCommentsQuery";
 
-function run({ caller, post }: { caller: CallingUser | null; post: PostView | null }) {
+function run({ caller, post }: { caller: CallingUserWithBlockList | null; post: PostView | null }) {
     const getPostCommentViews = mock(async () => ({ items: [], nextCursor: null }));
     const result = getPostCommentsQuery({
         input: { postId: mockPost().id, limit: 20, order: "oldest" },
@@ -35,7 +35,7 @@ describe("getPostCommentsQuery", () => {
     });
 
     it("needs sign-up to be finished", async () => {
-        const { result } = run({ caller: mockCaller({ profile: null }), post: mockPost() });
+        const { result } = run({ caller: mockCaller({ hasProfile: false }), post: mockPost() });
         expect(await result).toMatchObject({ ok: false, error: { type: "authorization" } });
     });
 

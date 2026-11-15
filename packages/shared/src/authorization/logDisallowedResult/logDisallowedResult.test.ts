@@ -27,7 +27,7 @@ function logged(result: ReturnType<typeof canUpdatePost>) {
 describe("logDisallowedResult", () => {
     it("logs routine failures as info", () => {
         expect(logged(canUpdatePost({ caller: null, post: mockPost() })).info).toHaveBeenCalledTimes(1);
-        expect(logged(canUpdatePost({ caller: mockCaller({ profile: null }), post: mockPost() })).info).toHaveBeenCalledTimes(1);
+        expect(logged(canUpdatePost({ caller: mockCaller({ hasProfile: false }), post: mockPost() })).info).toHaveBeenCalledTimes(1);
     });
 
     it("logs likely client bugs as warn", () => {

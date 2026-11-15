@@ -1,4 +1,4 @@
-import type { CallingUser } from "../../types/calling-user";
+import type { CallingUserWithBlockList } from "../../types/calling-user";
 import type { ViewerFollowStatus } from "../../types/user-follow";
 import type { UserProfile } from "../../types/user-profile";
 import type { ProfileVisibility } from "../../types/user-settings";
@@ -11,11 +11,11 @@ import { hasBlocked, isBlockedBy, isSelf } from "../../../../authorization/condi
  * always the user themselves. Blocking hides them both ways.
  */
 export const canViewUserPosts: AuthorizationCheck<{
-    caller: CallingUser | null;
+    caller: CallingUserWithBlockList | null;
     profile: Pick<UserProfile, "userId">;
     visibility: ProfileVisibility;
     followStatus: ViewerFollowStatus;
-}, CallingUser | null> = ({ caller, profile, visibility, followStatus }) => {
+}, CallingUserWithBlockList | null> = ({ caller, profile, visibility, followStatus }) => {
     if (caller && isBlockedBy(caller, profile.userId)) {
         return disallow("blocked-by-user");
     }

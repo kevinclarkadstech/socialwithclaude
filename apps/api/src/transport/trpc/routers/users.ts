@@ -65,11 +65,11 @@ import { procedure, router } from "../trpc";
 
 export const usersRouter = router({
     me: procedure.input(GetMeQueryInputSchema).query(({ ctx, input }) =>
-        getMeQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser } }),
+        getMeQuery({ input, context: { logger: ctx.logger }, dependencies: { getSignedInUser: ctx.getSignedInUser } }),
     ),
 
     getUserProfile: procedure.input(GetUserProfileQueryInputSchema).query(({ ctx, input }) =>
-        getUserProfileQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, getProfileVisibility, getUserFollowStatus } }),
+        getUserProfileQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUserWithBlockList, getUserProfileByUsername, getProfileVisibility, getUserFollowStatus } }),
     ),
 
     updateMyProfile: procedure.input(UpdateMyProfileMutationInputSchema).mutation(({ ctx, input }) =>
@@ -112,7 +112,7 @@ export const usersRouter = router({
         followUserMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, getProfileVisibility, followUser },
+            dependencies: { getCallingUser: ctx.getCallingUserWithBlockList, getUserProfileByUsername, getProfileVisibility, followUser },
         }),
     ),
 

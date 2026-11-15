@@ -4,7 +4,7 @@ import { fail, succeed } from "../../../../utils/result";
 import { notFoundError } from "../../../../error-handling";
 import { canFollowUser } from "../../authorization/canFollowUser/canFollowUser";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
-import type { GetCallingUser } from "../../types/calling-user";
+import type { GetCallingUserWithBlockList } from "../../types/calling-user";
 import { UserFollowSchema, type UserFollow } from "../../types/user-follow";
 import { UserProfileSchema, type UserProfile } from "../../types/user-profile";
 import type { ProfileVisibility } from "../../types/user-settings";
@@ -22,7 +22,7 @@ export type FollowUserMutationOutput = z.infer<typeof FollowUserMutationOutputSc
  * pending their response. Following again returns the existing follow.
  */
 export const followUserMutation: Mutation<{ input: FollowUserMutationInput, output: FollowUserMutationOutput }, {
-    getCallingUser: GetCallingUser;
+    getCallingUser: GetCallingUserWithBlockList;
     getUserProfileByUsername: (args: { username: string }) => Promise<UserProfile | null>;
     // Null if the user has no settings (which shouldn't happen).
     getProfileVisibility: (args: { userId: string }) => Promise<ProfileVisibility | null>;

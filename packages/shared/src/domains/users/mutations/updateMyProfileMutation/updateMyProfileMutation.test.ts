@@ -31,6 +31,10 @@ describe("updateMyProfileMutation", () => {
         expect(updateUserProfile).toHaveBeenCalledWith({ ...edit, userId: mockCaller().userId });
     });
 
+    it("keeps a username that's already theirs", async () => {
+        expect((await run({ existing: mockProfile() }).result).ok).toBe(true);
+    });
+
     it("changes the username when it's free", async () => {
         expect((await run({ username: "maya" }).result).ok).toBe(true);
     });

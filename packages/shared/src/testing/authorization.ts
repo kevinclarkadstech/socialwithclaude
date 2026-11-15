@@ -1,5 +1,5 @@
 import { expect, it } from "bun:test";
-import type { CallingUser } from "../domains/users/types/calling-user";
+import type { CallingUserWithBlockList } from "../domains/users/types/calling-user";
 import { mockCaller, mockChatMember, mockChatMessage, mockProfile, userId2 } from "./fixtures";
 
 /**
@@ -7,10 +7,10 @@ import { mockCaller, mockChatMember, mockChatMessage, mockProfile, userId2 } fro
  * test file says which rule it follows. Call them inside the check's describe.
  */
 
-type Check<Context> = (args: { caller: CallingUser | null } & Context) => { ok: boolean };
+type Check<Context> = (args: { caller: CallingUserWithBlockList | null } & Context) => { ok: boolean };
 
 const signedOut = null;
-const midSignUp = mockCaller({ profile: null });
+const midSignUp = mockCaller({ hasProfile: false });
 const author = mockCaller();
 const someoneElse = mockCaller({ userId: userId2 });
 
@@ -80,6 +80,6 @@ export function itAllowsOnlySomeoneElse(can: Check<{ target: ReturnType<typeof m
     });
     it("needs a signed-in user who finished sign-up", () => {
         expect(can({ caller: null, target: mockProfile({ userId: userId2 }) })).toMatchObject({ ok: false, error: { type: "authentication" } });
-        expect(can({ caller: mockCaller({ profile: null }), target: mockProfile({ userId: userId2 }) })).toMatchObject({ ok: false, error: { type: "authorization" } });
+        expect(can({ caller: mockCaller({ hasProfile: false }), target: mockProfile({ userId: userId2 }) })).toMatchObject({ ok: false, error: { type: "authorization" } });
     });
 }

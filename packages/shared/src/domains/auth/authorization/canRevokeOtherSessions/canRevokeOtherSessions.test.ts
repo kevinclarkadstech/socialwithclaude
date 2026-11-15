@@ -5,7 +5,7 @@ import { canRevokeOtherSessions } from "./canRevokeOtherSessions";
 describe("canRevokeOtherSessions", () => {
     it("allows anyone signed in, even before sign-up is finished", () => {
         expect(canRevokeOtherSessions({ caller: mockCaller() }).ok).toBe(true);
-        expect(canRevokeOtherSessions({ caller: mockCaller({ profile: null }) }).ok).toBe(true);
+        expect(canRevokeOtherSessions({ caller: mockCaller({ hasProfile: false }) }).ok).toBe(true);
     });
     it("needs a signed-in user", () => {
         expect(canRevokeOtherSessions({ caller: null })).toMatchObject({ ok: false, error: { type: "authentication" } });

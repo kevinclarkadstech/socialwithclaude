@@ -5,7 +5,7 @@ import { blockedEitherWay } from "../../../../authorization/conditions/condition
 import { viewablePosts } from "../../utils/canViewPost";
 import { PageInputSchema, type Page } from "../../../../types/page";
 import { PostViewSchema, type PostView } from "../../types/post";
-import type { GetCallingUser } from "../../../users/types/calling-user";
+import type { GetCallingUserWithBlockList } from "../../../users/types/calling-user";
 
 export const SearchPostsQueryInputSchema = PageInputSchema.extend({
     query: z.string().trim().min(1).max(100),
@@ -22,7 +22,7 @@ export type SearchPostsQueryOutput = z.infer<typeof SearchPostsQueryOutputSchema
 
 /** Posts and listings whose content (or listing title) contains `query`, newest first. */
 export const searchPostsQuery: Query<{ input: SearchPostsQueryInput, output: SearchPostsQueryOutput }, {
-    getCallingUser: GetCallingUser;
+    getCallingUser: GetCallingUserWithBlockList;
     searchPostViews: (args: { excludedCreatorIds: string[]; query: string; viewerId: string | null; cursor?: string | null; limit: number }) => Promise<Page<PostView>>;
 }> = async ({ input, dependencies }) => {
     const caller = await dependencies.getCallingUser();

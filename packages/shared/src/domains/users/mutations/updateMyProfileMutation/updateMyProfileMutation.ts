@@ -42,12 +42,11 @@ export const updateMyProfileMutation: Mutation<{ input: UpdateMyProfileMutationI
     }
 
     const userId = allowed.value.userId;
-    if (input.username !== allowed.value.profile.username) {
-        const existingProfile = await dependencies.getUserProfileByUsername({ username: input.username });
-        if (existingProfile && existingProfile.userId !== userId) {
-            logger.info("Username is taken", { callerId: userId, username: input.username });
-            return fail(conflictError("Username is taken"));
-        }
+    // Their own profile when the username isn't changing.
+    const existingProfile = await dependencies.getUserProfileByUsername({ username: input.username });
+    if (existingProfile && existingProfile.userId !== userId) {
+        logger.info("Username is taken", { callerId: userId, username: input.username });
+        return fail(conflictError("Username is taken"));
     }
 
     const profile = await dependencies.updateUserProfile({ ...input, userId });

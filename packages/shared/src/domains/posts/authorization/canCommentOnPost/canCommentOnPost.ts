@@ -1,11 +1,11 @@
-import type { CallingUser } from "../../../users/types/calling-user";
+import type { CallingUserWithBlockList } from "../../../users/types/calling-user";
 import type { PostView } from "../../types/post";
 import { allow, disallow, type AuthorizationCheck } from "../../../../authorization/allowDisallow/allowDisallow";
 import { hasProfile, isSignedIn } from "../../../../authorization/conditions/conditions";
 import { canViewPost } from "../../utils/canViewPost";
 
 /** Anyone who has finished sign-up can comment on a post they can see. */
-export const canCommentOnPost: AuthorizationCheck<{ caller: CallingUser | null; post: PostView }> = ({ caller, post }) => {
+export const canCommentOnPost: AuthorizationCheck<{ caller: CallingUserWithBlockList | null; post: PostView }> = ({ caller, post }) => {
     if (!isSignedIn(caller)) {
         return disallow("not-signed-in");
     }

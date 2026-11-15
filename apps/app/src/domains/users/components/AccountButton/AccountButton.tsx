@@ -12,16 +12,21 @@ export function AccountButton() {
   if (!isLoaded) {
     return null;
   }
-  if (signedUpCheck.ok) {
+  if (!signedUpCheck.ok) {
     return (
-      <IonButton routerLink={`/profile/${signedUpCheck.value.profile.username}`} aria-label="Your profile">
-        <UserAvatar user={signedUpCheck.value.profile} size={32} />
+      <IonButton onClick={() => disallowedActions.emit({ error: signedUpCheck.error })}>
+        {callingUser ? 'Finish sign-up' : 'Sign in'}
       </IonButton>
     );
   }
+  // Anyone who finished sign-up has one.
+  const profile = callingUser?.profile;
+  if (!profile) {
+    return null;
+  }
   return (
-    <IonButton onClick={() => disallowedActions.emit({ error: signedUpCheck.error })}>
-      {callingUser ? 'Finish sign-up' : 'Sign in'}
+    <IonButton routerLink={`/profile/${profile.username}`} aria-label="Your profile">
+      <UserAvatar user={profile} size={32} />
     </IonButton>
   );
 }

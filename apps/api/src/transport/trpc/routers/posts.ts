@@ -36,15 +36,15 @@ import { procedure, router } from "../trpc";
 
 export const postsRouter = router({
     getPostById: procedure.input(GetPostByIdQueryInputSchema).query(({ ctx, input }) =>
-        getPostByIdQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getPostViewById } }),
+        getPostByIdQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUserWithBlockList, getPostViewById } }),
     ),
 
     getFeed: procedure.input(GetFeedQueryInputSchema).query(({ ctx, input }) =>
-        getFeedQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getPostViews } }),
+        getFeedQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUserWithBlockList, getPostViews } }),
     ),
 
     getUserPosts: procedure.input(GetUserPostsQueryInputSchema).query(({ ctx, input }) =>
-        getUserPostsQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, getProfileVisibility, getUserFollowStatus, getPostViews } }),
+        getUserPostsQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUserWithBlockList, getUserProfileByUsername, getProfileVisibility, getUserFollowStatus, getPostViews } }),
     ),
 
     createPost: procedure.input(CreatePostMutationInputSchema).mutation(({ ctx, input }) =>
@@ -101,7 +101,7 @@ export const postsRouter = router({
         reportPostMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostViewById, createPostReport },
+            dependencies: { getCallingUser: ctx.getCallingUserWithBlockList, getPostViewById, createPostReport },
         }),
     ),
 });

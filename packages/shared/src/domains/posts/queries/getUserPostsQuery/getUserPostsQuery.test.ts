@@ -1,5 +1,5 @@
 import { describe, expect, it, mock } from "bun:test";
-import type { CallingUser } from "../../../users/types/calling-user";
+import type { CallingUserWithBlockList } from "../../../users/types/calling-user";
 import type { UserFollow } from "../../../users/types/user-follow";
 import type { ProfileVisibility } from "../../../users/types/user-settings";
 import { mockCaller, mockPost, mockProfile, userId2 } from "../../../../testing/fixtures";
@@ -9,7 +9,7 @@ import { getUserPostsQuery, type UserPostsType } from "./getUserPostsQuery";
 const target = mockProfile({ userId: userId2, username: "user2" });
 
 function run({ caller = mockCaller(), visibility = "public", follow = null, type }: {
-    caller?: CallingUser | null;
+    caller?: CallingUserWithBlockList | null;
     visibility?: ProfileVisibility;
     follow?: UserFollow["status"] | null;
     type?: UserPostsType;

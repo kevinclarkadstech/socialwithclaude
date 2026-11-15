@@ -4,7 +4,7 @@ import { fail, succeed } from "../../../../utils/result";
 import { notFoundError } from "../../../../error-handling";
 import { canViewPost } from "../../utils/canViewPost";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
-import type { GetCallingUser } from "../../../users/types/calling-user";
+import type { GetCallingUserWithBlockList } from "../../../users/types/calling-user";
 import { PostViewSchema, type PostView } from "../../types/post";
 
 export const GetPostByIdQueryInputSchema = z.object({
@@ -21,7 +21,7 @@ export type GetPostByIdQueryOutput = z.infer<typeof GetPostByIdQueryOutputSchema
 
 /** A post (or listing). Not found if it doesn't exist, was deleted, or the caller can't see it (canViewPost). */
 export const getPostByIdQuery: Query<{ input: GetPostByIdQueryInput, output: GetPostByIdQueryOutput }, {
-    getCallingUser: GetCallingUser;
+    getCallingUser: GetCallingUserWithBlockList;
     getPostViewById: (args: { id: string; viewerId: string | null }) => Promise<PostView | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();

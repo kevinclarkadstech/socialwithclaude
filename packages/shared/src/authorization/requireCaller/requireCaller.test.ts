@@ -4,7 +4,7 @@ import { requireCaller, requireCallerWithProfile } from "./requireCaller";
 
 describe("requireCaller", () => {
     it("allows a signed-in user mid sign-up", () => {
-        expect(requireCaller({ caller: mockCaller({ profile: null }) }).ok).toBe(true);
+        expect(requireCaller({ caller: mockCaller({ hasProfile: false }) }).ok).toBe(true);
     });
     it("refuses a signed-out caller", () => {
         expect(requireCaller({ caller: null })).toMatchObject({ ok: false, error: { type: "authentication" } });
@@ -16,6 +16,6 @@ describe("requireCallerWithProfile", () => {
         expect(requireCallerWithProfile({ caller: mockCaller() }).ok).toBe(true);
     });
     it("refuses a user mid sign-up", () => {
-        expect(requireCallerWithProfile({ caller: mockCaller({ profile: null }) })).toMatchObject({ ok: false, error: { type: "authorization" } });
+        expect(requireCallerWithProfile({ caller: mockCaller({ hasProfile: false }) })).toMatchObject({ ok: false, error: { type: "authorization" } });
     });
 });

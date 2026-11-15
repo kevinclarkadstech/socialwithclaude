@@ -1,11 +1,11 @@
 import type { ChatMember } from "../../domains/chats/types/chat-member";
-import type { CallingUser, CallingUserWithProfile } from "../../domains/users/types/calling-user";
+import type { CallingUser, CallingUserWithBlockList, CallingUserWithProfile } from "../../domains/users/types/calling-user";
 
 /** Someone is signed in. */
 export const isSignedIn = (caller: CallingUser | null): caller is CallingUser => caller !== null;
 
 /** The caller has finished sign-up. */
-export const hasProfile = (caller: CallingUser): caller is CallingUserWithProfile => caller.profile !== null;
+export const hasProfile = <Caller extends CallingUser>(caller: Caller): caller is Caller & CallingUserWithProfile => caller.hasProfile;
 
 /** The caller created `entity`. */
 export const isCreator = (caller: CallingUser, entity: { createdBy: string }) => entity.createdBy === caller.userId;
@@ -18,11 +18,11 @@ export const isChatMember = (caller: CallingUser, members: Pick<ChatMember, "use
     members.some((member) => member.userId === caller.userId);
 
 /** The caller has blocked `userId`. */
-export const hasBlocked = (caller: CallingUser, userId: string) => caller.blockList.blocking.includes(userId);
+export const hasBlocked = (caller: CallingUserWithBlockList, userId: string) => caller.blockList.blocking.includes(userId);
 
 /** `userId` has blocked the caller. */
-export const isBlockedBy = (caller: CallingUser, userId: string) => caller.blockList.blockedBy.includes(userId);
+export const isBlockedBy = (caller: CallingUserWithBlockList, userId: string) => caller.blockList.blockedBy.includes(userId);
 
 /** Everyone the caller has blocked or been blocked by: their posts are left out of lists. */
-export const blockedEitherWay = (caller: CallingUser | null): string[] =>
+export const blockedEitherWay = (caller: CallingUserWithBlockList | null): string[] =>
     caller ? [...caller.blockList.blocking, ...caller.blockList.blockedBy] : [];

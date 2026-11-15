@@ -42,6 +42,13 @@ export function createAuthInstance(db: Database) {
             schema,
             usePlural: true,
         }),
+        user: {
+            additionalFields: {
+                // Comes back with every session lookup, so a request knows whether its caller finished
+                // sign-up without another query. Only createUserProfile sets it (never client input).
+                hasProfile: { type: "boolean", required: false, defaultValue: false, input: false },
+            },
+        },
         emailAndPassword: {
             enabled: false,
         },

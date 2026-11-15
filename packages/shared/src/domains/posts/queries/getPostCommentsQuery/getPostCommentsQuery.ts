@@ -7,7 +7,7 @@ import { canViewPostComments } from "../../authorization/canViewPostComments/can
 import type { PostView } from "../../types/post";
 import { PageInputSchema, type Page } from "../../../../types/page";
 import { PostCommentViewSchema, type PostCommentView } from "../../types/post-comment";
-import type { GetCallingUser } from "../../../users/types/calling-user";
+import type { GetCallingUserWithBlockList } from "../../../users/types/calling-user";
 
 export const GetPostCommentsQueryInputSchema = PageInputSchema.extend({
     postId: PostCommentViewSchema.shape.postId,
@@ -29,7 +29,7 @@ export type GetPostCommentsQueryOutput = z.infer<typeof GetPostCommentsQueryOutp
  * can't see it, as for getPostById.
  */
 export const getPostCommentsQuery: Query<{ input: GetPostCommentsQueryInput, output: GetPostCommentsQueryOutput }, {
-    getCallingUser: GetCallingUser;
+    getCallingUser: GetCallingUserWithBlockList;
     getPostViewById: (args: { id: string; viewerId: string | null }) => Promise<PostView | null>;
     getPostCommentViews: (args: {
         postId: string;

@@ -13,6 +13,6 @@ describe("canCreateDirectChat", () => {
     });
     it("needs a signed-in user who finished sign-up", () => {
         expect(canCreateDirectChat({ caller: null, receiver: mockProfile({ userId: userId2 }) })).toMatchObject({ ok: false, error: { type: "authentication" } });
-        expect(canCreateDirectChat({ caller: mockCaller({ profile: null }), receiver: mockProfile({ userId: userId2 }) })).toMatchObject({ ok: false, error: { type: "authorization" } });
+        expect(canCreateDirectChat({ caller: mockCaller({ hasProfile: false }), receiver: mockProfile({ userId: userId2 }) })).toMatchObject({ ok: false, error: { type: "authorization" } });
     });
 });

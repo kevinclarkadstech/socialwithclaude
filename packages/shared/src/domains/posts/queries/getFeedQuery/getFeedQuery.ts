@@ -5,7 +5,7 @@ import { blockedEitherWay } from "../../../../authorization/conditions/condition
 import { viewablePosts } from "../../utils/canViewPost";
 import { PageInputSchema, type Page } from "../../../../types/page";
 import { PostViewSchema, type PostView } from "../../types/post";
-import type { GetCallingUser } from "../../../users/types/calling-user";
+import type { GetCallingUserWithBlockList } from "../../../users/types/calling-user";
 
 export const GetFeedQueryInputSchema = PageInputSchema;
 
@@ -20,7 +20,7 @@ export type GetFeedQueryOutput = z.infer<typeof GetFeedQueryOutputSchema>;
 
 /** Every post and listing, newest first. Only what the caller can see (canViewPost). */
 export const getFeedQuery: Query<{ input: GetFeedQueryInput, output: GetFeedQueryOutput }, {
-    getCallingUser: GetCallingUser;
+    getCallingUser: GetCallingUserWithBlockList;
     getPostViews: (args: { excludedCreatorIds: string[]; viewerId: string | null; cursor?: string | null; limit: number }) => Promise<Page<PostView>>;
 }> = async ({ input, dependencies }) => {
     const caller = await dependencies.getCallingUser();

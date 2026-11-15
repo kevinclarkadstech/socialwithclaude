@@ -2,7 +2,7 @@ import type { ChatMember } from "../domains/chats/types/chat-member";
 import type { ChatMessageView } from "../domains/chats/types/chat-message";
 import type { PostView } from "../domains/posts/types/post";
 import type { PostCommentView } from "../domains/posts/types/post-comment";
-import type { CallingUser } from "../domains/users/types/calling-user";
+import type { CallingUserWithBlockList } from "../domains/users/types/calling-user";
 import type { UserProfile } from "../domains/users/types/user-profile";
 
 export const now = "2026-01-01T00:00:00.000Z";
@@ -27,14 +27,13 @@ export function mockProfile(overrides: Partial<UserProfile> = {}): UserProfile {
     };
 }
 
-/** A signed-in user who has finished sign-up. */
-export function mockCaller(overrides: Partial<CallingUser> = {}): CallingUser {
-    const userId = overrides.userId ?? userId1;
+/** A signed-in user who has finished sign-up, with their block list (empty). */
+export function mockCaller(overrides: Partial<CallingUserWithBlockList> = {}): CallingUserWithBlockList {
     return {
-        userId,
+        userId: userId1,
         email: "user1@example.com",
         sessionId: "session-1",
-        profile: mockProfile({ userId }),
+        hasProfile: true,
         blockList: { blocking: [], blockedBy: [] },
         ...overrides,
     };

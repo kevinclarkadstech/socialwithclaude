@@ -10,7 +10,7 @@ import { toViewerFollowStatus, type UserFollowStatus } from "../../../users/type
 import { UserProfileSchema, type UserProfile } from "../../../users/types/user-profile";
 import type { ProfileVisibility } from "../../../users/types/user-settings";
 import { PostViewSchema, type PostView } from "../../types/post";
-import type { GetCallingUser } from "../../../users/types/calling-user";
+import type { GetCallingUserWithBlockList } from "../../../users/types/calling-user";
 
 export const UserPostsTypeSchema = z.enum(["posts", "listings"]);
 
@@ -36,7 +36,7 @@ export type GetUserPostsQueryOutput = z.infer<typeof GetUserPostsQueryOutputSche
  * caller doesn't follow (see canViewUserPosts).
  */
 export const getUserPostsQuery: Query<{ input: GetUserPostsQueryInput, output: GetUserPostsQueryOutput }, {
-    getCallingUser: GetCallingUser;
+    getCallingUser: GetCallingUserWithBlockList;
     getUserProfileByUsername: (args: { username: string }) => Promise<UserProfile | null>;
     // Null if the user has no settings (which shouldn't happen): treated as followers-only.
     getProfileVisibility: (args: { userId: string }) => Promise<ProfileVisibility | null>;

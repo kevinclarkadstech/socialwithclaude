@@ -4,7 +4,7 @@ import { canCreateUserProfile } from "./canCreateUserProfile";
 
 describe("canCreateUserProfile", () => {
     it("allows someone signed in without a profile", () => {
-        expect(canCreateUserProfile({ caller: mockCaller({ profile: null }) }).ok).toBe(true);
+        expect(canCreateUserProfile({ caller: mockCaller({ hasProfile: false }) }).ok).toBe(true);
     });
     it("refuses someone who already has a profile, as a conflict", () => {
         expect(canCreateUserProfile({ caller: mockCaller() })).toMatchObject({ ok: false, error: { type: "conflict" } });

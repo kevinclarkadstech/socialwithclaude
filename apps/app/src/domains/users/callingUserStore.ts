@@ -1,4 +1,4 @@
-import type { CallingUser } from '@myapp/shared/domains';
+import type { SignedInUser } from '@myapp/shared/domains';
 import { orThrow } from '../../lib/api/results';
 import { errorMessage } from '../../lib/api/errors';
 import { logger } from '../../lib/logger';
@@ -9,11 +9,11 @@ export interface CallingUserState {
   /** False until the first load finishes. */
   isLoaded: boolean;
   /** Null when signed out. `profile` is null until sign-up is finished. */
-  callingUser: CallingUser | null;
+  callingUser: SignedInUser | null;
 }
 
 let state: CallingUserState = { isLoaded: false, callingUser: null };
-let loading: Promise<CallingUser | null> | null = null;
+let loading: Promise<SignedInUser | null> | null = null;
 const listeners = new Set<() => void>();
 
 function setState(next: CallingUserState) {
@@ -36,13 +36,13 @@ export const callingUserStore = {
       listeners.delete(listener);
     };
   },
-  set(callingUser: CallingUser | null) {
+  set(callingUser: SignedInUser | null) {
     setState({ isLoaded: true, callingUser });
   },
 };
 
 /** Loads who's signed in from the API. Concurrent calls share one request. */
-export function refreshCallingUser(): Promise<CallingUser | null> {
+export function refreshCallingUser(): Promise<SignedInUser | null> {
   loading ??= runGetMeQuery()
     .then((result) => {
       const callingUser = orThrow(result);
@@ -68,6 +68,6 @@ export function refreshCallingUser(): Promise<CallingUser | null> {
  * The getCallingUser dependency for shared queries and mutations on the
  * client: from the store, waiting for the first load if it hasn't finished.
  */
-export async function getCallingUser(): Promise<CallingUser | null> {
+export async function getCallingUser(): Promise<SignedInUser | null> {
   return state.isLoaded ? state.callingUser : refreshCallingUser();
 }
