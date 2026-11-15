@@ -3,7 +3,7 @@ import type { Query } from "../../../../types/query";
 import { fail, succeed } from "../../../../utils/result";
 import { notFoundError } from "../../../../error-handling";
 import { hasBlocked, isSelf } from "../../../../authorization/conditions/conditions";
-import { canViewUserPosts } from "../../authorization/canViewUserPosts/canViewUserPosts";
+import { canViewUserPosts } from "../../../posts/authorization/canViewUserPosts/canViewUserPosts";
 import { canViewUserProfile } from "../../authorization/canViewUserProfile/canViewUserProfile";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../types/calling-user";

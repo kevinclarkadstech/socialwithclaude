@@ -17,6 +17,10 @@ import {
     markChatReadMutation,
     sendChatMessageMutation,
     updateChatMessageMutation,
+    SaveChatMessageMutationInputSchema,
+    UnsaveChatMessageMutationInputSchema,
+    saveChatMessageMutation,
+    unsaveChatMessageMutation,
 } from "@myapp/shared/domains";
 
 import {
@@ -32,6 +36,8 @@ import {
     getUserProfileByUsername,
     markChatRead,
     updateChatMessage,
+    createUserSave,
+    deleteUserSave,
 } from "../../../data-access";
 import { procedure, router } from "../trpc";
 
@@ -105,6 +111,30 @@ export const chatsRouter = router({
             input,
             context: { logger: ctx.logger },
             dependencies: { getCallingUser: ctx.getCallingUser, getChatMembers, clearChat },
+        }),
+    ),
+
+    saveMessage: procedure.input(SaveChatMessageMutationInputSchema).mutation(({ ctx, input }) =>
+        saveChatMessageMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: {
+                getCallingUser: ctx.getCallingUser,
+                getChatMessageViewById,
+                getChatMembers,
+                saveChatMessage: ({ userId, chatMessageId }) => createUserSave({ userId, type: "chatMessage", id: chatMessageId }),
+            },
+        }),
+    ),
+
+    unsaveMessage: procedure.input(UnsaveChatMessageMutationInputSchema).mutation(({ ctx, input }) =>
+        unsaveChatMessageMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: {
+                getCallingUser: ctx.getCallingUser,
+                unsaveChatMessage: ({ userId, chatMessageId }) => deleteUserSave({ userId, type: "chatMessage", id: chatMessageId }),
+            },
         }),
     ),
 });

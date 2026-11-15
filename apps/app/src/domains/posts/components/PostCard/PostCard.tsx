@@ -11,7 +11,7 @@ import {
 } from '@ionic/react';
 import { bookmark, bookmarkOutline, chatbubbleOutline } from 'ionicons/icons';
 import { useNavigate } from 'react-router';
-import { canSaveItem, canUnsaveItem, canViewPostComments } from '@myapp/shared/domains';
+import { canSavePost, canUnsavePost, canViewPostComments } from '@myapp/shared/domains';
 import { useCallingUser, UserAvatar } from '../../../users';
 import { timeAgo } from '../../../../utils/formatters/dates';
 import { displayName } from '../../../../utils/formatters/names';
@@ -56,7 +56,7 @@ export function PostCard({ postId, linkToPost = true, linkToAuthor = true, onDel
   }
   const { creator, listing, viewer } = post;
   const viewCommentsCheck = canViewPostComments({ caller: callingUser, post });
-  const saveCheck = viewer.hasSaved ? canUnsaveItem({ caller: callingUser }) : canSaveItem({ caller: callingUser });
+  const saveCheck = viewer.hasSaved ? canUnsavePost({ caller: callingUser }) : canSavePost({ caller: callingUser, post });
   const toggleSaved = () => void setSaved(post, !viewer.hasSaved);
 
   return (

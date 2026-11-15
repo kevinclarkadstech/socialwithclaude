@@ -8,3 +8,7 @@ export * from './setPostCommentVoteMutation/setPostCommentVoteMutation';
 export * from './updatePostCommentMutation/updatePostCommentMutation';
 export * from './updatePostMutation/updatePostMutation';
 export * from './createPostMediaUploadsMutation/createPostMediaUploadsMutation';
+export * from './savePostMutation/savePostMutation';
+export * from './unsavePostMutation/unsavePostMutation';
+export * from './savePostCommentMutation/savePostCommentMutation';
+export * from './unsavePostCommentMutation/unsavePostCommentMutation';

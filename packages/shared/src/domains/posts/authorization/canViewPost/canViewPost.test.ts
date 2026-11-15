@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { mockCaller, mockPost, userId2 } from "../../../testing/fixtures";
-import { canCommentOnPost, canReportPost } from "../authorization";
-import { canViewPost, viewablePosts } from "./canViewPost";
+import { mockCaller, mockPost, userId2 } from "../../../../testing/fixtures";
+import { canCommentOnPost, canReportPost } from "..";
+import { canViewPost } from "./canViewPost";
 
 const theirs = (profileVisibility: "public" | "followers", followsCreator = false) =>
     mockPost({
@@ -25,14 +25,6 @@ describe("canViewPost", () => {
     it("refuses across a block, either way", () => {
         expect(canViewPost({ caller: mockCaller({ blockList: { blocking: [userId2], blockedBy: [] } }), post: theirs("public") }).ok).toBe(false);
         expect(canViewPost({ caller: mockCaller({ blockList: { blocking: [], blockedBy: [userId2] } }), post: theirs("public") }).ok).toBe(false);
-    });
-});
-
-describe("viewablePosts", () => {
-    it("keeps only what the caller can see, in order", () => {
-        const visible = theirs("public");
-        const hidden = { ...theirs("followers"), id: "01JBBBBBBBBBBBBBBBBBBBBBB2" };
-        expect(viewablePosts({ caller: mockCaller(), posts: [hidden, visible] })).toEqual([visible]);
     });
 });
 

@@ -2,7 +2,8 @@ import type { PostView } from '@myapp/shared/domains';
 import { errorMessage } from '../../../../lib/api/errors';
 import { orThrow } from '../../../../lib/api/results';
 import { showErrorToast } from '../../../../lib/toasts';
-import { runCreateUserSaveMutation, runDeleteUserSaveMutation } from '../../../users';
+import { runSavePostMutation } from '../../operations/runSavePostMutation/runSavePostMutation';
+import { runUnsavePostMutation } from '../../operations/runUnsavePostMutation/runUnsavePostMutation';
 import { postStore } from '../../postStore';
 
 /** Saves or unsaves a post. Every list showing it updates right away, and it's undone if the request fails. */
@@ -19,8 +20,7 @@ export function useSavePost() {
     }));
 
     try {
-      const input = { type: 'post' as const, id: post.id };
-      const result = save ? await runCreateUserSaveMutation(input) : await runDeleteUserSaveMutation(input);
+      const result = save ? await runSavePostMutation({ post }) : await runUnsavePostMutation({ post });
       orThrow(result);
       // A list that reloaded meanwhile (e.g. right after signing in) may have brought the old state back.
       postStore.updateItem(post.id, (current) =>

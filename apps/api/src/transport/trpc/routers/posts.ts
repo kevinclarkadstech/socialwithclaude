@@ -15,6 +15,10 @@ import {
     getUserPostsQuery,
     reportPostMutation,
     updatePostMutation,
+    SavePostMutationInputSchema,
+    UnsavePostMutationInputSchema,
+    savePostMutation,
+    unsavePostMutation,
 } from "@myapp/shared/domains";
 
 import {
@@ -29,6 +33,8 @@ import {
     getUserFollowStatus,
     getUserProfileByUsername,
     updatePost,
+    createUserSave,
+    deleteUserSave,
 } from "../../../data-access";
 import { publishPostPhotos } from "../../../media";
 import { storage } from "../../../storage";
@@ -102,6 +108,29 @@ export const postsRouter = router({
             input,
             context: { logger: ctx.logger },
             dependencies: { getCallingUser: ctx.getCallingUser, getPostViewById, createPostReport },
+        }),
+    ),
+
+    save: procedure.input(SavePostMutationInputSchema).mutation(({ ctx, input }) =>
+        savePostMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: {
+                getCallingUser: ctx.getCallingUser,
+                getPostViewById,
+                savePost: ({ userId, postId }) => createUserSave({ userId, type: "post", id: postId }),
+            },
+        }),
+    ),
+
+    unsave: procedure.input(UnsavePostMutationInputSchema).mutation(({ ctx, input }) =>
+        unsavePostMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: {
+                getCallingUser: ctx.getCallingUser,
+                unsavePost: ({ userId, postId }) => deleteUserSave({ userId, type: "post", id: postId }),
+            },
         }),
     ),
 });

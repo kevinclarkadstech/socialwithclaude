@@ -19,8 +19,6 @@ export { useUserProfile } from './hooks/useUserProfile/useUserProfile';
 
 // Operations
 export { followStatusFrom } from './operations/profileFromApi/profileFromApi';
-export { runCreateUserSaveMutation } from './operations/runCreateUserSaveMutation/runCreateUserSaveMutation';
-export { runDeleteUserSaveMutation } from './operations/runDeleteUserSaveMutation/runDeleteUserSaveMutation';
 
 // Stores
 export { callingUserStore, getCallingUser, refreshCallingUser } from './callingUserStore';

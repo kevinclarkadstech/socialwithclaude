@@ -2,8 +2,6 @@ export * from './acceptFollowRequestMutation/acceptFollowRequestMutation';
 export * from './blockUserMutation/blockUserMutation';
 export * from './createUserFeedbackMutation/createUserFeedbackMutation';
 export * from './createUserProfileMutation/createUserProfileMutation';
-export * from './createUserSaveMutation/createUserSaveMutation';
-export * from './deleteUserSaveMutation/deleteUserSaveMutation';
 export * from './denyFollowRequestMutation/denyFollowRequestMutation';
 export * from './followUserMutation/followUserMutation';
 export * from './unblockUserMutation/unblockUserMutation';
