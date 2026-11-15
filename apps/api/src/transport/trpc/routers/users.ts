@@ -7,8 +7,6 @@ import {
     createProfilePhotoUploadMutation,
     removeProfilePhotoMutation,
     BlockUserMutationInputSchema,
-    CreateUserSaveMutationInputSchema,
-    DeleteUserSaveMutationInputSchema,
     DenyFollowRequestMutationInputSchema,
     FollowUserMutationInputSchema,
     GetMeQueryInputSchema,
@@ -23,8 +21,6 @@ import {
     UpdateMySettingsMutationInputSchema,
     acceptFollowRequestMutation,
     blockUserMutation,
-    createUserSaveMutation,
-    deleteUserSaveMutation,
     denyFollowRequestMutation,
     followUserMutation,
     getMeQuery,
@@ -42,8 +38,6 @@ import {
 import {
     acceptUserFollowRequest,
     blockUser,
-    createUserSave,
-    deleteUserSave,
     denyUserFollowRequest,
     followUser,
     getProfileVisibility,
@@ -185,22 +179,6 @@ export const usersRouter = router({
             input,
             context: { logger: ctx.logger },
             dependencies: { getCallingUser: ctx.getCallingUser, updateUserSettings },
-        }),
-    ),
-
-    save: procedure.input(CreateUserSaveMutationInputSchema).mutation(({ ctx, input }) =>
-        createUserSaveMutation({
-            input,
-            context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, createUserSave },
-        }),
-    ),
-
-    unsave: procedure.input(DeleteUserSaveMutationInputSchema).mutation(({ ctx, input }) =>
-        deleteUserSaveMutation({
-            input,
-            context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, deleteUserSave },
         }),
     ),
 

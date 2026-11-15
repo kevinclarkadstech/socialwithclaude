@@ -3,7 +3,7 @@ import type { Query } from "../../../../types/query";
 import { fail, succeed } from "../../../../utils/result";
 import { notFoundError } from "../../../../error-handling";
 import { isSelf } from "../../../../authorization/conditions/conditions";
-import { canViewUserPosts } from "../../../users/authorization/canViewUserPosts/canViewUserPosts";
+import { canViewUserPosts } from "../../authorization/canViewUserPosts/canViewUserPosts";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import { PageInputSchema, type Page } from "../../../../types/page";
 import { toViewerFollowStatus, type UserFollowStatus } from "../../../users/types/user-follow";

@@ -11,6 +11,10 @@ import {
     reportPostCommentMutation,
     updatePostCommentMutation,
     setPostCommentVoteMutation,
+    SavePostCommentMutationInputSchema,
+    UnsavePostCommentMutationInputSchema,
+    savePostCommentMutation,
+    unsavePostCommentMutation,
 } from "@myapp/shared/domains";
 
 import {
@@ -23,6 +27,8 @@ import {
     getPostCommentViews,
     setPostCommentVote,
     updatePostComment,
+    createUserSave,
+    deleteUserSave,
 } from "../../../data-access";
 import { procedure, router } from "../trpc";
 
@@ -68,6 +74,30 @@ export const postCommentsRouter = router({
             input,
             context: { logger: ctx.logger },
             dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentViewById, createPostCommentReport },
+        }),
+    ),
+
+    save: procedure.input(SavePostCommentMutationInputSchema).mutation(({ ctx, input }) =>
+        savePostCommentMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: {
+                getCallingUser: ctx.getCallingUser,
+                getPostCommentViewById,
+                getPostViewById,
+                savePostComment: ({ userId, postCommentId }) => createUserSave({ userId, type: "postComment", id: postCommentId }),
+            },
+        }),
+    ),
+
+    unsave: procedure.input(UnsavePostCommentMutationInputSchema).mutation(({ ctx, input }) =>
+        unsavePostCommentMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: {
+                getCallingUser: ctx.getCallingUser,
+                unsavePostComment: ({ userId, postCommentId }) => deleteUserSave({ userId, type: "postComment", id: postCommentId }),
+            },
         }),
     ),
 });

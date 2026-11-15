@@ -1,7 +1,7 @@
-import type { CallingUser } from "../../types/calling-user";
-import type { ViewerFollowStatus } from "../../types/user-follow";
-import type { UserProfile } from "../../types/user-profile";
-import type { ProfileVisibility } from "../../types/user-settings";
+import type { CallingUser } from "../../../users/types/calling-user";
+import type { ViewerFollowStatus } from "../../../users/types/user-follow";
+import type { UserProfile } from "../../../users/types/user-profile";
+import type { ProfileVisibility } from "../../../users/types/user-settings";
 import { allow, disallow, type AuthorizationCheck } from "../../../../authorization/allowDisallow/allowDisallow";
 import { hasBlocked, isBlockedBy, isSelf } from "../../../../authorization/conditions/conditions";
 

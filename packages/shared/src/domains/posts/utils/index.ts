@@ -1,1 +1,1 @@
-export { canViewPost, viewablePosts } from './canViewPost';
+export { viewablePosts } from './viewablePosts/viewablePosts';
