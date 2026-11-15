@@ -2,6 +2,7 @@ import {
   IonButton,
   IonButtons,
   IonContent,
+  IonFooter,
   IonHeader,
   IonIcon,
   IonPage,
@@ -32,6 +33,11 @@ import { BackButton, usePageContext, useTabHref, useTabNavigation } from '../../
 import { displayName } from '../../utils/formatters/names';
 import '../../common/styles/pages.css';
 import './ChatPage.css';
+
+/** Sending is refused because one of you blocked the other. */
+function isBlock(reason: unknown) {
+  return reason === 'blocked-by-user' || reason === 'blocking-user';
+}
 
 /** A conversation (/chats/:chatId): the messages, newest at the bottom, and the message box. */
 export function ChatPage() {
@@ -206,6 +212,13 @@ export function ChatPage() {
         )}
       </IonContent>
       {chat && sendCheck.ok && <ChatComposer onSend={send} />}
+      {chat && !sendCheck.ok && isBlock(sendCheck.error.metadata?.reason) && (
+        <IonFooter>
+          <IonToolbar>
+            <p className="chat-page__blocked">{sendCheck.error.message}</p>
+          </IonToolbar>
+        </IonFooter>
+      )}
     </IonPage>
   );
 }
