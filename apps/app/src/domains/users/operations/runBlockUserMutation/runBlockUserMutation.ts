@@ -13,6 +13,8 @@ export function runBlockUserMutation({ profile }: { profile: GetUserProfileQuery
       getCallingUser,
       getUserProfileByUsername: async () => profile,
       blockUser: () => fromApi(api.users.blockUser.mutate({ username: profile.username })),
+      // The API's blockUser ends the follows too.
+      removeFollowsBetween: async () => {},
     },
   });
 }

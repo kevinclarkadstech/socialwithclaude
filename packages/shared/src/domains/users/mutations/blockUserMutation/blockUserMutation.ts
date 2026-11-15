@@ -16,11 +16,18 @@ export const BlockUserMutationOutputSchema = UserBlockSchema;
 
 export type BlockUserMutationOutput = z.infer<typeof BlockUserMutationOutputSchema>;
 
-/** Blocking an already-blocked user returns the existing block. */
+/**
+ * Blocks a user, and ends any follow between the two, either way (requests
+ * included): neither follows the other while blocked, and unblocking doesn't
+ * bring a follow back. Blocking an already-blocked user returns the existing
+ * block (and makes sure the follows are gone).
+ */
 export const blockUserMutation: Mutation<{ input: BlockUserMutationInput, output: BlockUserMutationOutput }, {
     getCallingUser: GetCallingUser;
     getUserProfileByUsername: (args: { username: string }) => Promise<UserProfile | null>;
     blockUser: (args: { userId: string; blockedUserId: string }) => Promise<UserBlock>;
+    /** Deletes any follow or follow request between the two, either way. */
+    removeFollowsBetween: (args: { userId: string; otherUserId: string }) => Promise<void>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const target = await dependencies.getUserProfileByUsername(input);
     if (!target) {
@@ -40,5 +47,6 @@ export const blockUserMutation: Mutation<{ input: BlockUserMutationInput, output
     }
 
     const block = await dependencies.blockUser({ userId: allowed.value.userId, blockedUserId: target.userId });
+    await dependencies.removeFollowsBetween({ userId: allowed.value.userId, otherUserId: target.userId });
     return succeed(block);
 }

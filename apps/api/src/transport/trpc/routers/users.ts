@@ -52,6 +52,7 @@ import {
     touchUserProfile,
     updateUserProfile,
     updateUserSettings,
+    removeFollowsBetween,
 } from "../../../data-access";
 import { publishProfilePhoto } from "../../../media";
 import { storage } from "../../../storage";
@@ -146,7 +147,7 @@ export const usersRouter = router({
         blockUserMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, blockUser },
+            dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, blockUser, removeFollowsBetween },
         }),
     ),
 
