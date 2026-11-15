@@ -14,6 +14,7 @@ export { useChatMessages } from './hooks/useChatMessages/useChatMessages';
 
 // Operations
 export { runClearChatMutation } from './operations/runClearChatMutation/runClearChatMutation';
+export { runGetOrCreateDirectChatMutation } from './operations/runGetOrCreateDirectChatMutation/runGetOrCreateDirectChatMutation';
 export { runGetMyChatsQuery } from './operations/runGetMyChatsQuery/runGetMyChatsQuery';
 
 // Types

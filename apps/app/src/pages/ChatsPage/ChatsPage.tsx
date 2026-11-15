@@ -19,6 +19,7 @@ import { ChatListItem, runGetMyChatsQuery } from '../../domains/chats';
 import { AccountButton, useCallingUser } from '../../domains/users';
 import { usePagedQuery } from '../../lib/api/usePagedQuery';
 import { usePageContext } from '../../navigation';
+import { usePolling } from '../../lib/usePolling';
 import '../../common/styles/pages.css';
 
 /** The Chats tab: your conversations, the most recent first, unread ones marked. Needs sign-in. */
@@ -57,6 +58,9 @@ function Inbox() {
   const chats = usePagedQuery(runGetMyChatsQuery);
   const { isVisible } = usePageContext();
   const wasVisible = useRef(isVisible);
+
+  // New messages come in while it's open.
+  usePolling(() => chats.reload(), { intervalMs: 15000, enabled: isVisible && chats.status === 'ready' });
 
   // Back from a chat: what's unread, and the order, may have changed.
   useEffect(() => {

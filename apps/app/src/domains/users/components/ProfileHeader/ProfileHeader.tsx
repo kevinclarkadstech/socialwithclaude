@@ -1,6 +1,6 @@
 import { IonButton, IonIcon } from '@ionic/react';
 import type { GetUserProfileQueryOutput } from '@myapp/shared/domains';
-import { camera, ellipsisHorizontal, lockClosed, shareOutline } from 'ionicons/icons';
+import { camera, chatbubbleOutline, ellipsisHorizontal, lockClosed, shareOutline } from 'ionicons/icons';
 import { useState, type CSSProperties } from 'react';
 import { PhotoCropModal } from '../../../../common/components/PhotoCropModal/PhotoCropModal';
 import { displayName } from '../../../../utils/formatters/names';
@@ -17,6 +17,8 @@ interface ProfileHeaderProps {
   isOwn: boolean;
   onProfileChange: (profile: GetUserProfileQueryOutput) => void;
   onEdit: () => void;
+  /** Opens your chat with them; no Message button without it. */
+  onMessage?: () => void;
 }
 
 const counts = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 });
@@ -26,7 +28,7 @@ const counts = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFr
  * (Follow or Edit, share, the menu), name, about, and counts. The cover is
  * a gradient in the user's own colour until profiles have photos.
  */
-export function ProfileHeader({ profile, isOwn, onProfileChange, onEdit }: ProfileHeaderProps) {
+export function ProfileHeader({ profile, isOwn, onProfileChange, onEdit, onMessage }: ProfileHeaderProps) {
   const { follow, unfollow, unblock, openMenu, share } = useProfileHeader({ profile, onProfileChange });
   const { fileInputRef, crop, openMenu: openPhotoMenu, onPhotoChosen, cancel, save } = useProfilePhotoEditor({ profile, onProfileChange });
   const { followStatus, hasBlocked } = profile.viewer;
@@ -82,6 +84,12 @@ export function ProfileHeader({ profile, isOwn, onProfileChange, onEdit }: Profi
           {!isOwn && !hasBlocked && followStatus !== 'none' && (
             <IonButton fill="outline" data-follow-status={followStatus} onClick={unfollow}>
               {followStatus === 'following' ? 'Following' : 'Requested'}
+            </IonButton>
+          )}
+          {!isOwn && !hasBlocked && onMessage && (
+            <IonButton fill="outline" className="profile-header__icon-button" onClick={onMessage}>
+              <IonIcon slot="icon-only" icon={chatbubbleOutline} aria-hidden="true" />
+              <span className="visually-hidden">Message</span>
             </IonButton>
           )}
           <IonButton fill="outline" className="profile-header__icon-button" onClick={() => void share()}>

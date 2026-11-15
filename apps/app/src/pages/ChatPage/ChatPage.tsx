@@ -28,7 +28,7 @@ import {
 import { useCallingUser, UserAvatar } from '../../domains/users';
 import { runOrToast } from '../../lib/api/runOrToast';
 import { askForText, chooseFrom, confirm } from '../../lib/prompts';
-import { BackButton, useTabHref, useTabNavigation } from '../../navigation';
+import { BackButton, usePageContext, useTabHref, useTabNavigation } from '../../navigation';
 import { displayName } from '../../utils/formatters/names';
 import '../../common/styles/pages.css';
 import './ChatPage.css';
@@ -38,7 +38,8 @@ export function ChatPage() {
   const { chatId = '' } = useParams();
   const { callingUser } = useCallingUser();
   const { chat, status } = useChat(chatId);
-  const messages = useChatMessages(chat);
+  const { isVisible } = usePageContext();
+  const messages = useChatMessages(chat, { isShown: isVisible });
   const { goBack } = useTabNavigation();
   const tabHref = useTabHref();
   const navigate = useNavigate();
@@ -47,13 +48,30 @@ export function ChatPage() {
   const sendCheck = canSendChatMessage({ caller: callingUser, members });
   const clearCheck = canViewChat({ caller: callingUser, members });
 
-  // The newest message in view: on opening, and when one arrives or is sent.
-  const newestId = messages.messages.at(-1)?.id;
+  // The newest message in view: on opening, when you send one, and when one
+  // arrives while you're at the bottom (not while you're reading older ones).
+  const newest = messages.messages.at(-1);
+  const newestId = newest?.id;
+  const newestIsMine = newest?.createdBy === callingUser?.userId;
+  const hasScrolled = useRef(false);
   useEffect(() => {
-    if (newestId) {
-      void contentRef.current?.scrollToBottom(0);
+    if (!newestId) {
+      return;
     }
-  }, [newestId]);
+    const content = contentRef.current;
+    if (!content) {
+      return;
+    }
+    void content.getScrollElement().then((scroller) => {
+      const nearBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 150;
+      const isFirst = !hasScrolled.current;
+      if (isFirst || newestIsMine || nearBottom) {
+        hasScrolled.current = true;
+        // Straight there on opening; a short glide for a new message.
+        void content.scrollToBottom(isFirst ? 0 : 200);
+      }
+    });
+  }, [newestId, newestIsMine]);
 
   function send(content: string) {
     if (!sendCheck.ok) {

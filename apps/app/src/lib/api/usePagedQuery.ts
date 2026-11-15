@@ -44,8 +44,12 @@ export function usePagedQuery<T>(fetchPage: FetchPage<T>) {
     };
   }, [fetchPage, applyFirstPage]);
 
+  /** Loads the first page again. Once the list has loaded, a failed reload keeps what's shown. */
   async function reload() {
     const result = await fetchPage({ cursor: null }).catch(() => null);
+    if (!result?.ok && status === 'ready') {
+      return;
+    }
     applyFirstPage(result);
   }
 
