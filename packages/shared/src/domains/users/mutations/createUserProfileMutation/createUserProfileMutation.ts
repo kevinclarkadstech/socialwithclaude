@@ -28,7 +28,8 @@ export type CreateUserProfileMutationOutput = z.infer<typeof CreateUserProfileMu
 export const createUserProfileMutation: Mutation<{ input: CreateUserProfileMutationInput, output: CreateUserProfileMutationOutput }, {
     getCallingUser: GetCallingUser;
     getUserProfileByUsername: (args: { username: string }) => Promise<UserProfile | null>;
-    createUserProfile: (args: Pick<UserProfile, "userId" | "username" | "firstName" | "lastName" | "about">) => Promise<UserProfile>;
+    /** "username-taken" if someone took it meanwhile; "profile-exists" if the user already has one (e.g. a double submit). */
+    createUserProfile: (args: Pick<UserProfile, "userId" | "username" | "firstName" | "lastName" | "about">) => Promise<UserProfile | "username-taken" | "profile-exists">;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     const allowed = canCreateUserProfile({ caller });
@@ -48,5 +49,14 @@ export const createUserProfileMutation: Mutation<{ input: CreateUserProfileMutat
     }
 
     const profile = await dependencies.createUserProfile({ ...input, userId: allowed.value.userId });
+    if (profile === "username-taken") {
+        logger.info("Username taken before the profile was created", { callerId: allowed.value.userId, username: input.username });
+        return fail(conflictError("Username is taken"));
+    }
+    if (profile === "profile-exists") {
+        // Passed canCreateUserProfile, but another request (e.g. a double submit) created it first.
+        logger.warn("Profile created by another request meanwhile", { callerId: allowed.value.userId });
+        return fail(conflictError("Profile already exists"));
+    }
     return succeed(profile);
 }
