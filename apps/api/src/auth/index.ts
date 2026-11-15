@@ -1,8 +1,10 @@
 import { betterAuth } from "better-auth";
-import { bearer, emailOTP } from "better-auth/plugins";
-import { drizzleAdapter } from "@better-auth/drizzle-adapter";
+import { bearer, customSession, emailOTP } from "better-auth/plugins";
+// The relations-v2 build speaks drizzle 1.0's relational queries (used for joins).
+import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 
 import { newId, schema, type Database } from "../data-access/db";
+import { getUserProfileAndBlockList } from "../data-access";
 import { nativeAppOrigins, serverConfig } from "../config";
 import { sendOtp } from "../notifications";
 import { rootLogger } from "../observability";
@@ -67,6 +69,12 @@ export function createAuthInstance(db: Database) {
                 // Only a hash is stored, so a database leak doesn't leak live codes.
                 storeOTP: "hashed",
             }),
+            // Every signed-in tRPC request needs the caller's profile and block list
+            // (see transport/trpc/context.ts), so the session lookup loads them too.
+            customSession(async ({ user, session }) => {
+                const { profile, blockList } = await getUserProfileAndBlockList({ userId: user.id });
+                return { user, session, profile, blockList };
+            }),
         ],
         // Off: the API's own rate limits (src/rate-limiting) cover /api/auth; better-auth's are in memory, per instance.
         rateLimit: { enabled: false },
@@ -74,6 +82,8 @@ export function createAuthInstance(db: Database) {
             database: {
                 // ULIDs, like every other id in the app.
                 generateId: () => newId(),
+                // A session and its user in one query (needs the relations in data-access/db).
+                joins: true,
             },
         },
     });
