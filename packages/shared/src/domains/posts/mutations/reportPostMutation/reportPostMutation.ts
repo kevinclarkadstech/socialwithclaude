@@ -3,6 +3,7 @@ import type { Mutation } from "../../../../types/mutation";
 import { fail, succeed } from "../../../../utils/result";
 import { notFoundError } from "../../../../error-handling";
 import { canReportPost } from "../../authorization/canReportPost/canReportPost";
+import { hideUnviewablePost } from "../../utils/hideUnviewablePost/hideUnviewablePost";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
 import { type PostView } from "../../types/post";
@@ -47,7 +48,7 @@ export const reportPostMutation: Mutation<{ input: ReportPostMutationInput, outp
             result: allowed,
             details: { action: "report-post", callerId: caller?.userId, postId: post.id },
         });
-        return allowed;
+        return hideUnviewablePost({ error: allowed.error, message: "Post not found" });
     }
 
     // The post as created, not as the reporter sees it.

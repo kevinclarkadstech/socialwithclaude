@@ -6,6 +6,7 @@ import { logDisallowedResult } from "../../../../authorization/logDisallowedResu
 import type { GetCallingUser } from "../../../users/types/calling-user";
 import { PostSchema, type PostView } from "../../types/post";
 import { canSavePost } from "../../authorization/canSavePost/canSavePost";
+import { hideUnviewablePost } from "../../utils/hideUnviewablePost/hideUnviewablePost";
 
 export const SavePostMutationInputSchema = z.object({
     postId: PostSchema.shape.id,
@@ -37,7 +38,7 @@ export const savePostMutation: Mutation<{ input: SavePostMutationInput, output: 
             result: allowed,
             details: { action: "save-post", callerId: caller?.userId, postId: post.id },
         });
-        return allowed;
+        return hideUnviewablePost({ error: allowed.error, message: "Post not found" });
     }
 
     await dependencies.savePost({ userId: allowed.value.userId, postId: post.id });
