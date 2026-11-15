@@ -16,10 +16,16 @@ export const BlockUserMutationOutputSchema = UserBlockSchema;
 
 export type BlockUserMutationOutput = z.infer<typeof BlockUserMutationOutputSchema>;
 
-/** Blocking an already-blocked user returns the existing block. */
+/**
+ * Blocks a user, and ends any follow between the two, either way (requests
+ * included): neither follows the other while blocked, and unblocking doesn't
+ * bring a follow back. Blocking an already-blocked user returns the existing
+ * block (and makes sure the follows are gone).
+ */
 export const blockUserMutation: Mutation<{ input: BlockUserMutationInput, output: BlockUserMutationOutput }, {
     getCallingUser: GetCallingUser;
     getUserProfileByUsername: (args: { username: string }) => Promise<UserProfile | null>;
+    /** Saves the block and deletes any follow or follow request between the two, either way, in one go. */
     blockUser: (args: { userId: string; blockedUserId: string }) => Promise<UserBlock>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const target = await dependencies.getUserProfileByUsername(input);
