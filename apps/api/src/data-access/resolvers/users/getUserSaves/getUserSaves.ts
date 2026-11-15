@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, notInArray, sql } from "drizzle-orm";
 import type { Page } from "@myapp/shared/types";
 import type { UserSave } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
@@ -10,12 +10,18 @@ import { getChatMessageViewsByIds } from "../../chats/getChatMessageViewsByIds/g
 const s = schema.userSaves;
 // The saved item's id, whichever type it is.
 const targetId = sql<string>`coalesce(${s.postId}, ${s.postCommentId}, ${s.chatMessageId})`;
+// Who made the saved item, whichever type it is.
+const targetCreatorId = sql<string>`coalesce(${schema.posts.createdBy}, ${schema.postComments.createdBy}, ${schema.chatMessages.createdBy})`;
 
 /**
  * What `userId` saved, most recent first, with each saved item. Deleted
- * items are left out. The cursor is the last saved item's id.
+ * items, and items made by `excludedCreatorIds`, are left out. The cursor is
+ * the last saved item's id.
  */
-export async function getUserSaves({ userId, cursor, limit }: {
+export async function getUserSaves({ excludedCreatorIds = [], userId, cursor, limit }: {
+    // Creators whose items are left out. The saves stay, and show again if
+    // they're no longer excluded.
+    excludedCreatorIds?: string[];
     userId: string;
     cursor?: string | null;
     limit: number;
@@ -29,6 +35,7 @@ export async function getUserSaves({ userId, cursor, limit }: {
         .where(and(
             eq(s.userId, userId),
             sql`coalesce(${schema.posts.deletedAt}, ${schema.postComments.deletedAt}, ${schema.chatMessages.deletedAt}) is null`,
+            excludedCreatorIds.length ? notInArray(targetCreatorId, excludedCreatorIds) : undefined,
             cursor
                 ? sql`(${s.createdAt}, ${targetId}) < (select created_at, coalesce(post_id, post_comment_id, chat_message_id) from user_saves where user_id = ${userId} and coalesce(post_id, post_comment_id, chat_message_id) = ${cursor})`
                 : undefined,
