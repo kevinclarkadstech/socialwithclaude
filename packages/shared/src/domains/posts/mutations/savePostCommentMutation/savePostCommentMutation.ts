@@ -7,6 +7,7 @@ import type { GetCallingUser } from "../../../users/types/calling-user";
 import type { PostView } from "../../types/post";
 import { PostCommentSchema, type PostCommentView } from "../../types/post-comment";
 import { canSavePostComment } from "../../authorization/canSavePostComment/canSavePostComment";
+import { hideUnviewablePost } from "../../utils/hideUnviewablePost/hideUnviewablePost";
 
 export const SavePostCommentMutationInputSchema = z.object({
     postCommentId: PostCommentSchema.shape.id,
@@ -41,7 +42,7 @@ export const savePostCommentMutation: Mutation<{ input: SavePostCommentMutationI
             result: allowed,
             details: { action: "save-post-comment", callerId: caller?.userId, postCommentId: comment.id, postId: post.id },
         });
-        return allowed;
+        return hideUnviewablePost({ error: allowed.error, message: "Comment not found" });
     }
 
     await dependencies.savePostComment({ userId: allowed.value.userId, postCommentId: comment.id });

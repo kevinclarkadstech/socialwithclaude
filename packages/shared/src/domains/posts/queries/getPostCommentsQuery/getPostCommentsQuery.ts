@@ -4,6 +4,7 @@ import { fail, succeed } from "../../../../utils/result";
 import { notFoundError } from "../../../../error-handling";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import { canViewPostComments } from "../../authorization/canViewPostComments/canViewPostComments";
+import { hideUnviewablePost } from "../../utils/hideUnviewablePost/hideUnviewablePost";
 import type { PostView } from "../../types/post";
 import { PageInputSchema, type Page } from "../../../../types/page";
 import { PostCommentViewSchema, type PostCommentView } from "../../types/post-comment";
@@ -53,13 +54,7 @@ export const getPostCommentsQuery: Query<{ input: GetPostCommentsQueryInput, out
             result: allowed,
             details: { action: "view-post-comments", callerId: caller?.userId, postId: post.id },
         });
-        const reason = allowed.error.metadata?.reason;
-        // Signed out or mid-sign-up: say so, so the app can ask them to sign in.
-        if (reason === "not-signed-in" || reason === "profile-required") {
-            return allowed;
-        }
-        // Can't see the post: not found, so a link doesn't reveal that a private or blocked post exists.
-        return fail(notFoundError("Post not found"));
+        return hideUnviewablePost({ error: allowed.error, message: "Post not found" });
     }
 
     const page = await dependencies.getPostCommentViews({ ...input, viewerId: caller?.userId ?? null });
