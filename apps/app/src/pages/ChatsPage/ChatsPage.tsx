@@ -12,9 +12,11 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/react';
+import { createOutline, searchOutline } from 'ionicons/icons';
 import { requireCallerWithProfile } from '@myapp/shared/authorization';
 import { useEffect, useRef } from 'react';
 import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
+import { HeaderIconButton } from '../../common/components/HeaderIconButton/HeaderIconButton';
 import { ChatListItem, runGetMyChatsQuery } from '../../domains/chats';
 import { AccountButton, useCallingUser } from '../../domains/users';
 import { usePagedQuery } from '../../lib/api/usePagedQuery';
@@ -33,6 +35,13 @@ export function ChatsPage() {
         <IonToolbar>
           <IonTitle>Chats</IonTitle>
           <IonButtons slot="end">
+            {/* Your chats only exist once you've signed up. */}
+            {signedUpCheck.ok && (
+              <>
+                <HeaderIconButton icon={searchOutline} label="Search messages" to="/chats/search" />
+                <HeaderIconButton icon={createOutline} label="New message" to="/chats/new" />
+              </>
+            )}
             <AccountButton />
           </IonButtons>
         </IonToolbar>

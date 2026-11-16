@@ -14,11 +14,12 @@ import {
   IonIcon,
   IonToolbar,
 } from '@ionic/react';
-import { add } from 'ionicons/icons';
+import { add, searchOutline } from 'ionicons/icons';
 import { useState } from 'react';
 import { canCreatePost } from '@myapp/shared/domains';
 import { AccountButton, useCallingUser } from '../../domains/users';
 import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
+import { HeaderIconButton } from '../../common/components/HeaderIconButton/HeaderIconButton';
 import { ComposePostModal, PendingPosts, PostCard, useFeed } from '../../domains/posts';
 import '../../common/styles/pages.css';
 
@@ -36,6 +37,7 @@ export function FeedPage() {
         <IonToolbar>
           <IonTitle>Feed</IonTitle>
           <IonButtons slot="end">
+            <HeaderIconButton icon={searchOutline} label="Search" to="/feed/search" />
             <AccountButton />
           </IonButtons>
         </IonToolbar>

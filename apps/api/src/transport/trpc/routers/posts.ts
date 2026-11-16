@@ -1,4 +1,6 @@
 import {
+    SearchPostsQueryInputSchema,
+    searchPostsQuery,
     CreatePostMediaUploadsMutationInputSchema,
     CreatePostMutationInputSchema,
     DeletePostMutationInputSchema,
@@ -35,6 +37,7 @@ import {
     updatePost,
     createUserSave,
     deleteUserSave,
+    searchPostViews,
 } from "../../../data-access";
 import { publishPostPhotos } from "../../../media";
 import { storage } from "../../../storage";
@@ -132,5 +135,10 @@ export const postsRouter = router({
                 unsavePost: ({ userId, postId }) => deleteUserSave({ userId, type: "post", id: postId }),
             },
         }),
+    ),
+
+    /** Posts and listings (only `type` if given) matching the query; the Feed and Marketplace search. */
+    search: procedure.input(SearchPostsQueryInputSchema).query(({ ctx, input }) =>
+        searchPostsQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, searchPostViews } }),
     ),
 });

@@ -18,10 +18,11 @@ import {
   IonToolbar,
 } from '@ionic/react';
 import { canCreatePost, listingStatuses, type ListingStatus } from '@myapp/shared/domains';
-import { add } from 'ionicons/icons';
+import { add, searchOutline } from 'ionicons/icons';
 import { useState } from 'react';
 import { listingStatusLabels } from '../../utils/formatters/listings';
 import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
+import { HeaderIconButton } from '../../common/components/HeaderIconButton/HeaderIconButton';
 import { AccountButton, useCallingUser } from '../../domains/users';
 import { ComposeListingModal, PendingPosts, PostCard, useListings } from '../../domains/posts';
 import '../../common/styles/pages.css';
@@ -46,6 +47,7 @@ export function MarketplacePage() {
         <IonToolbar>
           <IonTitle>Marketplace</IonTitle>
           <IonButtons slot="end">
+            <HeaderIconButton icon={searchOutline} label="Search listings" to="/marketplace/search" />
             <AccountButton />
           </IonButtons>
         </IonToolbar>

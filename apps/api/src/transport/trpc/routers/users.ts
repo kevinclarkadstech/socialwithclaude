@@ -1,4 +1,6 @@
 import {
+    SearchUsersQueryInputSchema,
+    searchUsersQuery,
     AcceptFollowRequestMutationInputSchema,
     ConfirmProfilePhotoUploadMutationInputSchema,
     CreateProfilePhotoUploadMutationInputSchema,
@@ -55,6 +57,7 @@ import {
     touchUserProfile,
     updateUserProfile,
     updateUserSettings,
+    searchUserProfiles,
 } from "../../../data-access";
 import { publishProfilePhoto } from "../../../media";
 import { storage } from "../../../storage";
@@ -196,5 +199,10 @@ export const usersRouter = router({
             context: { logger: ctx.logger },
             dependencies: { getCallingUser: ctx.getCallingUser, getUserSaves },
         }),
+    ),
+
+    /** People whose username or name starts with the query. */
+    search: procedure.input(SearchUsersQueryInputSchema).query(({ ctx, input }) =>
+        searchUsersQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, searchUserProfiles } }),
     ),
 });

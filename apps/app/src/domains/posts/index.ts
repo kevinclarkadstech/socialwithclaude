@@ -18,6 +18,9 @@ export { usePostComments } from './hooks/usePostComments/usePostComments';
 export { usePostDetail } from './hooks/usePostDetail/usePostDetail';
 export { useUserPosts } from './hooks/useUserPosts/useUserPosts';
 
+// Operations
+export { runSearchPostsQuery } from './operations/runSearchPostsQuery/runSearchPostsQuery';
+
 // Utils
 export { applyCreatorChange } from './utils/applyCreatorChange/applyCreatorChange';
 

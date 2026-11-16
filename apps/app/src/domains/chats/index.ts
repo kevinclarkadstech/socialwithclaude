@@ -7,6 +7,7 @@
 export { ChatComposer } from './components/ChatComposer/ChatComposer';
 export { ChatListItem } from './components/ChatListItem/ChatListItem';
 export { ChatMessageBubble } from './components/ChatMessageBubble/ChatMessageBubble';
+export { ChatMessageSearchItem } from './components/ChatMessageSearchItem/ChatMessageSearchItem';
 
 // Hooks
 export { useChat } from './hooks/useChat/useChat';
@@ -16,6 +17,7 @@ export { useChatMessages } from './hooks/useChatMessages/useChatMessages';
 export { runClearChatMutation } from './operations/runClearChatMutation/runClearChatMutation';
 export { runGetOrCreateDirectChatMutation } from './operations/runGetOrCreateDirectChatMutation/runGetOrCreateDirectChatMutation';
 export { runGetMyChatsQuery } from './operations/runGetMyChatsQuery/runGetMyChatsQuery';
+export { runSearchChatsQuery } from './operations/runSearchChatsQuery/runSearchChatsQuery';
 
 // Types
 export type { ShownChatMessage } from './types';

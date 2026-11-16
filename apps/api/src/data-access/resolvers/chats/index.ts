@@ -3,6 +3,7 @@ export { createChatMessage } from './createChatMessage/createChatMessage';
 export { createDirectChat } from './createDirectChat/createDirectChat';
 export { deleteChatMessage } from './deleteChatMessage/deleteChatMessage';
 export { getChatMembers } from './getChatMembers/getChatMembers';
+export { searchChatMessages } from './searchChatMessages/searchChatMessages';
 export { getChatViewById } from './getChatViewById/getChatViewById';
 export { getChatMessageViewById } from './getChatMessageViewById/getChatMessageViewById';
 export { getChatMessageViews } from './getChatMessageViews/getChatMessageViews';
