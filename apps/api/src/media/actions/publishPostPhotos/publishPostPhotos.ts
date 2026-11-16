@@ -1,38 +1,31 @@
-import { photoKey, photoKeys } from "@myapp/shared/media";
-import { postPhotoSizes } from "@myapp/shared/domains";
 import type { AppLogger } from "@myapp/shared/observability";
 import type { Storage } from "../../../storage";
-import { publishPhotoFiles } from "../../publishing/publishPhotoFiles/publishPhotoFiles";
-import { readUploadedPhoto } from "../../publishing/readUploadedPhoto/readUploadedPhoto";
-import { findPostPhotoProblem } from "../../checks/findPostPhotoProblem/findPostPhotoProblem";
+import { mapWithConcurrency, valuesOrThrow } from "@myapp/shared/utils";
+import { publishPostPhoto } from "../publishPostPhoto/publishPostPhoto";
+
+// Photos published at once: each is a few reads and writes, so this keeps a 10-photo post quick without a burst of connections.
+const CONCURRENCY = 4;
 
 /**
- * Publishes the photos the app uploaded for a post, as it's saved. Each needs
- * every post size, its longer side exactly that size, all one shape and not
- * longer and thinner than maxPhotoAspectRatio. One that isn't is left out (the
- * app warns about it); the rest are published at the same keys. The uploads
- * are deleted either way. Returns the published photos with their real sizes.
+ * Publishes the photos the app uploaded for a post, as it's saved, a few at
+ * a time (see publishPostPhoto). One that isn't usable is left out (the app
+ * warns about it). Returns the published photos, in order, with their real
+ * sizes. The uploads stay until the post is saved (deletePostPhotoUploads),
+ * so a save that fails can be retried.
  */
 export async function publishPostPhotos({ storage, logger, userId, postId, media }: {
-    storage: Pick<Storage, "readUpload" | "putMedia" | "deleteUploads">;
+    storage: Pick<Storage, "readUpload" | "putMedia">;
     logger: AppLogger;
     userId: string;
     postId: string;
     media: { id: string }[];
 }): Promise<{ id: string; width: number; height: number }[]> {
-    const published: { id: string; width: number; height: number }[] = [];
-    for (const { id } of media) {
-        const uploadKeys = postPhotoSizes.map((size) => photoKey({ userId, parentId: postId, photoId: id, size }));
-        const read = await readUploadedPhoto({ storage, uploadKeys });
-        const problem = read.ok ? findPostPhotoProblem(read.files) : `${read.reason}: ${read.uploadKey}`;
-        if (!read.ok || problem) {
-            logger.warn("Photo left out", { userId, postId, photoId: id, reason: problem });
-            continue;
-        }
-        await publishPhotoFiles({ storage, files: read.files.map((file) => ({ ...file, mediaKey: file.uploadKey })) });
-        const largest = read.files[read.files.length - 1]!.info;
-        published.push({ id, width: largest.width, height: largest.height });
-    }
-    await storage.deleteUploads({ keys: media.flatMap(({ id }) => photoKeys({ userId, parentId: postId, photoId: id, sizes: postPhotoSizes })) });
-    return published;
+    const settled = await mapWithConcurrency({
+        items: media,
+        limit: CONCURRENCY,
+        run: ({ id }) => publishPostPhoto({ storage, logger, userId, postId, photoId: id }),
+    });
+    // A photo that isn't usable is null; one that threw (e.g. storage down) fails the save, which can be retried.
+    const results = valuesOrThrow(settled);
+    return results.filter((result): result is { id: string; width: number; height: number } => result !== null);
 }

@@ -1,7 +1,8 @@
 import { AwsClient } from "aws4fetch";
 import type { Storage } from "../../types";
-import { deleteObject } from "../deleteObject/deleteObject";
+import { deleteObjects } from "../deleteObjects/deleteObjects";
 import { generateObjectUrl } from "../generateObjectUrl/generateObjectUrl";
+import { listObjects } from "../listObjects/listObjects";
 
 /**
  * Storage over the S3 API, with requests signed by aws4fetch (plain fetch, so
@@ -43,7 +44,7 @@ export function createS3Storage({ endpoint, region, accessKeyId, secretAccessKey
             return new Uint8Array(await response.arrayBuffer());
         },
         async deleteUploads({ keys }) {
-            await Promise.all(keys.map((key) => deleteObject({ client, endpoint, bucket: uploadsBucket, key })));
+            await deleteObjects({ client, endpoint, bucket: uploadsBucket, keys });
         },
         async putMedia({ key, bytes, contentType }) {
             const response = await client.fetch(generateObjectUrl({ endpoint, bucket: mediaBucket, key }).toString(), {
@@ -56,7 +57,10 @@ export function createS3Storage({ endpoint, region, accessKeyId, secretAccessKey
             }
         },
         async deleteMedia({ keys }) {
-            await Promise.all(keys.map((key) => deleteObject({ client, endpoint, bucket: mediaBucket, key })));
+            await deleteObjects({ client, endpoint, bucket: mediaBucket, keys });
+        },
+        listMedia({ cursor }) {
+            return listObjects({ client, endpoint, bucket: mediaBucket, cursor });
         },
     };
 }

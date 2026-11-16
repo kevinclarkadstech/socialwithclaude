@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 import type { GetCallingUser } from "@myapp/shared/domains";
+import type { ErrorReportContext } from "../../observability";
 
 import type { AppHonoEnv } from "../../index";
 
@@ -15,6 +16,14 @@ export function createContext(opts: FetchCreateContextFnOptions, c: Context<AppH
      */
     const getCallingUser: GetCallingUser = () => Promise.resolve(callingUser);
 
+    // The same ids every other report from the API carries; a procedure adds its own name.
+    const errorReportContext: ErrorReportContext = {
+        requestId: c.get("requestId"),
+        userId: user?.id,
+        method: c.req.method,
+        path: c.req.path,
+    };
+
     return {
         auth: c.get("auth"),
         reqHeaders: opts.req.headers,
@@ -22,6 +31,8 @@ export function createContext(opts: FetchCreateContextFnOptions, c: Context<AppH
         resHeaders: opts.resHeaders,
         getCallingUser,
         logger: c.get("logger"),
+        /** Who and what to attach to an error report from this request (see reportingFailures). */
+        errorReportContext,
         /** Who rate limits count against: the signed-in user, else the IP address. */
         rateLimitKey: user ? `user:${user.id}` : `ip:${c.get("clientIp")}`,
         rateLimiter: c.get("rateLimiter"),

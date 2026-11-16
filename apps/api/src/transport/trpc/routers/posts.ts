@@ -39,8 +39,9 @@ import {
     deleteUserSave,
     searchPostViews,
 } from "../../../data-access";
-import { publishPostPhotos } from "../../../media";
+import { deletePostPhotoUploads, publishPostPhotos } from "../../../media";
 import { storage } from "../../../storage";
+import { errorReporter, reportingFailures } from "../../../observability";
 import { procedure, router } from "../trpc";
 
 export const postsRouter = router({
@@ -65,6 +66,7 @@ export const postsRouter = router({
                 isPostingEnabled: () => ctx.featureFlagStore.isEnabled("usersCanPost"),
                 getPostViewById,
                 publishPostPhotos: (args) => publishPostPhotos({ ...args, storage, logger: ctx.logger }),
+                deletePostPhotoUploads: (args) => deletePostPhotoUploads({ ...args, storage }),
                 createPost,
             },
         }),
@@ -92,7 +94,9 @@ export const postsRouter = router({
                 getPostById,
                 getPostMediaByPostId,
                 publishPostPhotos: (args) => publishPostPhotos({ ...args, storage, logger: ctx.logger }),
-                deleteMedia: storage.deleteMedia,
+                deletePostPhotoUploads: (args) => deletePostPhotoUploads({ ...args, storage }),
+                // A removed photo whose file wasn't deleted is still public: report it (the edit still succeeds).
+                deleteMedia: reportingFailures({ reporter: errorReporter, context: { ...ctx.errorReportContext, procedure: "posts.updatePost" }, run: storage.deleteMedia }),
                 updatePost,
             },
         }),
@@ -102,7 +106,14 @@ export const postsRouter = router({
         deletePostMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, getPostMediaByPostId, deletePost, deleteMedia: storage.deleteMedia },
+            dependencies: {
+                getCallingUser: ctx.getCallingUser,
+                getPostById,
+                getPostMediaByPostId,
+                deletePost,
+                // A deleted post's photo whose file wasn't deleted is still public: report it (the delete still succeeds).
+                deleteMedia: reportingFailures({ reporter: errorReporter, context: { ...ctx.errorReportContext, procedure: "posts.deletePost" }, run: storage.deleteMedia }),
+            },
         }),
     ),
 

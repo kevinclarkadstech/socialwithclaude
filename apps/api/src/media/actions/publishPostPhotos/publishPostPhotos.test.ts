@@ -11,26 +11,24 @@ const postPhotoKey = (id: string, size: number) => `${userId}/${postId}/${id}-${
 describe("publishPostPhotos", () => {
     function publish(uploads: Record<string, Uint8Array | null>, ids = [mediaId]) {
         const putMedia = mock(async (_args: { key: string; bytes: Uint8Array; contentType: string }) => {});
-        const deleteUploads = mock(async (_args: { keys: string[] }) => {});
         const result = publishPostPhotos({
-            storage: { readUpload: async ({ key: uploadKey }) => uploads[uploadKey] ?? null, putMedia, deleteUploads },
+            storage: { readUpload: async ({ key: uploadKey }) => uploads[uploadKey] ?? null, putMedia },
             logger: silentLogger,
             userId,
             postId,
             media: ids.map((id) => ({ id })),
         });
-        return { result, putMedia, deleteUploads };
+        return { result, putMedia };
     }
     const landscape = (id: string) => ({ [postPhotoKey(id, 320)]: mockJpeg(320, 240), [postPhotoKey(id, 640)]: mockJpeg(640, 480), [postPhotoKey(id, 1280)]: mockJpeg(1280, 960) });
 
-    it("publishes every size at the same key without metadata, and clears the uploads", async () => {
-        const { result, putMedia, deleteUploads } = publish(landscape(mediaId));
+    it("publishes every size at the same key without metadata (the uploads stay until the post is saved)", async () => {
+        const { result, putMedia } = publish(landscape(mediaId));
         expect(await result).toEqual([{ id: mediaId, width: 1280, height: 960 }]);
         expect(putMedia.mock.calls.map(([args]) => args.key)).toEqual([320, 640, 1280].map((size) => postPhotoKey(mediaId, size)));
         for (const [args] of putMedia.mock.calls) {
             expect(new TextDecoder().decode(args.bytes)).not.toContain("GPS");
         }
-        expect(deleteUploads).toHaveBeenCalledWith({ keys: [320, 640, 1280].map((size) => postPhotoKey(mediaId, size)) });
     });
 
     it("takes portrait photos by their longer side", async () => {
@@ -46,10 +44,16 @@ describe("publishPostPhotos", () => {
             { [postPhotoKey(secondMediaId, 320)]: mockJpeg(320, 80), [postPhotoKey(secondMediaId, 640)]: mockJpeg(640, 160), [postPhotoKey(secondMediaId, 1280)]: mockJpeg(1280, 320) },
             { [postPhotoKey(secondMediaId, 1280)]: new Uint8Array([60, 104, 116, 109, 108, 62]) },
         ]) {
-            const { result, putMedia, deleteUploads } = publish({ ...landscape(mediaId), ...landscape(secondMediaId), ...bad }, [mediaId, secondMediaId]);
+            const { result, putMedia } = publish({ ...landscape(mediaId), ...landscape(secondMediaId), ...bad }, [mediaId, secondMediaId]);
             expect(await result).toEqual([{ id: mediaId, width: 1280, height: 960 }]);
             expect(putMedia.mock.calls.every(([args]) => args.key.includes(mediaId))).toBe(true);
-            expect(deleteUploads.mock.calls[0]![0].keys).toHaveLength(6);
         }
+    });
+
+    it("returns the published photos in the order they were given", async () => {
+        const ids = ["01JMMMMMMMMMMMMMMMMMMMMMM1", "01JMMMMMMMMMMMMMMMMMMMMMM2", "01JMMMMMMMMMMMMMMMMMMMMMM3", "01JMMMMMMMMMMMMMMMMMMMMMM4", "01JMMMMMMMMMMMMMMMMMMMMMM5", "01JMMMMMMMMMMMMMMMMMMMMMM6"];
+        const uploads = Object.assign({}, ...ids.map(landscape));
+        const { result } = publish(uploads, ids);
+        expect((await result).map(({ id }) => id)).toEqual(ids);
     });
 });

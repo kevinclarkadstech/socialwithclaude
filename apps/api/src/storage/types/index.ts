@@ -14,4 +14,6 @@ export interface Storage {
     putMedia(args: { key: string; bytes: Uint8Array; contentType: string }): Promise<void>;
     /** Deletes public media objects (whether or not they exist). */
     deleteMedia(args: { keys: string[] }): Promise<void>;
+    /** One page of the media bucket's objects, in key order; pass `nextCursor` back for the next (null on the last). */
+    listMedia(args: { cursor?: string | null }): Promise<{ objects: { key: string; lastModified: Date }[]; nextCursor: string | null }>;
 }

@@ -17,6 +17,7 @@ function run({ created, existing }: { created: PostView | null; existing: PostVi
             isPostingEnabled: () => true,
             getPostViewById: async () => existing,
             publishPostPhotos: async () => [],
+            deletePostPhotoUploads: async () => {},
             createPost,
         },
     });
@@ -57,6 +58,7 @@ describe("createPostMutation for a listing", () => {
                 isPostingEnabled: () => true,
                 getPostViewById: async () => null,
                 publishPostPhotos: async () => [],
+                deletePostPhotoUploads: async () => {},
                 createPost,
             },
         });
@@ -69,13 +71,27 @@ describe("createPostMutation with photos", () => {
     const caller = mockCaller();
     const userId = caller.userId;
 
-    function create({ content = "", media, published = media.map(({ id }) => ({ id, width: 1280, height: 960 })) }: {
+    function create({ content = "", media, published = media.map(({ id }) => ({ id, width: 1280, height: 960 })), save = async () => post, deleteUploads = async () => {} }: {
         content?: string;
         media: ReturnType<typeof photoFromApp>[];
         published?: { id: string; width: number; height: number }[];
+        save?: () => Promise<PostView | null>;
+        deleteUploads?: () => Promise<void>;
     }) {
-        const createPost = mock(async () => post);
-        const publishPostPhotos = mock(async () => published);
+        // What ran, in order.
+        const calls: string[] = [];
+        const createPost = mock(async () => {
+            calls.push("createPost");
+            return save();
+        });
+        const publishPostPhotos = mock(async () => {
+            calls.push("publishPostPhotos");
+            return published;
+        });
+        const deletePostPhotoUploads = mock(async (_args: { userId: string; postId: string; photoIds: string[] }) => {
+            calls.push("deletePostPhotoUploads");
+            return deleteUploads();
+        });
         const result = createPostMutation({
             input: { id: post.id, content, media },
             context: testContext,
@@ -84,10 +100,11 @@ describe("createPostMutation with photos", () => {
                 isPostingEnabled: () => true,
                 getPostViewById: async () => null,
                 publishPostPhotos,
+                deletePostPhotoUploads,
                 createPost,
             },
         });
-        return { result, createPost, publishPostPhotos };
+        return { result, createPost, publishPostPhotos, deletePostPhotoUploads, calls };
     }
 
     it("creates a photo-only post: publishes its photos under its id, saving them with the server's post, owner, time and real sizes", async () => {
@@ -129,5 +146,35 @@ describe("createPostMutation with photos", () => {
         const { result, publishPostPhotos } = create({ content: "Hi", media: [photoFromApp(mediaId), photoFromApp(mediaId)] });
         expect(await result).toMatchObject({ ok: false, error: { type: "validation" } });
         expect(publishPostPhotos).not.toHaveBeenCalled();
+    });
+
+    it("deletes every photo's uploads (left out ones too) only once the post is saved", async () => {
+        const { result, deletePostPhotoUploads, calls } = create({ content: "Hi", media: [photoFromApp(mediaId), photoFromApp(secondMediaId)], published: [{ id: secondMediaId, width: 1280, height: 960 }] });
+        expect(await result).toMatchObject({ ok: true });
+        expect(calls).toEqual(["publishPostPhotos", "createPost", "deletePostPhotoUploads"]);
+        expect(deletePostPhotoUploads).toHaveBeenCalledWith({ userId, postId: post.id, photoIds: [mediaId, secondMediaId] });
+    });
+
+    it("keeps the uploads when saving fails, so a retry can publish the photos again", async () => {
+        const failed = create({ media: [photoFromApp(mediaId)], save: async () => { throw new Error("database down"); } });
+        expect(failed.result).rejects.toThrow("database down");
+        await failed.result.catch(() => {});
+        expect(failed.deletePostPhotoUploads).not.toHaveBeenCalled();
+
+        const retried = create({ media: [photoFromApp(mediaId)] });
+        expect(await retried.result).toMatchObject({ ok: true });
+        expect(retried.calls).toEqual(["publishPostPhotos", "createPost", "deletePostPhotoUploads"]);
+        expect(retried.createPost).toHaveBeenCalledWith(expect.objectContaining({ media: [savedPhoto(mediaId, null, 1280, 960)] }));
+    });
+
+    it("keeps the uploads when the id turns out to be taken", async () => {
+        const { result, deletePostPhotoUploads } = create({ media: [photoFromApp(mediaId)], save: async () => null });
+        expect(await result).toMatchObject({ ok: false, error: { type: "conflict" } });
+        expect(deletePostPhotoUploads).not.toHaveBeenCalled();
+    });
+
+    it("still succeeds when deleting the uploads fails (they expire on their own)", async () => {
+        const { result } = create({ media: [photoFromApp(mediaId)], deleteUploads: async () => { throw new Error("storage down"); } });
+        expect(await result).toMatchObject({ ok: true, value: post });
     });
 });

@@ -3,6 +3,7 @@ import type { Mutation } from "../../../../types/mutation";
 import { fail, succeed } from "../../../../utils/result";
 import { notFoundError, validationError } from "../../../../error-handling";
 import { canUpdatePost } from "../../authorization/canUpdatePost/canUpdatePost";
+import { cleanUpAfterSave } from "../../utils/cleanUpAfterSave/cleanUpAfterSave";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
 import { PostSchema, PostViewSchema, type Post, type PostView } from "../../types/post";
@@ -38,6 +39,8 @@ export const updatePostMutation: Mutation<{ input: UpdatePostMutationInput, outp
     getPostMediaByPostId: (args: { postId: string }) => Promise<PostMedia[]>;
     /** Publishes photos uploaded for the post; returns those it could, with their real dimensions. */
     publishPostPhotos: (args: { userId: string; postId: string; media: PostMedia[] }) => Promise<{ id: string; width: number; height: number }[]>;
+    /** Deletes the uploads of a post's photos, once the post is saved. */
+    deletePostPhotoUploads: (args: { userId: string; postId: string; photoIds: string[] }) => Promise<void>;
     /** Deletes published photo files. */
     deleteMedia: (args: { keys: string[] }) => Promise<void>;
     /** Saves the text and listing details, and makes the post's photos exactly `media`. Null if it was deleted. */
@@ -79,6 +82,7 @@ export const updatePostMutation: Mutation<{ input: UpdatePostMutationInput, outp
         return fail(validationError("Your photos didn't upload. Try adding them again."));
     }
 
+    // If saving fails, the uploads are still there, so a retry publishes the new photos again.
     const updatedPost = await dependencies.updatePost({
         id: post.id,
         content: input.content,
@@ -91,10 +95,27 @@ export const updatePostMutation: Mutation<{ input: UpdatePostMutationInput, outp
         return fail(notFoundError("Post not found"));
     }
 
+    // Saved: the new photos' uploads aren't needed any more.
+    if (added.length > 0) {
+        await cleanUpAfterSave({
+            logger,
+            level: "warn",
+            what: "photo uploads",
+            postId: post.id,
+            run: () => dependencies.deletePostPhotoUploads({ userId: post.createdBy, postId: post.id, photoIds: added.map(({ id }) => id) }),
+        });
+    }
     // The photos taken off it are gone for good (their addresses only reached people shown the post).
     if (removed.length > 0) {
-        await dependencies.deleteMedia({
-            keys: removed.flatMap((item) => photoKeys({ userId: post.createdBy, parentId: post.id, photoId: item.id, sizes: postPhotoSizes })),
+        await cleanUpAfterSave({
+            logger,
+            // They believe it's gone, but its file would still be public.
+            level: "error",
+            what: "removed photos",
+            postId: post.id,
+            run: () => dependencies.deleteMedia({
+                keys: removed.flatMap((item) => photoKeys({ userId: post.createdBy, parentId: post.id, photoId: item.id, sizes: postPhotoSizes })),
+            }),
         });
     }
 

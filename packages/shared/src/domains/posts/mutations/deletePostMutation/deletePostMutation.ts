@@ -3,6 +3,7 @@ import type { Mutation } from "../../../../types/mutation";
 import { fail, succeed } from "../../../../utils/result";
 import { notFoundError } from "../../../../error-handling";
 import { canDeletePost } from "../../authorization/canDeletePost/canDeletePost";
+import { cleanUpAfterSave } from "../../utils/cleanUpAfterSave/cleanUpAfterSave";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
 import { PostSchema, type Post } from "../../types/post";
@@ -46,10 +47,17 @@ export const deletePostMutation: Mutation<{ input: DeletePostMutationInput, outp
 
     const media = await dependencies.getPostMediaByPostId({ postId: post.id });
     const deleted = await dependencies.deletePost({ id: post.id, userId: allowed.value.userId });
-    // Its photos go with it (their addresses only reached people shown the post).
+    // Its photos go with it (their addresses only reached people shown the post). The post is
+    // deleted either way: a failure here is logged as an error and the files are swept up later.
     if (deleted && media.length > 0) {
-        await dependencies.deleteMedia({
-            keys: media.flatMap((item) => photoKeys({ userId: post.createdBy, parentId: post.id, photoId: item.id, sizes: postPhotoSizes })),
+        await cleanUpAfterSave({
+            logger,
+            level: "error",
+            what: "photos",
+            postId: post.id,
+            run: () => dependencies.deleteMedia({
+                keys: media.flatMap((item) => photoKeys({ userId: post.createdBy, parentId: post.id, photoId: item.id, sizes: postPhotoSizes })),
+            }),
         });
     }
     return succeed();
