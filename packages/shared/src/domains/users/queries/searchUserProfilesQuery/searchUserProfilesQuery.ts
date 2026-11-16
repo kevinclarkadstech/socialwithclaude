@@ -16,7 +16,11 @@ export const SearchUserProfilesQueryOutputSchema = z.array(UserProfileSchema);
 
 export type SearchUserProfilesQueryOutput = z.infer<typeof SearchUserProfilesQueryOutputSchema>;
 
-/** Profiles whose username or name contains `query`, leaving out anyone blocked either way. */
+/**
+ * Profiles whose username, first name or last name starts with `query`
+ * ("maya lo" matches a first and last name), leaving out anyone blocked
+ * either way.
+ */
 export const searchUserProfilesQuery: Query<{ input: SearchUserProfilesQueryInput, output: SearchUserProfilesQueryOutput }, {
     getCallingUser: GetCallingUser;
     searchUserProfiles: (args: { excludedUserIds?: string[]; query: string; limit: number }) => Promise<UserProfile[]>;
