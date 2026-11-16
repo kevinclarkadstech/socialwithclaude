@@ -14,7 +14,7 @@ import {
 } from '@ionic/react';
 import { canDeleteChatMessage, canSendChatMessage, canUpdateChatMessage, canViewChat } from '@myapp/shared/domains';
 import { ellipsisHorizontal } from 'ionicons/icons';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
 import {
@@ -51,6 +51,9 @@ export function ChatPage() {
   const navigate = useNavigate();
   const contentRef = useRef<HTMLIonContentElement>(null);
   const members = chat ? chatMembers(chat) : [];
+  // Who "@" suggests while writing: the other member (memoized so the composer's matching isn't redone every render).
+  const otherMember = chat?.otherMember;
+  const mentionCandidates = useMemo(() => (otherMember ? [otherMember] : []), [otherMember]);
   const sendCheck = canSendChatMessage({ caller: callingUser, members });
   const clearCheck = canViewChat({ caller: callingUser, members });
 
@@ -211,7 +214,7 @@ export function ChatPage() {
           </div>
         )}
       </IonContent>
-      {chat && sendCheck.ok && <ChatComposer onSend={send} />}
+      {chat && sendCheck.ok && <ChatComposer members={mentionCandidates} onSend={send} />}
       {chat && !sendCheck.ok && isBlock(sendCheck.error.metadata?.reason) && (
         <IonFooter>
           <IonToolbar>

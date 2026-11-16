@@ -1,11 +1,11 @@
 import { IonTextarea } from '@ionic/react';
 import type { UserProfileSummary } from '@myapp/shared/domains';
-import { useEffect, useLayoutEffect, useRef, useState, type ComponentProps, type KeyboardEvent } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { displayName } from '../../../../utils/formatters/names';
 import { useMentionSuggestions } from '../../hooks/useMentionSuggestions/useMentionSuggestions';
 import { activeMention } from '../../utils/activeMention/activeMention';
 import { insertMention } from '../../utils/insertMention/insertMention';
+import { matchMentionCandidates } from '../../utils/matchMentionCandidates/matchMentionCandidates';
 import { UserAvatar } from '../UserAvatar/UserAvatar';
 import './MentionTextarea.css';
 
@@ -14,6 +14,11 @@ type MentionTextareaProps = Omit<ComponentProps<typeof IonTextarea>, 'value' | '
   onValueChange: (value: string) => void;
   /** Where the suggestions open: "above" for a composer pinned to the bottom of the screen. */
   suggestionsPlacement: 'above' | 'below';
+  /**
+   * Who can be tagged, when that's already known (a chat's members): matched
+   * here, without asking the server. Without it, anyone the server suggests.
+   */
+  candidates?: UserProfileSummary[];
 };
 
 /**
@@ -25,7 +30,7 @@ type MentionTextareaProps = Omit<ComponentProps<typeof IonTextarea>, 'value' | '
  * textarea: a toolbar (the comment and chat composers) clips anything that
  * sticks out of it.
  */
-export function MentionTextarea({ value, onValueChange, suggestionsPlacement, onKeyDown, ...textareaProps }: MentionTextareaProps) {
+export function MentionTextarea({ value, onValueChange, suggestionsPlacement, candidates, onKeyDown, ...textareaProps }: MentionTextareaProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const textareaRef = useRef<HTMLIonTextareaElement>(null);
@@ -39,7 +44,14 @@ export function MentionTextarea({ value, onValueChange, suggestionsPlacement, on
 
   const mention = activeMention({ text: value, caret });
   const open = hasFocus && mention !== null && mention.start !== dismissedAt;
-  const suggestions = useMentionSuggestions(open ? mention.query : null);
+  // The server is only asked when the candidates aren't known.
+  const serverSuggestions = useMentionSuggestions(open && !candidates ? mention.query : null);
+  const localQuery = candidates && open ? mention.query : null;
+  const localSuggestions = useMemo(
+    () => (candidates && localQuery !== null ? matchMentionCandidates({ candidates, query: localQuery }) : []),
+    [candidates, localQuery],
+  );
+  const suggestions = candidates ? localSuggestions : serverSuggestions;
   const showList = open && suggestions.length > 0;
   const highlightedIndex = highlighted && highlighted.query === mention?.query ? Math.min(highlighted.index, suggestions.length - 1) : 0;
 
@@ -160,9 +172,14 @@ export function MentionTextarea({ value, onValueChange, suggestionsPlacement, on
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => choose(user)}
               >
-                <UserAvatar user={user} size={28} />
-                <span className="mention-textarea__name">{displayName(user)}</span>
-                {(user.firstName || user.lastName) && <span className="mention-textarea__username">@{user.username}</span>}
+                <UserAvatar user={user} size={32} />
+                {/* Username first, as people are tagged by it; the name (if they gave one) under it. */}
+                <span className="mention-textarea__who">
+                  <span className="mention-textarea__username">{user.username}</span>
+                  {(user.firstName || user.lastName) && (
+                    <span className="mention-textarea__name">{[user.firstName, user.lastName].filter(Boolean).join(' ')}</span>
+                  )}
+                </span>
               </button>
             </li>
           ))}
