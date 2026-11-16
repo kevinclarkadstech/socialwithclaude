@@ -39,7 +39,7 @@ import {
     deleteUserSave,
     searchPostViews,
 } from "../../../data-access";
-import { publishPostPhotos } from "../../../media";
+import { deletePostPhotoUploads, publishPostPhotos } from "../../../media";
 import { storage } from "../../../storage";
 import { procedure, router } from "../trpc";
 
@@ -65,6 +65,7 @@ export const postsRouter = router({
                 isPostingEnabled: () => ctx.featureFlagStore.isEnabled("usersCanPost"),
                 getPostViewById,
                 publishPostPhotos: (args) => publishPostPhotos({ ...args, storage, logger: ctx.logger }),
+                deletePostPhotoUploads: (args) => deletePostPhotoUploads({ ...args, storage }),
                 createPost,
             },
         }),
@@ -92,6 +93,7 @@ export const postsRouter = router({
                 getPostById,
                 getPostMediaByPostId,
                 publishPostPhotos: (args) => publishPostPhotos({ ...args, storage, logger: ctx.logger }),
+                deletePostPhotoUploads: (args) => deletePostPhotoUploads({ ...args, storage }),
                 deleteMedia: storage.deleteMedia,
                 updatePost,
             },

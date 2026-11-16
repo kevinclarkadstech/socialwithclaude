@@ -2,6 +2,7 @@ import { AwsClient } from "aws4fetch";
 import type { Storage } from "../../types";
 import { deleteObject } from "../deleteObject/deleteObject";
 import { generateObjectUrl } from "../generateObjectUrl/generateObjectUrl";
+import { listObjects } from "../listObjects/listObjects";
 
 /**
  * Storage over the S3 API, with requests signed by aws4fetch (plain fetch, so
@@ -57,6 +58,9 @@ export function createS3Storage({ endpoint, region, accessKeyId, secretAccessKey
         },
         async deleteMedia({ keys }) {
             await Promise.all(keys.map((key) => deleteObject({ client, endpoint, bucket: mediaBucket, key })));
+        },
+        listMedia({ cursor }) {
+            return listObjects({ client, endpoint, bucket: mediaBucket, cursor });
         },
     };
 }

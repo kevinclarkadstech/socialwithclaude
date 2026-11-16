@@ -11,6 +11,7 @@ import { ListingPriceSchema, PostListingFieldsSchema } from "../../types/post-li
 import { savedPostMedia } from "../../logic/postMedia";
 import { hasPostContent, validatePostMedia } from "../../validation/validatePostMedia";
 import { canCreatePost } from "../../authorization/canCreatePost/canCreatePost";
+import { cleanUpAfterSave } from "../../utils/cleanUpAfterSave/cleanUpAfterSave";
 
 export const CreatePostMutationInputSchema = PostSchema.pick({ id: true, content: true }).extend({
     // Its photos, each uploaded first (createPostMediaUploadsMutation) under this post's id. The server sets
@@ -38,8 +39,10 @@ export const createPostMutation: Mutation<{ input: CreatePostMutationInput, outp
     isPostingEnabled: () => boolean;
     /** The post as it's shown: what a retried create returns. */
     getPostViewById: (args: { id: string; viewerId: string | null }) => Promise<PostView | null>;
-    /** Publishes the post's uploaded photos; returns those it could, with their real dimensions. */
+    /** Publishes the post's uploaded photos; returns those it could, with their real dimensions. Safe to run again. */
     publishPostPhotos: (args: { userId: string; postId: string; media: PostMedia[] }) => Promise<{ id: string; width: number; height: number }[]>;
+    /** Deletes the uploads of a post's photos, once the post is saved. */
+    deletePostPhotoUploads: (args: { userId: string; postId: string; photoIds: string[] }) => Promise<void>;
     /** Creates the post with its photos (and listing details). Null if the id is already used. */
     createPost: (args: { id: string; userId: string; content: string; media: PostMedia[]; listing?: CreatePostMutationInput["listing"] }) => Promise<PostView | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {
@@ -85,11 +88,21 @@ export const createPostMutation: Mutation<{ input: CreatePostMutationInput, outp
         return fail(validationError("Your photos didn't upload. Try adding them again."));
     }
 
+    // If saving fails, the uploads are still there, so a retry (same id) publishes the photos again.
     const createdPost = await dependencies.createPost({ id: input.id, userId, content: input.content, media, listing: input.listing });
     if (!createdPost) {
         // Created by another request in the meantime.
         logger.warn("Post id already used", { postId: input.id, callerId: userId });
         return fail(conflictError("Id is already used"));
     }
+
+    // Saved: the uploads (published or left out) aren't needed any more.
+    await cleanUpAfterSave({
+        logger,
+        what: "photo uploads",
+        postId: input.id,
+        run: () => dependencies.deletePostPhotoUploads({ userId, postId: input.id, photoIds: input.media.map(({ id }) => id) }),
+    });
     return succeed(createdPost);
 }
+

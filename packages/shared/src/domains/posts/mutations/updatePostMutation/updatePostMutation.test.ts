@@ -1,4 +1,5 @@
 import { describe, expect, it, mock } from "bun:test";
+import type { PostView } from "../../types/post";
 import { mockCaller, mockPost, userId2 } from "../../../../testing/fixtures";
 import { testContext } from "../../../../testing/context";
 import { mediaId, photoFromApp, photoOnPost, postPhotoKey, savedPhoto } from "../../../../testing/postMedia";
@@ -16,6 +17,7 @@ function run(caller: ReturnType<typeof mockCaller> | null, existing = post) {
             getPostById: async () => existing,
             getPostMediaByPostId: async () => [],
             publishPostPhotos: async () => [],
+            deletePostPhotoUploads: async () => {},
             deleteMedia: async () => {},
             updatePost,
         },
@@ -45,6 +47,7 @@ describe("updatePostMutation", () => {
                 getPostById: async () => null,
                 getPostMediaByPostId: async () => [],
                 publishPostPhotos: async () => [],
+                deletePostPhotoUploads: async () => {},
                 deleteMedia: async () => {},
                 updatePost: async () => null,
             },
@@ -66,6 +69,7 @@ describe("updatePostMutation with listing details", () => {
                 getPostById: async () => existing,
                 getPostMediaByPostId: async () => [],
                 publishPostPhotos: async () => [],
+                deletePostPhotoUploads: async () => {},
                 deleteMedia: async () => {},
                 updatePost,
             },
@@ -90,14 +94,35 @@ describe("updatePostMutation with photos", () => {
     const caller = mockCaller();
     const userId = caller.userId;
 
-    it("on an edit, publishes only new photos, keeps the rest (with new captions), and deletes removed ones' files", async () => {
-        const kept = "01JMMMMMMMMMMMMMMMMMMMMMM3";
-        const removed = "01JMMMMMMMMMMMMMMMMMMMMMM4";
+    const kept = "01JMMMMMMMMMMMMMMMMMMMMMM3";
+    const removed = "01JMMMMMMMMMMMMMMMMMMMMMM4";
+
+    /** Edits a post with `kept` and `removed` on it: adds mediaId, keeps `kept` (captioned), takes `removed` off. */
+    function edit({ save, deleteUploads = async () => {}, deleteFiles = async () => {} }: {
+        save?: () => Promise<PostView | null>;
+        deleteUploads?: () => Promise<void>;
+        deleteFiles?: () => Promise<void>;
+    } = {}) {
         const existing = mockPost({ media: [photoOnPost(kept), photoOnPost(removed)] });
-        const updatePost = mock(async () => existing);
-        const publishPostPhotos = mock(async () => [{ id: mediaId, width: 960, height: 1280 }]);
-        const deleteMedia = mock(async (_args: { keys: string[] }) => {});
-        const result = await updatePostMutation({
+        // What ran, in order.
+        const calls: string[] = [];
+        const updatePost = mock(async () => {
+            calls.push("updatePost");
+            return save ? save() : existing;
+        });
+        const publishPostPhotos = mock(async () => {
+            calls.push("publishPostPhotos");
+            return [{ id: mediaId, width: 960, height: 1280 }];
+        });
+        const deletePostPhotoUploads = mock(async (_args: { userId: string; postId: string; photoIds: string[] }) => {
+            calls.push("deletePostPhotoUploads");
+            return deleteUploads();
+        });
+        const deleteMedia = mock(async (_args: { keys: string[] }) => {
+            calls.push("deleteMedia");
+            return deleteFiles();
+        });
+        const result = updatePostMutation({
             input: { id: post.id, content: "Edited", media: [photoFromApp(mediaId), photoFromApp(kept, "Kept")] },
             context: testContext,
             dependencies: {
@@ -105,11 +130,17 @@ describe("updatePostMutation with photos", () => {
                 getPostById: async () => existing,
                 getPostMediaByPostId: async () => existing.media,
                 publishPostPhotos,
+                deletePostPhotoUploads,
                 deleteMedia,
                 updatePost,
             },
         });
-        expect(result).toMatchObject({ ok: true });
+        return { result, existing, calls, updatePost, publishPostPhotos, deletePostPhotoUploads, deleteMedia };
+    }
+
+    it("on an edit, publishes only new photos, keeps the rest (with new captions), and deletes removed ones' files", async () => {
+        const { result, updatePost, publishPostPhotos, deleteMedia } = edit();
+        expect(await result).toMatchObject({ ok: true });
         expect(publishPostPhotos).toHaveBeenCalledWith({ userId, postId: post.id, media: [photoFromApp(mediaId)] });
         expect(updatePost).toHaveBeenCalledWith({
             id: post.id,
@@ -118,5 +149,28 @@ describe("updatePostMutation with photos", () => {
             media: [savedPhoto(mediaId, null, 960, 1280), expect.objectContaining({ id: kept, caption: "Kept", width: 1280, height: 960, updatedBy: userId })],
         });
         expect(deleteMedia).toHaveBeenCalledWith({ keys: [320, 640, 1280].map((size) => postPhotoKey(removed, size)) });
+    });
+
+    it("deletes the new photos' uploads and the removed photos' files only once the post is saved", async () => {
+        const { result, calls, deletePostPhotoUploads } = edit();
+        expect(await result).toMatchObject({ ok: true });
+        expect(calls).toEqual(["publishPostPhotos", "updatePost", "deletePostPhotoUploads", "deleteMedia"]);
+        expect(deletePostPhotoUploads).toHaveBeenCalledWith({ userId, postId: post.id, photoIds: [mediaId] });
+    });
+
+    it("deletes nothing when saving fails, so a retry can publish the new photos again", async () => {
+        const { result, deletePostPhotoUploads, deleteMedia } = edit({ save: async () => { throw new Error("database down"); } });
+        expect(result).rejects.toThrow("database down");
+        await result.catch(() => {});
+        expect(deletePostPhotoUploads).not.toHaveBeenCalled();
+        expect(deleteMedia).not.toHaveBeenCalled();
+    });
+
+    it("still succeeds when the clean-up fails (left-overs expire or are swept up)", async () => {
+        const { result, existing } = edit({
+            deleteUploads: async () => { throw new Error("storage down"); },
+            deleteFiles: async () => { throw new Error("storage down"); },
+        });
+        expect(await result).toEqual({ ok: true, value: existing });
     });
 });

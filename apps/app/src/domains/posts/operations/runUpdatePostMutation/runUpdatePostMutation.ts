@@ -16,6 +16,8 @@ export function runUpdatePostMutation(post: UpdatePostMutationInput) {
       getPostMediaByPostId: mediaFromStoreOrApi,
       // The API publishes the uploaded photos for real; here they're taken as they are.
       publishPostPhotos: async ({ media }) => media.map(({ id, width, height }) => ({ id, width, height })),
+      // The API deletes the uploads once the post is saved.
+      deletePostPhotoUploads: async () => {},
       // The API deletes the files of photos taken off the post.
       deleteMedia: async () => {},
       // The API takes the caller from the session, so userId isn't sent.
