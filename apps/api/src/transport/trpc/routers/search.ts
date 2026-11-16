@@ -10,7 +10,7 @@ import { procedure, router } from "../trpc";
 
 export const searchRouter = router({
     users: procedure.input(SearchUserProfilesQueryInputSchema).query(({ ctx, input }) =>
-        searchUserProfilesQuery({ input, context: { logger: ctx.logger }, dependencies: { searchUserProfiles } }),
+        searchUserProfilesQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, searchUserProfiles } }),
     ),
 
     posts: procedure.input(SearchPostsQueryInputSchema).query(({ ctx, input }) =>
