@@ -1,16 +1,21 @@
 import { IonList, IonListHeader } from '@ionic/react';
 import type { UserProfile } from '@myapp/shared/domains';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
+import { useTabHref } from '../../../../navigation';
 import { runSearchUsersQuery } from '../../operations/runSearchUsersQuery/runSearchUsersQuery';
-import { UserSummaryItem } from '../UserSummaryItem/UserSummaryItem';
+import { UserPickerItem } from '../UserPickerItem/UserPickerItem';
 
 const LIMIT = 3;
 
 /**
  * The few people matching `query`, above other search results (e.g. the
- * Feed's posts). Shows nothing when nobody matches or the search fails.
+ * Feed's posts), username first. Tapping one opens their profile in this
+ * tab. Shows nothing when nobody matches or the search fails.
  */
 export function PeopleSearchSection({ query }: { query: string }) {
+  const navigate = useNavigate();
+  const tabHref = useTabHref();
   const [loaded, setLoaded] = useState<{ query: string; people: UserProfile[] } | null>(null);
 
   useEffect(() => {
@@ -36,7 +41,7 @@ export function PeopleSearchSection({ query }: { query: string }) {
     <IonList data-section="people">
       <IonListHeader>People</IonListHeader>
       {people.map((person) => (
-        <UserSummaryItem key={person.userId} user={person} />
+        <UserPickerItem key={person.userId} user={person} onSelect={() => navigate(tabHref(`profile/${person.username}`))} />
       ))}
     </IonList>
   );
