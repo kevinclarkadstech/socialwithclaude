@@ -58,6 +58,9 @@ export function createSentryErrorReporter({ dsn, environment, release }: {
                 if (context?.procedure) {
                     scope.setTag("procedure", context.procedure);
                 }
+                if (context?.command) {
+                    scope.setTag("command", context.command);
+                }
                 if (context?.method || context?.path) {
                     scope.setContext("request", { method: context.method, path: context.path });
                 }

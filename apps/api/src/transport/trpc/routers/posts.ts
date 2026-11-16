@@ -96,7 +96,7 @@ export const postsRouter = router({
                 publishPostPhotos: (args) => publishPostPhotos({ ...args, storage, logger: ctx.logger }),
                 deletePostPhotoUploads: (args) => deletePostPhotoUploads({ ...args, storage }),
                 // A removed photo whose file wasn't deleted is still public: report it (the edit still succeeds).
-                deleteMedia: reportingFailures({ reporter: errorReporter, context: { procedure: "posts.updatePost" }, run: storage.deleteMedia }),
+                deleteMedia: reportingFailures({ reporter: errorReporter, context: { ...ctx.errorReportContext, procedure: "posts.updatePost" }, run: storage.deleteMedia }),
                 updatePost,
             },
         }),
@@ -112,7 +112,7 @@ export const postsRouter = router({
                 getPostMediaByPostId,
                 deletePost,
                 // A deleted post's photo whose file wasn't deleted is still public: report it (the delete still succeeds).
-                deleteMedia: reportingFailures({ reporter: errorReporter, context: { procedure: "posts.deletePost" }, run: storage.deleteMedia }),
+                deleteMedia: reportingFailures({ reporter: errorReporter, context: { ...ctx.errorReportContext, procedure: "posts.deletePost" }, run: storage.deleteMedia }),
             },
         }),
     ),

@@ -7,6 +7,8 @@ export interface ErrorReportContext {
     path?: string;
     /** The tRPC procedure, e.g. "posts.createPost". */
     procedure?: string;
+    /** A command run outside a request, e.g. "media:sweep". */
+    command?: string;
 }
 
 /**
