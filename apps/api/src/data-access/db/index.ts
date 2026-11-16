@@ -2,9 +2,11 @@ import { serverConfig } from '../../config';
 import 'dotenv/config';
 import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
+import { relations } from './relations';
 
 export function createDb(connectionString: string) {
-    return drizzle(connectionString);
+    // The relations let better-auth join a session and its user in one query.
+    return drizzle(connectionString, { relations });
 }
 
 export type Database = ReturnType<typeof createDb>;

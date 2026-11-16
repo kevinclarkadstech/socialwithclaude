@@ -12,6 +12,7 @@ export { getUserBlockViews } from './getUserBlockViews/getUserBlockViews';
 export { getUserFeedbackById } from './getUserFeedbackById/getUserFeedbackById';
 export { getUserFollowRequestViews } from './getUserFollowRequestViews/getUserFollowRequestViews';
 export { getUserFollowStatus } from './getUserFollowStatus/getUserFollowStatus';
+export { getUserProfileAndBlockList } from './getUserProfileAndBlockList/getUserProfileAndBlockList';
 export { getUserProfileByUserId } from './getUserProfileByUserId/getUserProfileByUserId';
 export { getUserProfileByUsername } from './getUserProfileByUsername/getUserProfileByUsername';
 export { getUserSaves } from './getUserSaves/getUserSaves';

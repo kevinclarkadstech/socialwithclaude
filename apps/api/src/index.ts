@@ -6,6 +6,7 @@ import { contextStorage } from "hono/context-storage";
 import { secureHeaders } from "hono/secure-headers";
 import { bodyLimit } from "hono/body-limit";
 import type { AppLogger } from "@myapp/shared/observability";
+import type { CallingUser } from "@myapp/shared/domains";
 import { createAuthInstance } from "./auth";
 import { nativeAppOrigins, serverConfig } from "./config";
 import { createAppFeatureFlagStore, type AppFeatureFlagStore } from "./shared/feature-flags";
@@ -27,6 +28,8 @@ export type AppHonoEnv = Env & {
         auth: Auth;
         user: Auth["$Infer"]["Session"]["user"] | null
         session: Auth["$Infer"]["Session"]["session"] | null
+        /** Who's calling, for tRPC: null when signed out. */
+        callingUser: CallingUser | null;
         /** The caller's IP address, from CLIENT_IP_HEADER ("unknown" without one). */
         clientIp: string;
         rateLimiter: RateLimiter;
@@ -99,9 +102,19 @@ const app = new Hono<AppHonoEnv>()
     .on(["POST", "GET"], "/api/auth/*", (c) => c.get("auth").handler(c.req.raw))
     // Only tRPC needs the caller; better-auth reads its own session.
     .use("/api/trpc/*", async (c, next) => {
+        // Two queries in a row: the session with its user, then the profile and block list (customSession).
         const session = await c.get("auth").api.getSession({ headers: c.req.raw.headers });
         c.set("user", session?.user ?? null);
         c.set("session", session?.session ?? null);
+        c.set("callingUser", session
+            ? {
+                userId: session.user.id,
+                email: session.user.email,
+                sessionId: session.session.id,
+                profile: session.profile,
+                blockList: session.blockList,
+            }
+            : null);
         await next();
     })
     .use(
