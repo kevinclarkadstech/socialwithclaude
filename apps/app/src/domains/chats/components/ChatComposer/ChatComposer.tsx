@@ -1,10 +1,15 @@
-import { IonButton, IonButtons, IonFooter, IonIcon, IonTextarea, IonToolbar } from '@ionic/react';
+import { IonButton, IonButtons, IonFooter, IonIcon, IonToolbar } from '@ionic/react';
 import { send } from 'ionicons/icons';
+import type { UserProfileSummary } from '@myapp/shared/domains';
 import { useState } from 'react';
+import { MentionTextarea } from '../../../users';
 import './ChatComposer.css';
 
-/** Writing a message, pinned to the bottom of the chat. Enter sends; Shift+Enter starts a new line. */
-export function ChatComposer({ onSend }: { onSend: (content: string) => void }) {
+/**
+ * Writing a message, pinned to the bottom of the chat. Enter sends;
+ * Shift+Enter starts a new line. "@" suggests only `members`.
+ */
+export function ChatComposer({ members, onSend }: { members: UserProfileSummary[]; onSend: (content: string) => void }) {
   const [content, setContent] = useState('');
   const trimmed = content.trim();
 
@@ -19,7 +24,9 @@ export function ChatComposer({ onSend }: { onSend: (content: string) => void }) 
   return (
     <IonFooter>
       <IonToolbar>
-        <IonTextarea
+        <MentionTextarea
+          suggestionsPlacement="above"
+          candidates={members}
           className="chat-composer__input"
           aria-label="Message"
           placeholder="Message"
@@ -27,7 +34,7 @@ export function ChatComposer({ onSend }: { onSend: (content: string) => void }) 
           rows={1}
           maxlength={2000}
           value={content}
-          onIonInput={(event) => setContent(event.detail.value ?? '')}
+          onValueChange={setContent}
           onKeyDown={(event) => {
             if (event.key === 'Enter' && !event.shiftKey) {
               event.preventDefault();

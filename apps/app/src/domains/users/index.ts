@@ -7,6 +7,7 @@
 export { AccountButton } from './components/AccountButton/AccountButton';
 export { BlockedUserList } from './components/BlockedUserList/BlockedUserList';
 export { EditProfileModal } from './components/EditProfileModal/EditProfileModal';
+export { MentionTextarea } from './components/MentionTextarea/MentionTextarea';
 export { FollowRequestList } from './components/FollowRequestList/FollowRequestList';
 export { OnboardingModal } from './components/OnboardingModal/OnboardingModal';
 export { PrivacySettings } from './components/PrivacySettings/PrivacySettings';

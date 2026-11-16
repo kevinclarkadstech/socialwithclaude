@@ -127,6 +127,10 @@ export const userProfiles = pgTable("user_profiles", {
 }, (t) => [
     // Usernames are stored lowercase (the shared schema lowercases them), so a plain unique index is enough.
     uniqueIndex("user_profiles_username_idx").on(t.username),
+    // Prefix matches ("ma%") for mention suggestions: text_pattern_ops so LIKE can use them whatever the collation.
+    index("user_profiles_username_prefix_idx").using("btree", t.username.op("text_pattern_ops")),
+    index("user_profiles_first_name_prefix_idx").using("btree", sql`lower(${t.firstName}) text_pattern_ops`),
+    index("user_profiles_last_name_prefix_idx").using("btree", sql`lower(${t.lastName}) text_pattern_ops`),
     check("user_profiles_username_lowercase", sql`${t.username} = lower(${t.username})`),
     check("user_profiles_num_followers_non_negative", sql`${t.numFollowers} >= 0`),
     check("user_profiles_num_following_non_negative", sql`${t.numFollowing} >= 0`),

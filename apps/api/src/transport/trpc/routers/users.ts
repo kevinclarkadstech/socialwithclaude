@@ -15,6 +15,7 @@ import {
     GetMySavesQueryInputSchema,
     GetMySettingsQueryInputSchema,
     GetUserProfileQueryInputSchema,
+    SuggestMentionsQueryInputSchema,
     UnblockUserMutationInputSchema,
     UnfollowUserMutationInputSchema,
     UpdateMyProfileMutationInputSchema,
@@ -29,6 +30,7 @@ import {
     getMySavesQuery,
     getMySettingsQuery,
     getUserProfileQuery,
+    suggestMentionsQuery,
     unblockUserMutation,
     unfollowUserMutation,
     updateMyProfileMutation,
@@ -40,6 +42,7 @@ import {
     blockUser,
     denyUserFollowRequest,
     followUser,
+    getMentionSuggestions,
     getProfileVisibility,
     getUserBlockViews,
     getUserFollowStatus,
@@ -64,6 +67,11 @@ export const usersRouter = router({
 
     getUserProfile: procedure.input(GetUserProfileQueryInputSchema).query(({ ctx, input }) =>
         getUserProfileQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, getProfileVisibility, getUserFollowStatus } }),
+    ),
+
+    /** Who the caller can tag after typing "@" (see suggestMentionsQuery). */
+    suggestMentions: procedure.input(SuggestMentionsQueryInputSchema).query(({ ctx, input }) =>
+        suggestMentionsQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getMentionSuggestions } }),
     ),
 
     updateMyProfile: procedure.input(UpdateMyProfileMutationInputSchema).mutation(({ ctx, input }) =>
