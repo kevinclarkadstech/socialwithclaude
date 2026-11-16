@@ -4,11 +4,13 @@ import { succeed } from "../../../../utils/result";
 import { blockedEitherWay } from "../../../../authorization/conditions/conditions";
 import { viewablePosts } from "../../utils/viewablePosts/viewablePosts";
 import { PageInputSchema, type Page } from "../../../../types/page";
-import { PostViewSchema, type PostView } from "../../types/post";
+import { PostTypeSchema, PostViewSchema, type PostType, type PostView } from "../../types/post";
 import type { GetCallingUser } from "../../../users/types/calling-user";
 
 export const SearchPostsQueryInputSchema = PageInputSchema.extend({
     query: z.string().trim().min(1).max(100),
+    // Only posts or only listings (e.g. the Marketplace's search); both if left out.
+    type: PostTypeSchema.optional(),
 });
 
 export type SearchPostsQueryInput = z.infer<typeof SearchPostsQueryInputSchema>;
@@ -20,10 +22,13 @@ export const SearchPostsQueryOutputSchema = z.object({
 
 export type SearchPostsQueryOutput = z.infer<typeof SearchPostsQueryOutputSchema>;
 
-/** Posts and listings whose content (or listing title) contains `query`, newest first. */
+/**
+ * Posts and listings (only `type` if given) whose content, or listing title
+ * or description, contains `query`, newest first.
+ */
 export const searchPostsQuery: Query<{ input: SearchPostsQueryInput, output: SearchPostsQueryOutput }, {
     getCallingUser: GetCallingUser;
-    searchPostViews: (args: { excludedCreatorIds: string[]; query: string; viewerId: string | null; cursor?: string | null; limit: number }) => Promise<Page<PostView>>;
+    searchPostViews: (args: { excludedCreatorIds: string[]; query: string; type?: PostType; viewerId: string | null; cursor?: string | null; limit: number }) => Promise<Page<PostView>>;
 }> = async ({ input, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     // Posts from anyone blocked either way are left out; the rest are checked one by one (canViewPost).

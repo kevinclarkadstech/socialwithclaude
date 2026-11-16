@@ -1,0 +1,5 @@
+/* The search bar fills the toolbar next to the back button. */
+.search-page__bar {
+  padding-block: 6px;
+  padding-inline: 0 8px;
+}

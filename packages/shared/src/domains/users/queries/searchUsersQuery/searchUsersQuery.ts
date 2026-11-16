@@ -5,23 +5,23 @@ import { blockedEitherWay } from "../../../../authorization/conditions/condition
 import type { GetCallingUser } from "../../types/calling-user";
 import { UserProfileSchema, type UserProfile } from "../../types/user-profile";
 
-export const SearchUserProfilesQueryInputSchema = z.object({
+export const SearchUsersQueryInputSchema = z.object({
     query: z.string().trim().min(1).max(100),
     limit: z.int().min(1).max(50).default(20),
 });
 
-export type SearchUserProfilesQueryInput = z.infer<typeof SearchUserProfilesQueryInputSchema>;
+export type SearchUsersQueryInput = z.infer<typeof SearchUsersQueryInputSchema>;
 
-export const SearchUserProfilesQueryOutputSchema = z.array(UserProfileSchema);
+export const SearchUsersQueryOutputSchema = z.array(UserProfileSchema);
 
-export type SearchUserProfilesQueryOutput = z.infer<typeof SearchUserProfilesQueryOutputSchema>;
+export type SearchUsersQueryOutput = z.infer<typeof SearchUsersQueryOutputSchema>;
 
 /**
  * Profiles whose username, first name or last name starts with `query`
  * ("maya lo" matches a first and last name), leaving out anyone blocked
  * either way.
  */
-export const searchUserProfilesQuery: Query<{ input: SearchUserProfilesQueryInput, output: SearchUserProfilesQueryOutput }, {
+export const searchUsersQuery: Query<{ input: SearchUsersQueryInput, output: SearchUsersQueryOutput }, {
     getCallingUser: GetCallingUser;
     searchUserProfiles: (args: { excludedUserIds?: string[]; query: string; limit: number }) => Promise<UserProfile[]>;
 }> = async ({ input, dependencies }) => {

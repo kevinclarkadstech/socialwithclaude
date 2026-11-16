@@ -10,15 +10,18 @@ export { EditProfileModal } from './components/EditProfileModal/EditProfileModal
 export { MentionTextarea } from './components/MentionTextarea/MentionTextarea';
 export { FollowRequestList } from './components/FollowRequestList/FollowRequestList';
 export { OnboardingModal } from './components/OnboardingModal/OnboardingModal';
+export { PeopleSearchSection } from './components/PeopleSearchSection/PeopleSearchSection';
 export { PrivacySettings } from './components/PrivacySettings/PrivacySettings';
 export { ProfileHeader } from './components/ProfileHeader/ProfileHeader';
 export { UserAvatar } from './components/UserAvatar/UserAvatar';
+export { UserPickerItem } from './components/UserPickerItem/UserPickerItem';
 
 // Hooks
 export { useCallingUser } from './hooks/useCallingUser/useCallingUser';
 export { useUserProfile } from './hooks/useUserProfile/useUserProfile';
 
 // Operations
+export { runSearchUsersQuery } from './operations/runSearchUsersQuery/runSearchUsersQuery';
 export { followStatusFrom } from './operations/profileFromApi/profileFromApi';
 
 // Stores

@@ -5,7 +5,6 @@ import { feedbackRouter } from "./routers/feedback";
 import { postCommentsRouter } from "./routers/post-comments";
 import { postListingsRouter } from "./routers/post-listings";
 import { postsRouter } from "./routers/posts";
-import { searchRouter } from "./routers/search";
 import { usersRouter } from "./routers/users";
 
 export const appRouter = router({
@@ -15,7 +14,6 @@ export const appRouter = router({
     posts: postsRouter,
     postComments: postCommentsRouter,
     postListings: postListingsRouter,
-    search: searchRouter,
     users: usersRouter,
 });
 
