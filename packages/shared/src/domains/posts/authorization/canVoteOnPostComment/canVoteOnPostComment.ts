@@ -1,15 +1,21 @@
 import type { CallingUser } from "../../../users/types/calling-user";
-import type { PostCommentView } from "../../types/post-comment";
+import type { PostView } from "../../types/post";
 import { allow, disallow, type AuthorizationCheck } from "../../../../authorization/allowDisallow/allowDisallow";
 import { hasProfile, isSignedIn } from "../../../../authorization/conditions/conditions";
+import { canViewPost } from "../canViewPost/canViewPost";
 
-/** Anyone who has finished sign-up can vote on a comment. */
-export const canVoteOnPostComment: AuthorizationCheck<{ caller: CallingUser | null; comment: PostCommentView }> = ({ caller }) => {
+/** Anyone who has finished sign-up can vote on a comment on a post they can see. */
+export const canVoteOnPostComment: AuthorizationCheck<{ caller: CallingUser | null; post: PostView }> = ({ caller, post }) => {
     if (!isSignedIn(caller)) {
         return disallow("not-signed-in");
     }
     if (!hasProfile(caller)) {
         return disallow("profile-required");
+    }
+    // Only on a post the caller can see (not across a block, not a private profile they don't follow).
+    const viewable = canViewPost({ caller, post });
+    if (!viewable.ok) {
+        return viewable;
     }
     return allow(caller);
 };

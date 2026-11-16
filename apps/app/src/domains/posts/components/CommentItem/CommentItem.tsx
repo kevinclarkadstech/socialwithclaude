@@ -6,6 +6,7 @@ import { timeAgo } from '../../../../utils/formatters/dates';
 import { displayName } from '../../../../utils/formatters/names';
 import { setPostCommentVote } from '../../actions/setPostCommentVote/setPostCommentVote';
 import { nextVote } from '../../commentVotes';
+import { usePost } from '../../hooks/usePost/usePost';
 import { usePostComment } from '../../hooks/usePostComment/usePostComment';
 import { AuthorLink } from '../AuthorLink/AuthorLink';
 import { openCommentMenu } from './openCommentMenu';
@@ -15,14 +16,16 @@ import './CommentItem.css';
 /** One comment: who and when, the text, up/down votes, and a menu (edit and delete yours, report others'). */
 export function CommentItem({ commentId }: { commentId: string }) {
   const comment = usePostComment(commentId);
+  // Comments show on their post's page, so the post is in the store.
+  const post = usePost(comment?.postId ?? '');
   const { callingUser } = useCallingUser();
 
-  if (!comment) {
+  if (!comment || !post) {
     return null;
   }
   const { id, creator, viewer } = comment;
   const edited = comment.updatedAt !== comment.createdAt;
-  const voteCheck = canVoteOnPostComment({ caller: callingUser, comment });
+  const voteCheck = canVoteOnPostComment({ caller: callingUser, post });
 
   /** Tapping the vote you already gave removes it; otherwise it becomes your vote. */
   function vote(tapped: 1 | -1) {

@@ -3,8 +3,10 @@ import type { Mutation } from "../../../../types/mutation";
 import { fail, succeed } from "../../../../utils/result";
 import { notFoundError } from "../../../../error-handling";
 import { canReportPostComment } from "../../authorization/canReportPostComment/canReportPostComment";
+import { hideUnviewablePost } from "../../utils/hideUnviewablePost/hideUnviewablePost";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
+import type { PostView } from "../../types/post";
 import type { PostCommentView } from "../../types/post-comment";
 import { PostCommentReportSchema, type PostCommentReport } from "../../types/post-comment-report";
 import type { ReportReason } from "../../types/report";
@@ -29,6 +31,7 @@ export type ReportPostCommentMutationOutput = z.infer<typeof ReportPostCommentMu
 export const reportPostCommentMutation: Mutation<{ input: ReportPostCommentMutationInput, output: ReportPostCommentMutationOutput }, {
     getCallingUser: GetCallingUser;
     getPostCommentViewById: (args: { id: string; viewerId: string | null }) => Promise<PostCommentView | null>;
+    getPostViewById: (args: { id: string; viewerId: string | null }) => Promise<PostView | null>;
     createPostCommentReport: (args: {
         id: string;
         userId: string;
@@ -39,20 +42,22 @@ export const reportPostCommentMutation: Mutation<{ input: ReportPostCommentMutat
     }) => Promise<PostCommentReport>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const comment = await dependencies.getPostCommentViewById({ id: input.postCommentId, viewerId: caller?.userId ?? null });
-    if (!comment) {
+    const viewerId = caller?.userId ?? null;
+    const comment = await dependencies.getPostCommentViewById({ id: input.postCommentId, viewerId });
+    const post = comment ? await dependencies.getPostViewById({ id: comment.postId, viewerId }) : null;
+    if (!comment || !post) {
         logger.info("Comment to report not found", { postCommentId: input.postCommentId });
         return fail(notFoundError("Comment not found"));
     }
 
-    const allowed = canReportPostComment({ caller, comment });
+    const allowed = canReportPostComment({ caller, post });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,
             result: allowed,
             details: { action: "report-post-comment", callerId: caller?.userId, postCommentId: comment.id },
         });
-        return allowed;
+        return hideUnviewablePost({ error: allowed.error, message: "Comment not found" });
     }
 
     // The comment as created, not as the reporter sees it.

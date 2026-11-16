@@ -65,7 +65,7 @@ export const postCommentsRouter = router({
         setPostCommentVoteMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentViewById, setPostCommentVote, deletePostCommentVote },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentViewById, getPostViewById, setPostCommentVote, deletePostCommentVote },
         }),
     ),
 
@@ -73,7 +73,7 @@ export const postCommentsRouter = router({
         reportPostCommentMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentViewById, createPostCommentReport },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentViewById, getPostViewById, createPostCommentReport },
         }),
     ),
 
