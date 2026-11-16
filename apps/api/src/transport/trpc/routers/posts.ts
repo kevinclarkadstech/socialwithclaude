@@ -41,6 +41,7 @@ import {
 } from "../../../data-access";
 import { deletePostPhotoUploads, publishPostPhotos } from "../../../media";
 import { storage } from "../../../storage";
+import { errorReporter, reportingFailures } from "../../../observability";
 import { procedure, router } from "../trpc";
 
 export const postsRouter = router({
@@ -94,7 +95,8 @@ export const postsRouter = router({
                 getPostMediaByPostId,
                 publishPostPhotos: (args) => publishPostPhotos({ ...args, storage, logger: ctx.logger }),
                 deletePostPhotoUploads: (args) => deletePostPhotoUploads({ ...args, storage }),
-                deleteMedia: storage.deleteMedia,
+                // A removed photo whose file wasn't deleted is still public: report it (the edit still succeeds).
+                deleteMedia: reportingFailures({ reporter: errorReporter, context: { procedure: "posts.updatePost" }, run: storage.deleteMedia }),
                 updatePost,
             },
         }),
@@ -104,7 +106,14 @@ export const postsRouter = router({
         deletePostMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostById, getPostMediaByPostId, deletePost, deleteMedia: storage.deleteMedia },
+            dependencies: {
+                getCallingUser: ctx.getCallingUser,
+                getPostById,
+                getPostMediaByPostId,
+                deletePost,
+                // A deleted post's photo whose file wasn't deleted is still public: report it (the delete still succeeds).
+                deleteMedia: reportingFailures({ reporter: errorReporter, context: { procedure: "posts.deletePost" }, run: storage.deleteMedia }),
+            },
         }),
     ),
 

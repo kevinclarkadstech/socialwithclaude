@@ -1,6 +1,6 @@
 import type { AppLogger } from "@myapp/shared/observability";
 import type { Storage } from "../../../storage";
-import { mapWithConcurrency } from "../../../shared/utils/mapWithConcurrency/mapWithConcurrency";
+import { mapWithConcurrency, valuesOrThrow } from "@myapp/shared/utils";
 import { publishPostPhoto } from "../publishPostPhoto/publishPostPhoto";
 
 // Photos published at once: each is a few reads and writes, so this keeps a 10-photo post quick without a burst of connections.
@@ -20,10 +20,12 @@ export async function publishPostPhotos({ storage, logger, userId, postId, media
     postId: string;
     media: { id: string }[];
 }): Promise<{ id: string; width: number; height: number }[]> {
-    const results = await mapWithConcurrency({
+    const settled = await mapWithConcurrency({
         items: media,
         limit: CONCURRENCY,
-        map: ({ id }) => publishPostPhoto({ storage, logger, userId, postId, photoId: id }),
+        run: ({ id }) => publishPostPhoto({ storage, logger, userId, postId, photoId: id }),
     });
+    // A photo that isn't usable is null; one that threw (e.g. storage down) fails the save, which can be retried.
+    const results = valuesOrThrow(settled);
     return results.filter((result): result is { id: string; width: number; height: number } => result !== null);
 }

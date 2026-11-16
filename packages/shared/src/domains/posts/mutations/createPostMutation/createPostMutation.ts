@@ -99,6 +99,7 @@ export const createPostMutation: Mutation<{ input: CreatePostMutationInput, outp
     // Saved: the uploads (published or left out) aren't needed any more.
     await cleanUpAfterSave({
         logger,
+        level: "warn",
         what: "photo uploads",
         postId: input.id,
         run: () => dependencies.deletePostPhotoUploads({ userId, postId: input.id, photoIds: input.media.map(({ id }) => id) }),

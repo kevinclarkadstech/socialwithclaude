@@ -9,6 +9,8 @@ export interface SweepSummary {
     // Post photo files no live post uses, old enough to go.
     orphaned: string[];
     deleted: boolean;
+    // Pages whose delete failed (each logged as an error); a later run tries them again.
+    failedPages: number;
 }
 
 /**
@@ -28,6 +30,7 @@ export async function sweepOrphanedMedia({ storage, logger, getLivePostMediaIds,
     dryRun: boolean;
 }): Promise<SweepSummary> {
     let checked = 0;
+    let failedPages = 0;
     const orphaned: string[] = [];
     let cursor: string | null = null;
     do {
@@ -40,7 +43,13 @@ export async function sweepOrphanedMedia({ storage, logger, getLivePostMediaIds,
         const live = await getLivePostMediaIds({ photoIds: [...new Set(candidates.map(({ photoId }) => photoId))] });
         const unused = candidates.filter(({ postId, photoId }) => !live.has(`${postId}/${photoId}`)).map(({ key }) => key);
         if (unused.length > 0 && !dryRun) {
-            await storage.deleteMedia({ keys: unused });
+            try {
+                await storage.deleteMedia({ keys: unused });
+            } catch (err) {
+                // Keep going: the rest of the bucket still gets swept, and these are found again next run.
+                failedPages += 1;
+                logger.error("Couldn't delete some orphaned media", { keys: unused.slice(0, 100), err });
+            }
         }
         orphaned.push(...unused);
         cursor = page.nextCursor;
@@ -49,7 +58,8 @@ export async function sweepOrphanedMedia({ storage, logger, getLivePostMediaIds,
     logger.info(dryRun ? "Orphaned media found (dry run, nothing deleted)" : "Orphaned media deleted", {
         checked,
         orphaned: orphaned.length,
+        failedPages,
         keys: orphaned.slice(0, 100),
     });
-    return { checked, orphaned, deleted: !dryRun };
+    return { checked, orphaned, deleted: !dryRun, failedPages };
 }

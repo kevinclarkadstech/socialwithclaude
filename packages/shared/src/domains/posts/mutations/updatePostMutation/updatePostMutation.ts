@@ -99,6 +99,7 @@ export const updatePostMutation: Mutation<{ input: UpdatePostMutationInput, outp
     if (added.length > 0) {
         await cleanUpAfterSave({
             logger,
+            level: "warn",
             what: "photo uploads",
             postId: post.id,
             run: () => dependencies.deletePostPhotoUploads({ userId: post.createdBy, postId: post.id, photoIds: added.map(({ id }) => id) }),
@@ -108,6 +109,8 @@ export const updatePostMutation: Mutation<{ input: UpdatePostMutationInput, outp
     if (removed.length > 0) {
         await cleanUpAfterSave({
             logger,
+            // They believe it's gone, but its file would still be public.
+            level: "error",
             what: "removed photos",
             postId: post.id,
             run: () => dependencies.deleteMedia({

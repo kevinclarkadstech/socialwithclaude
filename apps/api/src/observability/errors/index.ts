@@ -4,6 +4,7 @@ import { createSentryErrorReporter } from "./sentry/createSentryErrorReporter/cr
 import type { ErrorReporter } from "./types";
 
 export type { ErrorReportContext, ErrorReporter } from "./types";
+export { reportingFailures } from "./utils/reportingFailures/reportingFailures";
 
 /** Where unexpected errors are reported: Sentry when SENTRY_DSN is set. */
 export const errorReporter: ErrorReporter = serverConfig.SENTRY_DSN

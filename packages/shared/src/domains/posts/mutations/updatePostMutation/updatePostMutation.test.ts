@@ -1,7 +1,8 @@
 import { describe, expect, it, mock } from "bun:test";
 import type { PostView } from "../../types/post";
 import { mockCaller, mockPost, userId2 } from "../../../../testing/fixtures";
-import { testContext } from "../../../../testing/context";
+import { silentLogger, testContext } from "../../../../testing/context";
+import type { AppLogger } from "../../../../observability";
 import { mediaId, photoFromApp, photoOnPost, postPhotoKey, savedPhoto } from "../../../../testing/postMedia";
 import { updatePostMutation } from "./updatePostMutation";
 
@@ -98,10 +99,11 @@ describe("updatePostMutation with photos", () => {
     const removed = "01JMMMMMMMMMMMMMMMMMMMMMM4";
 
     /** Edits a post with `kept` and `removed` on it: adds mediaId, keeps `kept` (captioned), takes `removed` off. */
-    function edit({ save, deleteUploads = async () => {}, deleteFiles = async () => {} }: {
+    function edit({ save, deleteUploads = async () => {}, deleteFiles = async () => {}, logger = silentLogger }: {
         save?: () => Promise<PostView | null>;
         deleteUploads?: () => Promise<void>;
         deleteFiles?: () => Promise<void>;
+        logger?: AppLogger;
     } = {}) {
         const existing = mockPost({ media: [photoOnPost(kept), photoOnPost(removed)] });
         // What ran, in order.
@@ -124,7 +126,7 @@ describe("updatePostMutation with photos", () => {
         });
         const result = updatePostMutation({
             input: { id: post.id, content: "Edited", media: [photoFromApp(mediaId), photoFromApp(kept, "Kept")] },
-            context: testContext,
+            context: { logger },
             dependencies: {
                 getCallingUser: async () => caller,
                 getPostById: async () => existing,
@@ -166,11 +168,18 @@ describe("updatePostMutation with photos", () => {
         expect(deleteMedia).not.toHaveBeenCalled();
     });
 
-    it("still succeeds when the clean-up fails (left-overs expire or are swept up)", async () => {
+    it("still succeeds when the clean-up fails: uploads (which expire) as a warning, removed photos (still public) as an error", async () => {
+        const logged: string[] = [];
         const { result, existing } = edit({
             deleteUploads: async () => { throw new Error("storage down"); },
             deleteFiles: async () => { throw new Error("storage down"); },
+            logger: {
+                ...silentLogger,
+                warn: (message: string) => { logged.push(`warn: ${message}`); },
+                error: (message: string) => { logged.push(`error: ${message}`); },
+            },
         });
         expect(await result).toEqual({ ok: true, value: existing });
+        expect(logged).toEqual(["warn: Couldn't delete a post's photo uploads", "error: Couldn't delete a post's removed photos"]);
     });
 });

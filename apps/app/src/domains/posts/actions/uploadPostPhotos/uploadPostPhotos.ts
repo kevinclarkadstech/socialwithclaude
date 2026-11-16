@@ -1,5 +1,4 @@
-import { succeed } from '@myapp/shared/utils';
-import { mapWithConcurrency } from '../../../../utils';
+import { mapWithConcurrency, succeed } from '@myapp/shared/utils';
 import { uploadToStorage } from '../../../../lib/photos/uploadToStorage';
 import { runCreatePostMediaUploadsMutation } from '../../operations/runCreatePostMediaUploadsMutation/runCreatePostMediaUploadsMutation';
 import type { PreparedPostPhoto } from '../../utils/preparePostPhoto/preparePostPhoto';
@@ -25,10 +24,14 @@ export async function uploadPostPhotos({ postId, photos }: { postId: string; pho
     return created;
   }
   const uploads = created.value.uploads;
-  const results = await mapWithConcurrency(uploads, parallelUploads, (target) => {
-    const photo = photos.find((candidate) => candidate.mediaId === target.mediaId)!;
-    const file = photo.files.find((candidate) => candidate.size === target.size)!;
-    return uploadToStorage({ url: target.url, blob: file.blob, contentType: target.contentType });
+  const results = await mapWithConcurrency({
+    items: uploads,
+    limit: parallelUploads,
+    run: (target) => {
+      const photo = photos.find((candidate) => candidate.mediaId === target.mediaId)!;
+      const file = photo.files.find((candidate) => candidate.size === target.size)!;
+      return uploadToStorage({ url: target.url, blob: file.blob, contentType: target.contentType });
+    },
   });
   const failedIds = new Set(uploads.filter((_, index) => results[index]!.status === 'rejected').map((target) => target.mediaId));
   return succeed({ uploadedIds: photos.map((photo) => photo.mediaId).filter((id) => !failedIds.has(id)) });
