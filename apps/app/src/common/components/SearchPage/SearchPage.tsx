@@ -40,14 +40,8 @@ interface SearchPageProps<T> {
  */
 export function SearchPage<T>({ placeholder, search, renderItem, getKey, hint, emptyText, renderHeader }: SearchPageProps<T>) {
   const searchbarRef = useRef<HTMLIonSearchbarElement>(null);
-  const [text, setText] = useState('');
   const [query, setQuery] = useState('');
   const { items, status, hasMore, loadMore } = useSearchResults(search, query);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setQuery(text.trim()), DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [text]);
 
   // Ready to type as soon as the page has slid in.
   useEffect(() => {
@@ -66,9 +60,9 @@ export function SearchPage<T>({ placeholder, search, renderItem, getKey, hint, e
             ref={searchbarRef}
             className="search-page__bar"
             placeholder={placeholder}
-            value={text}
-            debounce={0}
-            onIonInput={(event) => setText(event.detail.value ?? '')}
+            // ionInput fires once typing pauses (clearing included), so each pause is one search.
+            debounce={DEBOUNCE_MS}
+            onIonInput={(event) => setQuery((event.detail.value ?? '').trim())}
           />
         </IonToolbar>
       </IonHeader>
