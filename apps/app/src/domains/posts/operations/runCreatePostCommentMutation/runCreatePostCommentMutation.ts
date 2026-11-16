@@ -12,7 +12,8 @@ export function runCreatePostCommentMutation(comment: CreatePostCommentMutationI
     context: { logger },
     dependencies: {
       getCallingUser,
-      getPostViewById: postFromStoreOrApi,
+      // The post (from the store, else the API) has what deciding who can see it takes.
+      getPostAccessById: postFromStoreOrApi,
       getPostCommentViewById: commentFromStore,
       createPostComment: ({ id, postId, content }) =>
         fromApi(api.postComments.createPostComment.mutate({ id, postId, content })),

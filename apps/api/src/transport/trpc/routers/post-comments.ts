@@ -22,7 +22,7 @@ import {
     createPostCommentReport,
     deletePostComment,
     deletePostCommentVote,
-    getPostViewById,
+    getPostAccessById,
     getPostCommentViewById,
     getPostCommentViews,
     setPostCommentVote,
@@ -34,14 +34,14 @@ import { procedure, router } from "../trpc";
 
 export const postCommentsRouter = router({
     getPostComments: procedure.input(GetPostCommentsQueryInputSchema).query(({ ctx, input }) =>
-        getPostCommentsQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getPostViewById, getPostCommentViews } }),
+        getPostCommentsQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getPostAccessById, getPostCommentViews } }),
     ),
 
     createPostComment: procedure.input(CreatePostCommentMutationInputSchema).mutation(({ ctx, input }) =>
         createPostCommentMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostViewById, getPostCommentViewById, createPostComment },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostAccessById, getPostCommentViewById, createPostComment },
         }),
     ),
 
@@ -65,7 +65,7 @@ export const postCommentsRouter = router({
         setPostCommentVoteMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentViewById, getPostViewById, setPostCommentVote, deletePostCommentVote },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentViewById, getPostAccessById, setPostCommentVote, deletePostCommentVote },
         }),
     ),
 
@@ -73,7 +73,7 @@ export const postCommentsRouter = router({
         reportPostCommentMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentViewById, getPostViewById, createPostCommentReport },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentViewById, getPostAccessById, createPostCommentReport },
         }),
     ),
 
@@ -84,7 +84,7 @@ export const postCommentsRouter = router({
             dependencies: {
                 getCallingUser: ctx.getCallingUser,
                 getPostCommentViewById,
-                getPostViewById,
+                getPostAccessById,
                 savePostComment: ({ userId, postCommentId }) => createUserSave({ userId, type: "postComment", id: postCommentId }),
             },
         }),

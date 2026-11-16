@@ -25,7 +25,7 @@ export function CommentItem({ commentId }: { commentId: string }) {
   }
   const { id, creator, viewer } = comment;
   const edited = comment.updatedAt !== comment.createdAt;
-  const voteCheck = canVoteOnPostComment({ caller: callingUser, post });
+  const voteCheck = canVoteOnPostComment({ caller: callingUser, post, comment });
 
   /** Tapping the vote you already gave removes it; otherwise it becomes your vote. */
   function vote(tapped: 1 | -1) {

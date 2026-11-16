@@ -28,7 +28,7 @@ function run({ post }: { post: PostView | null }) {
         dependencies: {
             getCallingUser: async () => caller,
             getPostCommentViewById: async () => comment,
-            getPostViewById: async () => post,
+            getPostAccessById: async () => post,
             createPostCommentReport,
         },
     });

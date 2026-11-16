@@ -13,7 +13,8 @@ export function runReportPostCommentMutation(report: ReportPostCommentMutationIn
     dependencies: {
       getCallingUser,
       getPostCommentViewById: commentFromStore,
-      getPostViewById: postFromStoreOrApi,
+      // The post (from the store, else the API) has what deciding who can see it takes.
+      getPostAccessById: postFromStoreOrApi,
       createPostCommentReport: ({ id, postCommentId, reason, details }) =>
         fromApi(api.postComments.reportPostComment.mutate({ id, postCommentId, reason, details })),
     },

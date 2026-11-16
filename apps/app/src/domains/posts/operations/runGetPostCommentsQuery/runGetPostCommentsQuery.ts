@@ -13,7 +13,9 @@ export function runGetPostCommentsQuery({ postId, cursor }: { postId: string; cu
     context: { logger },
     dependencies: {
       getCallingUser,
-      getPostViewById: postFromStoreOrApi,
+      // The post (from the store, else the API) has what deciding who can see it takes.
+      getPostAccessById: postFromStoreOrApi,
+      // The API leaves out blocked people's comments itself (it knows the caller from the session).
       getPostCommentViews: ({ postId, order, cursor, limit }) =>
         withRetry(() => fromApi(api.postComments.getPostComments.query({ postId, order, cursor, limit }))),
     },

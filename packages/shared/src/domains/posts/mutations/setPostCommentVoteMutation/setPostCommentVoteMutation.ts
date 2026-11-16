@@ -6,7 +6,7 @@ import { canVoteOnPostComment } from "../../authorization/canVoteOnPostComment/c
 import { hideUnviewablePost } from "../../utils/hideUnviewablePost/hideUnviewablePost";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
-import type { PostView } from "../../types/post";
+import type { PostAccess } from "../../types/post-access";
 import type { PostCommentView } from "../../types/post-comment";
 import { PostCommentVoteSchema, PostCommentVoteValueSchema, type PostCommentVote, type PostCommentVoteValue } from "../../types/post-comment-vote";
 
@@ -29,20 +29,21 @@ export type SetPostCommentVoteMutationOutput = z.infer<typeof SetPostCommentVote
 export const setPostCommentVoteMutation: Mutation<{ input: SetPostCommentVoteMutationInput, output: SetPostCommentVoteMutationOutput }, {
     getCallingUser: GetCallingUser;
     getPostCommentViewById: (args: { id: string; viewerId: string | null }) => Promise<PostCommentView | null>;
-    getPostViewById: (args: { id: string; viewerId: string | null }) => Promise<PostView | null>;
+    /** Who can see the post (its creator, their visibility, whether the caller follows them). */
+    getPostAccessById: (args: { id: string; viewerId: string | null }) => Promise<PostAccess | null>;
     setPostCommentVote: (args: { userId: string; postCommentId: string; value: PostCommentVoteValue }) => Promise<PostCommentVote | null>;
     deletePostCommentVote: (args: { userId: string; postCommentId: string }) => Promise<boolean>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     const viewerId = caller?.userId ?? null;
     const comment = await dependencies.getPostCommentViewById({ id: input.postCommentId, viewerId });
-    const post = comment ? await dependencies.getPostViewById({ id: comment.postId, viewerId }) : null;
+    const post = comment ? await dependencies.getPostAccessById({ id: comment.postId, viewerId }) : null;
     if (!comment || !post) {
         logger.info("Comment to vote on not found", { postCommentId: input.postCommentId });
         return fail(notFoundError("Comment not found"));
     }
 
-    const allowed = canVoteOnPostComment({ caller, post });
+    const allowed = canVoteOnPostComment({ caller, post, comment });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

@@ -6,13 +6,13 @@ import { testContext } from "../../../../testing/context";
 import { getPostCommentsQuery } from "./getPostCommentsQuery";
 
 function run({ caller, post }: { caller: CallingUser | null; post: PostView | null }) {
-    const getPostCommentViews = mock(async () => ({ items: [], nextCursor: null }));
+    const getPostCommentViews = mock(async (_args: { excludedCreatorIds: string[] }) => ({ items: [], nextCursor: null }));
     const result = getPostCommentsQuery({
         input: { postId: mockPost().id, limit: 20, order: "oldest" },
         context: testContext,
         dependencies: {
             getCallingUser: async () => caller,
-            getPostViewById: async () => post,
+            getPostAccessById: async () => post,
             getPostCommentViews,
         },
     });
@@ -48,5 +48,13 @@ describe("getPostCommentsQuery", () => {
     it("is not found for a missing post", async () => {
         const { result } = run({ caller: mockCaller(), post: null });
         expect(await result).toMatchObject({ ok: false, error: { type: "not-found" } });
+    });
+
+    it("leaves out comments by anyone blocked either way", async () => {
+        const userId3 = "01JAAAAAAAAAAAAAAAAAAAAAA3";
+        const caller = mockCaller({ userId: userId2, blockList: { blocking: [userId3], blockedBy: ["01JAAAAAAAAAAAAAAAAAAAAAA4"] } });
+        const { result, getPostCommentViews } = run({ caller, post: mockPost() });
+        expect((await result).ok).toBe(true);
+        expect(getPostCommentViews.mock.calls[0]![0].excludedCreatorIds).toEqual([userId3, "01JAAAAAAAAAAAAAAAAAAAAAA4"]);
     });
 });

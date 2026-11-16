@@ -6,7 +6,7 @@ import { canReportPostComment } from "../../authorization/canReportPostComment/c
 import { hideUnviewablePost } from "../../utils/hideUnviewablePost/hideUnviewablePost";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
-import type { PostView } from "../../types/post";
+import type { PostAccess } from "../../types/post-access";
 import type { PostCommentView } from "../../types/post-comment";
 import { PostCommentReportSchema, type PostCommentReport } from "../../types/post-comment-report";
 import type { ReportReason } from "../../types/report";
@@ -31,7 +31,8 @@ export type ReportPostCommentMutationOutput = z.infer<typeof ReportPostCommentMu
 export const reportPostCommentMutation: Mutation<{ input: ReportPostCommentMutationInput, output: ReportPostCommentMutationOutput }, {
     getCallingUser: GetCallingUser;
     getPostCommentViewById: (args: { id: string; viewerId: string | null }) => Promise<PostCommentView | null>;
-    getPostViewById: (args: { id: string; viewerId: string | null }) => Promise<PostView | null>;
+    /** Who can see the post (its creator, their visibility, whether the caller follows them). */
+    getPostAccessById: (args: { id: string; viewerId: string | null }) => Promise<PostAccess | null>;
     createPostCommentReport: (args: {
         id: string;
         userId: string;
@@ -44,13 +45,13 @@ export const reportPostCommentMutation: Mutation<{ input: ReportPostCommentMutat
     const caller = await dependencies.getCallingUser();
     const viewerId = caller?.userId ?? null;
     const comment = await dependencies.getPostCommentViewById({ id: input.postCommentId, viewerId });
-    const post = comment ? await dependencies.getPostViewById({ id: comment.postId, viewerId }) : null;
+    const post = comment ? await dependencies.getPostAccessById({ id: comment.postId, viewerId }) : null;
     if (!comment || !post) {
         logger.info("Comment to report not found", { postCommentId: input.postCommentId });
         return fail(notFoundError("Comment not found"));
     }
 
-    const allowed = canReportPostComment({ caller, post });
+    const allowed = canReportPostComment({ caller, post, comment });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,

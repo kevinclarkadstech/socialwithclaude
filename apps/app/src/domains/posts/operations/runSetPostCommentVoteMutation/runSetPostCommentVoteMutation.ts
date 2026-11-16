@@ -13,7 +13,8 @@ export function runSetPostCommentVoteMutation(vote: SetPostCommentVoteMutationIn
     dependencies: {
       getCallingUser,
       getPostCommentViewById: commentFromStore,
-      getPostViewById: postFromStoreOrApi,
+      // The post (from the store, else the API) has what deciding who can see it takes.
+      getPostAccessById: postFromStoreOrApi,
       setPostCommentVote: ({ postCommentId, value }) =>
         fromApi(api.postComments.setPostCommentVote.mutate({ postCommentId, value })),
       deletePostCommentVote: async ({ postCommentId }) => {

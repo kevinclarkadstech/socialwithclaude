@@ -30,7 +30,7 @@ function run({ value, existing = comment, signedIn = caller, post = mockPost({ i
         dependencies: {
             getCallingUser: async () => signedIn,
             getPostCommentViewById: async () => existing,
-            getPostViewById: async () => post,
+            getPostAccessById: async () => post,
             setPostCommentVote,
             deletePostCommentVote,
         },

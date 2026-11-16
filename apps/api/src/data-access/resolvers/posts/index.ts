@@ -7,6 +7,7 @@ export { deletePostComment } from './deletePostComment/deletePostComment';
 export { deletePostCommentVote } from './deletePostCommentVote/deletePostCommentVote';
 export { getListingPostViews } from './getListingPostViews/getListingPostViews';
 export { getLivePostMediaIds } from './getLivePostMediaIds/getLivePostMediaIds';
+export { getPostAccessById } from './getPostAccessById/getPostAccessById';
 export { getPostById } from './getPostById/getPostById';
 export { getPostCommentViewById } from './getPostCommentViewById/getPostCommentViewById';
 export { getPostCommentViews } from './getPostCommentViews/getPostCommentViews';
