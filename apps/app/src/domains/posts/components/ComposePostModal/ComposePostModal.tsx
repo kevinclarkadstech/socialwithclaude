@@ -5,11 +5,11 @@ import {
   IonHeader,
   IonModal,
   IonSpinner,
-  IonTextarea,
   IonTitle,
   IonToolbar,
 } from '@ionic/react';
 import type { PostView } from '@myapp/shared/domains';
+import { MentionTextarea } from '../../../users';
 import { useComposePost } from '../../hooks/useComposePost/useComposePost';
 import { PostPhotosField } from '../PostPhotosField/PostPhotosField';
 import './ComposePostModal.css';
@@ -43,7 +43,8 @@ export function ComposePostModal({ isOpen, post, onDismiss }: ComposePostModalPr
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
-        <IonTextarea
+        <MentionTextarea
+          suggestionsPlacement="below"
           aria-label="What's on your mind?"
           placeholder="What's on your mind?"
           autoGrow
@@ -52,7 +53,7 @@ export function ComposePostModal({ isOpen, post, onDismiss }: ComposePostModalPr
           maxlength={MAX_LENGTH}
           rows={4}
           value={content}
-          onIonInput={(event) => setContent(event.detail.value ?? '')}
+          onValueChange={setContent}
         />
         <div className="compose-post__photos">
           <PostPhotosField photos={photos} />

@@ -1,6 +1,7 @@
-import { IonButton, IonButtons, IonFooter, IonIcon, IonTextarea, IonToolbar } from '@ionic/react';
+import { IonButton, IonButtons, IonFooter, IonIcon, IonToolbar } from '@ionic/react';
 import { send } from 'ionicons/icons';
 import { useState } from 'react';
+import { MentionTextarea } from '../../../users';
 import { createPostComment } from '../../actions/createPostComment/createPostComment';
 import './CommentComposer.css';
 
@@ -24,7 +25,8 @@ export function CommentComposer({ postId }: { postId: string }) {
   return (
     <IonFooter>
       <IonToolbar>
-        <IonTextarea
+        <MentionTextarea
+          suggestionsPlacement="above"
           className="comment-composer__input"
           aria-label="Add a comment"
           placeholder="Add a comment"
@@ -32,7 +34,7 @@ export function CommentComposer({ postId }: { postId: string }) {
           rows={1}
           maxlength={2000}
           value={content}
-          onIonInput={(event) => setContent(event.detail.value ?? '')}
+          onValueChange={setContent}
         />
         <IonButtons slot="end">
           <IonButton disabled={isBusy || content.trim() === ''} onClick={() => void submit()}>

@@ -1,0 +1,48 @@
+.mention-textarea {
+  position: relative;
+  flex: 1;
+}
+
+/* Over everything, modals included (Ionic's overlays start at 20000). */
+.mention-textarea__suggestions {
+  position: fixed;
+  z-index: 30000;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--ion-background-color, #fff);
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+
+.mention-textarea__suggestion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 12px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.mention-textarea__suggestions [aria-selected='true'] .mention-textarea__suggestion,
+.mention-textarea__suggestion:hover {
+  background: var(--app-fill);
+}
+
+.mention-textarea__name {
+  font-weight: 600;
+}
+
+.mention-textarea__username {
+  color: var(--ion-color-medium);
+  font-size: 0.9em;
+}

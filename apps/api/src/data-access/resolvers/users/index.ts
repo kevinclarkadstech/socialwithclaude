@@ -6,6 +6,7 @@ export { createUserSave } from './createUserSave/createUserSave';
 export { deleteUserSave } from './deleteUserSave/deleteUserSave';
 export { denyUserFollowRequest } from './denyUserFollowRequest/denyUserFollowRequest';
 export { followUser } from './followUser/followUser';
+export { getMentionSuggestions } from './getMentionSuggestions/getMentionSuggestions';
 export { getProfileVisibility } from './getProfileVisibility/getProfileVisibility';
 export { getUserBlockList } from './getUserBlockList/getUserBlockList';
 export { getUserBlockViews } from './getUserBlockViews/getUserBlockViews';

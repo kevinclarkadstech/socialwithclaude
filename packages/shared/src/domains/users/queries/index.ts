@@ -5,3 +5,4 @@ export * from './getMySavesQuery/getMySavesQuery';
 export * from './getMySettingsQuery/getMySettingsQuery';
 export * from './getUserProfileQuery/getUserProfileQuery';
 export * from './searchUserProfilesQuery/searchUserProfilesQuery';
+export * from './suggestMentionsQuery/suggestMentionsQuery';
