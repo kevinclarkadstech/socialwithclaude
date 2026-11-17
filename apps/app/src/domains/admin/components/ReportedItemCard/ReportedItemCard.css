@@ -3,6 +3,12 @@
   vertical-align: middle;
 }
 
+.reported-item__history {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: var(--ion-color-medium);
+}
+
 .reported-item__title {
   font-size: 1.05rem;
 }

@@ -1,0 +1,16 @@
+.app-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-inline-start: 12px;
+}
+
+.app-logo__mark {
+  border-radius: 6px;
+}
+
+.app-logo__name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}

@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import type { ModerationActionType, ReportKind, ReportStatus } from "@myapp/shared/domains";
+import type { ModerationActionType, ReportKind, ReportOutcome, ReportStatus } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 
 /** The report table and its "what was reported" column, per kind. */
@@ -11,12 +11,14 @@ const reportTables = {
 } satisfies Record<ReportKind, unknown>;
 
 /**
- * Sets every open report about one thing to `status`, and logs what the
- * moderator did, in one transaction. How many reports it settled.
+ * Sets every open report about one thing to `status`, logs what the
+ * moderator did, and tells each person whose report it settled how it went
+ * (a "report_resolved" notification), in one transaction. How many reports it settled.
  */
-export async function resolveReports({ kind, targetId, status, action, subjectUserId, moderatorId, note }: {
+export async function resolveReports({ kind, targetId, outcome, status, action, subjectUserId, moderatorId, note }: {
     kind: ReportKind;
     targetId: string;
+    outcome: ReportOutcome;
     status: ReportStatus;
     action: ModerationActionType;
     subjectUserId: string;
@@ -29,8 +31,12 @@ export async function resolveReports({ kind, targetId, status, action, subjectUs
             .update(table)
             .set({ status, updatedBy: moderatorId, updatedAt: new Date() })
             .where(and(eq(targetColumn, targetId), eq(table.status, "open")))
-            .returning({ id: table.id });
+            .returning({ reporterId: table.createdBy });
         await tx.insert(schema.moderationActions).values({ action, subjectUserId, targetKind: kind, targetId, note, createdBy: moderatorId });
+        const reporterIds = [...new Set(resolved.map((report) => report.reporterId))];
+        if (reporterIds.length > 0) {
+            await tx.insert(schema.notifications).values(reporterIds.map((userId) => ({ userId, type: "report_resolved" as const, data: { kind, outcome } })));
+        }
         return resolved.length;
     });
 }

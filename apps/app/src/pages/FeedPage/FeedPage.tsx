@@ -1,23 +1,20 @@
 import {
-  IonButtons,
   IonContent,
   IonFab,
   IonFabButton,
-  IonHeader,
   IonInfiniteScroll,
   IonInfiniteScrollContent,
   IonPage,
   IonRefresher,
   IonRefresherContent,
   IonSpinner,
-  IonTitle,
   IonIcon,
-  IonToolbar,
 } from '@ionic/react';
 import { add, searchOutline } from 'ionicons/icons';
 import { useState } from 'react';
 import { canCreatePost } from '@myapp/shared/domains';
-import { AccountButton, useCallingUser } from '../../domains/users';
+import { useCallingUser } from '../../domains/users';
+import { AppHeader } from '../../common/components/AppHeader/AppHeader';
 import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
 import { HeaderIconButton } from '../../common/components/HeaderIconButton/HeaderIconButton';
 import { ComposePostModal, PendingPosts, PostCard, useFeed } from '../../domains/posts';
@@ -33,15 +30,7 @@ export function FeedPage() {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>Feed</IonTitle>
-          <IonButtons slot="end">
-            <HeaderIconButton icon={searchOutline} label="Search" to="/feed/search" />
-            <AccountButton />
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
+      <AppHeader actions={<HeaderIconButton icon={searchOutline} label="Search" to="/feed/search" />} />
       <IonContent>
         <IonRefresher slot="fixed" onIonRefresh={(event) => void refresh().finally(() => event.detail.complete())}>
           <IonRefresherContent />

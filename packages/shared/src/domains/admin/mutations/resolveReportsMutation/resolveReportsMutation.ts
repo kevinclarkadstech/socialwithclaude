@@ -40,7 +40,8 @@ const outcomes: Record<ReportOutcome, { status: ReportStatus; action: Moderation
  * Settles every open report about one thing, and logs it: dismiss them,
  * remove the thing (a post with its photos' files, a comment, a chat
  * message; a profile can't be removed, its person can be banned), or mark
- * them reviewed after dealing with it another way. Admins only.
+ * them reviewed after dealing with it another way. Everyone who reported
+ * it is told the outcome. Admins only.
  */
 export const resolveReportsMutation: Mutation<{ input: ResolveReportsMutationInput, output: ResolveReportsMutationOutput }, {
     getCallingUser: GetCallingUser;
@@ -51,10 +52,15 @@ export const resolveReportsMutation: Mutation<{ input: ResolveReportsMutationInp
     deleteMedia: (args: { keys: string[] }) => Promise<void>;
     deletePostComment: (args: { id: string; userId: string }) => Promise<boolean>;
     deleteChatMessage: (args: { id: string; userId: string }) => Promise<boolean>;
-    /** Sets the thing's open reports to `status` and logs the action, in one go. How many it settled. */
+    /**
+     * Sets the thing's open reports to `status`, logs the action, and tells
+     * each reporter how it went (a "report_resolved" notification), in one go.
+     * How many reports it settled.
+     */
     resolveReports: (args: {
         kind: ReportKind;
         targetId: string;
+        outcome: ReportOutcome;
         status: ReportStatus;
         action: ModerationActionType;
         subjectUserId: string;
@@ -110,6 +116,7 @@ export const resolveReportsMutation: Mutation<{ input: ResolveReportsMutationInp
     const resolvedCount = await dependencies.resolveReports({
         kind: item.kind,
         targetId: item.targetId,
+        outcome: input.outcome,
         status,
         action,
         subjectUserId: item.subject.userId,

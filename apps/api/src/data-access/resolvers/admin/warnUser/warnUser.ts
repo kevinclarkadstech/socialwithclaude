@@ -1,0 +1,24 @@
+import type { ReportKind, ReportReason } from "@myapp/shared/domains";
+import { db, schema } from "../../../db";
+
+/** Sends `userId` a "warning" notification and logs it, in one transaction. */
+export async function warnUser({ userId, moderatorId, reason, note, kind, targetId }: {
+    userId: string;
+    moderatorId: string;
+    reason: ReportReason;
+    note: string | null;
+    kind: ReportKind | null;
+    targetId: string | null;
+}): Promise<void> {
+    await db.transaction(async (tx) => {
+        await tx.insert(schema.notifications).values({ userId, type: "warning", data: { reason, note, kind } });
+        await tx.insert(schema.moderationActions).values({
+            action: "warn_user",
+            subjectUserId: userId,
+            targetKind: kind,
+            targetId,
+            note: note ? `${reason}: ${note}` : reason,
+            createdBy: moderatorId,
+        });
+    });
+}

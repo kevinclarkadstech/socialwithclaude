@@ -1,0 +1,16 @@
+.notification-item--new {
+  --background: rgba(var(--ion-color-primary-rgb), 0.08);
+}
+
+.notification-item h3 {
+  font-weight: 600;
+}
+
+.notification-item p {
+  color: var(--ion-text-color);
+}
+
+.notification-item .notification-item__time {
+  color: var(--ion-color-medium);
+  font-size: 0.8rem;
+}

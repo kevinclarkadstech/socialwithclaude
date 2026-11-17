@@ -29,3 +29,4 @@ export type UserBlockRow = typeof schema.userBlocks.$inferSelect;
 export type UserFeedbackRow = typeof schema.userFeedback.$inferSelect;
 
 export type SessionRow = typeof schema.sessions.$inferSelect;
+export type NotificationRow = typeof schema.notifications.$inferSelect;

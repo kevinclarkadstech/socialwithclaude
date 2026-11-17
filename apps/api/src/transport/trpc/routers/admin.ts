@@ -5,6 +5,8 @@ import {
     ResolveReportsMutationInputSchema,
     UnbanUserMutationInputSchema,
     UpdateFeedbackStatusMutationInputSchema,
+    WarnUserMutationInputSchema,
+    warnUserMutation,
     banUserMutation,
     getFeedbackQuery,
     getReportQueueQuery,
@@ -26,6 +28,7 @@ import {
     resolveReports,
     unbanUser,
     updateUserFeedbackStatus,
+    warnUser,
 } from "../../../data-access";
 import { storage } from "../../../storage";
 import { errorReporter, reportingFailures } from "../../../observability";
@@ -64,6 +67,14 @@ export const adminRouter = router({
             input,
             context: { logger: ctx.logger },
             dependencies: { getCallingUser: ctx.getCallingUser, getModerationSubject, banUser },
+        }),
+    ),
+
+    warnUser: procedure.input(WarnUserMutationInputSchema).mutation(({ ctx, input }) =>
+        warnUserMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: { getCallingUser: ctx.getCallingUser, getModerationSubject, warnUser },
         }),
     ),
 

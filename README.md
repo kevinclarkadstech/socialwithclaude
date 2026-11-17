@@ -37,11 +37,11 @@ What the app stores and the law expect from a social app with photos, and where 
 - [x] Send feedback from the app (Google's in-app feedback requirement).
 - [x] Photos stripped of location and other metadata when they're published.
 - [x] **Hide banned people's content:** their profile, posts, listings and comments disappear everywhere (feeds, Marketplace, search, mentions, comments, saves) while the ban lasts, and come back when it ends or is lifted. Nothing is deleted. Chats with them stay, with their history, but show them as "Account unavailable" and can't be replied to.
+- [x] **Warnings and replies to reporters:** admins can warn someone from a report (they get a notification), each report card shows the person's last 90 days (warnings, removals, bans), and everyone who reported something is told the outcome. Notifications are under the bell in the header.
 - [x] **Act on reports** (Settings → Admin, admins only): one queue item per reported thing with every report about it; dismiss, remove it (a post's photo files too), or ban its person. Every action goes in the moderation log. Apple treats removing reported content quickly as the minimum for filtering objectionable material, and expects nonconsensual intimate imagery to be removed proactively. See [Admin and moderation](#admin-and-moderation).
 
 **Before launch**
 - [ ] **CSAM scanning** on the media domain: step 6 under Object storage (Google requires handling CSAM; US law requires reporting it).
-- [ ] **Warnings and replies to reporters,** through in-app notifications, with each person's warning history shown when acting on a report.
 - [ ] **Contact details** in the app and on the store listings (Apple 1.2).
 - [ ] **Child safety standards page:** a public web page with your standards against child sexual abuse and exploitation, naming the app, plus a child safety point of contact (Google).
 - [ ] **Self-certify** the Child Safety Standards in Play Console before publishing (Google).
@@ -65,6 +65,8 @@ bun run --cwd apps/api admin:revoke someone@example.com
 - **Reports:** one item per reported post, comment, profile or chat message, longest-waiting first, with every report about it and a snapshot of it as last reported. **Dismiss** (nothing wrong), **Remove** (deleted for everyone, a post's photo files too), or **Ban** its person.
 - **Bans** (better-auth's admin plugin): for 1, 7 or 30 days, or for good. The person is signed out everywhere at once and can't sign in until it ends, and their profile, posts and comments are hidden from everyone until then (nothing is deleted). Admins can't be banned.
 - **Moderation log:** every dismissal, removal, ban and unban is kept in `moderation_actions` (who, what, about whom, why, when), for appeals and store reviews.
+- **Warnings:** Warn on a report card picks a reason (the ones it was reported for first) and an optional note, then offers to remove the thing or mark its reports reviewed. They get a notification with a default message; it counts in the 90-day history shown on their report cards. There are no automatic bans.
+- **Reporters are told the outcome** (removed, reviewed, or not against the guidelines) in a notification, with a default message.
 - **Feedback:** newest first, filtered by New, Read and Done.
 
 ## Deployment

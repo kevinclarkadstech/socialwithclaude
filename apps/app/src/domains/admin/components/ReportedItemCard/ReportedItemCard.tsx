@@ -6,8 +6,14 @@ import { reportReasonLabels } from '../../../../utils/formatters/reportReasons';
 import { banUser } from '../../actions/banUser/banUser';
 import { resolveReports } from '../../actions/resolveReports/resolveReports';
 import { unbanUser } from '../../actions/unbanUser/unbanUser';
+import { warnUser } from '../../actions/warnUser/warnUser';
 import { describeReportedItem } from '../../utils/describeReportedItem/describeReportedItem';
 import './ReportedItemCard.css';
+
+/** "1 warning", "2 removals". */
+function plural(count: number, noun: string) {
+  return `${count} ${noun}${count === 1 ? '' : 's'}`;
+}
 
 /** What was reported, as it was when last reported. */
 function Snapshot({ item }: { item: ReportedItem }) {
@@ -81,6 +87,12 @@ export function ReportedItemCard({ item, onChanged }: { item: ReportedItem; onCh
             </IonBadge>
           )}
         </IonCardSubtitle>
+        {canBan && (
+          <p className="reported-item__history" data-history>
+            Last 90 days: {plural(item.subject.history.warnings, 'warning')} · {plural(item.subject.history.removals, 'removal')} ·{' '}
+            {plural(item.subject.history.bans, 'ban')}
+          </p>
+        )}
         <IonCardTitle className="reported-item__title">
           {item.reports.length === 1 ? '1 report' : `${item.reports.length} reports`}
           <span className="reported-item__when"> · last {timeAgo(item.lastReportedAt)}</span>
@@ -112,6 +124,11 @@ export function ReportedItemCard({ item, onChanged }: { item: ReportedItem; onCh
           {item.isOpen && item.kind !== 'profile' && (
             <IonButton size="small" color="danger" disabled={isBusy} onClick={() => void act(() => resolveReports({ item, outcome: 'removed' }))}>
               Remove {noun}
+            </IonButton>
+          )}
+          {canBan && !item.subject.isBanned && (
+            <IonButton size="small" color="warning" fill="outline" disabled={isBusy} onClick={() => void act(() => warnUser({ item }))}>
+              Warn
             </IonButton>
           )}
           {canBan && !item.subject.isBanned && (
