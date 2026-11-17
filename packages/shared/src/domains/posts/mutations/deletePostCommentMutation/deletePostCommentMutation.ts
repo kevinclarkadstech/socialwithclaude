@@ -6,6 +6,8 @@ import { canDeletePostComment } from "../../authorization/canDeletePostComment/c
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
 import { PostCommentSchema, type PostCommentView } from "../../types/post-comment";
+import { cleanUpAfterSave } from "../../utils/cleanUpAfterSave/cleanUpAfterSave";
+import { postCommentPhotoKeys } from "../../utils/postCommentPhotoKeys/postCommentPhotoKeys";
 
 export const DeletePostCommentMutationInputSchema = PostCommentSchema.pick({ id: true });
 
@@ -15,10 +17,13 @@ export const DeletePostCommentMutationOutputSchema = z.null();
 
 export type DeletePostCommentMutationOutput = z.infer<typeof DeletePostCommentMutationOutputSchema>;
 
+/** Deletes a comment, and its photo's files. */
 export const deletePostCommentMutation: Mutation<{ input: DeletePostCommentMutationInput, output: DeletePostCommentMutationOutput }, {
     getCallingUser: GetCallingUser;
     getPostCommentViewById: (args: { id: string; viewerId: string | null }) => Promise<PostCommentView | null>;
     deletePostComment: (args: { id: string; userId: string }) => Promise<boolean>;
+    /** Deletes published photo files. */
+    deleteMedia: (args: { keys: string[] }) => Promise<void>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     const comment = await dependencies.getPostCommentViewById({ id: input.id, viewerId: caller?.userId ?? null });
@@ -37,6 +42,17 @@ export const deletePostCommentMutation: Mutation<{ input: DeletePostCommentMutat
         return allowed;
     }
 
-    await dependencies.deletePostComment({ id: comment.id, userId: allowed.value.userId });
+    const deleted = await dependencies.deletePostComment({ id: comment.id, userId: allowed.value.userId });
+    // Its photo goes with it. The comment is deleted either way: a failure is logged as an error and the files swept up later.
+    const photo = comment.photo;
+    if (deleted && photo) {
+        await cleanUpAfterSave({
+            logger,
+            level: "error",
+            what: "comment photo",
+            postId: comment.postId,
+            run: () => dependencies.deleteMedia({ keys: postCommentPhotoKeys(photo) }),
+        });
+    }
     return succeed();
 }

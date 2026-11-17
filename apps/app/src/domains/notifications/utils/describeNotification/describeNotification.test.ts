@@ -2,7 +2,7 @@ import type { NotificationView } from '@myapp/shared/domains';
 import { describe, expect, it } from 'vitest';
 import { describeNotification } from './describeNotification';
 
-const base = { id: '01JNNNNNNNNNNNNNNNNNNNNNN1', userId: '01JAAAAAAAAAAAAAAAAAAAAAA1', readAt: null, createdAt: '2026-01-01T00:00:00.000Z' };
+const base = { id: '01JNNNNNNNNNNNNNNNNNNNNNN1', userId: '01JAAAAAAAAAAAAAAAAAAAAAA1', readAt: null, createdAt: '2026-01-01T00:00:00.000Z', commentPhoto: null };
 const sam = { userId: '01JAAAAAAAAAAAAAAAAAAAAAA2', username: 'sam_k', firstName: null, lastName: null, updatedAt: '2026-01-01T00:00:00.000Z' };
 const postId = '01JBBBBBBBBBBBBBBBBBBBBBB1';
 
@@ -30,5 +30,6 @@ describe('describeNotification', () => {
     expect(describeNotification({ ...from, type: 'commented', data: { postId, postCommentId: '01JCCCCCCCCCCCCCCCCCCCCCC1', excerpt: 'Nice!' } }))
       .toEqual({ title: '@sam_k', message: 'commented on your post: “Nice!”', target: `/feed/posts/${postId}` });
     expect(describeNotification({ ...from, type: 'mentioned', data: { postId, postCommentId: null } }).message).toBe('mentioned you in a post.');
+    expect(describeNotification({ ...from, type: 'commented', data: { postId, postCommentId: '01JCCCCCCCCCCCCCCCCCCCCCC1', excerpt: '' } }).message).toBe('commented on your post.');
   });
 });

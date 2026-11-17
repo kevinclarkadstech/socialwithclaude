@@ -23,6 +23,7 @@ import {
     getFeedbackItems,
     getModerationSubject,
     getPostMediaByPostId,
+    getPostCommentPhoto,
     getReportedItem,
     getReportedItems,
     resolveReports,
@@ -56,6 +57,7 @@ export const adminRouter = router({
                 // A removed post's photo whose file wasn't deleted is still public: report it (the removal still succeeds).
                 deleteMedia: reportingFailures({ reporter: errorReporter, context: { ...ctx.errorReportContext, procedure: "admin.resolveReports" }, run: storage.deleteMedia }),
                 deletePostComment,
+                getPostCommentPhoto,
                 deleteChatMessage,
                 resolveReports,
             },

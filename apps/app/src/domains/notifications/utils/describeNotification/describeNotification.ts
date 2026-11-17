@@ -47,7 +47,12 @@ export function describeNotification(notification: NotificationView): { title: s
     case 'follow_accepted':
       return { title: who, message: 'accepted your follow request.', target: profile };
     case 'commented':
-      return { title: who, message: `commented on your post: “${notification.data.excerpt}”`, target: `/feed/posts/${notification.data.postId}` };
+      return {
+        title: who,
+        // A photo-only comment has no words to quote (its photo shows beside it).
+        message: notification.data.excerpt ? `commented on your post: “${notification.data.excerpt}”` : 'commented on your post.',
+        target: `/feed/posts/${notification.data.postId}`,
+      };
     case 'mentioned':
       return {
         title: who,

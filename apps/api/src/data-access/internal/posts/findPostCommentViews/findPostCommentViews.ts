@@ -4,6 +4,7 @@ import type { PostCommentView } from "@myapp/shared/domains";
 import { db, schema, type Executor } from "../../../db";
 import { creatorFields } from "../../../constants";
 import { toCreator } from "../../../mappers/users/toCreator/toCreator";
+import { toPostCommentPhoto } from "../../../mappers/posts/toPostCommentPhoto/toPostCommentPhoto";
 import { isNotBanned } from "../../users/isNotBanned/isNotBanned";
 
 /**
@@ -37,9 +38,11 @@ function selectPostComments(executor: Executor, viewerId: string | null) {
             creator: creatorFields,
             vote: schema.postCommentVotes.value,
             savedAt: schema.userSaves.createdAt,
+            photo: schema.postCommentPhotos,
         })
         .from(schema.postComments)
         .innerJoin(schema.userProfiles, eq(schema.userProfiles.userId, schema.postComments.createdBy))
+        .leftJoin(schema.postCommentPhotos, eq(schema.postCommentPhotos.postCommentId, schema.postComments.id))
         .leftJoin(
             schema.postCommentVotes,
             viewerId
@@ -61,7 +64,7 @@ function selectPostComments(executor: Executor, viewerId: string | null) {
 type Row = Awaited<ReturnType<typeof selectPostComments>>[number];
 
 /** A comment from selectPostComments. */
-function toPostComment({ comment, creator, vote, savedAt }: Row): PostCommentView {
+function toPostComment({ comment, creator, vote, savedAt, photo }: Row): PostCommentView {
     return {
         id: comment.id,
         postId: comment.postId,
@@ -69,6 +72,7 @@ function toPostComment({ comment, creator, vote, savedAt }: Row): PostCommentVie
         numUpVotes: comment.numUpVotes,
         numDownVotes: comment.numDownVotes,
         creator: toCreator(creator),
+        photo: photo ? toPostCommentPhoto(photo) : null,
         viewer: { hasSaved: savedAt !== null, vote: vote === null ? null : vote === 1 ? 1 : -1 },
         createdBy: comment.createdBy,
         updatedBy: comment.updatedBy,

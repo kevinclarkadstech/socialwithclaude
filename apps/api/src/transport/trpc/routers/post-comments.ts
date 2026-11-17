@@ -1,5 +1,7 @@
 import {
     CreatePostCommentMutationInputSchema,
+    CreatePostCommentPhotoUploadMutationInputSchema,
+    createPostCommentPhotoUploadMutation,
     DeletePostCommentMutationInputSchema,
     GetPostCommentsQueryInputSchema,
     ReportPostCommentMutationInputSchema,
@@ -32,9 +34,21 @@ import {
     createNotifications,
 } from "../../../data-access";
 import { notifyMentions } from "../../../notifications";
+import { deletePostCommentPhotoUploads, publishPostCommentPhoto } from "../../../media";
+import { storage } from "../../../storage";
+import { errorReporter, reportingFailures } from "../../../observability";
 import { procedure, router } from "../trpc";
 
 export const postCommentsRouter = router({
+    /** Upload URLs for a comment's photo (see createPostCommentPhotoUploadMutation). */
+    createPostCommentPhotoUpload: procedure.input(CreatePostCommentPhotoUploadMutationInputSchema).mutation(({ ctx, input }) =>
+        createPostCommentPhotoUploadMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostAccessById, getPostCommentViewById, createUploadUrl: storage.createUploadUrl },
+        }),
+    ),
+
     getPostComments: procedure.input(GetPostCommentsQueryInputSchema).query(({ ctx, input }) =>
         getPostCommentsQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getPostAccessById, getPostCommentViews } }),
     ),
@@ -43,7 +57,16 @@ export const postCommentsRouter = router({
         createPostCommentMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostAccessById, getPostCommentViewById, createPostComment, sendNotifications: createNotifications, notifyMentions },
+            dependencies: {
+                getCallingUser: ctx.getCallingUser,
+                getPostAccessById,
+                getPostCommentViewById,
+                createPostComment,
+                sendNotifications: createNotifications,
+                notifyMentions,
+                publishPostCommentPhoto: (args) => publishPostCommentPhoto({ ...args, storage, logger: ctx.logger }),
+                deletePostCommentPhotoUploads: (args) => deletePostCommentPhotoUploads({ ...args, storage }),
+            },
         }),
     ),
 
@@ -51,7 +74,16 @@ export const postCommentsRouter = router({
         updatePostCommentMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentViewById, updatePostComment, notifyMentions },
+            dependencies: {
+                getCallingUser: ctx.getCallingUser,
+                getPostCommentViewById,
+                updatePostComment,
+                notifyMentions,
+                publishPostCommentPhoto: (args) => publishPostCommentPhoto({ ...args, storage, logger: ctx.logger }),
+                deletePostCommentPhotoUploads: (args) => deletePostCommentPhotoUploads({ ...args, storage }),
+                // A removed photo whose file wasn't deleted is still public: report it (the edit still succeeds).
+                deleteMedia: reportingFailures({ reporter: errorReporter, context: { ...ctx.errorReportContext, procedure: "postComments.updatePostComment" }, run: storage.deleteMedia }),
+            },
         }),
     ),
 
@@ -59,7 +91,12 @@ export const postCommentsRouter = router({
         deletePostCommentMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentViewById, deletePostComment },
+            dependencies: {
+                getCallingUser: ctx.getCallingUser,
+                getPostCommentViewById,
+                deletePostComment,
+                deleteMedia: reportingFailures({ reporter: errorReporter, context: { ...ctx.errorReportContext, procedure: "postComments.deletePostComment" }, run: storage.deleteMedia }),
+            },
         }),
     ),
 

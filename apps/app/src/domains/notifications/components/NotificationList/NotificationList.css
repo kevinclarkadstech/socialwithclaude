@@ -19,3 +19,10 @@
   color: var(--ion-text-color);
   font-size: 0.95rem;
 }
+
+.notification-item__thumbnail {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+}

@@ -7,6 +7,7 @@ const comment = (vote: 1 | -1 | null, numUpVotes: number, numDownVotes: number):
   id: '01JCCCCCCCCCCCCCCCCCCCCCC1',
   postId: '01JBBBBBBBBBBBBBBBBBBBBBB1',
   content: 'Nice',
+  photo: null,
   numUpVotes,
   numDownVotes,
   creator,

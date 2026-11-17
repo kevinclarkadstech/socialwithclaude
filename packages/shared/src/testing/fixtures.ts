@@ -71,6 +71,7 @@ export function mockPostComment(overrides: Partial<PostCommentView> = {}): PostC
         numUpVotes: 0,
         numDownVotes: 0,
         creator,
+        photo: null,
         viewer: { hasSaved: false, vote: null },
         createdBy: userId1,
         updatedBy: userId1,

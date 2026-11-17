@@ -12,3 +12,4 @@ export * from './savePostMutation/savePostMutation';
 export * from './unsavePostMutation/unsavePostMutation';
 export * from './savePostCommentMutation/savePostCommentMutation';
 export * from './unsavePostCommentMutation/unsavePostCommentMutation';
+export * from './createPostCommentPhotoUploadMutation/createPostCommentPhotoUploadMutation';

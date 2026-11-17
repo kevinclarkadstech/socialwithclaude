@@ -20,6 +20,7 @@ function run({ item, outcome, caller = admin }: { item: ReportedItem | null; out
         deletePost: mock(async () => true),
         deleteMedia: mock(async () => {}),
         deletePostComment: mock(async () => true),
+        getPostCommentPhoto: async () => null,
         deleteChatMessage: mock(async () => true),
         resolveReports: mock(async () => 2),
     };

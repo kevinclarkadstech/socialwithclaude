@@ -28,3 +28,4 @@ export { applyCreatorChange } from './utils/applyCreatorChange/applyCreatorChang
 // Stores
 export { postCommentStore } from './postCommentStore';
 export { postStore } from './postStore';
+export { commentPhotoThumbnailUrl } from './utils/commentPhotoDisplay/commentPhotoDisplay';

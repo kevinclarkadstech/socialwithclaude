@@ -2,6 +2,7 @@ import z from "zod";
 import { ReportKindSchema, ReportOutcomeSchema } from "../../admin/types/reported-item";
 import { ReportReasonSchema } from "../../posts/types/report";
 import { UserProfileSummarySchema } from "../../users/types/user-profile-summary";
+import { PostCommentPhotoSchema } from "../../posts/types/post-comment-photo";
 
 /**
  * Something the app tells one person, shown on their Notifications page.
@@ -71,9 +72,13 @@ export const NotificationTypeSchema = z.enum(["warning", "report_resolved", "fol
 
 /**
  * A notification as its recipient sees it: with who did it (null for the
- * app's own, or if they have no profile any more).
+ * app's own, or if they have no profile any more), and for "commented", the
+ * comment's photo if it has one (shown as a thumbnail).
  */
-export const NotificationViewSchema = z.intersection(NotificationSchema, z.object({ actor: UserProfileSummarySchema.nullable() }));
+export const NotificationViewSchema = z.intersection(NotificationSchema, z.object({
+    actor: UserProfileSummarySchema.nullable(),
+    commentPhoto: PostCommentPhotoSchema.nullable(),
+}));
 
 /** A notification to send: who it's for, who did it, and what. Each mutation that sends one builds it. */
 export type NewNotification = Notification extends infer N ? (N extends Notification ? Omit<N, "id" | "readAt" | "createdAt"> : never) : never;

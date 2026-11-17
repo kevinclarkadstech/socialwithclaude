@@ -322,6 +322,26 @@ export const postComments = pgTable("post_comments", {
     check("post_comments_num_down_votes_non_negative", sql`${t.numDownVotes} >= 0`),
 ]);
 
+/**
+ * A comment's photo: at most one per comment. Its files are at
+ * `{commenter}/{post_comment_id}/{id}-{size}` (see PostCommentPhoto).
+ */
+export const postCommentPhotos = pgTable("post_comment_photos", {
+    id: text("id").primaryKey(),
+    postCommentId: text("post_comment_id")
+        .notNull()
+        .unique()
+        .references(() => postComments.id, { onDelete: "cascade" }),
+    // At the largest size.
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    // A ThumbHash (base64) shown while it loads.
+    placeholder: text("placeholder"),
+    ...auditFields(),
+}, (t) => [
+    check("post_comment_photos_dimensions_positive", sql`${t.width} > 0 and ${t.height} > 0`),
+]);
+
 /** One vote per user per comment: 1 = up, -1 = down. */
 export const postCommentVotes = pgTable("post_comment_votes", {
     userId: text("user_id")
