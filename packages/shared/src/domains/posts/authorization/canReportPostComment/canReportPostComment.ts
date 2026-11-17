@@ -1,27 +1,18 @@
 import type { CallingUser } from "../../../users/types/calling-user";
-import type { PostAccess } from "../../types/post-access";
 import { allow, disallow, type AuthorizationCheck } from "../../../../authorization/allowDisallow/allowDisallow";
-import { hasProfile, ignoringBlocks, isSignedIn } from "../../../../authorization/conditions/conditions";
-import { canViewPost } from "../canViewPost/canViewPost";
+import { hasProfile, isSignedIn } from "../../../../authorization/conditions/conditions";
 
 /**
- * Anyone who has finished sign-up can report a comment on a post they could
- * see, blocks or not (with the post's creator or the comment's author):
- * being blocked mid-report doesn't make it fail.
+ * Anyone who has finished sign-up can report a comment, whoever can see its
+ * post now: being blocked, or unfollowed by a followers-only account,
+ * mid-report doesn't make it fail. A report shows the reporter nothing of the comment.
  */
-export const canReportPostComment: AuthorizationCheck<{
-    caller: CallingUser | null;
-    post: PostAccess;
-}> = ({ caller, post }) => {
+export const canReportPostComment: AuthorizationCheck<{ caller: CallingUser | null }> = ({ caller }) => {
     if (!isSignedIn(caller)) {
         return disallow("not-signed-in");
     }
     if (!hasProfile(caller)) {
         return disallow("profile-required");
-    }
-    const viewable = canViewPost({ caller: ignoringBlocks(caller), post });
-    if (!viewable.ok) {
-        return viewable;
     }
     return allow(caller);
 };

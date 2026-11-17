@@ -18,7 +18,7 @@ export function usePostMenuButton({ post, onDeleted }: { post: PostView; onDelet
 
   const canEdit = canUpdatePost({ caller: callingUser, post }).ok;
   const canDelete = canDeletePost({ caller: callingUser, post }).ok;
-  const reportCheck = canReportPost({ caller: callingUser, post });
+  const reportCheck = canReportPost({ caller: callingUser });
 
   async function removePost() {
     const confirmed = await confirm({

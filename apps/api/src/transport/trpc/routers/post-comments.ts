@@ -73,7 +73,7 @@ export const postCommentsRouter = router({
         reportPostCommentMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentViewById, getPostAccessById, createPostCommentReport },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentViewById, createPostCommentReport },
         }),
     ),
 
