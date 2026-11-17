@@ -10,4 +10,13 @@ export const ChatMemberSchema = z.object({
     createdAt: z.iso.datetime(),
 });
 
+/**
+ * A member with whether they're banned right now: a chat with a banned
+ * person stays (with its history), but nobody can send in it until the ban ends.
+ */
+export const ChatMemberViewSchema = ChatMemberSchema.extend({
+    isBanned: z.boolean(),
+});
+
 export type ChatMember = z.infer<typeof ChatMemberSchema>;
+export type ChatMemberView = z.infer<typeof ChatMemberViewSchema>;

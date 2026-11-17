@@ -36,7 +36,7 @@ What the app stores and the law expect from a social app with photos, and where 
 - [x] Block someone: either way, they disappear from feeds, search and comments, and can't message you (Apple 1.2).
 - [x] Send feedback from the app (Google's in-app feedback requirement).
 - [x] Photos stripped of location and other metadata when they're published.
-- [x] **Hide banned people's content:** their profile, posts and comments disappear everywhere (feeds, search, mentions, comments, saves) while the ban lasts, and come back when it ends or is lifted. Nothing is deleted.
+- [x] **Hide banned people's content:** their profile, posts, listings and comments disappear everywhere (feeds, Marketplace, search, mentions, comments, saves) while the ban lasts, and come back when it ends or is lifted. Nothing is deleted. Chats with them stay, with their history, but show them as "Account unavailable" and can't be replied to.
 - [x] **Act on reports** (Settings → Admin, admins only): one queue item per reported thing with every report about it; dismiss, remove it (a post's photo files too), or ban its person. Every action goes in the moderation log. Apple treats removing reported content quickly as the minimum for filtering objectionable material, and expects nonconsensual intimate imagery to be removed proactively. See [Admin and moderation](#admin-and-moderation).
 
 **Before launch**

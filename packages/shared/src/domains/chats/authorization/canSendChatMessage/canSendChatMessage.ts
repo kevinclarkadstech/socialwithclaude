@@ -1,14 +1,15 @@
 import type { CallingUser } from "../../../users/types/calling-user";
-import type { ChatMember } from "../../types/chat-member";
+import type { ChatMemberView } from "../../types/chat-member";
 import { allow, disallow, type AuthorizationCheck } from "../../../../authorization/allowDisallow/allowDisallow";
 import { hasBlocked, hasProfile, isBlockedBy, isChatMember, isSignedIn } from "../../../../authorization/conditions/conditions";
 
 /**
  * Only a chat's members can send messages in it (anyone else gets
  * not-found), and not across a block: not to someone who blocked them, nor
- * to someone they blocked (they can unblock).
+ * to someone they blocked (they can unblock), nor to someone who is
+ * banned (until the ban ends).
  */
-export const canSendChatMessage: AuthorizationCheck<{ caller: CallingUser | null; members: Pick<ChatMember, "userId">[] }> = ({ caller, members }) => {
+export const canSendChatMessage: AuthorizationCheck<{ caller: CallingUser | null; members: Pick<ChatMemberView, "userId" | "isBanned">[] }> = ({ caller, members }) => {
     if (!isSignedIn(caller)) {
         return disallow("not-signed-in");
     }
@@ -24,6 +25,9 @@ export const canSendChatMessage: AuthorizationCheck<{ caller: CallingUser | null
     }
     if (others.some((member) => hasBlocked(caller, member.userId))) {
         return disallow("blocking-user", "Unblock them to send messages");
+    }
+    if (others.some((member) => member.isBanned)) {
+        return disallow("user-unavailable", "You can't reply to this chat");
     }
     return allow(caller);
 };

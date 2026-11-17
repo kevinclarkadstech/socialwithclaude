@@ -5,7 +5,7 @@ import { conflictError } from "../../../../error-handling";
 import { canSendChatMessage } from "../../authorization/canSendChatMessage/canSendChatMessage";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
-import type { ChatMember } from "../../types/chat-member";
+import type { ChatMemberView } from "../../types/chat-member";
 import { ChatMessageSchema, ChatMessageViewSchema, type ChatMessageView } from "../../types/chat-message";
 
 export const SendChatMessageMutationInputSchema = ChatMessageSchema.pick({ id: true, chatId: true, content: true });
@@ -20,7 +20,7 @@ export type SendChatMessageMutationOutput = z.infer<typeof SendChatMessageMutati
 export const sendChatMessageMutation: Mutation<{ input: SendChatMessageMutationInput, output: SendChatMessageMutationOutput }, {
     getCallingUser: GetCallingUser;
     // Only who's in the chat is used.
-    getChatMembers: (args: { chatId: string }) => Promise<Pick<ChatMember, "userId">[]>;
+    getChatMembers: (args: { chatId: string }) => Promise<Pick<ChatMemberView, "userId" | "isBanned">[]>;
     getChatMessageViewById: (args: { id: string; viewerId: string | null }) => Promise<ChatMessageView | null>;
     createChatMessage: (args: { id: string; chatId: string; userId: string; content: string }) => Promise<ChatMessageView | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {

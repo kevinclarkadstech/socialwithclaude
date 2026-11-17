@@ -1,4 +1,4 @@
-import type { ChatMember } from "../domains/chats/types/chat-member";
+import type { ChatMemberView } from "../domains/chats/types/chat-member";
 import type { ChatMessageView } from "../domains/chats/types/chat-message";
 import type { PostView } from "../domains/posts/types/post";
 import type { PostCommentView } from "../domains/posts/types/post-comment";
@@ -80,13 +80,14 @@ export function mockPostComment(overrides: Partial<PostCommentView> = {}): PostC
     };
 }
 
-export function mockChatMember(overrides: Partial<ChatMember> = {}): ChatMember {
+export function mockChatMember(overrides: Partial<ChatMemberView> = {}): ChatMemberView {
     return {
         chatId: "01JDDDDDDDDDDDDDDDDDDDDDD1",
         userId: userId1,
         lastReadAt: null,
         clearedAt: null,
         createdAt: now,
+        isBanned: false,
         ...overrides,
     };
 }
