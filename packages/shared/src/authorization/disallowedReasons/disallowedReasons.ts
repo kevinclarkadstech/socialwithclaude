@@ -22,6 +22,8 @@ export const disallowedReasons = {
     "blocking-user": { errorType: "authorization", message: "Unblock them first", logLevel: "warn" },
     // Admin-only things (moderation), for anyone else. The UI never offers it: someone probing.
     "not-admin": { errorType: "authorization", message: "Not allowed", logLevel: "error" },
+    // They're banned right now (shown as "Account unavailable"); their chats can't be replied to until it ends.
+    "user-unavailable": { errorType: "authorization", message: "This account isn't available", logLevel: "info" },
     // A followers-only profile, and the caller isn't an approved follower.
     "followers-only": { errorType: "authorization", message: "This account is private", logLevel: "info" },
 } satisfies Record<string, { errorType: AppError["type"]; message: string; logLevel: "info" | "warn" | "error" }>;

@@ -1,12 +1,13 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { PostAccess } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
+import { isNotBanned } from "../../../internal/users/isNotBanned/isNotBanned";
 
 /**
  * Who can see a post, as `viewerId`: its creator, whether their profile is
  * public, and whether the viewer follows them (accepted). One small query,
  * for checks on what's under a post (its comments) that don't show the post
- * itself; null if there's no such post or it was deleted.
+ * itself; null if there's no such post, it was deleted, or its creator is banned.
  */
 export async function getPostAccessById({ id, viewerId }: { id: string; viewerId: string | null }): Promise<PostAccess | null> {
     const [row] = await db
@@ -29,7 +30,7 @@ export async function getPostAccessById({ id, viewerId }: { id: string; viewerId
                 )
                 : sql`false`,
         )
-        .where(and(eq(schema.posts.id, id), isNull(schema.posts.deletedAt)));
+        .where(and(eq(schema.posts.id, id), isNull(schema.posts.deletedAt), isNotBanned(schema.posts.createdBy)));
     if (!row) {
         return null;
     }

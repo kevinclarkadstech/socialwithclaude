@@ -26,3 +26,4 @@ export type { ShownChatMessage } from './types';
 
 // Utils
 export { chatMembers } from './utils/chatMembers/chatMembers';
+export { chatPartnerName } from './utils/chatPartnerName/chatPartnerName';

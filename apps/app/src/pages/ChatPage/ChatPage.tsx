@@ -21,6 +21,7 @@ import {
   ChatComposer,
   ChatMessageBubble,
   chatMembers,
+  chatPartnerName,
   reportChatMessage,
   runClearChatMutation,
   useChat,
@@ -35,9 +36,9 @@ import { displayName } from '../../utils/formatters/names';
 import '../../common/styles/pages.css';
 import './ChatPage.css';
 
-/** Sending is refused because one of you blocked the other. */
+/** Sending is refused because one of you blocked the other, or they're banned: the box is replaced by why. */
 function isBlock(reason: unknown) {
-  return reason === 'blocked-by-user' || reason === 'blocking-user';
+  return reason === 'blocked-by-user' || reason === 'blocking-user' || reason === 'user-unavailable';
 }
 
 /** A conversation (/chats/:chatId): the messages, newest at the bottom, and the message box. */
@@ -157,7 +158,13 @@ export function ChatPage() {
             <BackButton />
           </IonButtons>
           <IonTitle>
-            {chat ? (
+            {chat?.otherMember.isBanned && (
+              <span className="chat-page__title">
+                <UserAvatar user={chat.otherMember} size={32} isAvailable={false} />
+                <span>{chatPartnerName(chat.otherMember)}</span>
+              </span>
+            )}
+            {chat && !chat.otherMember.isBanned && (
               <a
                 className="chat-page__title"
                 href={tabHref(`profile/${chat.otherMember.username}`)}
@@ -169,9 +176,8 @@ export function ChatPage() {
                 <UserAvatar user={chat.otherMember} size={32} />
                 <span>{displayName(chat.otherMember)}</span>
               </a>
-            ) : (
-              'Chat'
             )}
+            {!chat && 'Chat'}
           </IonTitle>
           {chat && (
             <IonButtons slot="end">
@@ -205,7 +211,7 @@ export function ChatPage() {
                 Load earlier messages
               </IonButton>
             )}
-            {messages.messages.length === 0 && (
+            {messages.messages.length === 0 && !chat.otherMember.isBanned && (
               <p className="page-message">Say hi to {displayName(chat.otherMember)}.</p>
             )}
             {messages.messages.map((message) => (

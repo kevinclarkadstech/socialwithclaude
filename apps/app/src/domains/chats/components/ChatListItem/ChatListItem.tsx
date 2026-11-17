@@ -2,8 +2,8 @@ import { IonItem, IonLabel, IonNote } from '@ionic/react';
 import type { ChatView } from '@myapp/shared/domains';
 import { useNavigate } from 'react-router';
 import { timeAgo } from '../../../../utils/formatters/dates';
-import { displayName } from '../../../../utils/formatters/names';
 import { useCallingUser, UserAvatar } from '../../../users';
+import { chatPartnerName } from '../../utils/chatPartnerName/chatPartnerName';
 import './ChatListItem.css';
 
 /** A chat in your inbox: who it's with, the last message, when, and a dot if it's unread. */
@@ -25,9 +25,9 @@ export function ChatListItem({ chat }: { chat: ChatView }) {
       data-chat-id={chat.id}
       data-unread={String(viewer.hasUnread)}
     >
-      <UserAvatar slot="start" user={otherMember} size={48} />
+      <UserAvatar slot="start" user={otherMember} size={48} isAvailable={!otherMember.isBanned} />
       <IonLabel>
-        <h3>{displayName(otherMember)}</h3>
+        <h3>{chatPartnerName(otherMember)}</h3>
         <p>{preview}</p>
       </IonLabel>
       <div slot="end" className="chat-list-item__meta">

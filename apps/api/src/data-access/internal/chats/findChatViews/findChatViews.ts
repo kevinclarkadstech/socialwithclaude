@@ -5,6 +5,7 @@ import { db, schema } from "../../../db";
 import { creatorFields } from "../../../constants";
 import { toChat } from "../../../mappers/chats/toChat/toChat";
 import { toCreator } from "../../../mappers/users/toCreator/toCreator";
+import { isBanned } from "../../users/isBanned/isBanned";
 
 type LastMessage = { content: string; createdBy: string; createdAt: string };
 
@@ -33,6 +34,8 @@ export async function findChatViews({ viewerId, where, orderBy = [], limit }: {
         .select({
             chat: chats,
             otherMember: creatorFields,
+            // Banned right now: the app shows them as unavailable, and the chat can't be replied to.
+            otherMemberIsBanned: isBanned(otherUserId),
             lastMessage: sql<LastMessage | null>`(
                 select json_build_object(
                     'content', m.content,
@@ -63,9 +66,9 @@ export async function findChatViews({ viewerId, where, orderBy = [], limit }: {
         query = query.limit(limit);
     }
     const rows = await query;
-    return rows.map(({ chat, otherMember, lastMessage, hasUnread }) => ({
+    return rows.map(({ chat, otherMember, otherMemberIsBanned, lastMessage, hasUnread }) => ({
         ...toChat(chat),
-        otherMember: toCreator(otherMember),
+        otherMember: { ...toCreator(otherMember), isBanned: otherMemberIsBanned },
         lastMessage,
         viewer: { hasUnread },
     }));

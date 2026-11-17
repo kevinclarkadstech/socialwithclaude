@@ -11,17 +11,30 @@ interface UserAvatarProps {
   size?: number;
   slot?: string;
   className?: string;
+  /** False for someone shown as unavailable (banned): a plain placeholder, no photo or initials. */
+  isAvailable?: boolean;
 }
 
 /**
  * A user's avatar: their photo, over their initials on a colour picked from
  * their id. The initials show while it loads, and stay if they have no photo.
  */
-export function UserAvatar({ user, size = 40, slot, className }: UserAvatarProps) {
+export function UserAvatar({ user, size = 40, slot, className, isAvailable = true }: UserAvatarProps) {
   const src = profilePhotoUrl({ user, kind: 'avatar', width: profilePhotoWidthFor({ kind: 'avatar', displayWidth: size }) });
   // Which src failed (rather than a flag), so a new photo is tried again.
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
+
+  if (!isAvailable) {
+    return (
+      <IonAvatar
+        slot={slot}
+        className={className ? `user-avatar ${className}` : 'user-avatar'}
+        style={{ width: size, height: size, background: 'var(--ion-color-medium)' }}
+        aria-hidden="true"
+      />
+    );
+  }
 
   return (
     <IonAvatar

@@ -19,3 +19,10 @@ describe("canSendChatMessage", () => {
         expect(canSendChatMessage({ caller, members })).toMatchObject({ ok: false, error: { type: "authorization", metadata: { reason: "blocking-user" } } });
     });
 });
+
+describe("canSendChatMessage with a banned member", () => {
+    it("refuses, until the ban ends", () => {
+        const members = [mockChatMember(), mockChatMember({ userId: "01JAAAAAAAAAAAAAAAAAAAAAA3", isBanned: true })];
+        expect(canSendChatMessage({ caller: mockCaller(), members })).toMatchObject({ ok: false, error: { type: "authorization", metadata: { reason: "user-unavailable" } } });
+    });
+});
