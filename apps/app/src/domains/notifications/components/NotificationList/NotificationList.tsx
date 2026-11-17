@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { usePagedQuery } from '../../../../lib/api/usePagedQuery';
 import { timeAgo } from '../../../../utils/formatters/dates';
+import { commentPhotoThumbnailUrl } from '../../../posts';
 import { UserAvatar } from '../../../users';
 import { runGetMyNotificationsQuery } from '../../operations/runGetMyNotificationsQuery/runGetMyNotificationsQuery';
 import { runMarkNotificationsReadMutation } from '../../operations/runMarkNotificationsReadMutation/runMarkNotificationsReadMutation';
@@ -92,6 +93,9 @@ export function NotificationList() {
                 <time dateTime={notification.createdAt}>{timeAgo(notification.createdAt)}</time>
               </p>
             </IonLabel>
+            {notification.commentPhoto && (
+              <img slot="end" className="notification-item__thumbnail" src={commentPhotoThumbnailUrl(notification.commentPhoto)} alt="" loading="lazy" />
+            )}
           </IonItem>
         );
       })}

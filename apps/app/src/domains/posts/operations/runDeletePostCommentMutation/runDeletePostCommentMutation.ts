@@ -13,6 +13,8 @@ export function runDeletePostCommentMutation({ id }: { id: string }) {
     dependencies: {
       getCallingUser,
       getPostCommentViewById: commentFromStore,
+      // The API deletes the photo's files.
+      deleteMedia: async () => {},
       deletePostComment: async ({ id }) => {
         await fromApi(api.postComments.deletePostComment.mutate({ id }));
         return true;

@@ -21,3 +21,4 @@ export { setPostCommentVote } from './setPostCommentVote/setPostCommentVote';
 export { updatePost } from './updatePost/updatePost';
 export { updatePostComment } from './updatePostComment/updatePostComment';
 export { getSuggestedListingViews } from './getSuggestedListingViews/getSuggestedListingViews';
+export { getPostCommentPhoto } from './getPostCommentPhoto/getPostCommentPhoto';

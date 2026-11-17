@@ -7,6 +7,8 @@ import { photoKeys } from "../../../../media/utils";
 import { postPhotoSizes } from "../../../posts/constants";
 import type { PostMedia } from "../../../posts/types/post-media";
 import { cleanUpAfterSave } from "../../../posts/utils/cleanUpAfterSave/cleanUpAfterSave";
+import { postCommentPhotoKeys } from "../../../posts/utils/postCommentPhotoKeys/postCommentPhotoKeys";
+import type { PostCommentPhoto } from "../../../posts/types/post-comment-photo";
 import type { ReportStatus } from "../../../posts/types/report";
 import type { GetCallingUser } from "../../../users/types/calling-user";
 import { canAdminister } from "../../authorization/canAdminister/canAdminister";
@@ -38,7 +40,7 @@ const outcomes: Record<ReportOutcome, { status: ReportStatus; action: Moderation
 
 /**
  * Settles every open report about one thing, and logs it: dismiss them,
- * remove the thing (a post with its photos' files, a comment, a chat
+ * remove the thing (a post with its photos' files, a comment with its photo's, a chat
  * message; a profile can't be removed, its person can be banned), or mark
  * them reviewed after dealing with it another way. Everyone who reported
  * it is told the outcome. Admins only.
@@ -51,6 +53,8 @@ export const resolveReportsMutation: Mutation<{ input: ResolveReportsMutationInp
     /** Deletes published photo files. */
     deleteMedia: (args: { keys: string[] }) => Promise<void>;
     deletePostComment: (args: { id: string; userId: string }) => Promise<boolean>;
+    /** A comment's photo as it is now (not as reported), to delete its files with it. */
+    getPostCommentPhoto: (args: { postCommentId: string }) => Promise<PostCommentPhoto | null>;
     deleteChatMessage: (args: { id: string; userId: string }) => Promise<boolean>;
     /**
      * Sets the thing's open reports to `status`, logs the action, and tells
@@ -105,7 +109,17 @@ export const resolveReportsMutation: Mutation<{ input: ResolveReportsMutationInp
             }
         }
         if (item.kind === "postComment") {
-            await dependencies.deletePostComment({ id: item.targetId, userId: moderatorId });
+            const photo = await dependencies.getPostCommentPhoto({ postCommentId: item.targetId });
+            const deleted = await dependencies.deletePostComment({ id: item.targetId, userId: moderatorId });
+            if (deleted && photo) {
+                await cleanUpAfterSave({
+                    logger,
+                    level: "error",
+                    what: "comment photo",
+                    postId: item.snapshot.postId,
+                    run: () => dependencies.deleteMedia({ keys: postCommentPhotoKeys(photo) }),
+                });
+            }
         }
         if (item.kind === "chatMessage") {
             await dependencies.deleteChatMessage({ id: item.targetId, userId: moderatorId });
