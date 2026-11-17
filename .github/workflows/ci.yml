@@ -42,6 +42,37 @@ jobs:
       - name: Smoke test API
         run: bun run --cwd apps/api smoke
 
+  # The API's routers against a real Postgres: who can see and do what (privacy, blocks, follows,
+  # comments, saves, search, chats). The database is a throwaway service container.
+  api-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: app_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      # Its name must end in _test: the tests empty it first (integration/harness/preload.ts).
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/app_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      - name: Integration tests
+        run: bun run --cwd apps/api test:integration
+
   # The Ionic app (web and Capacitor share one build).
   app:
     runs-on: ubuntu-latest
