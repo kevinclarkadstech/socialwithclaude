@@ -36,7 +36,7 @@ What the app stores and the law expect from a social app with photos, and where 
 - [x] Block someone: either way, they disappear from feeds, search and comments, and can't message you (Apple 1.2).
 - [x] Send feedback from the app (Google's in-app feedback requirement).
 - [x] Photos stripped of location and other metadata when they're published.
-- [x] **Act on reports** (Settings → Moderation, admins only): one queue item per reported thing with every report about it; dismiss, remove it (a post's photo files too), or ban its person. Every action goes in the moderation log. Apple treats removing reported content quickly as the minimum for filtering objectionable material, and expects nonconsensual intimate imagery to be removed proactively. See [Moderation](#moderation).
+- [x] **Act on reports** (Settings → Admin, admins only): one queue item per reported thing with every report about it; dismiss, remove it (a post's photo files too), or ban its person. Every action goes in the moderation log. Apple treats removing reported content quickly as the minimum for filtering objectionable material, and expects nonconsensual intimate imagery to be removed proactively. See [Admin and moderation](#admin-and-moderation).
 
 **Before launch**
 - [ ] **CSAM scanning** on the media domain: step 6 under Object storage (Google requires handling CSAM; US law requires reporting it).
@@ -47,14 +47,15 @@ What the app stores and the law expect from a social app with photos, and where 
 - [ ] **Self-certify** the Child Safety Standards in Play Console before publishing (Google).
 - [ ] **Privacy policy and terms,** linked from sign-up and the store listings. Say that photo links work for anyone who has one, and that public posts' photos may appear in search engines.
 - [ ] **Email provider** for sign-in codes (they're only logged today).
+- [ ] **Account deletion** in the app (Apple 5.1.1(v): any app with sign-up must let people delete their account from inside it). Deletes their data, except what's kept for a report or a legal matter.
 
 **Later**
 - [ ] **Public post and profile pages** (server-rendered, public accounts only, with `og:image`, structured data and a sitemap), so public photos can show in Google Images.
 - [ ] If leaked photo links become a problem: signed, expiring links checked by Cloudflare (WAF HMAC validation on the media domain, Pro plan), so links stop working after 7 days.
 
-## Moderation
+## Admin and moderation
 
-Admins see **Moderation** in Settings: the report queue and the feedback people sent. Nothing in the app can make someone an admin; run this against the database instead (they need to have signed in once):
+Admins see **Admin** in Settings: the report queue and the feedback people sent. Nothing in the app can make someone an admin; run this against the database instead (they need to have signed in once):
 
 ```sh
 bun run --cwd apps/api admin:grant someone@example.com

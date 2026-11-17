@@ -479,10 +479,10 @@ export const chatMessageReports = pgTable("chat_message_reports", {
     check("chat_message_reports_status_valid", isOneOf(t.status, reportStatuses)),
 ]);
 
-// Moderation
+// Moderation (app-wide, by admins)
 
 /**
- * Everything a moderator did (see the moderation domain), kept for appeals
+ * Everything an admin did as moderator (see the admin domain), kept for appeals
  * and store reviews; rows are never changed. created_by is the moderator,
  * `subject_user_id` whose content or account it was about, and
  * `target_kind` / `target_id` what was reported, for report actions.

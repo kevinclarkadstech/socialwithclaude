@@ -8,7 +8,7 @@ import { FeedSearchPage } from '../pages/FeedSearchPage/FeedSearchPage';
 import { NewChatPage } from '../pages/NewChatPage/NewChatPage';
 import { PostDetailPage } from '../pages/PostDetailPage/PostDetailPage';
 import { SettingsPage } from '../pages/SettingsPage/SettingsPage';
-import { ModerationRoute } from '../pages/ModerationPage/ModerationRoute';
+import { AdminRoute } from '../pages/AdminPage/AdminRoute';
 import { MarketplacePage } from '../pages/MarketplacePage/MarketplacePage';
 import { MarketplaceSearchPage } from '../pages/MarketplaceSearchPage/MarketplaceSearchPage';
 import { UserProfilePage } from '../pages/UserProfilePage/UserProfilePage';
@@ -51,7 +51,7 @@ export const sharedRoutes: RouteObject[] = [
 export const rootRoutes: RouteObject[] = [
   { path: '/settings', element: <SettingsPage /> },
   // Admins only; loaded on demand.
-  { path: '/moderation', element: <ModerationRoute /> },
+  { path: '/admin', element: <AdminRoute /> },
   // Your profile (from the account button) and shared links: a full page over the tabs.
   { path: '/profile/:username', element: <UserProfilePage /> },
 ];

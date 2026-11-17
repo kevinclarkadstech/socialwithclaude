@@ -1,5 +1,5 @@
 import { IonButton, IonButtons, IonContent, IonHeader, IonItem, IonLabel, IonList, IonPage, IonTitle, IonToolbar } from '@ionic/react';
-import { canModerate } from '@myapp/shared/domains';
+import { canAdminister } from '@myapp/shared/domains';
 import { useNavigate } from 'react-router';
 import { requireCallerWithProfile } from '@myapp/shared/authorization';
 import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
@@ -10,12 +10,12 @@ import '../../common/styles/pages.css';
 
 /**
  * /settings, from your profile's menu: privacy, follow requests, where you're
- * signed in, and who you've blocked; for admins, a way into Moderation.
+ * signed in, and who you've blocked; for admins, a way into Admin.
  */
 export function SettingsPage() {
   const { callingUser } = useCallingUser();
   const signedUpCheck = requireCallerWithProfile({ caller: callingUser });
-  const canModerateCheck = canModerate({ caller: callingUser });
+  const canAdministerCheck = canAdminister({ caller: callingUser });
   const navigate = useNavigate();
 
   return (
@@ -35,10 +35,10 @@ export function SettingsPage() {
             <FollowRequestList />
             <SessionList />
             <BlockedUserList />
-            {canModerateCheck.ok && (
+            {canAdministerCheck.ok && (
               <IonList inset>
-                <IonItem button detail onClick={() => navigate('/moderation')}>
-                  <IonLabel>Moderation</IonLabel>
+                <IonItem button detail onClick={() => navigate('/admin')}>
+                  <IonLabel>Admin</IonLabel>
                 </IonItem>
               </IonList>
             )}
