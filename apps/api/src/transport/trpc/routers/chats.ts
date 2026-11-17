@@ -1,5 +1,7 @@
 import {
     SearchChatsQueryInputSchema,
+    GetChatSuggestionsQueryInputSchema,
+    getChatSuggestionsQuery,
     searchChatsQuery,
     ClearChatMutationInputSchema,
     DeleteChatMessageMutationInputSchema,
@@ -45,6 +47,7 @@ import {
     createUserSave,
     deleteUserSave,
     searchChatMessages,
+    getChatSuggestionProfiles,
 } from "../../../data-access";
 import { procedure, router } from "../trpc";
 
@@ -157,6 +160,11 @@ export const chatsRouter = router({
                 unsaveChatMessage: ({ userId, chatMessageId }) => deleteUserSave({ userId, type: "chatMessage", id: chatMessageId }),
             },
         }),
+    ),
+
+    /** People to message, beside the inbox (see getChatSuggestionsQuery). */
+    getSuggestions: procedure.input(GetChatSuggestionsQueryInputSchema).query(({ ctx, input }) =>
+        getChatSuggestionsQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getChatSuggestionProfiles } }),
     ),
 
     /** Messages in the caller's chats that contain the query. */

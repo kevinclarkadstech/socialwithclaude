@@ -4,3 +4,4 @@ export * from './getPostCommentsQuery/getPostCommentsQuery';
 export * from './getPostListingsQuery/getPostListingsQuery';
 export * from './getUserPostsQuery/getUserPostsQuery';
 export * from './searchPostsQuery/searchPostsQuery';
+export * from './getSuggestedListingsQuery/getSuggestedListingsQuery';

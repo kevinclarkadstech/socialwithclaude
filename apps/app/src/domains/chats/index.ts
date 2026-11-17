@@ -5,6 +5,7 @@
 
 // Components
 export { ChatComposer } from './components/ChatComposer/ChatComposer';
+export { ChatSuggestions } from './components/ChatSuggestions/ChatSuggestions';
 export { ChatListItem } from './components/ChatListItem/ChatListItem';
 export { ChatMessageBubble } from './components/ChatMessageBubble/ChatMessageBubble';
 export { ChatMessageSearchItem } from './components/ChatMessageSearchItem/ChatMessageSearchItem';

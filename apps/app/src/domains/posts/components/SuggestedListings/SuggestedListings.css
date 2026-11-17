@@ -1,0 +1,39 @@
+.suggested-listings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 8px 0 8px;
+  padding: 0 16px;
+  list-style: none;
+}
+
+.suggested-listings__item {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: inherit;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.suggested-listings__photo {
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--app-fill);
+}
+
+.suggested-listings__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.suggested-listings__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ion-color-medium);
+}

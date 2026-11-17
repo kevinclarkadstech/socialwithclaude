@@ -1,0 +1,21 @@
+.sponsored-slot {
+  margin-bottom: 16px;
+}
+
+.sponsored-slot__label {
+  display: block;
+  margin: 0 4px 4px;
+  font-size: 0.75rem;
+  color: var(--ion-color-medium);
+}
+
+.sponsored-slot__box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 250px;
+  border-radius: var(--app-radius);
+  border: 1px dashed var(--app-border-strong);
+  color: var(--ion-color-medium);
+  font-size: 0.9rem;
+}

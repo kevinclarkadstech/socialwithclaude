@@ -6,3 +6,7 @@
 .user-summary-item__link:hover h3 {
   text-decoration: underline;
 }
+
+.user-summary-item__detail {
+  font-size: 0.8rem;
+}

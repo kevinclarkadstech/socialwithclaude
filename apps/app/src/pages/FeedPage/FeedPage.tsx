@@ -13,7 +13,9 @@ import {
 import { add, searchOutline } from 'ionicons/icons';
 import { useState } from 'react';
 import { canCreatePost } from '@myapp/shared/domains';
-import { useCallingUser } from '../../domains/users';
+import { SuggestedPeople, useCallingUser } from '../../domains/users';
+import { PageColumns } from '../../common/components/PageColumns/PageColumns';
+import { SponsoredSlot } from '../../common/components/SponsoredSlot/SponsoredSlot';
 import { AppHeader } from '../../common/components/AppHeader/AppHeader';
 import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
 import { HeaderIconButton } from '../../common/components/HeaderIconButton/HeaderIconButton';
@@ -36,22 +38,31 @@ export function FeedPage() {
           <IonRefresherContent />
         </IonRefresher>
 
-        {isLoading && (
-          <div className="page-message">
-            <IonSpinner />
-          </div>
-        )}
-        {error !== null && <p className="page-message">Couldn't load the feed. Pull down to try again.</p>}
-        {!isLoading && error === null && postIds.length === 0 && <p className="page-message">Nothing here yet.</p>}
+        <PageColumns
+          rail={
+            <>
+              <SuggestedPeople />
+              <SponsoredSlot />
+            </>
+          }
+        >
+          {isLoading && (
+            <div className="page-message">
+              <IonSpinner />
+            </div>
+          )}
+          {error !== null && <p className="page-message">Couldn't load the feed. Pull down to try again.</p>}
+          {!isLoading && error === null && postIds.length === 0 && <p className="page-message">Nothing here yet.</p>}
 
-        <PendingPosts />
-        {postIds.map((id) => (
-          <PostCard key={id} postId={id} />
-        ))}
+          <PendingPosts />
+          {postIds.map((id) => (
+            <PostCard key={id} postId={id} />
+          ))}
 
-        <IonInfiniteScroll disabled={!hasMore} onIonInfinite={(event) => void loadMore().finally(() => event.target.complete())}>
-          <IonInfiniteScrollContent />
-        </IonInfiniteScroll>
+          <IonInfiniteScroll disabled={!hasMore} onIonInfinite={(event) => void loadMore().finally(() => event.target.complete())}>
+            <IonInfiniteScrollContent />
+          </IonInfiniteScroll>
+        </PageColumns>
 
         <IonFab slot="fixed" vertical="bottom" horizontal="end">
           <IonFabButton

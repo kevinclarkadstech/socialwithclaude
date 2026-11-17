@@ -18,6 +18,8 @@ import {
     GetMySettingsQueryInputSchema,
     GetUserProfileQueryInputSchema,
     SuggestMentionsQueryInputSchema,
+    GetSuggestedPeopleQueryInputSchema,
+    getSuggestedPeopleQuery,
     ReportProfileMutationInputSchema,
     reportProfileMutation,
     UnblockUserMutationInputSchema,
@@ -49,6 +51,7 @@ import {
     denyUserFollowRequest,
     followUser,
     getMentionSuggestions,
+    getSuggestedPeople,
     getProfileVisibility,
     getUserBlockViews,
     getUserFollowStatus,
@@ -79,6 +82,11 @@ export const usersRouter = router({
     /** Who the caller can tag after typing "@" (see suggestMentionsQuery). */
     suggestMentions: procedure.input(SuggestMentionsQueryInputSchema).query(({ ctx, input }) =>
         suggestMentionsQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getMentionSuggestions } }),
+    ),
+
+    /** People to follow, beside the feed (see getSuggestedPeopleQuery). */
+    getSuggestedPeople: procedure.input(GetSuggestedPeopleQueryInputSchema).query(({ ctx, input }) =>
+        getSuggestedPeopleQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser, getSuggestedPeople } }),
     ),
 
     updateMyProfile: procedure.input(UpdateMyProfileMutationInputSchema).mutation(({ ctx, input }) =>
