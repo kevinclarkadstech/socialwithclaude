@@ -4,6 +4,7 @@ import type { PostCommentView } from "@myapp/shared/domains";
 import { db, schema, type Executor } from "../../../db";
 import { creatorFields } from "../../../constants";
 import { toCreator } from "../../../mappers/users/toCreator/toCreator";
+import { isNotBanned } from "../../users/isNotBanned/isNotBanned";
 
 /**
  * Reads comments as `viewerId` sees them: each with its creator, the
@@ -17,10 +18,8 @@ export async function findPostCommentViews({ executor = db, viewerId, where, ord
     orderBy?: (SQL | AnyPgColumn)[];
     limit?: number;
 }): Promise<PostCommentView[]> {
-    let query = selectPostComments(executor, viewerId);
-    if (where) {
-        query = query.where(where);
-    }
+    // Never a banned person's comments (see isNotBanned).
+    let query = selectPostComments(executor, viewerId).where(and(where, isNotBanned(schema.postComments.createdBy)));
     if (orderBy.length > 0) {
         query = query.orderBy(...orderBy);
     }
