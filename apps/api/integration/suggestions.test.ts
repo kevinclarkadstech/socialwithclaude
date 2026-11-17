@@ -26,9 +26,11 @@ const suggested = async (who: ReturnType<typeof callAs>) =>
 
 describe("suggested people", () => {
     it("ranks people by how many of those I follow follow them, then popular public accounts", async () => {
-        const people = await suggested(me.call);
+        // All of them, not just this file's: which popular accounts fill the rest depends on the other test files.
+        const people = await valueOf(me.call.users.getSuggestedPeople({ limit: 20 }));
         expect(people.slice(0, 2).map((person) => [person.username, person.followedByCount])).toEqual([[dan.username, 2], [cat.username, 1]]);
-        expect(people.map((person) => person.username)).toContain(eve.username);
+        expect(people.length).toBeGreaterThan(2);
+        expect(people.slice(2).every((person) => person.followedByCount === 0)).toBe(true);
     });
 
     it("leaves out who I follow already, blocks and banned people", async () => {
