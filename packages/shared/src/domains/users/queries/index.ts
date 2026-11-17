@@ -6,3 +6,4 @@ export * from './getMySettingsQuery/getMySettingsQuery';
 export * from './getUserProfileQuery/getUserProfileQuery';
 export * from './searchUsersQuery/searchUsersQuery';
 export * from './suggestMentionsQuery/suggestMentionsQuery';
+export * from './getSuggestedPeopleQuery/getSuggestedPeopleQuery';

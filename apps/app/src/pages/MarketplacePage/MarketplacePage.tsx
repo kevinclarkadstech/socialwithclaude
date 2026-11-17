@@ -22,7 +22,9 @@ import { disallowedActions } from '../../common/events/disallowedActions/disallo
 import { HeaderIconButton } from '../../common/components/HeaderIconButton/HeaderIconButton';
 import { useCallingUser } from '../../domains/users';
 import { AppHeader } from '../../common/components/AppHeader/AppHeader';
-import { ComposeListingModal, PendingPosts, PostCard, useListings } from '../../domains/posts';
+import { PageColumns } from '../../common/components/PageColumns/PageColumns';
+import { SponsoredSlot } from '../../common/components/SponsoredSlot/SponsoredSlot';
+import { ComposeListingModal, PendingPosts, PostCard, SuggestedListings, useListings } from '../../domains/posts';
 import '../../common/styles/pages.css';
 
 const ALL = 'all';
@@ -60,23 +62,32 @@ export function MarketplacePage() {
           <IonRefresherContent />
         </IonRefresher>
 
-        {isLoading && (
-          <div className="page-message">
-            <IonSpinner />
-          </div>
-        )}
-        {error !== null && <p className="page-message">Couldn't load listings. Pull down to try again.</p>}
-        {!isLoading && error === null && postIds.length === 0 && <p className="page-message">No listings here yet.</p>}
+        <PageColumns
+          rail={
+            <>
+              <SuggestedListings />
+              <SponsoredSlot />
+            </>
+          }
+        >
+          {isLoading && (
+            <div className="page-message">
+              <IonSpinner />
+            </div>
+          )}
+          {error !== null && <p className="page-message">Couldn't load listings. Pull down to try again.</p>}
+          {!isLoading && error === null && postIds.length === 0 && <p className="page-message">No listings here yet.</p>}
 
-        {/* A listing being sent is available, so it shows under Available and All. */}
-        {(filter === 'available' || filter === ALL) && <PendingPosts kind="listing" />}
-        {postIds.map((id) => (
-          <PostCard key={id} postId={id} />
-        ))}
+          {/* A listing being sent is available, so it shows under Available and All. */}
+          {(filter === 'available' || filter === ALL) && <PendingPosts kind="listing" />}
+          {postIds.map((id) => (
+            <PostCard key={id} postId={id} />
+          ))}
 
-        <IonInfiniteScroll disabled={!hasMore} onIonInfinite={(event) => void loadMore().finally(() => event.target.complete())}>
-          <IonInfiniteScrollContent />
-        </IonInfiniteScroll>
+          <IonInfiniteScroll disabled={!hasMore} onIonInfinite={(event) => void loadMore().finally(() => event.target.complete())}>
+            <IonInfiniteScrollContent />
+          </IonInfiniteScroll>
+        </PageColumns>
 
         <IonFab slot="fixed" vertical="bottom" horizontal="end">
           <IonFabButton

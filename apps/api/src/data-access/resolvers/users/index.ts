@@ -26,3 +26,4 @@ export { updateUserProfile } from './updateUserProfile/updateUserProfile';
 export { updateUserSettings } from './updateUserSettings/updateUserSettings';
 export { createProfileReport } from './createProfileReport/createProfileReport';
 export { setUserRoleByEmail } from './setUserRoleByEmail/setUserRoleByEmail';
+export { getSuggestedPeople } from './getSuggestedPeople/getSuggestedPeople';

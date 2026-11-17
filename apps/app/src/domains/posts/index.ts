@@ -10,6 +10,7 @@ export { ComposeListingModal } from './components/ComposeListingModal/ComposeLis
 export { ComposePostModal } from './components/ComposePostModal/ComposePostModal';
 export { PendingPosts } from './components/PendingPosts/PendingPosts';
 export { PostCard } from './components/PostCard/PostCard';
+export { SuggestedListings } from './components/SuggestedListings/SuggestedListings';
 
 // Hooks
 export { useFeed } from './hooks/useFeed/useFeed';

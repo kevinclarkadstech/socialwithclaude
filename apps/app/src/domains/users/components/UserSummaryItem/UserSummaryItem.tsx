@@ -7,10 +7,11 @@ import './UserSummaryItem.css';
 
 /**
  * A person in a list: avatar, username, and their name under it when they
- * gave one (links to their profile), with buttons at the end. Username
+ * gave one (links to their profile), then `detail` if given (e.g. why
+ * they're suggested), with buttons at the end. Username
  * first, as everywhere people are listed.
  */
-export function UserSummaryItem({ user, children }: { user: UserProfileSummary; children?: ReactNode }) {
+export function UserSummaryItem({ user, detail, children }: { user: UserProfileSummary; detail?: string; children?: ReactNode }) {
   const navigate = useNavigate();
   const href = `/profile/${user.username}`;
   const name = [user.firstName, user.lastName].filter(Boolean).join(' ');
@@ -30,6 +31,7 @@ export function UserSummaryItem({ user, children }: { user: UserProfileSummary; 
           <h3>{user.username}</h3>
           {name && <p>{name}</p>}
         </a>
+        {detail && <p className="user-summary-item__detail">{detail}</p>}
       </IonLabel>
       {children}
     </IonItem>

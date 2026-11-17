@@ -14,7 +14,9 @@ export { PeopleSearchSection } from './components/PeopleSearchSection/PeopleSear
 export { PrivacySettings } from './components/PrivacySettings/PrivacySettings';
 export { ProfileHeader } from './components/ProfileHeader/ProfileHeader';
 export { UserAvatar } from './components/UserAvatar/UserAvatar';
+export { SuggestedPeople } from './components/SuggestedPeople/SuggestedPeople';
 export { UserPickerItem } from './components/UserPickerItem/UserPickerItem';
+export { UserSummaryItem } from './components/UserSummaryItem/UserSummaryItem';
 
 // Hooks
 export { useCallingUser } from './hooks/useCallingUser/useCallingUser';
@@ -23,6 +25,7 @@ export { useUserProfile } from './hooks/useUserProfile/useUserProfile';
 // Operations
 export { offerToBlock } from './actions/offerToBlock/offerToBlock';
 
+export { runGetUserProfileQuery } from './operations/runGetUserProfileQuery/runGetUserProfileQuery';
 export { runSearchUsersQuery } from './operations/runSearchUsersQuery/runSearchUsersQuery';
 export { followStatusFrom } from './operations/profileFromApi/profileFromApi';
 

@@ -1,0 +1,22 @@
+.rail-card {
+  margin-bottom: 16px;
+  padding: 12px 0 4px;
+  border-radius: var(--app-radius);
+  border: 1px solid var(--app-border-strong);
+  background: var(--ion-background-color);
+}
+
+.rail-card__title {
+  margin: 0 16px 4px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+}
+
+.rail-card ion-list {
+  background: transparent;
+}
+
+.rail-card ion-item {
+  --background: transparent;
+}

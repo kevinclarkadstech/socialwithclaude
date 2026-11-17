@@ -13,9 +13,10 @@ import { requireCallerWithProfile } from '@myapp/shared/authorization';
 import { useEffect, useRef } from 'react';
 import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
 import { HeaderIconButton } from '../../common/components/HeaderIconButton/HeaderIconButton';
-import { ChatListItem, runGetMyChatsQuery } from '../../domains/chats';
+import { ChatListItem, ChatSuggestions, runGetMyChatsQuery } from '../../domains/chats';
 import { useCallingUser } from '../../domains/users';
 import { AppHeader } from '../../common/components/AppHeader/AppHeader';
+import { PageColumns } from '../../common/components/PageColumns/PageColumns';
 import { usePagedQuery } from '../../lib/api/usePagedQuery';
 import { usePageContext } from '../../navigation';
 import { usePolling } from '../../lib/usePolling';
@@ -40,17 +41,19 @@ export function ChatsPage() {
         }
       />
       <IonContent>
-        {signedUpCheck.ok ? (
-          // Keyed by user, so signing in as someone else starts a fresh inbox.
-          <Inbox key={signedUpCheck.value.userId} />
-        ) : (
-          <div className="page-message">
-            <p>{callingUser ? 'Finish signing up to chat.' : 'Sign in to see your chats.'}</p>
-            <IonButton onClick={() => disallowedActions.emit({ error: signedUpCheck.error })}>
-              {callingUser ? 'Finish sign-up' : 'Sign in'}
-            </IonButton>
-          </div>
-        )}
+        <PageColumns rail={<ChatSuggestions />}>
+          {signedUpCheck.ok ? (
+            // Keyed by user, so signing in as someone else starts a fresh inbox.
+            <Inbox key={signedUpCheck.value.userId} />
+          ) : (
+            <div className="page-message">
+              <p>{callingUser ? 'Finish signing up to chat.' : 'Sign in to see your chats.'}</p>
+              <IonButton onClick={() => disallowedActions.emit({ error: signedUpCheck.error })}>
+                {callingUser ? 'Finish sign-up' : 'Sign in'}
+              </IonButton>
+            </div>
+          )}
+        </PageColumns>
       </IonContent>
     </IonPage>
   );
