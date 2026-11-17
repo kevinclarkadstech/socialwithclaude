@@ -27,6 +27,30 @@ bun run dev                   # API on :3000, app on :5173
 
 `apps/api/.env.example` lists every API variable. Its storage values point at the local Garage and aren't secrets.
 
+## Launch checklist
+
+What the app stores and the law expect from a social app with photos, and where the app stands. Apple: [App Review Guideline 1.2](https://developer.apple.com/app-store/review/guidelines/#user-generated-content) (user-generated content). Google Play: the [Child Safety Standards policy](https://support.google.com/googleplay/android-developer/answer/14747720) for social apps.
+
+**Done**
+- [x] Report a post or a comment (Apple 1.2).
+- [x] Block someone: either way, they disappear from feeds, search and comments, and can't message you (Apple 1.2).
+- [x] Send feedback from the app (Google's in-app feedback requirement).
+- [x] Photos stripped of location and other metadata when they're published.
+
+**Before launch**
+- [ ] **CSAM scanning** on the media domain: step 6 under Object storage (Google requires handling CSAM; US law requires reporting it).
+- [ ] **Act on reports:** an admin view to review reports and take content down, including a photo's files. Apple treats removing reported content quickly as the minimum for filtering objectionable material, and expects nonconsensual intimate imagery to be removed proactively.
+- [ ] **Report people and chat messages,** not only posts and comments.
+- [ ] **Contact details** in the app and on the store listings (Apple 1.2).
+- [ ] **Child safety standards page:** a public web page with your standards against child sexual abuse and exploitation, naming the app, plus a child safety point of contact (Google).
+- [ ] **Self-certify** the Child Safety Standards in Play Console before publishing (Google).
+- [ ] **Privacy policy and terms,** linked from sign-up and the store listings. Say that photo links work for anyone who has one, and that public posts' photos may appear in search engines.
+- [ ] **Email provider** for sign-in codes (they're only logged today).
+
+**Later**
+- [ ] **Public post and profile pages** (server-rendered, public accounts only, with `og:image`, structured data and a sitemap), so public photos can show in Google Images.
+- [ ] If leaked photo links become a problem: signed, expiring links checked by Cloudflare (WAF HMAC validation on the media domain, Pro plan), so links stop working after 7 days.
+
 ## Deployment
 
 ### Object storage (Cloudflare R2)
@@ -36,6 +60,9 @@ The API talks to storage through the S3 API, so production uses R2 with no code 
 1. **Create two buckets.**
    - Uploads, e.g. `myapp-uploads-prod`: **private**. The app uploads files here with presigned URLs, and the API checks them before publishing.
    - Media, e.g. `myapp-media-prod`: **public**, served from a custom domain such as `media.example.com`. The API publishes checked photos here, with a one-year cache.
+     - **Only by exact key:** leave the bucket's `r2.dev` address disabled, and don't allow listing. Photo keys hold a random 80-bit photo id, so a photo can only be opened by someone given its URL. A followers-only post's URL only ever reaches its followers.
+     - **Crawlable:** don't block search engines (no `robots.txt` disallow, no `noindex` header). Public photos can then appear in image search once there are public pages that show them (see the launch checklist). Private posts' photos aren't on any page a crawler can reach.
+     - A link keeps working for anyone who has it until the photo is deleted (deleting a post or a photo deletes its files). Say so in the privacy policy.
 2. **Set up the uploads bucket.**
    - A CORS rule that allows `PUT` from each origin the app runs on (the web app's address, plus `capacitor://localhost` and `https://localhost` for iOS and Android):
      ```json
