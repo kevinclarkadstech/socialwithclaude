@@ -6,3 +6,4 @@
  */
 export { assertCanNotify } from "./actions/assertCanNotify/assertCanNotify";
 export { sendOtp } from "./actions/sendOtp/sendOtp";
+export * from './actions/notifyMentions/notifyMentions';

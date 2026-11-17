@@ -7,6 +7,7 @@ export function toNotification(row: NotificationRow): Notification {
     return {
         id: row.id,
         userId: row.userId,
+        actorId: row.actorId,
         type: row.type,
         data: row.data,
         readAt: row.readAt?.toISOString() ?? null,

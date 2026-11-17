@@ -11,6 +11,8 @@ export function runCreatePostMutation(post: CreatePostMutationInput) {
     input: post,
     context: { logger },
     dependencies: {
+      // The API sends notifications when it saves; nothing to send from here.
+      notifyMentions: async () => {},
       getCallingUser,
       // Only the server knows the feature flag; it refuses if posting is off.
       isPostingEnabled: () => true,

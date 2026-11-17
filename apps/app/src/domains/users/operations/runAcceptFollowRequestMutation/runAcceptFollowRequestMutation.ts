@@ -10,6 +10,8 @@ export function runAcceptFollowRequestMutation({ follower }: { follower: UserPro
     input: { username: follower.username },
     context: { logger },
     dependencies: {
+      // The API sends notifications when it saves; nothing to send from here.
+      sendNotifications: async () => {},
       getCallingUser,
       getUserProfileByUsername: async () => follower,
       acceptUserFollowRequest: () => fromApi(api.users.acceptFollowRequest.mutate({ username: follower.username })),

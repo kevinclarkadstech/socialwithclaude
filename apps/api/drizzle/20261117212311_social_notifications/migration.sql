@@ -1,0 +1,3 @@
+ALTER TABLE "notifications" ADD COLUMN "actor_id" text;--> statement-breakpoint
+ALTER TABLE "notifications" ADD CONSTRAINT "notifications_actor_id_users_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "users"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "notifications" DROP CONSTRAINT "notifications_type_valid", ADD CONSTRAINT "notifications_type_valid" CHECK ("type" in ('warning', 'report_resolved', 'followed', 'follow_requested', 'follow_accepted', 'commented', 'mentioned'));

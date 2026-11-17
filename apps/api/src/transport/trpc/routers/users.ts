@@ -65,6 +65,7 @@ import {
     updateUserProfile,
     updateUserSettings,
     searchUserProfiles,
+    createNotifications,
 } from "../../../data-access";
 import { publishProfilePhoto } from "../../../media";
 import { storage } from "../../../storage";
@@ -129,7 +130,7 @@ export const usersRouter = router({
         followUserMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, getProfileVisibility, followUser },
+            dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, getProfileVisibility, followUser, sendNotifications: createNotifications },
         }),
     ),
 
@@ -153,7 +154,7 @@ export const usersRouter = router({
         acceptFollowRequestMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, acceptUserFollowRequest },
+            dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, acceptUserFollowRequest, sendNotifications: createNotifications },
         }),
     ),
 

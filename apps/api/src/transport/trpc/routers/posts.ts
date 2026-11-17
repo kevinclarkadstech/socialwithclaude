@@ -42,6 +42,7 @@ import {
 import { deletePostPhotoUploads, publishPostPhotos } from "../../../media";
 import { storage } from "../../../storage";
 import { errorReporter, reportingFailures } from "../../../observability";
+import { notifyMentions } from "../../../notifications";
 import { procedure, router } from "../trpc";
 
 export const postsRouter = router({
@@ -68,6 +69,7 @@ export const postsRouter = router({
                 publishPostPhotos: (args) => publishPostPhotos({ ...args, storage, logger: ctx.logger }),
                 deletePostPhotoUploads: (args) => deletePostPhotoUploads({ ...args, storage }),
                 createPost,
+                notifyMentions,
             },
         }),
     ),
@@ -98,6 +100,7 @@ export const postsRouter = router({
                 // A removed photo whose file wasn't deleted is still public: report it (the edit still succeeds).
                 deleteMedia: reportingFailures({ reporter: errorReporter, context: { ...ctx.errorReportContext, procedure: "posts.updatePost" }, run: storage.deleteMedia }),
                 updatePost,
+                notifyMentions,
             },
         }),
     ),

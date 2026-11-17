@@ -14,6 +14,8 @@ import { PostMediaSchema, type PostMedia } from "../../types/post-media";
 import { ListingPriceSchema, PostListingFieldsSchema } from "../../types/post-listing";
 import { photoKeys } from "../../../../media/utils";
 import { postPhotoSizes } from "../../constants";
+import { bestEffort } from "../../../../utils/bestEffort/bestEffort";
+import { newlyMentionedUsernames } from "../../../notifications/utils/mentionedUsernames/mentionedUsernames";
 
 export const UpdatePostMutationInputSchema = PostSchema.pick({ id: true, content: true }).extend({
     // All its photos: ones it has, and new ones uploaded first (createPostMediaUploadsMutation).
@@ -45,6 +47,11 @@ export const updatePostMutation: Mutation<{ input: UpdatePostMutationInput, outp
     deleteMedia: (args: { keys: string[] }) => Promise<void>;
     /** Saves the text and listing details, and makes the post's photos exactly `media`. Null if it was deleted. */
     updatePost: (args: { id: string; userId: string; content: string; media: PostMedia[]; listing?: UpdatePostMutationInput["listing"] }) => Promise<PostView | null>;
+    /**
+     * Notifies the people @-mentioned (by username) in a post or a comment on it
+     * who can see the post (see mentionRecipients), except `excludedUserIds`.
+     */
+    notifyMentions: (args: { actorId: string; postId: string; postCommentId: string | null; usernames: string[]; excludedUserIds: string[] }) => Promise<void>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     const post = await dependencies.getPostById({ id: input.id });
@@ -119,5 +126,14 @@ export const updatePostMutation: Mutation<{ input: UpdatePostMutationInput, outp
         });
     }
 
+    // Only people the edit newly mentions are told.
+    const usernames = newlyMentionedUsernames({ before: post.content, after: updatedPost.content });
+    if (usernames.length > 0) {
+        await bestEffort({
+            logger,
+            what: "send mention notifications",
+            run: () => dependencies.notifyMentions({ actorId: allowed.value.userId, postId: post.id, postCommentId: null, usernames, excludedUserIds: [] }),
+        });
+    }
     return succeed(updatedPost);
 }

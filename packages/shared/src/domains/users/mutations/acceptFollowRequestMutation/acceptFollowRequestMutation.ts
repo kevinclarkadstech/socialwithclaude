@@ -7,6 +7,8 @@ import type { GetCallingUser } from "../../types/calling-user";
 import { UserProfileSchema, type UserProfile } from "../../types/user-profile";
 import { UserFollowSchema, type UserFollow } from "../../types/user-follow";
 import { canAcceptFollowRequest } from "../../authorization/canAcceptFollowRequest/canAcceptFollowRequest";
+import { bestEffort } from "../../../../utils/bestEffort/bestEffort";
+import type { NewNotification } from "../../../notifications/types/notification";
 
 export const AcceptFollowRequestMutationInputSchema = UserProfileSchema.pick({ username: true });
 
@@ -16,12 +18,13 @@ export const AcceptFollowRequestMutationOutputSchema = UserFollowSchema;
 
 export type AcceptFollowRequestMutationOutput = z.infer<typeof AcceptFollowRequestMutationOutputSchema>;
 
-/** Accepts `username`'s pending request to follow the caller. */
+/** Accepts `username`'s pending request to follow the caller, and tells them ("follow_accepted"). */
 export const acceptFollowRequestMutation: Mutation<{ input: AcceptFollowRequestMutationInput, output: AcceptFollowRequestMutationOutput }, {
     getCallingUser: GetCallingUser;
     // Only the id is used, so a profile summary will do.
     getUserProfileByUsername: (args: { username: string }) => Promise<Pick<UserProfile, "userId"> | null>;
     acceptUserFollowRequest: (args: { userId: string; followerId: string }) => Promise<UserFollow | null>;
+    sendNotifications: (notifications: NewNotification[]) => Promise<void>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     const allowed = canAcceptFollowRequest({ caller });
@@ -46,5 +49,10 @@ export const acceptFollowRequestMutation: Mutation<{ input: AcceptFollowRequestM
         return fail(notFoundError("Request not found"));
     }
 
+    await bestEffort({
+        logger,
+        what: "send a follow-accepted notification",
+        run: () => dependencies.sendNotifications([{ userId: target.userId, actorId: allowed.value.userId, type: "follow_accepted", data: {} }]),
+    });
     return succeed(follow);
 }
