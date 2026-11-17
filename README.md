@@ -52,6 +52,11 @@ The API talks to storage through the S3 API, so production uses R2 with no code 
 3. **Configure the API.** Fill in the `STORAGE_*` variables in its environment. `apps/api/.env.example` shows each one with an R2 example. Create an R2 API token with read and write access to both buckets for the key ID and secret.
 4. **Configure the app.** Build it with `VITE_MEDIA_URL` set to the media bucket's public address, matching `STORAGE_MEDIA_PUBLIC_URL`.
 5. **Schedule the orphan sweep.** If saving a post fails after its photos were published and the app never retries, or a delete fails after a post is edited or deleted, published files are left with no post. `bun run --cwd apps/api media:sweep --delete` removes post photo files older than a day that no live post uses. Without `--delete` it only reports. Run it daily (a cron job, or a Cron Trigger on Workers).
+6. **Turn on CSAM scanning (before launch).** Every photo people upload is served from the media domain, so it must be checked against known child sexual abuse material. Cloudflare's free [CSAM Scanning Tool](https://developers.cloudflare.com/cache/reference/csam-scanning/) compares what's served through Cloudflare's cache on your zone against known CSAM lists:
+   - Serve the media bucket from the **custom domain** (step 1), on a zone in your account. The shared `r2.dev` address isn't on your zone, so it isn't covered.
+   - In the Cloudflare dashboard, open that zone, go to **Caching → Configuration**, select **Configure** next to CSAM Scanning Tool, and give an email address that's read promptly. Cloudflare notifies it when it finds a match.
+   - Check that photos really come through the cache: a media URL's response should have a `cf-cache-status` header.
+   - On a match, Cloudflare blocks the URL and emails you. The match still has to be dealt with: in the US, providers must report it to NCMEC's CyberTipline, and other countries have their own rules. Keep what's needed for the report; Cloudflare's email says what that is.
 
 ### Cache (Redis)
 
