@@ -78,4 +78,6 @@ const mapAppError = t.middleware(async ({ next }) => {
 const rateLimit = t.middleware(limitProcedureCallsMiddleware);
 
 export const router = t.router;
+/** Calls a router's procedures directly, with a given context (the integration tests). */
+export const createCallerFactory = t.createCallerFactory;
 export const procedure = t.procedure.use(rateLimit).use(mapAppError);

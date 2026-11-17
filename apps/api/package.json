@@ -11,6 +11,7 @@
     "smoke": "./scripts/smoke.sh",
     "lint": "eslint .",
     "test": "bun test src",
+    "test:integration": "bun test --preload ./integration/harness/preload.ts ./integration",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate --config=src/data-access/db/drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config=src/data-access/db/drizzle.config.ts",

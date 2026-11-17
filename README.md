@@ -20,6 +20,11 @@ bun run --cwd apps/api db:migrate
 bun run dev                   # API on :3000, app on :5173
 ```
 
+### Tests
+
+- `bun run --cwd apps/api test`, `bun run --cwd packages/shared test`, `bun run --cwd apps/app test`: unit tests, no services needed.
+- `bun run --cwd apps/api test:integration`: the API's routers against a real Postgres (who can see and do what). It **empties its database first**, so `DATABASE_URL` must name one ending in `_test`, e.g. `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/app_test` (create it once with `createdb -h localhost -U postgres app_test`). CI runs it against a throwaway Postgres container.
+
 `apps/api/.env.example` lists every API variable. Its storage values point at the local Garage and aren't secrets.
 
 ## Deployment
