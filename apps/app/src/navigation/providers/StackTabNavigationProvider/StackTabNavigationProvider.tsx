@@ -59,9 +59,11 @@ export function StackTabNavigationProvider({ tabs, sharedRoutes = NO_ROUTES, roo
   const goBack = useCallback(() => {
     const h = history.current;
     if (onRootRoute) {
-      // Back to the tab underneath, as it was left.
+      // Root pages can open one another (your profile → Settings → Admin), so
+      // back goes to the page before, whichever it was. Opened straight from a
+      // link (nothing before it in the app): back to the tab underneath, as it was left.
       const top = activeStack[activeStack.length - 1];
-      if (h.keys[h.index - 1] === top.location.key) {
+      if (h.index > 0) {
         navigate(-1);
       } else {
         navigate(hrefOf(top.location), {
