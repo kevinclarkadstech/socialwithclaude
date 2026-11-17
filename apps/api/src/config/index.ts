@@ -43,6 +43,9 @@ export const ServerConfigSchema = z.object({
     SENTRY_ENVIRONMENT: z.string().optional(),
     // e.g. the commit SHA, so Sentry can say which deploy an error started in.
     SENTRY_RELEASE: z.string().optional(),
+
+    // How long a notification waits before it shows, so a quick undo (unfollowing, editing a mention out) means it's never seen.
+    NOTIFICATION_DELAY_SECONDS: z.coerce.number().int().min(0).max(3600).default(30),
 });
 
 /**

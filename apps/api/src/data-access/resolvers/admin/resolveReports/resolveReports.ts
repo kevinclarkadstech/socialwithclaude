@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import type { ModerationActionType, ReportKind, ReportOutcome, ReportStatus } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
+import { notificationDeliverAt } from "../../../internal/notifications/notificationDeliverAt/notificationDeliverAt";
 
 /** The report table and its "what was reported" column, per kind. */
 const reportTables = {
@@ -35,7 +36,7 @@ export async function resolveReports({ kind, targetId, outcome, status, action, 
         await tx.insert(schema.moderationActions).values({ action, subjectUserId, targetKind: kind, targetId, note, createdBy: moderatorId });
         const reporterIds = [...new Set(resolved.map((report) => report.reporterId))];
         if (reporterIds.length > 0) {
-            await tx.insert(schema.notifications).values(reporterIds.map((userId) => ({ userId, type: "report_resolved" as const, data: { kind, outcome } })));
+            await tx.insert(schema.notifications).values(reporterIds.map((userId) => ({ userId, type: "report_resolved" as const, data: { kind, outcome }, deliverAt: notificationDeliverAt() })));
         }
         return resolved.length;
     });

@@ -547,6 +547,8 @@ export const notifications = pgTable("notifications", {
     type: text("type", { enum: asEnum(notificationTypes) }).notNull(),
     data: jsonb("data").$type<Notification["data"]>().notNull(),
     readAt: timestamp("read_at", { withTimezone: true }),
+    // When it starts to show (created_at plus NOTIFICATION_DELAY_SECONDS; see notificationDeliverAt).
+    deliverAt: timestamp("deliver_at", { withTimezone: true }).notNull().defaultNow(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
     // Someone's notifications, newest first.

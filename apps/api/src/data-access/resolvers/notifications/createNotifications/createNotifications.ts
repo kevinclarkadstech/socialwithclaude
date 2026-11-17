@@ -1,13 +1,15 @@
 import { and, eq, gt } from "drizzle-orm";
 import type { NewNotification, NotificationType } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
+import { notificationDeliverAt } from "../../../internal/notifications/notificationDeliverAt/notificationDeliverAt";
 
 /** Follow notifications aren't repeated within this long (following, unfollowing and following again). */
 const repeatWindowMs = 24 * 60 * 60 * 1000;
 const followTypes = new Set<NotificationType>(["followed", "follow_requested", "follow_accepted"]);
 
 /**
- * Saves notifications to send. Skips one to the person who did it, and a
+ * Saves notifications to send, each showing after the delay
+ * (notificationDeliverAt). Skips one to the person who did it, and a
  * follow notification already sent by the same person, of the same type,
  * within the last day.
  */
@@ -34,7 +36,13 @@ export async function createNotifications(notifications: NewNotification[]): Pro
                     continue;
                 }
             }
-            await tx.insert(schema.notifications).values({ userId: notification.userId, actorId: notification.actorId, type: notification.type, data: notification.data });
+            await tx.insert(schema.notifications).values({
+                userId: notification.userId,
+                actorId: notification.actorId,
+                type: notification.type,
+                data: notification.data,
+                deliverAt: notificationDeliverAt(),
+            });
         }
     });
 }
