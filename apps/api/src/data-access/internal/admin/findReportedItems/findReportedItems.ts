@@ -5,6 +5,7 @@ import { db, schema } from "../../../db";
 import { creatorFields } from "../../../constants";
 import { toCreator } from "../../../mappers/users/toCreator/toCreator";
 import { toModerationSubject } from "../../../mappers/admin/toModerationSubject/toModerationSubject";
+import { moderationHistory } from "../moderationHistory/moderationHistory";
 
 /**
  * Each report table, as the queue reads it: the column naming what was
@@ -156,6 +157,7 @@ async function findSubjects(userIds: string[]): Promise<Map<string, ModerationSu
             role: schema.users.role,
             banned: schema.users.banned,
             banExpires: schema.users.banExpires,
+            history: moderationHistory(schema.users.id),
         })
         .from(schema.users)
         .leftJoin(schema.userProfiles, eq(schema.userProfiles.userId, schema.users.id))

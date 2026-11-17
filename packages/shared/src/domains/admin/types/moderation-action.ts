@@ -7,6 +7,7 @@ export const ModerationActionTypeSchema = z.enum([
     "mark_reviewed",
     "ban_user",
     "unban_user",
+    "warn_user",
 ]);
 
 /**

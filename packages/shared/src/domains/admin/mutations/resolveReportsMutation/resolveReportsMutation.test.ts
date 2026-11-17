@@ -7,7 +7,7 @@ import { resolveReportsMutation } from "./resolveReportsMutation";
 
 const admin = mockCaller({ userId: userId2, role: "admin" });
 const { viewer: _viewer, ...snapshot } = mockPost();
-const subject = { userId: userId1, username: "user1", role: "user" as const, isBanned: false, banExpires: null };
+const subject = { userId: userId1, username: "user1", role: "user" as const, isBanned: false, banExpires: null, history: { warnings: 0, removals: 0, bans: 0 } };
 const fields = { subject, reports: [], firstReportedAt: now, lastReportedAt: now, isOpen: true };
 const reportedPost: ReportedItem = { kind: "post", targetId: snapshot.id, snapshot, ...fields };
 const reportedProfile: ReportedItem = { kind: "profile", targetId: userId1, snapshot: mockProfile(), ...fields };
@@ -37,7 +37,7 @@ describe("resolveReportsMutation", () => {
         expect(await result).toEqual({ ok: true, value: { resolvedCount: 2 } });
         expect(deletePost).toHaveBeenCalledWith({ id: snapshot.id, userId: admin.userId });
         expect(deleteMedia).toHaveBeenCalledWith({ keys: expect.arrayContaining([postPhotoKey(mediaId, 1280)]) });
-        expect(resolveReports).toHaveBeenCalledWith(expect.objectContaining({ status: "reviewed", action: "remove_content", subjectUserId: userId1, moderatorId: admin.userId }));
+        expect(resolveReports).toHaveBeenCalledWith(expect.objectContaining({ outcome: "removed", status: "reviewed", action: "remove_content", subjectUserId: userId1, moderatorId: admin.userId }));
     });
 
     it("dismisses without touching the post", async () => {

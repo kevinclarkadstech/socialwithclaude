@@ -1,0 +1,13 @@
+.notifications-button {
+  position: relative;
+}
+
+.notifications-button__badge {
+  position: absolute;
+  top: 2px;
+  inset-inline-end: 0;
+  min-width: 18px;
+  padding: 2px 5px;
+  border-radius: 9px;
+  font-size: 0.7rem;
+}

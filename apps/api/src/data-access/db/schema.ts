@@ -14,6 +14,8 @@ import {
     userRoles,
     moderationActionTypes,
     reportKinds,
+    notificationTypes,
+    type Notification,
     type ChatMessageReport,
     type PostView,
     type PostCommentView,
@@ -505,6 +507,31 @@ export const moderationActions = pgTable("moderation_actions", {
     index("moderation_actions_subject_user_id_created_at_idx").on(t.subjectUserId, t.createdAt),
     check("moderation_actions_action_valid", isOneOf(t.action, moderationActionTypes)),
     check("moderation_actions_target_kind_valid", sql`${t.targetKind} is null or ${isOneOf(t.targetKind, reportKinds)}`),
+]);
+
+// Notifications
+
+/**
+ * What the app tells one person (see the notifications domain): `data`
+ * depends on `type`, and the app words it. `read_at` is null until they open
+ * their Notifications page.
+ */
+export const notifications = pgTable("notifications", {
+    id: text("id").primaryKey().$defaultFn(newId),
+    // Who it's for.
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    type: text("type", { enum: asEnum(notificationTypes) }).notNull(),
+    data: jsonb("data").$type<Notification["data"]>().notNull(),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+    // Someone's notifications, newest first.
+    index("notifications_user_id_created_at_id_idx").on(t.userId, t.createdAt, t.id),
+    // The number on the bell: their unread ones.
+    index("notifications_user_id_unread_idx").on(t.userId).where(sql`${t.readAt} is null`),
+    check("notifications_type_valid", isOneOf(t.type, notificationTypes)),
 ]);
 
 // Saves (after the tables they point at)

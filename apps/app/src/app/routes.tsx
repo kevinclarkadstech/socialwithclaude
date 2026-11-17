@@ -8,6 +8,7 @@ import { FeedSearchPage } from '../pages/FeedSearchPage/FeedSearchPage';
 import { NewChatPage } from '../pages/NewChatPage/NewChatPage';
 import { PostDetailPage } from '../pages/PostDetailPage/PostDetailPage';
 import { SettingsPage } from '../pages/SettingsPage/SettingsPage';
+import { NotificationsPage } from '../pages/NotificationsPage/NotificationsPage';
 import { AdminRoute } from '../pages/AdminPage/AdminRoute';
 import { MarketplacePage } from '../pages/MarketplacePage/MarketplacePage';
 import { MarketplaceSearchPage } from '../pages/MarketplaceSearchPage/MarketplaceSearchPage';
@@ -50,6 +51,7 @@ export const sharedRoutes: RouteObject[] = [
 /** Top-level pages outside the tabs. They open over the tabs, without the tab bar. */
 export const rootRoutes: RouteObject[] = [
   { path: '/settings', element: <SettingsPage /> },
+  { path: '/notifications', element: <NotificationsPage /> },
   // Admins only; loaded on demand.
   { path: '/admin', element: <AdminRoute /> },
   // Your profile (from the account button) and shared links: a full page over the tabs.

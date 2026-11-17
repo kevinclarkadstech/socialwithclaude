@@ -6,3 +6,4 @@ export { getReportedItems } from './getReportedItems/getReportedItems';
 export { resolveReports } from './resolveReports/resolveReports';
 export { unbanUser } from './unbanUser/unbanUser';
 export { updateUserFeedbackStatus } from './updateUserFeedbackStatus/updateUserFeedbackStatus';
+export { warnUser } from './warnUser/warnUser';

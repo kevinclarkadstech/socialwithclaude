@@ -37,6 +37,12 @@ export const ModerationSubjectSchema = z.object({
     isBanned: z.boolean(),
     // When their ban ends; null if they aren't banned or it never ends.
     banExpires: z.iso.datetime().nullable(),
+    // What admins did about them in the last 90 days, to weigh before acting (see moderationHistoryDays).
+    history: z.object({
+        warnings: z.int().min(0),
+        removals: z.int().min(0),
+        bans: z.int().min(0),
+    }),
 });
 
 const reportedItemFields = {

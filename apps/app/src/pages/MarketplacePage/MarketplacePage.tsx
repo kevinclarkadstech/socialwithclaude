@@ -1,9 +1,7 @@
 import {
-  IonButtons,
   IonContent,
   IonFab,
   IonFabButton,
-  IonHeader,
   IonIcon,
   IonInfiniteScroll,
   IonInfiniteScrollContent,
@@ -14,7 +12,6 @@ import {
   IonSegment,
   IonSegmentButton,
   IonSpinner,
-  IonTitle,
   IonToolbar,
 } from '@ionic/react';
 import { canCreatePost, listingStatuses, type ListingStatus } from '@myapp/shared/domains';
@@ -23,7 +20,8 @@ import { useState } from 'react';
 import { listingStatusLabels } from '../../utils/formatters/listings';
 import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
 import { HeaderIconButton } from '../../common/components/HeaderIconButton/HeaderIconButton';
-import { AccountButton, useCallingUser } from '../../domains/users';
+import { useCallingUser } from '../../domains/users';
+import { AppHeader } from '../../common/components/AppHeader/AppHeader';
 import { ComposeListingModal, PendingPosts, PostCard, useListings } from '../../domains/posts';
 import '../../common/styles/pages.css';
 
@@ -43,14 +41,7 @@ export function MarketplacePage() {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>Marketplace</IonTitle>
-          <IonButtons slot="end">
-            <HeaderIconButton icon={searchOutline} label="Search listings" to="/marketplace/search" />
-            <AccountButton />
-          </IonButtons>
-        </IonToolbar>
+      <AppHeader actions={<HeaderIconButton icon={searchOutline} label="Search listings" to="/marketplace/search" />}>
         <IonToolbar>
           <IonSegment value={filter} onIonChange={(event) => setFilter(event.detail.value as Filter)}>
             {listingStatuses.map((status) => (
@@ -63,7 +54,7 @@ export function MarketplacePage() {
             </IonSegmentButton>
           </IonSegment>
         </IonToolbar>
-      </IonHeader>
+      </AppHeader>
       <IonContent>
         <IonRefresher slot="fixed" onIonRefresh={(event) => void refresh().finally(() => event.detail.complete())}>
           <IonRefresherContent />

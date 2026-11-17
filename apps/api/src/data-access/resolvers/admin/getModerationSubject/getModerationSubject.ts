@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import type { ModerationSubject } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toModerationSubject } from "../../../mappers/admin/toModerationSubject/toModerationSubject";
+import { moderationHistory } from "../../../internal/admin/moderationHistory/moderationHistory";
 
 /** A user as moderation sees them (role and ban). Null if there's no such user. */
 export async function getModerationSubject({ userId }: { userId: string }): Promise<ModerationSubject | null> {
@@ -12,6 +13,7 @@ export async function getModerationSubject({ userId }: { userId: string }): Prom
             role: schema.users.role,
             banned: schema.users.banned,
             banExpires: schema.users.banExpires,
+            history: moderationHistory(schema.users.id),
         })
         .from(schema.users)
         .leftJoin(schema.userProfiles, eq(schema.userProfiles.userId, schema.users.id))
