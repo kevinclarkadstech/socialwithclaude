@@ -26,3 +26,9 @@ export const isBlockedBy = (caller: CallingUser, userId: string) => caller.block
 /** Everyone the caller has blocked or been blocked by: their posts are left out of lists. */
 export const blockedEitherWay = (caller: CallingUser | null): string[] =>
     caller ? [...caller.blockList.blocking, ...caller.blockList.blockedBy] : [];
+
+/**
+ * The caller as if they had no blocks, for checks blocks shouldn't affect
+ * (reports: being blocked mid-report shouldn't make it fail).
+ */
+export const ignoringBlocks = (caller: CallingUser): CallingUser => ({ ...caller, blockList: { blocking: [], blockedBy: [] } });
