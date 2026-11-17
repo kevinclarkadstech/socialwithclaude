@@ -16,6 +16,11 @@ const second = await say(ben, "Yes");
 const third = await say(ana, "Can you do 50?");
 const rude = await say(ben, "Get lost");
 
+const dee = await createTestUser({ name: "dee" });
+const eve = await createTestUser({ name: "eve" });
+const post = await valueOf(dee.call.posts.createPost({ id: newId(), content: "Selling my bike" }));
+const comment = await valueOf(dee.call.postComments.createPostComment({ id: newId(), postId: post.id, content: "DM me" }));
+
 describe("reporting people", () => {
     it("keeps their profile as it was", async () => {
         const report = await valueOf(ana.call.users.reportProfile({ id: newId(), reportedUserId: ben.userId, reason: "impersonation", details: null }));
@@ -61,5 +66,18 @@ describe("reporting chat messages", () => {
     it("leaves out what the reporter cleared", async () => {
         await valueOf(ben.call.chats.deleteChat({ chatId: chat.id }));
         expect(await outcome(ben.call.chats.reportMessage({ id: newId(), chatMessageId: first.id, reason: "spam", details: null }))).toBe("NOT_FOUND");
+    });
+});
+
+describe("reporting posts and comments", () => {
+    it("works after the creator has blocked you", async () => {
+        await valueOf(dee.call.users.blockUser({ username: eve.username }));
+        expect(await outcome(eve.call.posts.reportPost({ id: newId(), postId: post.id, reason: "scam", details: null }))).toBe("OK");
+        expect(await outcome(eve.call.postComments.reportPostComment({ id: newId(), postCommentId: comment.id, reason: "scam", details: null }))).toBe("OK");
+    });
+
+    it("is still not found on a followers-only account's post you don't follow", async () => {
+        await valueOf(dee.call.users.updateMySettings({ profileVisibility: "followers" }));
+        expect(await outcome(eve.call.posts.reportPost({ id: newId(), postId: post.id, reason: "scam", details: null }))).toBe("NOT_FOUND");
     });
 });

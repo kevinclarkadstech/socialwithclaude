@@ -51,10 +51,11 @@ describe("when Sam blocks Maya", () => {
         expect((await valueOf(maya.call.posts.search({ query: "bike", limit: 20 }))).items.map((post) => post.id)).not.toContain(samsPost);
     });
 
-    it("stops Maya acting on Sam's comment under her own post", async () => {
+    it("stops Maya acting on Sam's comment under her own post, except reporting it", async () => {
         expect(await outcome(maya.call.postComments.setPostCommentVote({ postCommentId: samsComment, value: 1 }))).toBe("NOT_FOUND");
-        expect(await outcome(maya.call.postComments.reportPostComment({ id: newId(), postCommentId: samsComment, reason: "spam", details: null }))).toBe("NOT_FOUND");
         expect(await outcome(maya.call.postComments.save({ postCommentId: samsComment }))).toBe("NOT_FOUND");
+        // A block doesn't stop a report (see reports.test.ts).
+        expect(await outcome(maya.call.postComments.reportPostComment({ id: newId(), postCommentId: samsComment, reason: "spam", details: null }))).toBe("OK");
     });
 
     it("stops Maya messaging Sam", async () => {

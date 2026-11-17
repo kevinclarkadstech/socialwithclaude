@@ -1,10 +1,14 @@
 import type { CallingUser } from "../../../users/types/calling-user";
 import type { PostView } from "../../types/post";
 import { allow, disallow, type AuthorizationCheck } from "../../../../authorization/allowDisallow/allowDisallow";
-import { hasProfile, isSignedIn } from "../../../../authorization/conditions/conditions";
+import { hasProfile, ignoringBlocks, isSignedIn } from "../../../../authorization/conditions/conditions";
 import { canViewPost } from "../canViewPost/canViewPost";
 
-/** Anyone who has finished sign-up can report a post they can see. */
+/**
+ * Anyone who has finished sign-up can report a post they could see, blocks
+ * or not: being blocked by its creator mid-report doesn't make it fail, and
+ * blocking them doesn't stop you reporting it.
+ */
 export const canReportPost: AuthorizationCheck<{ caller: CallingUser | null; post: PostView }> = ({ caller, post }) => {
     if (!isSignedIn(caller)) {
         return disallow("not-signed-in");
@@ -12,8 +16,8 @@ export const canReportPost: AuthorizationCheck<{ caller: CallingUser | null; pos
     if (!hasProfile(caller)) {
         return disallow("profile-required");
     }
-    // Only posts the caller can see (not across a block, not a private profile they don't follow).
-    const viewable = canViewPost({ caller, post });
+    // Not a followers-only profile's post they don't follow.
+    const viewable = canViewPost({ caller: ignoringBlocks(caller), post });
     if (!viewable.ok) {
         return viewable;
     }
