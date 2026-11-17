@@ -21,6 +21,8 @@ export { useCallingUser } from './hooks/useCallingUser/useCallingUser';
 export { useUserProfile } from './hooks/useUserProfile/useUserProfile';
 
 // Operations
+export { offerToBlock } from './actions/offerToBlock/offerToBlock';
+
 export { runSearchUsersQuery } from './operations/runSearchUsersQuery/runSearchUsersQuery';
 export { followStatusFrom } from './operations/profileFromApi/profileFromApi';
 

@@ -3,8 +3,8 @@ import { timeAgo } from '../../../../utils/formatters/dates';
 import './ChatMessageBubble.css';
 
 /**
- * One message: yours on the right, theirs on the left. Tapping one of yours
- * opens its menu (edit, delete); one that failed to send offers a retry.
+ * One message: yours on the right, theirs on the left. Tapping one opens its
+ * menu (yours: edit, delete; theirs: report); one that failed to send offers a retry.
  */
 export function ChatMessageBubble({ message, isMine, onOpenMenu, onRetry }: {
   message: ShownChatMessage;
@@ -17,7 +17,7 @@ export function ChatMessageBubble({ message, isMine, onOpenMenu, onRetry }: {
 
   return (
     <div className={className} data-message-id={message.id} data-status={message.status}>
-      {isMine && onOpenMenu ? (
+      {onOpenMenu && (isMine || message.status === 'sent') ? (
         <button type="button" className="chat-message__bubble" onClick={() => onOpenMenu(message)}>
           {message.content}
         </button>

@@ -18,6 +18,8 @@ import {
     GetMySettingsQueryInputSchema,
     GetUserProfileQueryInputSchema,
     SuggestMentionsQueryInputSchema,
+    ReportProfileMutationInputSchema,
+    reportProfileMutation,
     UnblockUserMutationInputSchema,
     UnfollowUserMutationInputSchema,
     UpdateMyProfileMutationInputSchema,
@@ -42,6 +44,8 @@ import {
 import {
     acceptUserFollowRequest,
     blockUser,
+    createProfileReport,
+    getUserProfileByUserId,
     denyUserFollowRequest,
     followUser,
     getMentionSuggestions,
@@ -166,6 +170,14 @@ export const usersRouter = router({
             input,
             context: { logger: ctx.logger },
             dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, unblockUser },
+        }),
+    ),
+
+    reportProfile: procedure.input(ReportProfileMutationInputSchema).mutation(({ ctx, input }) =>
+        reportProfileMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUserId, createProfileReport },
         }),
     ),
 

@@ -15,6 +15,8 @@ export type PostCommentVoteRow = typeof schema.postCommentVotes.$inferSelect;
 export type PostReportRow = typeof schema.postReports.$inferSelect;
 
 export type PostCommentReportRow = typeof schema.postCommentReports.$inferSelect;
+export type ProfileReportRow = typeof schema.profileReports.$inferSelect;
+export type ChatMessageReportRow = typeof schema.chatMessageReports.$inferSelect;
 
 export type UserProfileRow = typeof schema.userProfiles.$inferSelect;
 

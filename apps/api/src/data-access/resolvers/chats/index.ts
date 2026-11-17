@@ -11,3 +11,5 @@ export { getChatMessageViewsByIds } from './getChatMessageViewsByIds/getChatMess
 export { getUserChatViews } from './getUserChatViews/getUserChatViews';
 export { markChatRead } from './markChatRead/markChatRead';
 export { updateChatMessage } from './updateChatMessage/updateChatMessage';
+export { createChatMessageReport } from './createChatMessageReport/createChatMessageReport';
+export { getChatMessageViewsBefore } from './getChatMessageViewsBefore/getChatMessageViewsBefore';

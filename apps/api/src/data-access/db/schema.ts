@@ -11,8 +11,10 @@ import {
     userFeedbackCategories,
     userFeedbackStatuses,
     userFollowStatuses,
+    type ChatMessageReport,
     type PostView,
     type PostCommentView,
+    type UserProfile,
 } from "@myapp/shared/domains";
 import { newId } from "./new-id";
 
@@ -367,6 +369,29 @@ export const postCommentReports = pgTable("post_comment_reports", {
     check("post_comment_reports_status_valid", isOneOf(t.status, reportStatuses)),
 ]);
 
+/**
+ * Like post_reports, for people: `reported_user_id` is who was reported, and
+ * `snapshot` their profile as it was when reported.
+ */
+export const profileReports = pgTable("profile_reports", {
+    id: text("id").primaryKey(),
+    reportedUserId: text("reported_user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    // created_by is the reporter.
+    reason: text("reason", { enum: asEnum(reportReasons) }).notNull(),
+    details: text("details"),
+    status: text("status", { enum: asEnum(reportStatuses) }).notNull().default("open"),
+    snapshot: jsonb("snapshot").$type<UserProfile>().notNull(),
+    ...auditFields(),
+}, (t) => [
+    uniqueIndex("profile_reports_created_by_reported_user_id_idx").on(t.createdBy, t.reportedUserId),
+    index("profile_reports_reported_user_id_idx").on(t.reportedUserId),
+    index("profile_reports_status_created_at_id_idx").on(t.status, t.createdAt, t.id),
+    check("profile_reports_reason_valid", isOneOf(t.reason, reportReasons)),
+    check("profile_reports_status_valid", isOneOf(t.status, reportStatuses)),
+]);
+
 // Chats
 
 /**
@@ -417,6 +442,29 @@ export const chatMessages = pgTable("chat_messages", {
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
 }, (t) => [
     index("chat_messages_chat_id_created_at_id_idx").on(t.chatId, t.createdAt, t.id),
+]);
+
+/**
+ * Like post_reports, for chat messages. `snapshot` is the message as it was
+ * when reported, and the few before it the reporter could see.
+ */
+export const chatMessageReports = pgTable("chat_message_reports", {
+    id: text("id").primaryKey(),
+    chatMessageId: text("chat_message_id")
+        .notNull()
+        .references(() => chatMessages.id, { onDelete: "cascade" }),
+    // created_by is the reporter.
+    reason: text("reason", { enum: asEnum(reportReasons) }).notNull(),
+    details: text("details"),
+    status: text("status", { enum: asEnum(reportStatuses) }).notNull().default("open"),
+    snapshot: jsonb("snapshot").$type<ChatMessageReport["snapshot"]>().notNull(),
+    ...auditFields(),
+}, (t) => [
+    uniqueIndex("chat_message_reports_created_by_chat_message_id_idx").on(t.createdBy, t.chatMessageId),
+    index("chat_message_reports_chat_message_id_idx").on(t.chatMessageId),
+    index("chat_message_reports_status_created_at_id_idx").on(t.status, t.createdAt, t.id),
+    check("chat_message_reports_reason_valid", isOneOf(t.reason, reportReasons)),
+    check("chat_message_reports_status_valid", isOneOf(t.status, reportStatuses)),
 ]);
 
 // Saves (after the tables they point at)

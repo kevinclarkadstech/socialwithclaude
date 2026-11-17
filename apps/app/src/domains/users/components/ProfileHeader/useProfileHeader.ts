@@ -1,10 +1,11 @@
-import { canBlockUser, canFollowUser, canUnblockUser, canUnfollowUser, type GetUserProfileQueryOutput } from '@myapp/shared/domains';
+import { canBlockUser, canFollowUser, canReportProfile, canUnblockUser, canUnfollowUser, type GetUserProfileQueryOutput } from '@myapp/shared/domains';
 import { disallowedActions } from '../../../../common/events/disallowedActions/disallowedActions';
 import { displayName } from '../../../../utils/formatters/names';
 import { config } from '../../../../lib/config';
 import { chooseFrom, confirm } from '../../../../lib/prompts';
 import { shareLink } from '../../../../lib/share';
 import { blockUser } from '../../actions/blockUser/blockUser';
+import { reportProfile } from '../../actions/reportProfile/reportProfile';
 import { followUser } from '../../actions/followUser/followUser';
 import { unblockUser } from '../../actions/unblockUser/unblockUser';
 import { unfollowUser } from '../../actions/unfollowUser/unfollowUser';
@@ -12,7 +13,7 @@ import { useCallingUser } from '../../hooks/useCallingUser/useCallingUser';
 
 /**
  * A profile header's actions: follow (asking first to sign in), unfollow or
- * withdraw a request, share, and block or unblock from the menu. Following
+ * withdraw a request, share, and report, block or unblock from the menu. Following
  * changes the profile on screen straight away; blocking reloads it (see useUserProfile).
  */
 export function useProfileHeader({ profile, onProfileChange }: {
@@ -23,6 +24,7 @@ export function useProfileHeader({ profile, onProfileChange }: {
   const followCheck = canFollowUser({ caller: callingUser, target: profile });
   const unfollowCheck = canUnfollowUser({ caller: callingUser });
   const unblockCheck = canUnblockUser({ caller: callingUser });
+  const reportCheck = canReportProfile({ caller: callingUser, target: profile });
   // The menu offers one of the two, so it opens only if that one is allowed.
   const menuCheck = profile.viewer.hasBlocked
     ? canUnblockUser({ caller: callingUser })
@@ -81,11 +83,15 @@ export function useProfileHeader({ profile, onProfileChange }: {
   async function openMenu() {
     const choice = await chooseFrom({
       options: [
+        ...(reportCheck.ok ? [{ text: 'Report', value: 'report' as const, role: 'destructive' as const }] : []),
         profile.viewer.hasBlocked
           ? { text: 'Unblock', value: 'unblock' as const }
           : { text: 'Block', value: 'block' as const, role: 'destructive' as const },
       ],
     });
+    if (choice === 'report') {
+      await reportProfile({ profile });
+    }
     if (choice === 'block') {
       await block();
     }

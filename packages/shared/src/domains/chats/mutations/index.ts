@@ -6,3 +6,4 @@ export * from './sendChatMessageMutation/sendChatMessageMutation';
 export * from './updateChatMessageMutation/updateChatMessageMutation';
 export * from './saveChatMessageMutation/saveChatMessageMutation';
 export * from './unsaveChatMessageMutation/unsaveChatMessageMutation';
+export * from './reportChatMessageMutation/reportChatMessageMutation';

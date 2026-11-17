@@ -32,7 +32,7 @@ bun run dev                   # API on :3000, app on :5173
 What the app stores and the law expect from a social app with photos, and where the app stands. Apple: [App Review Guideline 1.2](https://developer.apple.com/app-store/review/guidelines/#user-generated-content) (user-generated content). Google Play: the [Child Safety Standards policy](https://support.google.com/googleplay/android-developer/answer/14747720) for social apps.
 
 **Done**
-- [x] Report a post or a comment (Apple 1.2).
+- [x] Report a post, a comment, a person or a chat message (Apple 1.2; Google Play's user-generated content policy). After reporting a person or message, the app offers to block them.
 - [x] Block someone: either way, they disappear from feeds, search and comments, and can't message you (Apple 1.2).
 - [x] Send feedback from the app (Google's in-app feedback requirement).
 - [x] Photos stripped of location and other metadata when they're published.
@@ -40,7 +40,6 @@ What the app stores and the law expect from a social app with photos, and where 
 **Before launch**
 - [ ] **CSAM scanning** on the media domain: step 6 under Object storage (Google requires handling CSAM; US law requires reporting it).
 - [ ] **Act on reports:** an admin view to review reports and take content down, including a photo's files. Apple treats removing reported content quickly as the minimum for filtering objectionable material, and expects nonconsensual intimate imagery to be removed proactively.
-- [ ] **Report people and chat messages,** not only posts and comments.
 - [ ] **Contact details** in the app and on the store listings (Apple 1.2).
 - [ ] **Child safety standards page:** a public web page with your standards against child sexual abuse and exploitation, naming the app, plus a child safety point of contact (Google).
 - [ ] **Self-certify** the Child Safety Standards in Play Console before publishing (Google).

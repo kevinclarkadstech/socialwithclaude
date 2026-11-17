@@ -11,3 +11,4 @@ export * from './updateMyProfileMutation/updateMyProfileMutation';
 export * from './createProfilePhotoUploadMutation/createProfilePhotoUploadMutation';
 export * from './confirmProfilePhotoUploadMutation/confirmProfilePhotoUploadMutation';
 export * from './removeProfilePhotoMutation/removeProfilePhotoMutation';
+export * from './reportProfileMutation/reportProfileMutation';

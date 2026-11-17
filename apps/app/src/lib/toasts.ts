@@ -15,3 +15,29 @@ export async function showToast(message: string) {
   const toast = await toastController.create({ message, duration: 2500, position: 'top' });
   await toast.present();
 }
+
+/**
+ * A short message with buttons, e.g. "Thanks for the report" with "OK" and
+ * "Block user". Resolves with the tapped button's value, or null if none was
+ * tapped before it went away.
+ */
+export async function showToastWithChoices<Value extends string>({ message, choices }: {
+  message: string;
+  choices: { text: string; value: Value }[];
+}): Promise<Value | null> {
+  let chosen: Value | null = null;
+  const toast = await toastController.create({
+    message,
+    duration: 8000,
+    position: 'top',
+    buttons: choices.map(({ text, value }) => ({
+      text,
+      handler: () => {
+        chosen = value;
+      },
+    })),
+  });
+  await toast.present();
+  await toast.onDidDismiss();
+  return chosen;
+}
