@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { mockCaller, mockPost, userId2 } from "../../../../testing/fixtures";
-import { canCommentOnPost, canReportPost } from "..";
+import { canCommentOnPost } from "..";
 import { canViewPost } from "./canViewPost";
 
 const theirs = (profileVisibility: "public" | "followers", followsCreator = false) =>
@@ -28,10 +28,9 @@ describe("canViewPost", () => {
     });
 });
 
-describe("commenting on and reporting posts you can't see", () => {
+describe("commenting on posts you can't see", () => {
     it("is refused", () => {
         expect(canCommentOnPost({ caller: mockCaller(), post: theirs("followers") }).ok).toBe(false);
-        expect(canReportPost({ caller: mockCaller(), post: theirs("followers") }).ok).toBe(false);
         expect(canCommentOnPost({ caller: mockCaller(), post: theirs("followers", true) }).ok).toBe(true);
     });
 });

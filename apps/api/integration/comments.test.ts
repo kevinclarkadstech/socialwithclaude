@@ -15,10 +15,11 @@ const mayasComment = newId();
 await maya.call.postComments.createPostComment({ id: mayasComment, postId: mayasPost, content: "Mine" });
 
 describe("acting on a comment", () => {
-    it("is not found under a post the caller can't see", async () => {
+    it("is not found under a post the caller can't see, except reporting it", async () => {
         expect(await outcome(maya.call.postComments.setPostCommentVote({ postCommentId: josComment, value: 1 }))).toBe("NOT_FOUND");
-        expect(await outcome(maya.call.postComments.reportPostComment({ id: newId(), postCommentId: josComment, reason: "spam", details: null }))).toBe("NOT_FOUND");
         expect(await outcome(maya.call.postComments.save({ postCommentId: josComment }))).toBe("NOT_FOUND");
+        // A report shows nothing back (see reports.test.ts).
+        expect(await outcome(maya.call.postComments.reportPostComment({ id: newId(), postCommentId: josComment, reason: "spam", details: null }))).toBe("OK");
     });
 
     it("works on a post the caller can see", async () => {

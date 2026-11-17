@@ -22,9 +22,12 @@ const post = await valueOf(dee.call.posts.createPost({ id: newId(), content: "Se
 const comment = await valueOf(dee.call.postComments.createPostComment({ id: newId(), postId: post.id, content: "DM me" }));
 
 describe("reporting people", () => {
-    it("keeps their profile as it was", async () => {
+    it("keeps their profile as it was, without returning it", async () => {
         const report = await valueOf(ana.call.users.reportProfile({ id: newId(), reportedUserId: ben.userId, reason: "impersonation", details: null }));
-        expect(report).toMatchObject({ reportedUserId: ben.userId, createdBy: ana.userId, status: "open", snapshot: { username: ben.username } });
+        expect(report).toMatchObject({ reportedUserId: ben.userId, createdBy: ana.userId, status: "open" });
+        expect("snapshot" in report).toBe(false);
+        const [row] = await db.select().from(schema.profileReports).where(eq(schema.profileReports.id, report.id));
+        expect(row?.snapshot.username).toBe(ben.username);
     });
 
     it("replaces your earlier report of the same person", async () => {
@@ -44,10 +47,12 @@ describe("reporting people", () => {
 });
 
 describe("reporting chat messages", () => {
-    it("keeps the message and the ones before it, oldest first", async () => {
+    it("keeps the message and the ones before it, oldest first, without returning them", async () => {
         const report = await valueOf(ana.call.chats.reportMessage({ id: newId(), chatMessageId: rude.id, reason: "harassment", details: null }));
-        expect(report.snapshot.message).toMatchObject({ id: rude.id, content: "Get lost", createdBy: ben.userId });
-        expect(report.snapshot.earlier.map((message) => message.id)).toEqual([first.id, second.id, third.id]);
+        expect("snapshot" in report).toBe(false);
+        const [row] = await db.select().from(schema.chatMessageReports).where(eq(schema.chatMessageReports.id, report.id));
+        expect(row?.snapshot.message).toMatchObject({ id: rude.id, content: "Get lost", createdBy: ben.userId });
+        expect(row?.snapshot.earlier.map((message) => message.id)).toEqual([first.id, second.id, third.id]);
     });
 
     it("refuses your own message", async () => {
@@ -76,8 +81,15 @@ describe("reporting posts and comments", () => {
         expect(await outcome(eve.call.postComments.reportPostComment({ id: newId(), postCommentId: comment.id, reason: "scam", details: null }))).toBe("OK");
     });
 
-    it("is still not found on a followers-only account's post you don't follow", async () => {
+    it("works on a followers-only account's post you no longer follow, without returning it", async () => {
         await valueOf(dee.call.users.updateMySettings({ profileVisibility: "followers" }));
-        expect(await outcome(eve.call.posts.reportPost({ id: newId(), postId: post.id, reason: "scam", details: null }))).toBe("NOT_FOUND");
+        const report = await valueOf(eve.call.posts.reportPost({ id: newId(), postId: post.id, reason: "scam", details: null }));
+        expect("snapshot" in report).toBe(false);
+        const [row] = await db.select().from(schema.postReports).where(eq(schema.postReports.id, report.id));
+        expect(row?.snapshot.content).toBe("Selling my bike");
+    });
+
+    it("is not found for a post that doesn't exist", async () => {
+        expect(await outcome(eve.call.posts.reportPost({ id: newId(), postId: newId(), reason: "scam", details: null }))).toBe("NOT_FOUND");
     });
 });
