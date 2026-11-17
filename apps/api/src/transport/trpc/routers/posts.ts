@@ -42,7 +42,7 @@ import {
 import { deletePostPhotoUploads, publishPostPhotos } from "../../../media";
 import { storage } from "../../../storage";
 import { errorReporter, reportingFailures } from "../../../observability";
-import { notifyMentions } from "../../../notifications";
+import { notifyMentions, retractMentions } from "../../../notifications";
 import { procedure, router } from "../trpc";
 
 export const postsRouter = router({
@@ -101,6 +101,7 @@ export const postsRouter = router({
                 deleteMedia: reportingFailures({ reporter: errorReporter, context: { ...ctx.errorReportContext, procedure: "posts.updatePost" }, run: storage.deleteMedia }),
                 updatePost,
                 notifyMentions,
+                retractMentions,
             },
         }),
     ),
