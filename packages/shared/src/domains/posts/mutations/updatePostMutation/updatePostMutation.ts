@@ -15,7 +15,7 @@ import { ListingPriceSchema, PostListingFieldsSchema } from "../../types/post-li
 import { photoKeys } from "../../../../media/utils";
 import { postPhotoSizes } from "../../constants";
 import { bestEffort } from "../../../../utils/bestEffort/bestEffort";
-import { newlyMentionedUsernames } from "../../../notifications/utils/mentionedUsernames/mentionedUsernames";
+import { newlyMentionedUsernames, noLongerMentionedUsernames } from "../../../notifications/utils/mentionedUsernames/mentionedUsernames";
 
 export const UpdatePostMutationInputSchema = PostSchema.pick({ id: true, content: true }).extend({
     // All its photos: ones it has, and new ones uploaded first (createPostMediaUploadsMutation).
@@ -52,6 +52,8 @@ export const updatePostMutation: Mutation<{ input: UpdatePostMutationInput, outp
      * who can see the post (see mentionRecipients), except `excludedUserIds`.
      */
     notifyMentions: (args: { actorId: string; postId: string; postCommentId: string | null; usernames: string[]; excludedUserIds: string[] }) => Promise<void>;
+    /** Takes back the mention notifications sent to the people with these usernames: the edit took their mention out. */
+    retractMentions: (args: { postId: string; postCommentId: string | null; usernames: string[] }) => Promise<void>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     const post = await dependencies.getPostById({ id: input.id });
@@ -133,6 +135,15 @@ export const updatePostMutation: Mutation<{ input: UpdatePostMutationInput, outp
             logger,
             what: "send mention notifications",
             run: () => dependencies.notifyMentions({ actorId: allowed.value.userId, postId: post.id, postCommentId: null, usernames, excludedUserIds: [] }),
+        });
+    }
+    // People the edit took out stop seeing the mention.
+    const unmentioned = noLongerMentionedUsernames({ before: post.content, after: updatedPost.content });
+    if (unmentioned.length > 0) {
+        await bestEffort({
+            logger,
+            what: "take back mention notifications",
+            run: () => dependencies.retractMentions({ postId: post.id, postCommentId: null, usernames: unmentioned }),
         });
     }
     return succeed(updatedPost);

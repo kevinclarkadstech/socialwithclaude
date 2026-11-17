@@ -18,6 +18,7 @@ export function runUpdatePostCommentMutation({ id, content, photo }: { id: strin
     dependencies: {
       // The API sends notifications, publishes the photo and deletes old files as it saves; nothing to do here for those.
       notifyMentions: async () => {},
+      retractMentions: async () => {},
       publishPostCommentPhoto: async ({ photoId }) => (photo ? { id: photoId, width: photo.width, height: photo.height } : null),
       deletePostCommentPhotoUploads: async () => {},
       deleteMedia: async () => {},

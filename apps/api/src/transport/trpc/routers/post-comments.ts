@@ -33,7 +33,7 @@ import {
     deleteUserSave,
     createNotifications,
 } from "../../../data-access";
-import { notifyMentions } from "../../../notifications";
+import { notifyMentions, retractMentions } from "../../../notifications";
 import { deletePostCommentPhotoUploads, publishPostCommentPhoto } from "../../../media";
 import { storage } from "../../../storage";
 import { errorReporter, reportingFailures } from "../../../observability";
@@ -79,6 +79,7 @@ export const postCommentsRouter = router({
                 getPostCommentViewById,
                 updatePostComment,
                 notifyMentions,
+                retractMentions,
                 publishPostCommentPhoto: (args) => publishPostCommentPhoto({ ...args, storage, logger: ctx.logger }),
                 deletePostCommentPhotoUploads: (args) => deletePostCommentPhotoUploads({ ...args, storage }),
                 // A removed photo whose file wasn't deleted is still public: report it (the edit still succeeds).

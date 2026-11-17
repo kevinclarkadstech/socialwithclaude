@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { mentionedUsernames, newlyMentionedUsernames } from "./mentionedUsernames";
+import { mentionedUsernames, newlyMentionedUsernames, noLongerMentionedUsernames } from "./mentionedUsernames";
 
 describe("mentionedUsernames", () => {
     it("finds each mention once, lowercase", () => {
@@ -18,5 +18,11 @@ describe("mentionedUsernames", () => {
 describe("newlyMentionedUsernames", () => {
     it("is only who an edit added", () => {
         expect(newlyMentionedUsernames({ before: "hi @sam_k", after: "hi @sam_k and @jo_park" })).toEqual(["jo_park"]);
+    });
+});
+
+describe("noLongerMentionedUsernames", () => {
+    it("is only who an edit took out", () => {
+        expect(noLongerMentionedUsernames({ before: "hi @sam_k and @jo_park", after: "hi @Sam_K and @lee" })).toEqual(["jo_park"]);
     });
 });

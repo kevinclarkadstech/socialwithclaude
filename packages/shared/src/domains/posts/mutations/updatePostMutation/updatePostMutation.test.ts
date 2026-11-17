@@ -20,6 +20,7 @@ function run(caller: ReturnType<typeof mockCaller> | null, existing = post) {
             publishPostPhotos: async () => [],
             deletePostPhotoUploads: async () => {},
             notifyMentions: async () => {},
+            retractMentions: async () => {},
             deleteMedia: async () => {},
             updatePost,
         },
@@ -51,11 +52,38 @@ describe("updatePostMutation", () => {
                 publishPostPhotos: async () => [],
                 deletePostPhotoUploads: async () => {},
                 notifyMentions: async () => {},
+                retractMentions: async () => {},
                 deleteMedia: async () => {},
                 updatePost: async () => null,
             },
         });
         expect(result).toMatchObject({ ok: false, error: { type: "not-found" } });
+    });
+});
+
+describe("updatePostMutation with mentions", () => {
+    it("tells the people newly mentioned, and takes back the mention from those edited out", async () => {
+        const notifyMentions = mock(async () => {});
+        const retractMentions = mock(async () => {});
+        const existing = { ...post, content: "hi @sam_k and @jo_park" };
+        const result = await updatePostMutation({
+            input: { id: post.id, content: "hi @sam_k and @lee", media: [] },
+            context: testContext,
+            dependencies: {
+                getCallingUser: async () => mockCaller(),
+                getPostById: async () => existing,
+                getPostMediaByPostId: async () => [],
+                publishPostPhotos: async () => [],
+                deletePostPhotoUploads: async () => {},
+                notifyMentions,
+                retractMentions,
+                deleteMedia: async () => {},
+                updatePost: async ({ content }) => ({ ...existing, content }),
+            },
+        });
+        expect(result.ok).toBe(true);
+        expect(notifyMentions).toHaveBeenCalledWith({ actorId: mockCaller().userId, postId: post.id, postCommentId: null, usernames: ["lee"], excludedUserIds: [] });
+        expect(retractMentions).toHaveBeenCalledWith({ postId: post.id, postCommentId: null, usernames: ["jo_park"] });
     });
 });
 
@@ -74,6 +102,7 @@ describe("updatePostMutation with listing details", () => {
                 publishPostPhotos: async () => [],
                 deletePostPhotoUploads: async () => {},
                 notifyMentions: async () => {},
+                retractMentions: async () => {},
                 deleteMedia: async () => {},
                 updatePost,
             },
@@ -137,6 +166,7 @@ describe("updatePostMutation with photos", () => {
                 publishPostPhotos,
                 deletePostPhotoUploads,
                 notifyMentions: async () => {},
+                retractMentions: async () => {},
                 deleteMedia,
                 updatePost,
             },

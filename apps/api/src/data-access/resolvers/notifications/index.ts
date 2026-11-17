@@ -3,3 +3,4 @@ export { getUserNotifications } from './getUserNotifications/getUserNotification
 export { markNotificationsRead } from './markNotificationsRead/markNotificationsRead';
 export { createNotifications } from './createNotifications/createNotifications';
 export { getMentionCandidates } from './getMentionCandidates/getMentionCandidates';
+export { deleteMentionNotifications } from './deleteMentionNotifications/deleteMentionNotifications';
