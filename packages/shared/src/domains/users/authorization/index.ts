@@ -9,3 +9,4 @@ export { canUnfollowUser } from './canUnfollowUser/canUnfollowUser';
 export { canUpdateMyProfile } from './canUpdateMyProfile/canUpdateMyProfile';
 export { canUpdateMySettings } from './canUpdateMySettings/canUpdateMySettings';
 export { canViewUserProfile } from './canViewUserProfile/canViewUserProfile';
+export { canReportProfile } from './canReportProfile/canReportProfile';

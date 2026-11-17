@@ -10,3 +10,4 @@ export * from "./user-block-list";
 export * from "./calling-user";
 export * from "./user-profile-summary";
 export * from "./profile-photo";
+export * from "./profile-report";

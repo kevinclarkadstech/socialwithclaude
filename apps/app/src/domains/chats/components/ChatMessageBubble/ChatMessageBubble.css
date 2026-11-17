@@ -36,6 +36,7 @@
   background: var(--app-fill);
   color: var(--ion-text-color);
   border-end-start-radius: 4px;
+  cursor: pointer;
 }
 
 .chat-message--sending .chat-message__bubble {

@@ -10,6 +10,8 @@ export { ChatMessageBubble } from './components/ChatMessageBubble/ChatMessageBub
 export { ChatMessageSearchItem } from './components/ChatMessageSearchItem/ChatMessageSearchItem';
 
 // Hooks
+export { reportChatMessage } from './actions/reportChatMessage/reportChatMessage';
+
 export { useChat } from './hooks/useChat/useChat';
 export { useChatMessages } from './hooks/useChatMessages/useChatMessages';
 

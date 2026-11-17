@@ -22,17 +22,21 @@ import {
     SaveChatMessageMutationInputSchema,
     UnsaveChatMessageMutationInputSchema,
     saveChatMessageMutation,
+    ReportChatMessageMutationInputSchema,
+    reportChatMessageMutation,
     unsaveChatMessageMutation,
 } from "@myapp/shared/domains";
 
 import {
     clearChat,
     createChatMessage,
+    createChatMessageReport,
     createDirectChat,
     deleteChatMessage,
     getChatMembers,
     getChatMessageViewById,
     getChatMessageViews,
+    getChatMessageViewsBefore,
     getUserChatViews,
     getChatViewById,
     getUserProfileByUsername,
@@ -126,6 +130,20 @@ export const chatsRouter = router({
                 getChatMessageViewById,
                 getChatMembers,
                 saveChatMessage: ({ userId, chatMessageId }) => createUserSave({ userId, type: "chatMessage", id: chatMessageId }),
+            },
+        }),
+    ),
+
+    reportMessage: procedure.input(ReportChatMessageMutationInputSchema).mutation(({ ctx, input }) =>
+        reportChatMessageMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: {
+                getCallingUser: ctx.getCallingUser,
+                getChatMessageViewById,
+                getChatMembers,
+                getChatMessageViewsBefore,
+                createChatMessageReport,
             },
         }),
     ),

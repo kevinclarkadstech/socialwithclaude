@@ -12,7 +12,7 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/react';
-import { canDeleteChatMessage, canSendChatMessage, canUpdateChatMessage, canViewChat } from '@myapp/shared/domains';
+import { canDeleteChatMessage, canReportChatMessage, canSendChatMessage, canUpdateChatMessage, canViewChat } from '@myapp/shared/domains';
 import { ellipsisHorizontal } from 'ionicons/icons';
 import { useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router';
@@ -21,6 +21,7 @@ import {
   ChatComposer,
   ChatMessageBubble,
   chatMembers,
+  reportChatMessage,
   runClearChatMutation,
   useChat,
   useChatMessages,
@@ -93,12 +94,17 @@ export function ChatPage() {
   async function openMessageMenu(message: ShownChatMessage) {
     const updateCheck = canUpdateChatMessage({ caller: callingUser, message });
     const deleteCheck = canDeleteChatMessage({ caller: callingUser, message });
+    const reportCheck = canReportChatMessage({ caller: callingUser, members, message });
     const choice = await chooseFrom({
       options: [
         ...(updateCheck.ok && message.status === 'sent' ? [{ text: 'Edit', value: 'edit' as const }] : []),
         ...(deleteCheck.ok ? [{ text: 'Delete', value: 'delete' as const, role: 'destructive' as const }] : []),
+        ...(reportCheck.ok && message.status === 'sent' ? [{ text: 'Report', value: 'report' as const, role: 'destructive' as const }] : []),
       ],
     });
+    if (choice === 'report') {
+      await reportChatMessage({ message, members });
+    }
     if (choice === 'edit') {
       const content = await askForText({ header: 'Edit message', value: message.content, confirmText: 'Save' });
       if (content?.trim() && content.trim() !== message.content) {

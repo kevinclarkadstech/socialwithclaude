@@ -5,3 +5,4 @@ export { canSendChatMessage } from './canSendChatMessage/canSendChatMessage';
 export { canUnsaveChatMessage } from './canUnsaveChatMessage/canUnsaveChatMessage';
 export { canUpdateChatMessage } from './canUpdateChatMessage/canUpdateChatMessage';
 export { canViewChat } from './canViewChat/canViewChat';
+export { canReportChatMessage } from './canReportChatMessage/canReportChatMessage';

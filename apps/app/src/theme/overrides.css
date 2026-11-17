@@ -218,6 +218,14 @@ html.md ion-action-sheet .action-sheet-title.sc-ion-action-sheet-md {
 
 html.md ion-toast {
   --border-radius: 12px;
+  /* Buttons in the toast's own text colour: the primary green doesn't show on its grey. */
+  --button-color: inherit;
+}
+
+html.md ion-toast::part(button) {
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 600;
 }
 
 /*
