@@ -20,6 +20,8 @@ export const disallowedReasons = {
     "blocked-by-user": { errorType: "not-found", message: "User not found", logLevel: "info" },
     // The caller blocked them; the UI offers Unblock instead.
     "blocking-user": { errorType: "authorization", message: "Unblock them first", logLevel: "warn" },
+    // Moderation, for anyone but an admin. The UI never offers it: someone probing.
+    "not-admin": { errorType: "authorization", message: "Not allowed", logLevel: "error" },
     // A followers-only profile, and the caller isn't an approved follower.
     "followers-only": { errorType: "authorization", message: "This account is private", logLevel: "info" },
 } satisfies Record<string, { errorType: AppError["type"]; message: string; logLevel: "info" | "warn" | "error" }>;

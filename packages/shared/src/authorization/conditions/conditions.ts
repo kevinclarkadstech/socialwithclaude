@@ -26,3 +26,6 @@ export const isBlockedBy = (caller: CallingUser, userId: string) => caller.block
 /** Everyone the caller has blocked or been blocked by: their posts are left out of lists. */
 export const blockedEitherWay = (caller: CallingUser | null): string[] =>
     caller ? [...caller.blockList.blocking, ...caller.blockList.blockedBy] : [];
+
+/** The caller can moderate (reports, bans, feedback). */
+export const isAdmin = (caller: CallingUser) => caller.role === "admin";

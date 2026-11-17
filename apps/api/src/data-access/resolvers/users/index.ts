@@ -25,3 +25,4 @@ export { unfollowUser } from './unfollowUser/unfollowUser';
 export { updateUserProfile } from './updateUserProfile/updateUserProfile';
 export { updateUserSettings } from './updateUserSettings/updateUserSettings';
 export { createProfileReport } from './createProfileReport/createProfileReport';
+export { setUserRoleByEmail } from './setUserRoleByEmail/setUserRoleByEmail';

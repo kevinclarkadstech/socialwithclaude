@@ -1,8 +1,9 @@
 import { betterAuth } from "better-auth";
-import { bearer, customSession, emailOTP } from "better-auth/plugins";
+import { admin, bearer, customSession, emailOTP } from "better-auth/plugins";
 // The relations-v2 build speaks drizzle 1.0's relational queries (used for joins).
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 
+import type { UserRole } from "@myapp/shared/domains";
 import { newId, schema, type Database } from "../data-access/db";
 import { getUserProfileAndBlockList } from "../data-access";
 import { nativeAppOrigins, serverConfig } from "../config";
@@ -69,11 +70,20 @@ export function createAuthInstance(db: Database) {
                 // Only a hash is stored, so a database leak doesn't leak live codes.
                 storeOTP: "hashed",
             }),
+            // Roles and bans: refuses sign-in to a banned user (and lifts a ban once it
+            // has expired). The app bans through its own moderation mutations, which also
+            // end the user's sessions and log it; the plugin's /admin endpoints are
+            // admin-only and the app doesn't use them.
+            admin({
+                bannedUserMessage: "This account has been banned. Contact support if you think this is a mistake.",
+            }),
             // Every signed-in tRPC request needs the caller's profile and block list
             // (see transport/trpc/context.ts), so the session lookup loads them too.
             customSession(async ({ user, session }) => {
                 const { profile, blockList } = await getUserProfileAndBlockList({ userId: user.id });
-                return { user, session, profile, blockList };
+                // The admin plugin's column; customSession's types only know better-auth's own user fields.
+                const role: UserRole = (user as typeof user & { role?: string | null }).role === "admin" ? "admin" : "user";
+                return { user, session, profile, blockList, role };
             }),
         ],
         // Off: the API's own rate limits (src/rate-limiting) cover /api/auth; better-auth's are in memory, per instance.
