@@ -29,7 +29,9 @@ import {
     updatePostComment,
     createUserSave,
     deleteUserSave,
+    createNotifications,
 } from "../../../data-access";
+import { notifyMentions } from "../../../notifications";
 import { procedure, router } from "../trpc";
 
 export const postCommentsRouter = router({
@@ -41,7 +43,7 @@ export const postCommentsRouter = router({
         createPostCommentMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostAccessById, getPostCommentViewById, createPostComment },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostAccessById, getPostCommentViewById, createPostComment, sendNotifications: createNotifications, notifyMentions },
         }),
     ),
 
@@ -49,7 +51,7 @@ export const postCommentsRouter = router({
         updatePostCommentMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentViewById, updatePostComment },
+            dependencies: { getCallingUser: ctx.getCallingUser, getPostCommentViewById, updatePostComment, notifyMentions },
         }),
     ),
 

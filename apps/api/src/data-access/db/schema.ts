@@ -522,6 +522,8 @@ export const notifications = pgTable("notifications", {
     userId: text("user_id")
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
+    // Who did it; null for the app's own (warnings, report updates).
+    actorId: text("actor_id").references(() => users.id, { onDelete: "cascade" }),
     type: text("type", { enum: asEnum(notificationTypes) }).notNull(),
     data: jsonb("data").$type<Notification["data"]>().notNull(),
     readAt: timestamp("read_at", { withTimezone: true }),

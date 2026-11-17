@@ -4,6 +4,7 @@ import { succeed } from "../../../../utils/result";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
 import { canReadMyNotifications } from "../../authorization/canReadMyNotifications/canReadMyNotifications";
+import { blockedEitherWay } from "../../../../authorization/conditions/conditions";
 
 export const GetUnreadNotificationCountQueryInputSchema = z.object({}).default({});
 
@@ -15,10 +16,10 @@ export const GetUnreadNotificationCountQueryOutputSchema = z.object({
 
 export type GetUnreadNotificationCountQueryOutput = z.infer<typeof GetUnreadNotificationCountQueryOutputSchema>;
 
-/** How many of the caller's notifications they haven't seen: the number on the bell. */
+/** How many of the caller's notifications they haven't seen: the number on the bell (only ones the list would show). */
 export const getUnreadNotificationCountQuery: Query<{ input: GetUnreadNotificationCountQueryInput, output: GetUnreadNotificationCountQueryOutput }, {
     getCallingUser: GetCallingUser;
-    countUnreadNotifications: (args: { userId: string }) => Promise<number>;
+    countUnreadNotifications: (args: { userId: string; excludedActorIds: string[] }) => Promise<number>;
 }> = async ({ context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     const allowed = canReadMyNotifications({ caller });
@@ -26,6 +27,6 @@ export const getUnreadNotificationCountQuery: Query<{ input: GetUnreadNotificati
         logDisallowedResult({ logger, result: allowed, details: { action: "get-unread-notification-count", callerId: caller?.userId } });
         return allowed;
     }
-    const count = await dependencies.countUnreadNotifications({ userId: allowed.value.userId });
+    const count = await dependencies.countUnreadNotifications({ userId: allowed.value.userId, excludedActorIds: blockedEitherWay(allowed.value) });
     return succeed({ count });
 };

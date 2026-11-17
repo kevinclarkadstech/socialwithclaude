@@ -8,6 +8,10 @@ import { logDisallowedResult } from "../../../../authorization/logDisallowedResu
 import type { GetCallingUser } from "../../../users/types/calling-user";
 import type { PostAccess } from "../../types/post-access";
 import { PostCommentSchema, PostCommentViewSchema, type PostCommentView } from "../../types/post-comment";
+import { bestEffort } from "../../../../utils/bestEffort/bestEffort";
+import type { NewNotification } from "../../../notifications/types/notification";
+import { commentExcerptLength } from "../../../notifications/types/notification";
+import { mentionedUsernames } from "../../../notifications/utils/mentionedUsernames/mentionedUsernames";
 
 export const CreatePostCommentMutationInputSchema = PostCommentSchema.pick({ id: true, postId: true, content: true });
 
@@ -24,6 +28,12 @@ export const createPostCommentMutation: Mutation<{ input: CreatePostCommentMutat
     getPostAccessById: (args: { id: string; viewerId: string | null }) => Promise<PostAccess | null>;
     getPostCommentViewById: (args: { id: string; viewerId: string | null }) => Promise<PostCommentView | null>;
     createPostComment: (args: { id: string; postId: string; userId: string; content: string }) => Promise<PostCommentView | null>;
+    sendNotifications: (notifications: NewNotification[]) => Promise<void>;
+    /**
+     * Notifies the people @-mentioned (by username) in a post or a comment on it
+     * who can see the post (see mentionRecipients), except `excludedUserIds`.
+     */
+    notifyMentions: (args: { actorId: string; postId: string; postCommentId: string | null; usernames: string[]; excludedUserIds: string[] }) => Promise<void>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     const post = await dependencies.getPostAccessById({ id: input.postId, viewerId: caller?.userId ?? null });
@@ -55,5 +65,29 @@ export const createPostCommentMutation: Mutation<{ input: CreatePostCommentMutat
         return fail(conflictError("Id is already used"));
     }
 
+    // The post's creator is told (not when it's their own comment), and anyone mentioned in it
+    // who can see the post (the creator only once, as "commented").
+    const actorId = allowed.value.userId;
+    const commented = post.createdBy !== actorId;
+    if (commented) {
+        await bestEffort({
+            logger,
+            what: "send a comment notification",
+            run: () => dependencies.sendNotifications([{
+                userId: post.createdBy,
+                actorId,
+                type: "commented",
+                data: { postId: post.id, postCommentId: comment.id, excerpt: comment.content.slice(0, commentExcerptLength) },
+            }]),
+        });
+    }
+    const usernames = mentionedUsernames(comment.content);
+    if (usernames.length > 0) {
+        await bestEffort({
+            logger,
+            what: "send mention notifications",
+            run: () => dependencies.notifyMentions({ actorId, postId: post.id, postCommentId: comment.id, usernames, excludedUserIds: commented ? [post.createdBy] : [] }),
+        });
+    }
     return succeed(comment);
 }

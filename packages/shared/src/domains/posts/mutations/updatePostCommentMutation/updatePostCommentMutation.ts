@@ -6,6 +6,8 @@ import { canUpdatePostComment } from "../../authorization/canUpdatePostComment/c
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
 import { PostCommentSchema, PostCommentViewSchema, type PostCommentView } from "../../types/post-comment";
+import { bestEffort } from "../../../../utils/bestEffort/bestEffort";
+import { newlyMentionedUsernames } from "../../../notifications/utils/mentionedUsernames/mentionedUsernames";
 
 export const UpdatePostCommentMutationInputSchema = PostCommentSchema.pick({ id: true, content: true });
 
@@ -20,6 +22,11 @@ export const updatePostCommentMutation: Mutation<{ input: UpdatePostCommentMutat
     getCallingUser: GetCallingUser;
     getPostCommentViewById: (args: { id: string; viewerId: string | null }) => Promise<PostCommentView | null>;
     updatePostComment: (args: { id: string; userId: string; content: string }) => Promise<PostCommentView | null>;
+    /**
+     * Notifies the people @-mentioned (by username) in a post or a comment on it
+     * who can see the post (see mentionRecipients), except `excludedUserIds`.
+     */
+    notifyMentions: (args: { actorId: string; postId: string; postCommentId: string | null; usernames: string[]; excludedUserIds: string[] }) => Promise<void>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     const comment = await dependencies.getPostCommentViewById({ id: input.id, viewerId: caller?.userId ?? null });
@@ -44,5 +51,14 @@ export const updatePostCommentMutation: Mutation<{ input: UpdatePostCommentMutat
         return fail(notFoundError("Comment not found"));
     }
 
+    // Only people the edit newly mentions are told.
+    const usernames = newlyMentionedUsernames({ before: comment.content, after: updatedComment.content });
+    if (usernames.length > 0) {
+        await bestEffort({
+            logger,
+            what: "send mention notifications",
+            run: () => dependencies.notifyMentions({ actorId: allowed.value.userId, postId: comment.postId, postCommentId: comment.id, usernames, excludedUserIds: [] }),
+        });
+    }
     return succeed(updatedComment);
 }

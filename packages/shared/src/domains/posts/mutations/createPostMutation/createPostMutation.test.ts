@@ -18,6 +18,7 @@ function run({ created, existing }: { created: PostView | null; existing: PostVi
             getPostViewById: async () => existing,
             publishPostPhotos: async () => [],
             deletePostPhotoUploads: async () => {},
+            notifyMentions: async () => {},
             createPost,
         },
     });
@@ -59,6 +60,7 @@ describe("createPostMutation for a listing", () => {
                 getPostViewById: async () => null,
                 publishPostPhotos: async () => [],
                 deletePostPhotoUploads: async () => {},
+                notifyMentions: async () => {},
                 createPost,
             },
         });
@@ -101,6 +103,7 @@ describe("createPostMutation with photos", () => {
                 getPostViewById: async () => null,
                 publishPostPhotos,
                 deletePostPhotoUploads,
+                notifyMentions: async () => {},
                 createPost,
             },
         });

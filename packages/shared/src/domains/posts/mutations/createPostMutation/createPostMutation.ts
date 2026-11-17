@@ -12,6 +12,8 @@ import { savedPostMedia } from "../../logic/postMedia";
 import { hasPostContent, validatePostMedia } from "../../validation/validatePostMedia";
 import { canCreatePost } from "../../authorization/canCreatePost/canCreatePost";
 import { cleanUpAfterSave } from "../../utils/cleanUpAfterSave/cleanUpAfterSave";
+import { bestEffort } from "../../../../utils/bestEffort/bestEffort";
+import { mentionedUsernames } from "../../../notifications/utils/mentionedUsernames/mentionedUsernames";
 
 export const CreatePostMutationInputSchema = PostSchema.pick({ id: true, content: true }).extend({
     // Its photos, each uploaded first (createPostMediaUploadsMutation) under this post's id. The server sets
@@ -45,6 +47,11 @@ export const createPostMutation: Mutation<{ input: CreatePostMutationInput, outp
     deletePostPhotoUploads: (args: { userId: string; postId: string; photoIds: string[] }) => Promise<void>;
     /** Creates the post with its photos (and listing details). Null if the id is already used. */
     createPost: (args: { id: string; userId: string; content: string; media: PostMedia[]; listing?: CreatePostMutationInput["listing"] }) => Promise<PostView | null>;
+    /**
+     * Notifies the people @-mentioned (by username) in a post or a comment on it
+     * who can see the post (see mentionRecipients), except `excludedUserIds`.
+     */
+    notifyMentions: (args: { actorId: string; postId: string; postCommentId: string | null; usernames: string[]; excludedUserIds: string[] }) => Promise<void>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     const allowed = canCreatePost({ caller });
@@ -104,6 +111,14 @@ export const createPostMutation: Mutation<{ input: CreatePostMutationInput, outp
         postId: input.id,
         run: () => dependencies.deletePostPhotoUploads({ userId, postId: input.id, photoIds: input.media.map(({ id }) => id) }),
     });
+    const usernames = mentionedUsernames(createdPost.content);
+    if (usernames.length > 0) {
+        await bestEffort({
+            logger,
+            what: "send mention notifications",
+            run: () => dependencies.notifyMentions({ actorId: userId, postId: createdPost.id, postCommentId: null, usernames, excludedUserIds: [] }),
+        });
+    }
     return succeed(createdPost);
 }
 

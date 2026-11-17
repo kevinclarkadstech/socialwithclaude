@@ -11,6 +11,9 @@ export function runCreatePostCommentMutation(comment: CreatePostCommentMutationI
     input: comment,
     context: { logger },
     dependencies: {
+      // The API sends notifications when it saves; nothing to send from here.
+      sendNotifications: async () => {},
+      notifyMentions: async () => {},
       getCallingUser,
       // The post (from the store, else the API) has what deciding who can see it takes.
       getPostAccessById: postFromStoreOrApi,

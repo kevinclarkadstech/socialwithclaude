@@ -14,3 +14,8 @@
   color: var(--ion-color-medium);
   font-size: 0.8rem;
 }
+
+.notification-item .notification-item__line {
+  color: var(--ion-text-color);
+  font-size: 0.95rem;
+}

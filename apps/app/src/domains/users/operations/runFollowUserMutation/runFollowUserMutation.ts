@@ -10,6 +10,8 @@ export function runFollowUserMutation({ profile }: { profile: GetUserProfileQuer
     input: { username: profile.username },
     context: { logger },
     dependencies: {
+      // The API sends notifications when it saves; nothing to send from here.
+      sendNotifications: async () => {},
       getCallingUser,
       getUserProfileByUsername: async () => profile,
       getProfileVisibility: async () => profile.profileVisibility,

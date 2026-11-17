@@ -11,6 +11,8 @@ export function runUpdatePostCommentMutation(comment: UpdatePostCommentMutationI
     input: comment,
     context: { logger },
     dependencies: {
+      // The API sends notifications when it saves; nothing to send from here.
+      notifyMentions: async () => {},
       getCallingUser,
       getPostCommentViewById: commentFromStore,
       updatePostComment: ({ id, content }) => fromApi(api.postComments.updatePostComment.mutate({ id, content })),

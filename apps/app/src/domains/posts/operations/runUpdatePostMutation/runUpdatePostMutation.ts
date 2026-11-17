@@ -11,6 +11,8 @@ export function runUpdatePostMutation(post: UpdatePostMutationInput) {
     input: post,
     context: { logger },
     dependencies: {
+      // The API sends notifications when it saves; nothing to send from here.
+      notifyMentions: async () => {},
       getCallingUser,
       getPostById: postFromStoreOrApi,
       getPostMediaByPostId: mediaFromStoreOrApi,
