@@ -2,11 +2,13 @@ import type { ProfilePhotoKind } from "../types/profile-photo";
 import { UserFeedbackCategorySchema, UserFeedbackStatusSchema } from "../types/user-feedback";
 import { UserFollowStatusSchema } from "../types/user-follow";
 import { ProfileVisibilitySchema } from "../types/user-settings";
+import { UserRoleSchema } from "../types/user-role";
 
 export const profileVisibilities = ProfileVisibilitySchema.options;
 export const userFollowStatuses = UserFollowStatusSchema.options;
 export const userFeedbackCategories = UserFeedbackCategorySchema.options;
 export const userFeedbackStatuses = UserFeedbackStatusSchema.options;
+export const userRoles = UserRoleSchema.options;
 
 /**
  * The widths each profile photo is stored at. The app crops and resizes on the

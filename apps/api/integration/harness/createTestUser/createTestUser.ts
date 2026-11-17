@@ -38,7 +38,7 @@ export function callAs(userId: string | null) {
             return null;
         }
         const { profile, blockList } = await getUserProfileAndBlockList({ userId });
-        return { userId, email: user.email, sessionId: `session-${userId}`, profile, blockList };
+        return { userId, email: user.email, sessionId: `session-${userId}`, profile, blockList, role: user.role };
     };
     const context = {
         auth: undefined,

@@ -36,6 +36,7 @@ export function mockCaller(overrides: Partial<CallingUser> = {}): CallingUser {
         sessionId: "session-1",
         profile: mockProfile({ userId }),
         blockList: { blocking: [], blockedBy: [] },
+        role: "user",
         ...overrides,
     };
 }

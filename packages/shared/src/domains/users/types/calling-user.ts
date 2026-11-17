@@ -1,6 +1,7 @@
 import z from "zod";
 import { UserProfileSchema } from "./user-profile";
 import { UserBlockListSchema } from "./user-block-list";
+import { UserRoleSchema } from "./user-role";
 
 /** The signed-in user a query or mutation runs for. */
 export const CallingUserSchema = z.object({
@@ -11,6 +12,8 @@ export const CallingUserSchema = z.object({
     // Null until sign-up is complete.
     profile: UserProfileSchema.nullable(),
     blockList: UserBlockListSchema,
+    // "admin" can moderate; everyone else is "user".
+    role: UserRoleSchema,
 });
 
 export type CallingUser = z.infer<typeof CallingUserSchema>;

@@ -11,6 +11,9 @@ import {
     userFeedbackCategories,
     userFeedbackStatuses,
     userFollowStatuses,
+    userRoles,
+    moderationActionTypes,
+    reportKinds,
     type ChatMessageReport,
     type PostView,
     type PostCommentView,
@@ -47,8 +50,15 @@ export const users = pgTable("users", {
     email: text("email").notNull(),
     emailVerified: boolean("email_verified").notNull().default(false),
     image: text("image"),
+    // better-auth's admin plugin: "admin" can moderate (granted with `bun run admin:grant`).
+    role: text("role", { enum: asEnum(userRoles) }).notNull().default("user"),
+    // A banned user can't sign in until `ban_expires` (never, if null); banning also ends their sessions.
+    banned: boolean("banned").notNull().default(false),
+    banReason: text("ban_reason"),
+    banExpires: timestamp("ban_expires", { withTimezone: true }),
 }, (t) => [
     uniqueIndex("users_email_lower_idx").on(sql`lower(${t.email})`),
+    check("users_role_valid", isOneOf(t.role, userRoles)),
 ]);
 
 export const sessions = pgTable("sessions", {
@@ -60,6 +70,8 @@ export const sessions = pgTable("sessions", {
     userId: text("user_id")
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
+    // better-auth's admin plugin: set on a session an admin started as this user (not used by the app).
+    impersonatedBy: text("impersonated_by"),
 }, (t) => [
     index("sessions_user_id_idx").on(t.userId),
 ]);
@@ -465,6 +477,34 @@ export const chatMessageReports = pgTable("chat_message_reports", {
     index("chat_message_reports_status_created_at_id_idx").on(t.status, t.createdAt, t.id),
     check("chat_message_reports_reason_valid", isOneOf(t.reason, reportReasons)),
     check("chat_message_reports_status_valid", isOneOf(t.status, reportStatuses)),
+]);
+
+// Moderation (app-wide, by admins)
+
+/**
+ * Everything an admin did as moderator (see the admin domain), kept for appeals
+ * and store reviews; rows are never changed. created_by is the moderator,
+ * `subject_user_id` whose content or account it was about, and
+ * `target_kind` / `target_id` what was reported, for report actions.
+ */
+export const moderationActions = pgTable("moderation_actions", {
+    id: text("id").primaryKey().$defaultFn(newId),
+    action: text("action", { enum: asEnum(moderationActionTypes) }).notNull(),
+    subjectUserId: text("subject_user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    targetKind: text("target_kind", { enum: asEnum(reportKinds) }),
+    targetId: text("target_id"),
+    note: text("note"),
+    createdBy: text("created_by")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+    // A person's history: what was done about them, newest first.
+    index("moderation_actions_subject_user_id_created_at_idx").on(t.subjectUserId, t.createdAt),
+    check("moderation_actions_action_valid", isOneOf(t.action, moderationActionTypes)),
+    check("moderation_actions_target_kind_valid", sql`${t.targetKind} is null or ${isOneOf(t.targetKind, reportKinds)}`),
 ]);
 
 // Saves (after the tables they point at)

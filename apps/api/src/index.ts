@@ -113,6 +113,7 @@ const app = new Hono<AppHonoEnv>()
                 sessionId: session.session.id,
                 profile: session.profile,
                 blockList: session.blockList,
+                role: session.role,
             }
             : null);
         await next();
