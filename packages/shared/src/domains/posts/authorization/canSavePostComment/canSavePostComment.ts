@@ -1,21 +1,35 @@
 import type { CallingUser } from "../../../users/types/calling-user";
-import type { PostView } from "../../types/post";
+import type { PostAccess } from "../../types/post-access";
+import type { PostCommentView } from "../../types/post-comment";
 import { allow, disallow, type AuthorizationCheck } from "../../../../authorization/allowDisallow/allowDisallow";
-import { hasProfile, isSignedIn } from "../../../../authorization/conditions/conditions";
+import { hasBlocked, hasProfile, isBlockedBy, isSignedIn } from "../../../../authorization/conditions/conditions";
 import { canViewPost } from "../canViewPost/canViewPost";
 
-/** Anyone who has finished sign-up can save a comment on a post they can see (`post` is the comment's post). */
-export const canSavePostComment: AuthorizationCheck<{ caller: CallingUser | null; post: PostView }> = ({ caller, post }) => {
+/**
+ * Anyone who has finished sign-up can save a comment.
+ * Not on a post the caller can't see, and not across a block with the
+ * comment's author (whose comments the caller isn't shown).
+ */
+export const canSavePostComment: AuthorizationCheck<{
+    caller: CallingUser | null;
+    post: PostAccess;
+    comment: Pick<PostCommentView, "createdBy">;
+}> = ({ caller, post, comment }) => {
     if (!isSignedIn(caller)) {
         return disallow("not-signed-in");
     }
     if (!hasProfile(caller)) {
         return disallow("profile-required");
     }
-    // Only what the caller can see (not across a block, not a private profile they don't follow).
     const viewable = canViewPost({ caller, post });
     if (!viewable.ok) {
         return viewable;
+    }
+    if (isBlockedBy(caller, comment.createdBy)) {
+        return disallow("blocked-by-user");
+    }
+    if (hasBlocked(caller, comment.createdBy)) {
+        return disallow("blocking-user");
     }
     return allow(caller);
 };

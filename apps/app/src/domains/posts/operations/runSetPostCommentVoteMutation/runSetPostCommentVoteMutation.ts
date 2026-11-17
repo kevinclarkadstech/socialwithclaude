@@ -3,7 +3,7 @@ import { api } from '../../../../lib/api/trpc';
 import { fromApi } from '../../../../lib/api/results';
 import { logger } from '../../../../lib/logger';
 import { getCallingUser } from '../../../users';
-import { commentFromStore } from '../postsFromApi/postsFromApi';
+import { commentFromStore, postFromStoreOrApi } from '../postsFromApi/postsFromApi';
 
 /** Makes the caller's vote on a comment up (1), down (-1) or none (null). */
 export function runSetPostCommentVoteMutation(vote: SetPostCommentVoteMutationInput) {
@@ -13,6 +13,8 @@ export function runSetPostCommentVoteMutation(vote: SetPostCommentVoteMutationIn
     dependencies: {
       getCallingUser,
       getPostCommentViewById: commentFromStore,
+      // The post (from the store, else the API) has what deciding who can see it takes.
+      getPostAccessById: postFromStoreOrApi,
       setPostCommentVote: ({ postCommentId, value }) =>
         fromApi(api.postComments.setPostCommentVote.mutate({ postCommentId, value })),
       deletePostCommentVote: async ({ postCommentId }) => {

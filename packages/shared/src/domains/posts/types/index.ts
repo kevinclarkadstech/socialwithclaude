@@ -6,3 +6,4 @@ export * from "./post-comment-vote";
 export * from "./report";
 export * from "./post-report";
 export * from "./post-comment-report";
+export * from "./post-access";

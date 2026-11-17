@@ -3,9 +3,10 @@ import type { Query } from "../../../../types/query";
 import { fail, succeed } from "../../../../utils/result";
 import { notFoundError } from "../../../../error-handling";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
+import { blockedEitherWay } from "../../../../authorization/conditions/conditions";
 import { canViewPostComments } from "../../authorization/canViewPostComments/canViewPostComments";
 import { hideUnviewablePost } from "../../utils/hideUnviewablePost/hideUnviewablePost";
-import type { PostView } from "../../types/post";
+import type { PostAccess } from "../../types/post-access";
 import { PageInputSchema, type Page } from "../../../../types/page";
 import { PostCommentViewSchema, type PostCommentView } from "../../types/post-comment";
 import type { GetCallingUser } from "../../../users/types/calling-user";
@@ -27,21 +28,25 @@ export type GetPostCommentsQueryOutput = z.infer<typeof GetPostCommentsQueryOutp
 /**
  * A post's comments, oldest first unless `order` is "newest". Needs sign-up
  * (canViewPostComments); not found if the post doesn't exist or the caller
- * can't see it, as for getPostById.
+ * can't see it, as for getPostById. Comments by anyone blocked either way
+ * are left out.
  */
 export const getPostCommentsQuery: Query<{ input: GetPostCommentsQueryInput, output: GetPostCommentsQueryOutput }, {
     getCallingUser: GetCallingUser;
-    getPostViewById: (args: { id: string; viewerId: string | null }) => Promise<PostView | null>;
+    /** Who can see the post (its creator, their visibility, whether the caller follows them). */
+    getPostAccessById: (args: { id: string; viewerId: string | null }) => Promise<PostAccess | null>;
     getPostCommentViews: (args: {
         postId: string;
         viewerId: string | null;
+        // Authors whose comments are left out.
+        excludedCreatorIds: string[];
         order: "oldest" | "newest";
         cursor?: string | null;
         limit: number;
     }) => Promise<Page<PostCommentView>>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
-    const post = await dependencies.getPostViewById({ id: input.postId, viewerId: caller?.userId ?? null });
+    const post = await dependencies.getPostAccessById({ id: input.postId, viewerId: caller?.userId ?? null });
     if (!post) {
         logger.info("Post not found", { postId: input.postId });
         return fail(notFoundError("Post not found"));
@@ -57,6 +62,7 @@ export const getPostCommentsQuery: Query<{ input: GetPostCommentsQueryInput, out
         return hideUnviewablePost({ error: allowed.error, message: "Post not found" });
     }
 
-    const page = await dependencies.getPostCommentViews({ ...input, viewerId: caller?.userId ?? null });
+    // Comments by anyone blocked either way are left out, as their posts are from feeds.
+    const page = await dependencies.getPostCommentViews({ ...input, viewerId: caller?.userId ?? null, excludedCreatorIds: blockedEitherWay(caller) });
     return succeed(page);
 }

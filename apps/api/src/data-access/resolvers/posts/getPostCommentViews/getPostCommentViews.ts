@@ -1,14 +1,15 @@
-import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, notInArray, sql } from "drizzle-orm";
 import type { Page } from "@myapp/shared/types";
 import type { PostCommentView } from "@myapp/shared/domains";
 import { schema } from "../../../db";
 import { toPage } from "../../../utils/toPage/toPage";
 import { findPostCommentViews } from "../../../internal/posts/findPostCommentViews/findPostCommentViews";
 
-/** A post's comments, oldest or newest first, as `viewerId` sees them. */
-export async function getPostCommentViews({ postId, viewerId, order, cursor, limit }: {
+/** A post's comments, oldest or newest first, as `viewerId` sees them; `excludedCreatorIds`' are left out. */
+export async function getPostCommentViews({ postId, viewerId, excludedCreatorIds = [], order, cursor, limit }: {
     postId: string;
     viewerId: string | null;
+    excludedCreatorIds?: string[];
     order: "oldest" | "newest";
     cursor?: string | null;
     limit: number;
@@ -20,6 +21,7 @@ export async function getPostCommentViews({ postId, viewerId, order, cursor, lim
         where: and(
             eq(t.postId, postId),
             isNull(t.deletedAt),
+            excludedCreatorIds.length ? notInArray(t.createdBy, excludedCreatorIds) : undefined,
             cursor
                 ? order === "oldest"
                     ? sql`(${t.createdAt}, ${t.id}) > ${cursorRow}`

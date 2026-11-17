@@ -4,7 +4,7 @@ import { fail, succeed } from "../../../../utils/result";
 import { notFoundError } from "../../../../error-handling";
 import { logDisallowedResult } from "../../../../authorization/logDisallowedResult/logDisallowedResult";
 import type { GetCallingUser } from "../../../users/types/calling-user";
-import type { PostView } from "../../types/post";
+import type { PostAccess } from "../../types/post-access";
 import { PostCommentSchema, type PostCommentView } from "../../types/post-comment";
 import { canSavePostComment } from "../../authorization/canSavePostComment/canSavePostComment";
 import { hideUnviewablePost } from "../../utils/hideUnviewablePost/hideUnviewablePost";
@@ -23,19 +23,20 @@ export type SavePostCommentMutationOutput = z.infer<typeof SavePostCommentMutati
 export const savePostCommentMutation: Mutation<{ input: SavePostCommentMutationInput, output: SavePostCommentMutationOutput }, {
     getCallingUser: GetCallingUser;
     getPostCommentViewById: (args: { id: string; viewerId: string | null }) => Promise<PostCommentView | null>;
-    getPostViewById: (args: { id: string; viewerId: string | null }) => Promise<PostView | null>;
+    /** Who can see the post (its creator, their visibility, whether the caller follows them). */
+    getPostAccessById: (args: { id: string; viewerId: string | null }) => Promise<PostAccess | null>;
     savePostComment: (args: { userId: string; postCommentId: string }) => Promise<boolean>;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     const viewerId = caller?.userId ?? null;
     const comment = await dependencies.getPostCommentViewById({ id: input.postCommentId, viewerId });
-    const post = comment ? await dependencies.getPostViewById({ id: comment.postId, viewerId }) : null;
+    const post = comment ? await dependencies.getPostAccessById({ id: comment.postId, viewerId }) : null;
     if (!comment || !post) {
         logger.info("Comment to save not found", { postCommentId: input.postCommentId });
         return fail(notFoundError("Comment not found"));
     }
 
-    const allowed = canSavePostComment({ caller, post });
+    const allowed = canSavePostComment({ caller, post, comment });
     if (!allowed.ok) {
         logDisallowedResult({
             logger,
