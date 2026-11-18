@@ -1,0 +1,65 @@
+name: Android build
+
+# An unsigned debug build of the Android app, so a change that breaks the
+# native build shows up on its PR. Signed release builds come later.
+on:
+  pull_request:
+    paths:
+      - "apps/app/**"
+      - "packages/shared/**"
+      - "bun.lock"
+      - ".github/workflows/native-android.yml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/app/**"
+      - "packages/shared/**"
+      - "bun.lock"
+      - ".github/workflows/native-android.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Placeholders: a debug build only has to compile. Real builds set the real addresses.
+    env:
+      VITE_API_URL: https://api.example.com
+      VITE_PUBLIC_URL: https://app.example.com
+      VITE_MEDIA_URL: https://media.example.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+
+      - name: Build the web app
+        run: bun run --cwd apps/app build
+      # Copies the web build in and points Gradle at the plugins' current paths in node_modules.
+      - name: Sync Capacitor
+        working-directory: apps/app
+        run: bunx cap sync android
+
+      # The runner image has the Android SDK (ANDROID_HOME); Gradle needs JDK 21.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - name: Build a debug APK
+        working-directory: apps/app/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: apps/app/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7

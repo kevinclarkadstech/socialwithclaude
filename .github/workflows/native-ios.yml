@@ -1,0 +1,70 @@
+name: iOS build
+
+# An unsigned simulator build of the iOS app, so a change that breaks the
+# native build shows up. macOS runners cost about 10x Linux minutes on a
+# private repository, so it runs only when something native could break
+# (the Xcode project, Capacitor's config or a dependency), weekly, and on
+# demand. Web-only changes can't break it: the web build is just copied in.
+on:
+  pull_request:
+    paths:
+      - "apps/app/ios/**"
+      - "apps/app/capacitor.config.ts"
+      - "apps/app/package.json"
+      - "bun.lock"
+      - ".github/workflows/native-ios.yml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/app/ios/**"
+      - "apps/app/capacitor.config.ts"
+      - "apps/app/package.json"
+      - "bun.lock"
+      - ".github/workflows/native-ios.yml"
+  schedule:
+    # Mondays, to catch a runner image's new Xcode before a release does.
+    - cron: "17 9 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 40
+    env:
+      VITE_API_URL: https://api.example.com
+      VITE_PUBLIC_URL: https://app.example.com
+      VITE_MEDIA_URL: https://media.example.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+
+      - name: Build the web app
+        run: bun run --cwd apps/app build
+      # Copies the web build in and points Swift Package Manager at the plugins' current paths.
+      - name: Sync Capacitor
+        working-directory: apps/app
+        run: bunx cap sync ios
+
+      - name: Xcode version
+        run: xcodebuild -version
+      - name: Build for the simulator (no signing)
+        working-directory: apps/app/ios/App
+        run: |
+          xcodebuild build \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO
