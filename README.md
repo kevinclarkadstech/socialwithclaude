@@ -40,6 +40,8 @@ What the app stores and the law expect from a social app with photos, and where 
 - [x] **Warnings and replies to reporters:** admins can warn someone from a report (they get a notification), each report card shows the person's last 90 days (warnings, removals, bans), and everyone who reported something is told the outcome. Notifications are under the bell in the header.
 - [x] **Act on reports** (Settings → Admin, admins only): one queue item per reported thing with every report about it; dismiss, remove it (a post's photo files too), or ban its person. Every action goes in the moderation log. Apple treats removing reported content quickly as the minimum for filtering objectionable material, and expects nonconsensual intimate imagery to be removed proactively. See [Admin and moderation](#admin-and-moderation).
 - [x] **Account deletion** in the app (Apple 5.1.1(v): any app with sign-up must let people delete their account from inside it). Deletes their data, except reports and the moderation log. See [Account deletion](#account-deletion).
+- [x] **Terms and privacy policy agreed to at sign-up** (Apple 1.2 asks for terms with no tolerance for objectionable content), recorded with their version; drafts to finish before launch (below).
+- [x] **A web page for deletion requests**, `/delete-account` (Google Play).
 - [x] **Email delivery** through Resend or Mailgun (the API won't start in production without one).
 
 **Before launch**
@@ -47,7 +49,8 @@ What the app stores and the law expect from a social app with photos, and where 
 - [ ] **Contact details** in the app and on the store listings (Apple 1.2).
 - [ ] **Child safety standards page:** a public web page with your standards against child sexual abuse and exploitation, naming the app, plus a child safety point of contact (Google).
 - [ ] **Self-certify** the Child Safety Standards in Play Console before publishing (Google).
-- [ ] **Privacy policy and terms,** linked from sign-up and the store listings. Say that photo links work for anyone who has one, and that public posts' photos may appear in search engines.
+- [ ] **Finish the Terms of Service and Privacy Policy:** fill in the [placeholders] in `apps/app/src/domains/legal/documents/` (company, contact, minimum age, jurisdiction, providers, retention), have a lawyer review them, and remove the "Draft" notes. Link `/terms` and `/privacy` from the store listings. See [Terms and privacy](#terms-and-privacy).
+- [ ] **Account deletion URL in Play Console:** `<app web address>/delete-account` (Google requires one that works without the app).
 - [ ] **Set up email** for sign-in codes: Resend or Mailgun, with the sending domain verified. See [Email](#email).
 
 **Later**
@@ -70,9 +73,16 @@ bun run --cwd apps/api admin:revoke someone@example.com
 - **Reporters are told the outcome** (removed, reviewed, or not against the guidelines) in a notification, with a default message.
 - **Feedback:** newest first, filtered by New, Read and Done.
 
+### Terms and privacy
+
+The Terms of Service and Privacy Policy are Markdown files in `apps/app/src/domains/legal/documents/`, shown at `/terms` and `/privacy` (public, also linked from Settings and sign-up). `{{appName}}` is replaced with the app's name.
+
+- **Agreeing:** finishing sign-up needs the "I agree" checkbox; the API refuses sign-up without it and records the version (`users.terms_accepted_version` and `terms_accepted_at`).
+- **Changing them:** `currentTermsVersion` in `packages/shared/src/domains/auth/constants` is "major.minor", agreed to for both documents together. Keep the version printed at the top of each document in step (a test checks). For a small edit, raise the minor version. For a change people must agree to again, raise the major version: everyone signed in then sees "We've updated our terms" before they can carry on (or sign out, or delete their account).
+
 ### Account deletion
 
-People delete their account from the app, confirming with a code sent by email (Apple and Google require that deletion can be started in the app).
+People delete their account from the app (Settings → Delete account), confirming with a code sent by email (Apple and Google require that deletion can be started in the app). `/delete-account` is the same page at a public address, for Google Play's deletion URL: signed out, it asks you to sign in first.
 
 - **30 days to change their mind.** Their account is hidden at once, like a banned one, and every device is signed out. Signing back in within 30 days lets them restore it; until then the API treats them as signed out everywhere else.
 - **Then everything goes.** `bun run --cwd apps/api accounts:purge` deletes accounts past their 30 days: the profile, posts and listings (with every comment, save and vote on them), comments, votes, saves, follows, blocks, chats (both sides), notifications, and the photo files. It takes them out of other people's counts too (followers, comments, saves, votes) and revokes their Sign in with Apple tokens. Run it daily (a cron job, or a Cron Trigger on Workers).

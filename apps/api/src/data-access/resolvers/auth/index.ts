@@ -9,3 +9,4 @@ export { getAccountsDueForPurge } from './getAccountsDueForPurge/getAccountsDueF
 export { getUserIdByEmail } from './getUserIdByEmail/getUserIdByEmail';
 export { addBannedEmail } from './addBannedEmail/addBannedEmail';
 export { isEmailHashBanned } from './isEmailHashBanned/isEmailHashBanned';
+export { recordTermsAccepted } from './recordTermsAccepted/recordTermsAccepted';

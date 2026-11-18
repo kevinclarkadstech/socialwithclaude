@@ -10,8 +10,8 @@ import '../../common/styles/pages.css';
 
 /**
  * /settings, from your profile's menu: privacy, follow requests, where you're
- * signed in, and who you've blocked; for admins, a way into Admin; and
- * deleting your account.
+ * signed in, and who you've blocked; for admins, a way into Admin;
+ * deleting your account; and the terms and privacy policy.
  */
 export function SettingsPage() {
   const { callingUser } = useCallingUser();
@@ -55,6 +55,14 @@ export function SettingsPage() {
         )}
         {/* Someone who never finished sign-up can still delete the account they made. */}
         {!signedUpCheck.ok && callingUser && <DeleteAccountItem />}
+        <IonList inset>
+          <IonItem button detail onClick={() => navigate('/terms')}>
+            <IonLabel>Terms of Service</IonLabel>
+          </IonItem>
+          <IonItem button detail onClick={() => navigate('/privacy')}>
+            <IonLabel>Privacy Policy</IonLabel>
+          </IonItem>
+        </IonList>
       </IonContent>
     </IonPage>
   );

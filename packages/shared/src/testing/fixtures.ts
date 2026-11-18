@@ -38,6 +38,7 @@ export function mockCaller(overrides: Partial<CallingUser> = {}): CallingUser {
         blockList: { blocking: [], blockedBy: [] },
         role: "user",
         deletionScheduledAt: null,
+        termsAcceptedVersion: "1.0",
         ...overrides,
     };
 }

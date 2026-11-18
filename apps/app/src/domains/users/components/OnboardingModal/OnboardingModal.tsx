@@ -10,6 +10,7 @@ import {
   IonToolbar,
 } from '@ionic/react';
 import type { FormEvent } from 'react';
+import { TermsAgreement } from '../../../legal';
 import { useOnboardingFlow } from '../../hooks/useOnboardingFlow/useOnboardingFlow';
 import '../../../../common/styles/modal-form.css';
 
@@ -21,7 +22,7 @@ interface OnboardingModalProps {
   onDidDismiss: () => void;
 }
 
-/** Finishing sign-up after the first sign-in: a username, and optionally a name. */
+/** Finishing sign-up after the first sign-in: a username, optionally a name, and agreeing to the terms. */
 export function OnboardingModal({ isOpen, onDone, onCancel, onDidDismiss }: OnboardingModalProps) {
   const flow = useOnboardingFlow({ onDone });
 
@@ -70,7 +71,8 @@ export function OnboardingModal({ isOpen, onDone, onCancel, onDidDismiss }: Onbo
             value={flow.lastName}
             onIonInput={(event) => flow.setLastName(event.detail.value ?? '')}
           />
-          <IonButton type="submit" expand="block" disabled={flow.isBusy || !flow.username}>
+          <TermsAgreement checked={flow.agreedToTerms} onChange={flow.setAgreedToTerms} />
+          <IonButton type="submit" expand="block" disabled={flow.isBusy || !flow.username || !flow.agreedToTerms}>
             Continue
           </IonButton>
           {flow.error && (

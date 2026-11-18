@@ -14,7 +14,7 @@ export function useCreateProfile() {
       }
       const { callingUser } = callingUserStore.get();
       if (callingUser) {
-        callingUserStore.set({ ...callingUser, profile: result.value });
+        callingUserStore.set({ ...callingUser, profile: result.value, termsAcceptedVersion: profile.acceptedTermsVersion });
       }
       return null;
     } catch (error) {

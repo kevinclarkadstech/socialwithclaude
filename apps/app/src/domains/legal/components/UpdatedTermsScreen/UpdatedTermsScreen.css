@@ -1,0 +1,9 @@
+.updated-terms p {
+  margin: 0;
+}
+
+.updated-terms__delete {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--ion-color-step-150, #e0e0e0);
+}

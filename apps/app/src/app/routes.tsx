@@ -9,6 +9,7 @@ import { NewChatPage } from '../pages/NewChatPage/NewChatPage';
 import { PostDetailPage } from '../pages/PostDetailPage/PostDetailPage';
 import { SettingsPage } from '../pages/SettingsPage/SettingsPage';
 import { DeleteAccountPage } from '../pages/DeleteAccountPage/DeleteAccountPage';
+import { LegalPage } from '../pages/LegalPage/LegalPage';
 import { NotificationsPage } from '../pages/NotificationsPage/NotificationsPage';
 import { AdminRoute } from '../pages/AdminPage/AdminRoute';
 import { MarketplacePage } from '../pages/MarketplacePage/MarketplacePage';
@@ -55,6 +56,10 @@ export const sharedRoutes: RouteObject[] = [
 export const rootRoutes: RouteObject[] = [
   { path: '/settings', element: <SettingsPage /> },
   { path: '/settings/delete-account', element: <DeleteAccountPage /> },
+  // Public, and linked from the store listings: the address for deletion requests (Google Play), the terms and the privacy policy.
+  { path: '/delete-account', element: <DeleteAccountPage /> },
+  { path: '/terms', element: <LegalPage name="terms" /> },
+  { path: '/privacy', element: <LegalPage name="privacy" /> },
   { path: '/notifications', element: <NotificationsPage /> },
   // Admins only; loaded on demand.
   { path: '/admin', element: <AdminRoute /> },

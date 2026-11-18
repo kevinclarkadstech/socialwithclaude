@@ -61,6 +61,10 @@ export const users = pgTable("users", {
     // Set when they ask to delete their account: hidden like a banned user until
     // they restore it, or until `bun run accounts:purge` deletes it (accountDeletionGraceDays later).
     deletionScheduledAt: timestamp("deletion_scheduled_at", { withTimezone: true }),
+    // The version of the Terms of Service and Privacy Policy they last agreed to, and when
+    // (at sign-up, then again whenever the major version goes up; see currentTermsVersion).
+    termsAcceptedVersion: text("terms_accepted_version"),
+    termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
 }, (t) => [
     uniqueIndex("users_email_lower_idx").on(sql`lower(${t.email})`),
     check("users_role_valid", isOneOf(t.role, userRoles)),

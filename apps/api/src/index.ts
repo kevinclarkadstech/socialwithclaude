@@ -125,6 +125,7 @@ const app = new Hono<AppHonoEnv>()
                 blockList: session.blockList,
                 role: session.role,
                 deletionScheduledAt: session.deletionScheduledAt,
+                termsAcceptedVersion: session.termsAcceptedVersion,
             }
             : null);
         await next();

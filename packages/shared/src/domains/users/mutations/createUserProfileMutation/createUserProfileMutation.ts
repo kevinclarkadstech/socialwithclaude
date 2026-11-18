@@ -12,6 +12,9 @@ export const CreateUserProfileMutationInputSchema = UserProfileSchema.pick({
     firstName: true,
     lastName: true,
     about: true,
+}).extend({
+    // The version of the Terms of Service and Privacy Policy they agreed to (see currentTermsVersion); sign-up needs it.
+    acceptedTermsVersion: z.string().regex(/^\d+\.\d+$/, "Agree to the Terms of Service and Privacy Policy to continue"),
 });
 
 export type CreateUserProfileMutationInput = z.infer<typeof CreateUserProfileMutationInputSchema>;
@@ -22,14 +25,14 @@ export type CreateUserProfileMutationOutput = z.infer<typeof CreateUserProfileMu
 
 /**
  * Completes sign-up for a signed-in user: creates their profile and
- * settings. Fails with a conflict if the username is taken or they already
- * have a profile.
+ * settings, and records which version of the terms they agreed to. Fails
+ * with a conflict if the username is taken or they already have a profile.
  */
 export const createUserProfileMutation: Mutation<{ input: CreateUserProfileMutationInput, output: CreateUserProfileMutationOutput }, {
     getCallingUser: GetCallingUser;
     getUserProfileByUsername: (args: { username: string }) => Promise<UserProfile | null>;
     /** "username-taken" if someone took it meanwhile; "profile-exists" if the user already has one (e.g. a double submit). */
-    createUserProfile: (args: Pick<UserProfile, "userId" | "username" | "firstName" | "lastName" | "about">) => Promise<UserProfile | "username-taken" | "profile-exists">;
+    createUserProfile: (args: Pick<UserProfile, "userId" | "username" | "firstName" | "lastName" | "about"> & { acceptedTermsVersion: string }) => Promise<UserProfile | "username-taken" | "profile-exists">;
 }> = async ({ input, context: { logger }, dependencies }) => {
     const caller = await dependencies.getCallingUser();
     const allowed = canCreateUserProfile({ caller });

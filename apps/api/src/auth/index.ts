@@ -66,6 +66,8 @@ export function createAuthInstance(db: Database) {
             additionalFields: {
                 // Set by scheduleAccountDeletion; read with the session, so the app can offer to restore the account.
                 deletionScheduledAt: { type: "date", required: false, input: false },
+                // Set at sign-up and by auth.acceptTerms; read with the session, so the app can ask to agree again.
+                termsAcceptedVersion: { type: "string", required: false, input: false },
             },
         },
         socialProviders: {
@@ -104,8 +106,8 @@ export function createAuthInstance(db: Database) {
                 const { profile, blockList } = await getUserProfileAndBlockList({ userId: user.id });
                 // The admin plugin's column; customSession's types only know better-auth's own user fields.
                 const role: UserRole = (user as typeof user & { role?: string | null }).role === "admin" ? "admin" : "user";
-                const { deletionScheduledAt } = user as typeof user & { deletionScheduledAt?: Date | null };
-                return { user, session, profile, blockList, role, deletionScheduledAt: deletionScheduledAt ? new Date(deletionScheduledAt).toISOString() : null };
+                const { deletionScheduledAt, termsAcceptedVersion } = user as typeof user & { deletionScheduledAt?: Date | null; termsAcceptedVersion?: string | null };
+                return { user, session, profile, blockList, role, deletionScheduledAt: deletionScheduledAt ? new Date(deletionScheduledAt).toISOString() : null, termsAcceptedVersion: termsAcceptedVersion ?? null };
             }),
         ],
         // Off: the API's own rate limits (src/rate-limiting) cover /api/auth; better-auth's are in memory, per instance.
