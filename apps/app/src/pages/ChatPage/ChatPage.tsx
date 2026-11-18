@@ -41,7 +41,10 @@ function isBlock(reason: unknown) {
   return reason === 'blocked-by-user' || reason === 'blocking-user' || reason === 'user-unavailable';
 }
 
-/** A conversation (/chats/:chatId): the messages, newest at the bottom, and the message box. */
+/**
+ * A conversation (/chats/:chatId, or …/chat/:chatId in another tab, see
+ * useChatHref): the messages, newest at the bottom, and the message box.
+ */
 export function ChatPage() {
   const { chatId = '' } = useParams();
   const { callingUser } = useCallingUser();

@@ -14,6 +14,7 @@ export { ChatMessageSearchItem } from './components/ChatMessageSearchItem/ChatMe
 export { reportChatMessage } from './actions/reportChatMessage/reportChatMessage';
 
 export { useChat } from './hooks/useChat/useChat';
+export { useChatHref } from './hooks/useChatHref/useChatHref';
 export { useChatMessages } from './hooks/useChatMessages/useChatMessages';
 
 // Operations

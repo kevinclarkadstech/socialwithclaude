@@ -46,6 +46,8 @@ export const tabs: TabDefinition[] = [
 export const sharedRoutes: RouteObject[] = [
   { path: 'posts/:postId', element: <PostDetailPage /> },
   { path: 'profile/:username', element: <UserProfilePage /> },
+  // A chat opened from outside the Chats tab (e.g. a profile's Chat button), so Back returns there. See useChatHref.
+  { path: 'chat/:chatId', element: <ChatPage /> },
 ];
 
 
