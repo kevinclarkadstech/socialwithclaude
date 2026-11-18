@@ -44,8 +44,31 @@ export const ServerConfigSchema = z.object({
     // e.g. the commit SHA, so Sentry can say which deploy an error started in.
     SENTRY_RELEASE: z.string().optional(),
 
+    // Email (one-time codes): "console" logs them (local development only); "resend" or "mailgun" sends them.
+    EMAIL_PROVIDER: z.enum(["console", "resend", "mailgun"]).default("console"),
+    // Who emails come from, on a domain verified with the provider, e.g. "Placeholder <no-reply@example.com>".
+    EMAIL_FROM: z.string().min(3).optional(),
+    RESEND_API_KEY: z.string().optional(),
+    MAILGUN_API_KEY: z.string().optional(),
+    // The sending domain as set up in Mailgun, e.g. "mg.example.com".
+    MAILGUN_DOMAIN: z.string().optional(),
+    // Where the Mailgun account lives: its API host differs.
+    MAILGUN_REGION: z.enum(["us", "eu"]).default("us"),
+
     // How long a notification waits before it shows, so a quick undo (unfollowing, editing a mention out) means it's never seen.
     NOTIFICATION_DELAY_SECONDS: z.coerce.number().int().min(0).max(3600).default(30),
+}).superRefine((config, ctx) => {
+    // Each provider's settings are required once it's chosen, so a deploy can't start half-configured.
+    const required = {
+        console: [],
+        resend: ["EMAIL_FROM", "RESEND_API_KEY"],
+        mailgun: ["EMAIL_FROM", "MAILGUN_API_KEY", "MAILGUN_DOMAIN"],
+    } as const satisfies Record<typeof config.EMAIL_PROVIDER, readonly (keyof typeof config)[]>;
+    for (const key of required[config.EMAIL_PROVIDER]) {
+        if (!config[key]) {
+            ctx.addIssue({ code: "custom", path: [key], message: `Required when EMAIL_PROVIDER is ${config.EMAIL_PROVIDER}` });
+        }
+    }
 });
 
 /**

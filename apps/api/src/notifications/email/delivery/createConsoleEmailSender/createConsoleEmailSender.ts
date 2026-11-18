@@ -9,11 +9,11 @@ import type { EmailSender } from "../types";
 export function createConsoleEmailSender(): EmailSender {
     return {
         async send({ to, subject, text }) {
-            rootLogger.info("Email (not sent: no email provider configured)", { to, subject, text });
+            rootLogger.info("Email (not sent: EMAIL_PROVIDER is console)", { to, subject, text });
         },
         assertCanSend() {
             if (process.env.NODE_ENV === "production") {
-                throw new Error("No email provider is configured, so emails (one-time codes) can't be sent");
+                throw new Error("EMAIL_PROVIDER is console, so emails (one-time codes) would never be sent: set it to resend or mailgun");
             }
         },
     };
