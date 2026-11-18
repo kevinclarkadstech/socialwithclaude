@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { APIError } from "better-auth/api";
 import { admin, bearer, customSession, emailOTP } from "better-auth/plugins";
 // The relations-v2 build speaks drizzle 1.0's relational queries (used for joins).
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
@@ -8,6 +9,7 @@ import { newId, schema, type Database } from "../data-access/db";
 import { getUserProfileAndBlockList } from "../data-access";
 import { nativeAppOrigins, serverConfig } from "../config";
 import { sendOtp } from "../notifications";
+import { isEmailBanned } from "../accounts";
 import { rootLogger } from "../observability";
 
 const {
@@ -48,6 +50,24 @@ export function createAuthInstance(db: Database) {
         emailAndPassword: {
             enabled: false,
         },
+        databaseHooks: {
+            user: {
+                create: {
+                    // Someone banned who then had their account deleted can't sign up again with that email.
+                    before: async (user) => {
+                        if (await isEmailBanned({ email: user.email })) {
+                            throw new APIError("FORBIDDEN", { message: "This email can't be used to sign up. Contact support if you think this is a mistake." });
+                        }
+                    },
+                },
+            },
+        },
+        user: {
+            additionalFields: {
+                // Set by scheduleAccountDeletion; read with the session, so the app can offer to restore the account.
+                deletionScheduledAt: { type: "date", required: false, input: false },
+            },
+        },
         socialProviders: {
             ...(google && { google }),
             ...(apple && { apple }),
@@ -83,7 +103,8 @@ export function createAuthInstance(db: Database) {
                 const { profile, blockList } = await getUserProfileAndBlockList({ userId: user.id });
                 // The admin plugin's column; customSession's types only know better-auth's own user fields.
                 const role: UserRole = (user as typeof user & { role?: string | null }).role === "admin" ? "admin" : "user";
-                return { user, session, profile, blockList, role };
+                const { deletionScheduledAt } = user as typeof user & { deletionScheduledAt?: Date | null };
+                return { user, session, profile, blockList, role, deletionScheduledAt: deletionScheduledAt ? new Date(deletionScheduledAt).toISOString() : null };
             }),
         ],
         // Off: the API's own rate limits (src/rate-limiting) cover /api/auth; better-auth's are in memory, per instance.

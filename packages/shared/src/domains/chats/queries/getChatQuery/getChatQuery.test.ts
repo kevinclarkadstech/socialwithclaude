@@ -15,7 +15,7 @@ const chat: ChatView = {
     updatedBy: mockCaller().userId,
     createdAt: "2026-02-01T00:00:00.000Z",
     updatedAt: "2026-02-01T00:00:00.000Z",
-    otherMember: { userId: other.userId, username: other.username, firstName: null, lastName: null, updatedAt: other.updatedAt, isBanned: false },
+    otherMember: { userId: other.userId, username: other.username, firstName: null, lastName: null, updatedAt: other.updatedAt, isUnavailable: false },
     lastMessage: null,
     viewer: { hasUnread: false },
 };

@@ -1,1 +1,11 @@
 export { getUserSessions } from './getUserSessions/getUserSessions';
+export { saveAccountDeletionCode } from './saveAccountDeletionCode/saveAccountDeletionCode';
+export { consumeAccountDeletionCode } from './consumeAccountDeletionCode/consumeAccountDeletionCode';
+export { scheduleAccountDeletion } from './scheduleAccountDeletion/scheduleAccountDeletion';
+export { restoreAccount } from './restoreAccount/restoreAccount';
+export { getAccountForPurge, type AccountForPurge } from './getAccountForPurge/getAccountForPurge';
+export { deleteAccount } from './deleteAccount/deleteAccount';
+export { getAccountsDueForPurge } from './getAccountsDueForPurge/getAccountsDueForPurge';
+export { getUserIdByEmail } from './getUserIdByEmail/getUserIdByEmail';
+export { addBannedEmail } from './addBannedEmail/addBannedEmail';
+export { isEmailHashBanned } from './isEmailHashBanned/isEmailHashBanned';

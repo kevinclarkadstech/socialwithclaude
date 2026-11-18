@@ -31,8 +31,10 @@ export const ReportEntrySchema = z.object({
 /** Whoever the reported thing is by (or who was reported), and whether they're banned. */
 export const ModerationSubjectSchema = z.object({
     userId: z.ulid(),
-    // Null if they have no profile.
+    // Null if they have no profile (or their account was deleted).
     username: z.string().nullable(),
+    // Their account was deleted: the reports and the log about them are kept, but there's no one left to warn or ban.
+    isDeleted: z.boolean(),
     role: UserRoleSchema,
     isBanned: z.boolean(),
     // When their ban ends; null if they aren't banned or it never ends.

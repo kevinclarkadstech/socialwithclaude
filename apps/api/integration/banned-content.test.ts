@@ -59,7 +59,7 @@ describe("a banned person's content", () => {
 
     it("leaves their chats in place, marked unavailable, and closed to replies", async () => {
         const shown = await annsChat();
-        expect(shown?.otherMember).toMatchObject({ userId: spammer.userId, isBanned: true });
+        expect(shown?.otherMember).toMatchObject({ userId: spammer.userId, isUnavailable: true });
         expect((await valueOf(ann.call.chats.getMessages({ chatId: chat.id, limit: 20 }))).items.map((message) => message.content)).toEqual(["Buy now"]);
         expect(await outcome(ann.call.chats.sendMessage({ id: newId(), chatId: chat.id, content: "Stop" }))).toBe("FORBIDDEN");
         expect(await outcome(ann.call.chats.getOrCreateDirectChat({ id: newId(), username: spammer.username }))).toBe("NOT_FOUND");
@@ -68,7 +68,7 @@ describe("a banned person's content", () => {
     it("isn't deleted: it's back once the ban is lifted", async () => {
         await valueOf(admin.call.admin.unbanUser({ userId: spammer.userId }));
         expect(await whatAnnSees()).toEqual(everything);
-        expect((await annsChat())?.otherMember.isBanned).toBe(false);
+        expect((await annsChat())?.otherMember.isUnavailable).toBe(false);
         expect(await outcome(ann.call.chats.sendMessage({ id: newId(), chatId: chat.id, content: "Hi again" }))).toBe("OK");
     });
 

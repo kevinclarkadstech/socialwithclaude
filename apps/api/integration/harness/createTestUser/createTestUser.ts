@@ -29,7 +29,7 @@ const runId = Date.now().toString(36).slice(-4);
 /** The API's routers, called as `userId` (null: signed out), with no HTTP, rate limits or sessions in between. */
 export function callAs(userId: string | null) {
     // Read fresh on every call, as the API does per request, so blocks and sign-up show at once.
-    const getCallingUser = async (): Promise<CallingUser | null> => {
+    const getAccountHolder = async (): Promise<CallingUser | null> => {
         if (!userId) {
             return null;
         }
@@ -38,13 +38,27 @@ export function callAs(userId: string | null) {
             return null;
         }
         const { profile, blockList } = await getUserProfileAndBlockList({ userId });
-        return { userId, email: user.email, sessionId: `session-${userId}`, profile, blockList, role: user.role };
+        return {
+            userId,
+            email: user.email,
+            sessionId: `session-${userId}`,
+            profile,
+            blockList,
+            role: user.role,
+            deletionScheduledAt: user.deletionScheduledAt?.toISOString() ?? null,
+        };
+    };
+    // As the API's context: someone whose account is scheduled for deletion counts as signed out, except for the account procedures.
+    const getCallingUser = async (): Promise<CallingUser | null> => {
+        const holder = await getAccountHolder();
+        return holder?.deletionScheduledAt ? null : holder;
     };
     const context = {
         auth: undefined,
         reqHeaders: new Headers(),
         resHeaders: new Headers(),
         getCallingUser,
+        getAccountHolder,
         logger: silentLogger,
         errorReportContext: { userId: userId ?? undefined },
         rateLimitKey: `test:${userId}`,

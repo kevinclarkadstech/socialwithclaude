@@ -19,8 +19,8 @@ export type Chat = z.infer<typeof ChatSchema>;
  * the chat), and whether anything from the other person is unread.
  */
 export const ChatViewSchema = ChatSchema.extend({
-    // isBanned: they're banned right now, so the app shows them as unavailable and the chat can't be replied to.
-    otherMember: UserProfileSummarySchema.extend({ isBanned: z.boolean() }),
+    // isUnavailable: they're banned or their account is being deleted, so the app shows them as unavailable and the chat can't be replied to.
+    otherMember: UserProfileSummarySchema.extend({ isUnavailable: z.boolean() }),
     lastMessage: z.object({
         content: z.string(),
         createdBy: z.ulid(),

@@ -7,6 +7,6 @@ import type { ChatView } from '@myapp/shared/domains';
  */
 export function chatMembers(chat: Pick<ChatView, 'createdBy' | 'receiverId' | 'otherMember'>) {
   const userIds = [chat.createdBy, chat.receiverId].filter((userId) => userId !== null);
-  // Whether the other person is banned (no one can send in the chat until it ends); the API checks it again.
-  return userIds.map((userId) => ({ userId, clearedAt: null, isBanned: userId === chat.otherMember.userId && chat.otherMember.isBanned }));
+  // Whether the other person is unavailable (banned, or their account is being deleted: no one can send in the chat); the API checks it again.
+  return userIds.map((userId) => ({ userId, clearedAt: null, isUnavailable: userId === chat.otherMember.userId && chat.otherMember.isUnavailable }));
 }

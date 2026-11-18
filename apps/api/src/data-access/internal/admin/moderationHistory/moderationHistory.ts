@@ -9,7 +9,7 @@ import { schema } from "../../../db";
  * their content, and bans.
  * Private to these resolvers: everything else goes through the resolvers.
  */
-export function moderationHistory(userId: AnyPgColumn): { warnings: SQL<number>; removals: SQL<number>; bans: SQL<number> } {
+export function moderationHistory(userId: AnyPgColumn | SQL): { warnings: SQL<number>; removals: SQL<number>; bans: SQL<number> } {
     const a = schema.moderationActions;
     const counted = (action: string) => sql<number>`(
         select count(*)::int from ${a}

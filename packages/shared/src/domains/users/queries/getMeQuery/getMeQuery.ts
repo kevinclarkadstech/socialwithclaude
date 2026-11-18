@@ -13,7 +13,9 @@ export type GetMeQueryOutput = z.infer<typeof GetMeQueryOutputSchema>;
 
 /**
  * The caller, or null when signed out. `profile` is null until sign-up is
- * complete. Clients use it as their getCallingUser dependency.
+ * complete, and `deletionScheduledAt` set while their account is scheduled
+ * for deletion (when the app offers only to restore it). Clients use it as
+ * their getCallingUser dependency.
  */
 export const getMeQuery: Query<{ input: GetMeQueryInput, output: GetMeQueryOutput }, {
     getCallingUser: GetCallingUser;

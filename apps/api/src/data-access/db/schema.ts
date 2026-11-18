@@ -58,6 +58,9 @@ export const users = pgTable("users", {
     banned: boolean("banned").notNull().default(false),
     banReason: text("ban_reason"),
     banExpires: timestamp("ban_expires", { withTimezone: true }),
+    // Set when they ask to delete their account: hidden like a banned user until
+    // they restore it, or until `bun run accounts:purge` deletes it (accountDeletionGraceDays later).
+    deletionScheduledAt: timestamp("deletion_scheduled_at", { withTimezone: true }),
 }, (t) => [
     uniqueIndex("users_email_lower_idx").on(sql`lower(${t.email})`),
     check("users_role_valid", isOneOf(t.role, userRoles)),
@@ -120,6 +123,17 @@ const auditFields = () => ({
     createdBy: text("created_by")
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
+    updatedBy: text("updated_by").references(() => users.id, { onDelete: "set null" }),
+    ...timestamps(),
+});
+
+/**
+ * Like auditFields, for reports: a report outlives both people, so
+ * `created_by` (the reporter) has no foreign key, and deleting either
+ * account keeps it for moderation (with the snapshot of what was reported).
+ */
+const reportAuditFields = () => ({
+    createdBy: text("created_by").notNull(),
     updatedBy: text("updated_by").references(() => users.id, { onDelete: "set null" }),
     ...timestamps(),
 });
@@ -204,6 +218,16 @@ export const userBlocks = pgTable("user_blocks", {
     index("user_blocks_blocked_user_id_idx").on(t.blockedUserId),
     check("user_blocks_no_self_block", sql`${t.userId} <> ${t.blockedUserId}`),
 ]);
+
+/**
+ * People banned when their account was deleted, so they can't sign up again
+ * with the same email: an HMAC of the lowercased address (see
+ * bannedEmailHash), never the address itself.
+ */
+export const bannedEmails = pgTable("banned_emails", {
+    emailHash: text("email_hash").primaryKey(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 /** Feedback users send from the app. */
 export const userFeedback = pgTable("user_feedback", {
@@ -361,19 +385,18 @@ export const postCommentVotes = pgTable("post_comment_votes", {
 /**
  * One report per user per post; reporting again replaces the reason, details
  * and snapshot. `snapshot` is the post as it was when reported, so edits and
- * deletes don't hide what was reported.
+ * deletes don't hide what was reported. No foreign keys: reports are kept
+ * for moderation after the post, or either person's account, is deleted.
  */
 export const postReports = pgTable("post_reports", {
     id: text("id").primaryKey(),
-    postId: text("post_id")
-        .notNull()
-        .references(() => posts.id, { onDelete: "cascade" }),
+    postId: text("post_id").notNull(),
     // created_by is the reporter.
     reason: text("reason", { enum: asEnum(reportReasons) }).notNull(),
     details: text("details"),
     status: text("status", { enum: asEnum(reportStatuses) }).notNull().default("open"),
     snapshot: jsonb("snapshot").$type<Omit<PostView, "viewer">>().notNull(),
-    ...auditFields(),
+    ...reportAuditFields(),
 }, (t) => [
     uniqueIndex("post_reports_created_by_post_id_idx").on(t.createdBy, t.postId),
     index("post_reports_post_id_idx").on(t.postId),
@@ -386,15 +409,13 @@ export const postReports = pgTable("post_reports", {
 /** Like post_reports, for comments. */
 export const postCommentReports = pgTable("post_comment_reports", {
     id: text("id").primaryKey(),
-    postCommentId: text("post_comment_id")
-        .notNull()
-        .references(() => postComments.id, { onDelete: "cascade" }),
+    postCommentId: text("post_comment_id").notNull(),
     // created_by is the reporter.
     reason: text("reason", { enum: asEnum(reportReasons) }).notNull(),
     details: text("details"),
     status: text("status", { enum: asEnum(reportStatuses) }).notNull().default("open"),
     snapshot: jsonb("snapshot").$type<Omit<PostCommentView, "viewer">>().notNull(),
-    ...auditFields(),
+    ...reportAuditFields(),
 }, (t) => [
     uniqueIndex("post_comment_reports_created_by_post_comment_id_idx").on(t.createdBy, t.postCommentId),
     index("post_comment_reports_post_comment_id_idx").on(t.postCommentId),
@@ -409,15 +430,13 @@ export const postCommentReports = pgTable("post_comment_reports", {
  */
 export const profileReports = pgTable("profile_reports", {
     id: text("id").primaryKey(),
-    reportedUserId: text("reported_user_id")
-        .notNull()
-        .references(() => users.id, { onDelete: "cascade" }),
+    reportedUserId: text("reported_user_id").notNull(),
     // created_by is the reporter.
     reason: text("reason", { enum: asEnum(reportReasons) }).notNull(),
     details: text("details"),
     status: text("status", { enum: asEnum(reportStatuses) }).notNull().default("open"),
     snapshot: jsonb("snapshot").$type<UserProfile>().notNull(),
-    ...auditFields(),
+    ...reportAuditFields(),
 }, (t) => [
     uniqueIndex("profile_reports_created_by_reported_user_id_idx").on(t.createdBy, t.reportedUserId),
     index("profile_reports_reported_user_id_idx").on(t.reportedUserId),
@@ -484,15 +503,13 @@ export const chatMessages = pgTable("chat_messages", {
  */
 export const chatMessageReports = pgTable("chat_message_reports", {
     id: text("id").primaryKey(),
-    chatMessageId: text("chat_message_id")
-        .notNull()
-        .references(() => chatMessages.id, { onDelete: "cascade" }),
+    chatMessageId: text("chat_message_id").notNull(),
     // created_by is the reporter.
     reason: text("reason", { enum: asEnum(reportReasons) }).notNull(),
     details: text("details"),
     status: text("status", { enum: asEnum(reportStatuses) }).notNull().default("open"),
     snapshot: jsonb("snapshot").$type<ChatMessageReport["snapshot"]>().notNull(),
-    ...auditFields(),
+    ...reportAuditFields(),
 }, (t) => [
     uniqueIndex("chat_message_reports_created_by_chat_message_id_idx").on(t.createdBy, t.chatMessageId),
     index("chat_message_reports_chat_message_id_idx").on(t.chatMessageId),
@@ -512,15 +529,12 @@ export const chatMessageReports = pgTable("chat_message_reports", {
 export const moderationActions = pgTable("moderation_actions", {
     id: text("id").primaryKey().$defaultFn(newId),
     action: text("action", { enum: asEnum(moderationActionTypes) }).notNull(),
-    subjectUserId: text("subject_user_id")
-        .notNull()
-        .references(() => users.id, { onDelete: "cascade" }),
+    // No foreign keys to users: the log outlives the accounts in it.
+    subjectUserId: text("subject_user_id").notNull(),
     targetKind: text("target_kind", { enum: asEnum(reportKinds) }),
     targetId: text("target_id"),
     note: text("note"),
-    createdBy: text("created_by")
-        .notNull()
-        .references(() => users.id, { onDelete: "cascade" }),
+    createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
     // A person's history: what was done about them, newest first.

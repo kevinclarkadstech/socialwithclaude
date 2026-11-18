@@ -25,7 +25,7 @@ export function ChatListItem({ chat }: { chat: ChatView }) {
       data-chat-id={chat.id}
       data-unread={String(viewer.hasUnread)}
     >
-      <UserAvatar slot="start" user={otherMember} size={48} isAvailable={!otherMember.isBanned} />
+      <UserAvatar slot="start" user={otherMember} size={48} isAvailable={!otherMember.isUnavailable} />
       <IonLabel>
         <h3>{chatPartnerName(otherMember)}</h3>
         <p>{preview}</p>

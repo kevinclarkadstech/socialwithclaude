@@ -36,7 +36,7 @@ import { displayName } from '../../utils/formatters/names';
 import '../../common/styles/pages.css';
 import './ChatPage.css';
 
-/** Sending is refused because one of you blocked the other, or they're banned: the box is replaced by why. */
+/** Sending is refused because one of you blocked the other, or they're unavailable: the box is replaced by why. */
 function isBlock(reason: unknown) {
   return reason === 'blocked-by-user' || reason === 'blocking-user' || reason === 'user-unavailable';
 }
@@ -158,13 +158,13 @@ export function ChatPage() {
             <BackButton />
           </IonButtons>
           <IonTitle>
-            {chat?.otherMember.isBanned && (
+            {chat?.otherMember.isUnavailable && (
               <span className="chat-page__title">
                 <UserAvatar user={chat.otherMember} size={32} isAvailable={false} />
                 <span>{chatPartnerName(chat.otherMember)}</span>
               </span>
             )}
-            {chat && !chat.otherMember.isBanned && (
+            {chat && !chat.otherMember.isUnavailable && (
               <a
                 className="chat-page__title"
                 href={tabHref(`profile/${chat.otherMember.username}`)}
@@ -211,7 +211,7 @@ export function ChatPage() {
                 Load earlier messages
               </IonButton>
             )}
-            {messages.messages.length === 0 && !chat.otherMember.isBanned && (
+            {messages.messages.length === 0 && !chat.otherMember.isUnavailable && (
               <p className="page-message">Say hi to {displayName(chat.otherMember)}.</p>
             )}
             {messages.messages.map((message) => (

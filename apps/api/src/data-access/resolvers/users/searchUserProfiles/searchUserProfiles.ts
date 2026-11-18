@@ -2,7 +2,7 @@ import { and, asc, desc, eq, like, notInArray, or, sql } from "drizzle-orm";
 import type { UserProfile } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toUserProfile } from "../../../mappers/users/toUserProfile/toUserProfile";
-import { isNotBanned } from "../../../internal/users/isNotBanned/isNotBanned";
+import { isAvailable } from "../../../internal/users/isAvailable/isAvailable";
 
 const t = schema.userProfiles;
 
@@ -37,7 +37,7 @@ export async function searchUserProfiles({ excludedUserIds = [], query, limit }:
     const rows = await db
         .select()
         .from(t)
-        .where(and(matches, excludedUserIds.length ? notInArray(t.userId, excludedUserIds) : undefined, isNotBanned(t.userId)))
+        .where(and(matches, excludedUserIds.length ? notInArray(t.userId, excludedUserIds) : undefined, isAvailable(t.userId)))
         .orderBy(desc(eq(t.username, lowered)), asc(t.username))
         .limit(limit);
     return rows.map(toUserProfile);

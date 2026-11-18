@@ -12,9 +12,12 @@ export function createContext(opts: FetchCreateContextFnOptions, c: Context<AppH
     /**
      * Who's calling: null when signed out. Queries and mutations decide whether
      * they need it. Loaded with the session (see auth's customSession), so this
-     * runs no queries.
+     * runs no queries. Someone whose account is scheduled for deletion counts as
+     * signed out here, so they can't do anything but restore it (or sign out).
      */
-    const getCallingUser: GetCallingUser = () => Promise.resolve(callingUser);
+    const getCallingUser: GetCallingUser = () => Promise.resolve(callingUser?.deletionScheduledAt ? null : callingUser);
+    /** Who's calling, even with their account scheduled for deletion: only for the account procedures (deleting, restoring, signing out). */
+    const getAccountHolder: GetCallingUser = () => Promise.resolve(callingUser);
 
     // The same ids every other report from the API carries; a procedure adds its own name.
     const errorReportContext: ErrorReportContext = {
@@ -30,6 +33,7 @@ export function createContext(opts: FetchCreateContextFnOptions, c: Context<AppH
         /** Headers to send back on the response, e.g. Set-Cookie from better-auth. */
         resHeaders: opts.resHeaders,
         getCallingUser,
+        getAccountHolder,
         logger: c.get("logger"),
         /** Who and what to attach to an error report from this request (see reportingFailures). */
         errorReportContext,

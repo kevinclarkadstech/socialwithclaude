@@ -22,7 +22,7 @@ describe("canSendChatMessage", () => {
 
 describe("canSendChatMessage with a banned member", () => {
     it("refuses, until the ban ends", () => {
-        const members = [mockChatMember(), mockChatMember({ userId: "01JAAAAAAAAAAAAAAAAAAAAAA3", isBanned: true })];
+        const members = [mockChatMember(), mockChatMember({ userId: "01JAAAAAAAAAAAAAAAAAAAAAA3", isUnavailable: true })];
         expect(canSendChatMessage({ caller: mockCaller(), members })).toMatchObject({ ok: false, error: { type: "authorization", metadata: { reason: "user-unavailable" } } });
     });
 });

@@ -69,6 +69,21 @@ bun run --cwd apps/api admin:revoke someone@example.com
 - **Reporters are told the outcome** (removed, reviewed, or not against the guidelines) in a notification, with a default message.
 - **Feedback:** newest first, filtered by New, Read and Done.
 
+### Account deletion
+
+People delete their account from the app, confirming with a code sent by email (Apple and Google require that deletion can be started in the app).
+
+- **30 days to change their mind.** Their account is hidden at once, like a banned one, and every device is signed out. Signing back in within 30 days lets them restore it; until then the API treats them as signed out everywhere else.
+- **Then everything goes.** `bun run --cwd apps/api accounts:purge` deletes accounts past their 30 days: the profile, posts and listings (with every comment, save and vote on them), comments, votes, saves, follows, blocks, chats (both sides), notifications, and the photo files. It takes them out of other people's counts too (followers, comments, saves, votes) and revokes their Sign in with Apple tokens. Run it daily (a cron job, or a Cron Trigger on Workers).
+- **Moderation records are kept.** Reports, with their snapshots, and the moderation log outlive both the reported person's and the reporter's accounts. The report queue shows a deleted person as a deleted account; their content is already gone, so its reports can only be marked reviewed or dismissed.
+- **Banned people** can't sign in, so they ask by email. Delete their account straight away with:
+
+  ```sh
+  bun run --cwd apps/api accounts:delete someone@example.com --confirm
+  ```
+
+  A banned person's email is kept as a keyed hash (`banned_emails`), so it can't be used to sign up again.
+
 ## Deployment
 
 ### Object storage (Cloudflare R2)

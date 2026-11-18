@@ -5,7 +5,7 @@ import { testContext } from "../../../../testing/context";
 import { warnUserMutation } from "./warnUserMutation";
 
 const admin = mockCaller({ userId: userId2, role: "admin" });
-const person: ModerationSubject = { userId: userId1, username: "user1", role: "user", isBanned: false, banExpires: null, history: { warnings: 1, removals: 0, bans: 0 } };
+const person: ModerationSubject = { userId: userId1, username: "user1", isDeleted: false, role: "user", isBanned: false, banExpires: null, history: { warnings: 1, removals: 0, bans: 0 } };
 
 function run({ subject = person, caller = admin }: { subject?: ModerationSubject | null; caller?: ReturnType<typeof mockCaller> } = {}) {
     const warnUser = mock(async () => {});

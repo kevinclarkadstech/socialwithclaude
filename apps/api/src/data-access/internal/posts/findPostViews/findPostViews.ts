@@ -5,7 +5,7 @@ import { db, schema, type Executor } from "../../../db";
 import { creatorFields } from "../../../constants";
 import { toCreator } from "../../../mappers/users/toCreator/toCreator";
 import { toPostListing } from "../../../mappers/posts/toPostListing/toPostListing";
-import { isNotBanned } from "../../users/isNotBanned/isNotBanned";
+import { isAvailable } from "../../users/isAvailable/isAvailable";
 
 /**
  * Reads posts as `viewerId` sees them: each with its photos (in the order
@@ -21,8 +21,8 @@ export async function findPostViews({ executor = db, viewerId, where, orderBy = 
     orderBy?: (SQL | AnyPgColumn)[];
     limit?: number;
 }): Promise<PostView[]> {
-    // Never a banned person's posts (see isNotBanned).
-    let query = selectPosts(executor, viewerId).where(and(where, isNotBanned(schema.posts.createdBy)));
+    // Never an unavailable person's posts (see isAvailable).
+    let query = selectPosts(executor, viewerId).where(and(where, isAvailable(schema.posts.createdBy)));
     if (orderBy.length > 0) {
         query = query.orderBy(...orderBy);
     }

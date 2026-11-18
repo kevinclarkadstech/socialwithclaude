@@ -1,12 +1,12 @@
 import { and, eq, isNull, lte, notInArray, or, sql, type SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { schema } from "../../../db";
-import { isNotBanned } from "../../users/isNotBanned/isNotBanned";
+import { isAvailable } from "../../users/isAvailable/isAvailable";
 
 /**
  * `userId`'s notifications that still make sense to show: only once their
  * delivery time has come (see notificationDeliverAt), none from
- * `excludedActorIds` (blocked either way) or a banned person, and none for
+ * `excludedActorIds` (blocked either way) or an unavailable person, and none for
  * something since undone: a post or comment deleted, a follow ended, a
  * follow request withdrawn or denied. (A mention edited out is deleted
  * instead: see retractMentions.) Within the
@@ -23,7 +23,7 @@ export function visibleNotifications({ userId, excludedActorIds }: { userId: str
     return and(
         eq(n.userId, userId),
         lte(n.deliverAt, sql`now()`),
-        or(isNull(n.actorId), and(excludedActorIds.length ? notInArray(n.actorId, excludedActorIds) : undefined, isNotBanned(n.actorId))),
+        or(isNull(n.actorId), and(excludedActorIds.length ? notInArray(n.actorId, excludedActorIds) : undefined, isAvailable(n.actorId))),
         sql`case ${n.type}
             when 'commented' then ${postLive} and ${commentLive}
             when 'mentioned' then ${postLive} and (${n.data}->>'postCommentId' is null or ${commentLive})

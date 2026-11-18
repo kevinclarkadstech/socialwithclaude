@@ -3,12 +3,12 @@ import type { UserProfileSummary } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { creatorFields } from "../../../constants";
 import { toCreator } from "../../../mappers/users/toCreator/toCreator";
-import { isNotBanned } from "../../../internal/users/isNotBanned/isNotBanned";
+import { isAvailable } from "../../../internal/users/isAvailable/isAvailable";
 
 /**
  * People `userId` follows (accepted) and hasn't messaged with yet (no chat
  * with a message, as the inbox shows), most recently followed first; never
- * `excludedUserIds` or anyone banned.
+ * `excludedUserIds` or anyone unavailable (see isAvailable).
  */
 export async function getChatSuggestionProfiles({ userId, excludedUserIds, limit }: {
     userId: string;
@@ -27,7 +27,7 @@ export async function getChatSuggestionProfiles({ userId, excludedUserIds, limit
             excludedUserIds.length ? notInArray(follows.followingId, excludedUserIds) : undefined,
             // No 1:1 chat with a message between the two yet, whoever started it.
             sql`not exists (select 1 from ${chats} where ${chats.lastMessageAt} is not null and least(${chats.createdBy}, ${chats.receiverId}) = least(${userId}, ${follows.followingId}) and greatest(${chats.createdBy}, ${chats.receiverId}) = greatest(${userId}, ${follows.followingId}))`,
-            isNotBanned(follows.followingId),
+            isAvailable(follows.followingId),
         ))
         .orderBy(desc(follows.createdAt))
         .limit(limit);

@@ -17,3 +17,6 @@ export const saveTargetColumns = {
     postComment: schema.userSaves.postCommentId,
     chatMessage: schema.userSaves.chatMessageId,
 } satisfies Record<UserSaveType, unknown>;
+
+/** The verifications row holding someone's account deletion code (see saveAccountDeletionCode). */
+export const accountDeletionCodeIdentifier = (userId: string) => `account-deletion:${userId}`;

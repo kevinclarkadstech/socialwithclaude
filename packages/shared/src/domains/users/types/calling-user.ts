@@ -14,6 +14,9 @@ export const CallingUserSchema = z.object({
     blockList: UserBlockListSchema,
     // "admin" can moderate; everyone else is "user".
     role: UserRoleSchema,
+    // When they asked to delete their account; null unless it's scheduled for deletion.
+    // Until they restore it, the API treats them as signed out everywhere but the account procedures.
+    deletionScheduledAt: z.iso.datetime().nullable(),
 });
 
 export type CallingUser = z.infer<typeof CallingUserSchema>;
