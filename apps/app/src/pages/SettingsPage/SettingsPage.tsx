@@ -5,12 +5,13 @@ import { requireCallerWithProfile } from '@myapp/shared/authorization';
 import { contactEmail } from '../../common/brand';
 import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
 import { SessionList } from '../../domains/auth';
+import { PushSettings } from '../../domains/notifications';
 import { BlockedUserList, FollowRequestList, PrivacySettings, useCallingUser } from '../../domains/users';
 import { BackButton } from '../../navigation';
 import '../../common/styles/pages.css';
 
 /**
- * /settings, from your profile's menu: privacy, follow requests, where you're
+ * /settings, from your profile's menu: privacy, notifications, follow requests, where you're
  * signed in, and who you've blocked; for admins, a way into Admin;
  * deleting your account; the terms, privacy policy and child safety
  * standards; and how to contact us.
@@ -35,6 +36,7 @@ export function SettingsPage() {
         {signedUpCheck.ok ? (
           <>
             <PrivacySettings />
+            <PushSettings />
             <FollowRequestList />
             <SessionList />
             <BlockedUserList />

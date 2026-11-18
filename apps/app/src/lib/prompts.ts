@@ -21,6 +21,21 @@ export async function confirm({ header, message, confirmText }: { header: string
   return role === 'confirm';
 }
 
+/** Asks a yes-or-no question that isn't about something destructive. Resolves true for yes. */
+export async function askYesNo({ header, message, yesText, noText }: { header: string; message: string; yesText: string; noText: string }) {
+  const alert = await alertController.create({
+    header,
+    message,
+    buttons: [
+      { text: noText, role: 'cancel' },
+      { text: yesText, role: 'confirm' },
+    ],
+  });
+  await alert.present();
+  const { role } = await alert.onDidDismiss();
+  return role === 'confirm';
+}
+
 /** Tells them something worth stopping for, with a single OK. Resolves once it's closed. */
 export async function showNotice({ header, message }: { header: string; message: string }) {
   const alert = await alertController.create({ header, message, buttons: [{ text: 'OK', role: 'confirm' }] });

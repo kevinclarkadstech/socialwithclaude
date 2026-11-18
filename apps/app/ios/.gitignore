@@ -11,3 +11,6 @@ capacitor-cordova-ios-plugins
 # Generated Config files
 App/App/capacitor.config.json
 App/App/config.xml
+
+# Made by `cap sync` (Swift packages that point into node_modules, by absolute path)
+App/CapApp-SPM/symlinks
