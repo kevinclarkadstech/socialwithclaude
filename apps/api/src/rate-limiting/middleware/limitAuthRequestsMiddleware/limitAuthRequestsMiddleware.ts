@@ -3,7 +3,6 @@ import type { AppHonoEnv } from "../../../index";
 import { tooManyRequestsMessage } from "../../utils/tooManyRequestsMessage/tooManyRequestsMessage";
 import type { RateLimitDecision, RateLimitRule } from "../../types";
 import { emailBudgetKey, rateLimitRules } from "../../constants";
-import { alertWhenEmailBudgetReached } from "../../utils/alertWhenEmailBudgetReached/alertWhenEmailBudgetReached";
 import { sha256Hex } from "../../utils/sha256Hex/sha256Hex";
 
 /**
@@ -47,7 +46,6 @@ export const limitAuthRequestsMiddleware: MiddlewareHandler<AppHonoEnv> = async 
     const sendsCode = c.req.method === "POST" && c.req.path === "/api/auth/email-otp/send-verification-otp";
     if (sendsCode && !decisions.some((decision) => !decision.allowed)) {
         const budget = await rateLimiter.consume({ rule: rateLimitRules.emailBudget, key: emailBudgetKey });
-        alertWhenEmailBudgetReached([{ rule: rateLimitRules.emailBudget, decision: budget }]);
         decisions.push(budget);
     }
     const refused = decisions.filter((decision) => !decision.allowed);

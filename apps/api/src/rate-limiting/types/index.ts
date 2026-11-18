@@ -9,6 +9,8 @@ export interface RateLimitRule {
      * guarding something costly, like sending email.
      */
     whenUnavailable?: "allow" | "refuse";
+    /** Whether reaching this limit is worth an alert (see createCacheRateLimiter's onLimitReached). */
+    alertWhenReached?: boolean;
 }
 
 export type RateLimitDecision = { allowed: true } | { allowed: false; retryAfterSeconds: number };

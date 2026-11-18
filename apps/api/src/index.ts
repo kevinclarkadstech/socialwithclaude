@@ -13,7 +13,7 @@ import { createAppFeatureFlagStore, type AppFeatureFlagStore } from "./shared/fe
 import { trpcServer } from "@hono/trpc-server";
 import { db, isDatabaseReachable } from "./data-access/db";
 import { cache } from "./cache";
-import { createCacheRateLimiter, limitAuthRequestsMiddleware, type RateLimiter } from "./rate-limiting";
+import { createCacheRateLimiter, limitAuthRequestsMiddleware, rateLimitRules, type RateLimiter } from "./rate-limiting";
 import { appRouter, createContext } from "./transport/trpc";
 import { trpcOnErrorFunction } from "./error-handling";
 import { assertCanNotify } from "./notifications";
@@ -48,7 +48,17 @@ const featureFlagsLoaded = featureFlagStore.initialize();
 
 // Where rate limits are counted. On Cloudflare Workers this would be built per request from the
 // rate-limit bindings in c.env instead (see rate-limiting/types/index.ts); nothing else changes.
-const rateLimiter = createCacheRateLimiter({ cache });
+const rateLimiter = createCacheRateLimiter({
+    cache,
+    logger: rootLogger,
+    limits: { [rateLimitRules.emailBudget.name]: serverConfig.EMAIL_HOURLY_LIMIT },
+    // Only the email budget alerts: either the app is busier than EMAIL_HOURLY_LIMIT allows, or someone is sending a lot through it.
+    onLimitReached: (rule) => {
+        const message = `Rate limit "${rule.name}" reached (${rule.limit} per ${rule.windowSeconds / 60} minutes): requests under it are refused until the window ends`;
+        rootLogger.error(message);
+        errorReporter.report({ error: new Error(message) });
+    },
+});
 
 const app = new Hono<AppHonoEnv>()
     .use(contextStorage())

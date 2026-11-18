@@ -3,7 +3,6 @@ import type { AppLogger } from "@myapp/shared/observability";
 
 import { procedureRateLimitRules, rateLimitRules } from "../../constants";
 import type { RateLimitDecision, RateLimiter, RateLimitRule } from "../../types";
-import { alertWhenEmailBudgetReached } from "../../utils/alertWhenEmailBudgetReached/alertWhenEmailBudgetReached";
 import { tooManyRequestsMessage } from "../../utils/tooManyRequestsMessage/tooManyRequestsMessage";
 
 /**
@@ -35,7 +34,6 @@ export async function limitProcedureCallsMiddleware<TResult>({ ctx, type, path, 
             }
         }
     }
-    alertWhenEmailBudgetReached(checked);
     const refused = checked.filter((check): check is { rule: RateLimitRule; decision: Extract<RateLimitDecision, { allowed: false }> } => !check.decision.allowed);
     if (refused.length > 0) {
         const retryAfterSeconds = Math.max(...refused.map(({ decision }) => decision.retryAfterSeconds));

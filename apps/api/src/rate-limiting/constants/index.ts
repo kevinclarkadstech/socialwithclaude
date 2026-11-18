@@ -1,4 +1,3 @@
-import { serverConfig } from "../../config";
 import type { RateLimitRule } from "../types";
 
 /** The key emailBudget is counted under: one counter for the whole API. */
@@ -21,9 +20,11 @@ export const rateLimitRules = {
     /**
      * Every email the API sends, all together (key "all"): a ceiling a bot
      * spread over many addresses and IPs can't get past, so it can't use up
-     * the provider's quota or the domain's reputation. Set by EMAIL_HOURLY_LIMIT.
+     * the provider's quota or the domain's reputation. Its limit is
+     * EMAIL_HOURLY_LIMIT, passed to the rate limiter (src/index.ts); 300 is
+     * only the fallback.
      */
-    emailBudget: { name: "email-budget", limit: serverConfig.EMAIL_HOURLY_LIMIT, windowSeconds: 60 * 60, whenUnavailable: "refuse" },
+    emailBudget: { name: "email-budget", limit: 300, windowSeconds: 60 * 60, whenUnavailable: "refuse", alertWhenReached: true },
     /** Signing in with a code, per IP address. (Each code also allows only 3 tries.) */
     signInWithCode: { name: "sign-in-code", limit: 20, windowSeconds: 15 * 60 },
     /** tRPC queries, per signed-in user (or IP address when signed out). */
