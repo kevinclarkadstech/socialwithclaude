@@ -3,6 +3,12 @@ export interface RateLimitRule {
     name: string;
     limit: number;
     windowSeconds: number;
+    /**
+     * What happens when the counters can't be reached: "allow" (the default),
+     * so an outage there doesn't take the API down, or "refuse", for rules
+     * guarding something costly, like sending email.
+     */
+    whenUnavailable?: "allow" | "refuse";
 }
 
 export type RateLimitDecision = { allowed: true } | { allowed: false; retryAfterSeconds: number };

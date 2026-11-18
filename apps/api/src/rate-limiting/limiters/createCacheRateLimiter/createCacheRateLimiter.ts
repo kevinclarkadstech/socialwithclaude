@@ -5,7 +5,8 @@ import type { RateLimiter } from "../../types";
 /**
  * Rate limits counted in the cache, so every API instance shares them: a fixed
  * window per rule and key. If the cache can't be reached the request is
- * allowed: an outage there shouldn't take the API down with it.
+ * allowed, so an outage there doesn't take the API down with it, except
+ * under a rule that says to refuse (whenUnavailable), like sending email.
  */
 export function createCacheRateLimiter({ cache }: { cache: Cache }): RateLimiter {
     let lastFailureLoggedAt = 0;
@@ -22,7 +23,7 @@ export function createCacheRateLimiter({ cache }: { cache: Cache }): RateLimiter
                     lastFailureLoggedAt = Date.now();
                     rootLogger.warn("Rate limiting is off: the cache can't be reached", { err });
                 }
-                return { allowed: true };
+                return rule.whenUnavailable === "refuse" ? { allowed: false, retryAfterSeconds: 60 } : { allowed: true };
             }
         },
     };
