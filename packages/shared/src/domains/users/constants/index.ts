@@ -24,3 +24,9 @@ export const profilePhotoAspectRatios = {
     avatar: 1,
     cover: 3,
 } as const satisfies Record<ProfilePhotoKind, number>;
+
+/** The youngest someone can be to use the app. Sign-up asks for a birth month and year, without saying this. */
+export const minimumAge = 13;
+
+/** The `reason` in a sign-up refusal for someone younger than minimumAge (the app then stops them trying again). */
+export const underMinimumAgeReason = "under-minimum-age";

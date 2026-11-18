@@ -10,3 +10,4 @@ export { getUserIdByEmail } from './getUserIdByEmail/getUserIdByEmail';
 export { addBannedEmail } from './addBannedEmail/addBannedEmail';
 export { isEmailHashBanned } from './isEmailHashBanned/isEmailHashBanned';
 export { recordTermsAccepted } from './recordTermsAccepted/recordTermsAccepted';
+export { deleteUnfinishedAccount } from './deleteUnfinishedAccount/deleteUnfinishedAccount';

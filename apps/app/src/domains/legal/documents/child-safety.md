@@ -29,7 +29,7 @@
 - **Report** apparent CSAM to NCMEC's CyberTipline, as US law requires, and to the relevant authorities elsewhere where the law requires it. We keep what's needed for the report, and cooperate with law enforcement.
 - **Scan published photos** against known CSAM (Cloudflare's CSAM Scanning Tool), and act on every match.
 - **Strip location data** from photos when they're published.
-- Keep {{appName}} for people aged [MINIMUM AGE, e.g. 13] and over, and delete accounts we find belong to younger children.
+- Keep {{appName}} for people aged 13 and over: sign-up asks for a birth month and year, and refuses anyone younger. We delete accounts we find belong to younger children.
 
 ## Following the law
 

@@ -8,7 +8,7 @@ These terms are an agreement between you and [COMPANY NAME] ("we", "us") about y
 
 ## 1. Who can use {{appName}}
 
-You must be at least [MINIMUM AGE, e.g. 13] years old, and old enough to agree to these terms where you live. If you're under the age of majority where you live, a parent or guardian must agree to them for you. You can't use {{appName}} if we've banned you before.
+You must be at least 13 years old, and old enough to agree to these terms where you live. You must give your real birth month and year when you sign up. If you're under the age of majority where you live, a parent or guardian must agree to them for you. You can't use {{appName}} if we've banned you before.
 
 ## 2. Your account
 

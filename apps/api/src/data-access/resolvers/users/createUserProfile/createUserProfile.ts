@@ -6,12 +6,14 @@ import { uniqueViolationConstraint } from "../../../utils/uniqueViolationConstra
 
 /**
  * Completes sign-up: creates the user's profile and default settings, and
- * records the version of the terms they agreed to.
+ * records the version of the terms they agreed to and their birth month and year.
  * "username-taken" if someone took the username meanwhile; "profile-exists"
  * if the user already has a profile (e.g. sign-up submitted twice).
  */
-export async function createUserProfile({ acceptedTermsVersion, ...profile }: Pick<UserProfile, "userId" | "username" | "firstName" | "lastName" | "about"> & {
+export async function createUserProfile({ acceptedTermsVersion, birthYear, birthMonth, ...profile }: Pick<UserProfile, "userId" | "username" | "firstName" | "lastName" | "about"> & {
     acceptedTermsVersion: string;
+    birthYear: number;
+    birthMonth: number;
 }): Promise<UserProfile | "username-taken" | "profile-exists"> {
     try {
         return await db.transaction(async (tx) => {
@@ -19,7 +21,7 @@ export async function createUserProfile({ acceptedTermsVersion, ...profile }: Pi
             await tx.insert(schema.userSettings).values({ userId: profile.userId });
             await tx
                 .update(schema.users)
-                .set({ termsAcceptedVersion: acceptedTermsVersion, termsAcceptedAt: new Date(), updatedAt: new Date() })
+                .set({ termsAcceptedVersion: acceptedTermsVersion, termsAcceptedAt: new Date(), birthYear, birthMonth, updatedAt: new Date() })
                 .where(eq(schema.users.id, profile.userId));
             return toUserProfile(row!);
         });
