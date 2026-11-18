@@ -13,10 +13,11 @@ const context: ErrorReportContext = { command: "push:deliver" };
 
 try {
     if (!pushSender) {
-        console.log("PUSH_PROVIDER is none: nothing to send.");
+        rootLogger.info("Push delivery skipped: PUSH_PROVIDER is none");
     } else {
+        // Logged as structured fields, like the API's own rounds, so a scheduler's logs can be searched the same way.
         const summary = await deliverPushes({ sender: pushSender, logger: rootLogger, chatDelaySeconds: serverConfig.CHAT_PUSH_DELAY_SECONDS });
-        console.log(JSON.stringify(summary));
+        rootLogger.info("Push delivery round finished", { ...summary });
     }
 } catch (error) {
     rootLogger.error("Push delivery failed", { err: error });
