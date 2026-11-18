@@ -21,7 +21,9 @@
     "auth:migrate": "npx @better-auth/cli migrate --config=src/auth/auth.cli.ts",
     "media:sweep": "bun src/commands/sweepOrphanedMedia/sweepOrphanedMedia.ts",
     "admin:grant": "bun src/commands/setAdminRole/setAdminRole.ts",
-    "admin:revoke": "bun src/commands/setAdminRole/setAdminRole.ts --revoke"
+    "admin:revoke": "bun src/commands/setAdminRole/setAdminRole.ts --revoke",
+    "accounts:purge": "bun src/commands/purgeDeletedAccounts/purgeDeletedAccounts.ts",
+    "accounts:delete": "bun src/commands/deleteAccountByEmail/deleteAccountByEmail.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.7.20",

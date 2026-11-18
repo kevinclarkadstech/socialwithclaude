@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import type { ModerationActionType, ReportKind, ReportOutcome, ReportStatus } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { notificationDeliverAt } from "../../../internal/notifications/notificationDeliverAt/notificationDeliverAt";
@@ -34,10 +34,19 @@ export async function resolveReports({ kind, targetId, outcome, status, action, 
             .where(and(eq(targetColumn, targetId), eq(table.status, "open")))
             .returning({ reporterId: table.createdBy });
         await tx.insert(schema.moderationActions).values({ action, subjectUserId, targetKind: kind, targetId, note, createdBy: moderatorId });
-        const reporterIds = [...new Set(resolved.map((report) => report.reporterId))];
+        // Only reporters who still have an account (a report outlives its reporter's).
+        const reporterIds = await existingUserIds(tx, [...new Set(resolved.map((report) => report.reporterId))]);
         if (reporterIds.length > 0) {
             await tx.insert(schema.notifications).values(reporterIds.map((userId) => ({ userId, type: "report_resolved" as const, data: { kind, outcome }, deliverAt: notificationDeliverAt() })));
         }
         return resolved.length;
     });
+}
+
+async function existingUserIds(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], userIds: string[]): Promise<string[]> {
+    if (userIds.length === 0) {
+        return [];
+    }
+    const rows = await tx.select({ id: schema.users.id }).from(schema.users).where(inArray(schema.users.id, userIds));
+    return rows.map(({ id }) => id);
 }

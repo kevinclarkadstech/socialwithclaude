@@ -2,7 +2,7 @@ import { and, asc, desc, eq, like, notInArray, or, sql } from "drizzle-orm";
 import type { UserProfileSummary } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toCreator } from "../../../mappers/users/toCreator/toCreator";
-import { isNotBanned } from "../../../internal/users/isNotBanned/isNotBanned";
+import { isAvailable } from "../../../internal/users/isAvailable/isAvailable";
 
 const profiles = schema.userProfiles;
 const follows = schema.userFollows;
@@ -39,7 +39,7 @@ export async function getMentionSuggestions({ callerId, query, excludedUserIds, 
                 like(sql`lower(${profiles.lastName})`, prefix),
             ),
             excludedUserIds.length ? notInArray(profiles.userId, excludedUserIds) : undefined,
-            isNotBanned(profiles.userId),
+            isAvailable(profiles.userId),
         ))
         .orderBy(desc(eq(profiles.username, lowered)), desc(callerFollows), desc(followsCaller), asc(profiles.username))
         .limit(limit);

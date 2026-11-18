@@ -3,15 +3,22 @@ import {
     GetMySessionsQueryInputSchema,
     RevokeOtherSessionsMutationInputSchema,
     RevokeSessionMutationInputSchema,
+    RestoreAccountMutationInputSchema,
+    ScheduleAccountDeletionMutationInputSchema,
+    SendAccountDeletionCodeMutationInputSchema,
     SignOutMutationInputSchema,
     createUserProfileMutation,
+    restoreAccountMutation,
+    scheduleAccountDeletionMutation,
+    sendAccountDeletionCodeMutation,
     getMySessionsQuery,
     revokeOtherSessionsMutation,
     revokeSessionMutation,
     signOutMutation,
 } from "@myapp/shared/domains";
 
-import { createUserProfile, getUserProfileByUsername, getUserSessions } from "../../../data-access";
+import { createUserProfile, getUserProfileByUsername, getUserSessions, restoreAccount, scheduleAccountDeletion } from "../../../data-access";
+import { sendAccountDeletionCode, verifyAccountDeletionCode } from "../../../accounts";
 import { procedure, router } from "../trpc";
 
 /*
@@ -71,7 +78,8 @@ export const authRouter = router({
             input,
             context: { logger: ctx.logger },
             dependencies: {
-                getCallingUser: ctx.getCallingUser,
+                // Also for someone whose account is scheduled for deletion.
+                getCallingUser: ctx.getAccountHolder,
                 signOut: async () => {
                     const { headers } = await ctx.auth.api.signOut({ headers: ctx.reqHeaders, returnHeaders: true });
                     // Forward better-auth's cookie-clearing Set-Cookie headers to the client.
@@ -80,6 +88,33 @@ export const authRouter = router({
                     }
                 },
             },
+        }),
+    ),
+
+    /** Emails a code to confirm deleting the caller's account with. */
+    sendAccountDeletionCode: procedure.input(SendAccountDeletionCodeMutationInputSchema).mutation(({ ctx, input }) =>
+        sendAccountDeletionCodeMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: { getCallingUser: ctx.getAccountHolder, sendAccountDeletionCode },
+        }),
+    ),
+
+    /** Deletes the caller's account (restorable for accountDeletionGraceDays), signing out every device. */
+    scheduleAccountDeletion: procedure.input(ScheduleAccountDeletionMutationInputSchema).mutation(({ ctx, input }) =>
+        scheduleAccountDeletionMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: { getCallingUser: ctx.getAccountHolder, verifyAccountDeletionCode, scheduleAccountDeletion },
+        }),
+    ),
+
+    /** Cancels the caller's account deletion. */
+    restoreAccount: procedure.input(RestoreAccountMutationInputSchema).mutation(({ ctx, input }) =>
+        restoreAccountMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: { getCallingUser: ctx.getAccountHolder, restoreAccount },
         }),
     ),
 });

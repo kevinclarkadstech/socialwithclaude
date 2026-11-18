@@ -90,6 +90,9 @@ export const resolveReportsMutation: Mutation<{ input: ResolveReportsMutationInp
     if (input.outcome === "removed" && item.kind === "profile") {
         return fail(validationError("A profile can't be removed. Ban them instead."));
     }
+    if (input.outcome === "removed" && item.subject.isDeleted) {
+        return fail(validationError("Their account was deleted, so this is already gone. Mark it reviewed instead."));
+    }
 
     if (input.outcome === "removed") {
         if (item.kind === "post") {

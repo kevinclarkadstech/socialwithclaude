@@ -37,6 +37,7 @@ export function mockCaller(overrides: Partial<CallingUser> = {}): CallingUser {
         profile: mockProfile({ userId }),
         blockList: { blocking: [], blockedBy: [] },
         role: "user",
+        deletionScheduledAt: null,
         ...overrides,
     };
 }
@@ -88,7 +89,7 @@ export function mockChatMember(overrides: Partial<ChatMemberView> = {}): ChatMem
         lastReadAt: null,
         clearedAt: null,
         createdAt: now,
-        isBanned: false,
+        isUnavailable: false,
         ...overrides,
     };
 }

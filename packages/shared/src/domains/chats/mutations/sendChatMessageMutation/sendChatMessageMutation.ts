@@ -20,7 +20,7 @@ export type SendChatMessageMutationOutput = z.infer<typeof SendChatMessageMutati
 export const sendChatMessageMutation: Mutation<{ input: SendChatMessageMutationInput, output: SendChatMessageMutationOutput }, {
     getCallingUser: GetCallingUser;
     // Only who's in the chat is used.
-    getChatMembers: (args: { chatId: string }) => Promise<Pick<ChatMemberView, "userId" | "isBanned">[]>;
+    getChatMembers: (args: { chatId: string }) => Promise<Pick<ChatMemberView, "userId" | "isUnavailable">[]>;
     getChatMessageViewById: (args: { id: string; viewerId: string | null }) => Promise<ChatMessageView | null>;
     createChatMessage: (args: { id: string; chatId: string; userId: string; content: string }) => Promise<ChatMessageView | null>;
 }> = async ({ input, context: { logger }, dependencies }) => {

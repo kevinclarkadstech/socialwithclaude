@@ -11,11 +11,12 @@ export const ChatMemberSchema = z.object({
 });
 
 /**
- * A member with whether they're banned right now: a chat with a banned
- * person stays (with its history), but nobody can send in it until the ban ends.
+ * A member with whether they're unavailable right now (banned, or their
+ * account is being deleted): the chat stays (with its history), but nobody
+ * can send in it until they're back.
  */
 export const ChatMemberViewSchema = ChatMemberSchema.extend({
-    isBanned: z.boolean(),
+    isUnavailable: z.boolean(),
 });
 
 export type ChatMember = z.infer<typeof ChatMemberSchema>;

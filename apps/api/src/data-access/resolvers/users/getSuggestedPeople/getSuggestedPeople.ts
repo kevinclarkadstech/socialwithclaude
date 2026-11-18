@@ -2,13 +2,13 @@ import { and, desc, eq, inArray, notInArray, sql } from "drizzle-orm";
 import type { SuggestedPerson } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { toCreator } from "../../../mappers/users/toCreator/toCreator";
-import { isNotBanned } from "../../../internal/users/isNotBanned/isNotBanned";
+import { isAvailable } from "../../../internal/users/isAvailable/isAvailable";
 
 /**
  * People for `callerId` to follow: those followed by the most people they
  * follow (accepted follows both ways along), then the most-followed public
  * accounts. Never `excludedUserIds`, anyone the caller follows or asked to,
- * or anyone banned. Signed out (null): just the most-followed public accounts.
+ * or anyone unavailable (see isAvailable). Signed out (null): just the most-followed public accounts.
  *
  * Cost: one pass over the caller's follows and each of theirs (the follows
  * primary key starts with follower_id). Fine at this size; if it gets slow,
@@ -53,7 +53,7 @@ export async function getSuggestedPeople({ callerId, excludedUserIds, limit }: {
             callerId
                 ? sql`not exists (select 1 from ${follows} where ${follows.followerId} = ${callerId} and ${follows.followingId} = ${profiles.userId})`
                 : undefined,
-            isNotBanned(profiles.userId),
+            isAvailable(profiles.userId),
         ))
         .orderBy(desc(followedByCount), desc(profiles.numFollowers), profiles.userId)
         .limit(limit);

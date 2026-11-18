@@ -5,7 +5,7 @@ import { db, schema, type Executor } from "../../../db";
 import { creatorFields } from "../../../constants";
 import { toCreator } from "../../../mappers/users/toCreator/toCreator";
 import { toPostCommentPhoto } from "../../../mappers/posts/toPostCommentPhoto/toPostCommentPhoto";
-import { isNotBanned } from "../../users/isNotBanned/isNotBanned";
+import { isAvailable } from "../../users/isAvailable/isAvailable";
 
 /**
  * Reads comments as `viewerId` sees them: each with its creator, the
@@ -19,8 +19,8 @@ export async function findPostCommentViews({ executor = db, viewerId, where, ord
     orderBy?: (SQL | AnyPgColumn)[];
     limit?: number;
 }): Promise<PostCommentView[]> {
-    // Never a banned person's comments (see isNotBanned).
-    let query = selectPostComments(executor, viewerId).where(and(where, isNotBanned(schema.postComments.createdBy)));
+    // Never an unavailable person's comments (see isAvailable).
+    let query = selectPostComments(executor, viewerId).where(and(where, isAvailable(schema.postComments.createdBy)));
     if (orderBy.length > 0) {
         query = query.orderBy(...orderBy);
     }

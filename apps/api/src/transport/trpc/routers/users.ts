@@ -72,8 +72,9 @@ import { storage } from "../../../storage";
 import { procedure, router } from "../trpc";
 
 export const usersRouter = router({
+    // Even with their account scheduled for deletion (deletionScheduledAt), so the app can offer to restore it.
     me: procedure.input(GetMeQueryInputSchema).query(({ ctx, input }) =>
-        getMeQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getCallingUser } }),
+        getMeQuery({ input, context: { logger: ctx.logger }, dependencies: { getCallingUser: ctx.getAccountHolder } }),
     ),
 
     getUserProfile: procedure.input(GetUserProfileQueryInputSchema).query(({ ctx, input }) =>

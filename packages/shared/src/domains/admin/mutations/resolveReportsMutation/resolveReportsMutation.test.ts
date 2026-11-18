@@ -7,7 +7,7 @@ import { resolveReportsMutation } from "./resolveReportsMutation";
 
 const admin = mockCaller({ userId: userId2, role: "admin" });
 const { viewer: _viewer, ...snapshot } = mockPost();
-const subject = { userId: userId1, username: "user1", role: "user" as const, isBanned: false, banExpires: null, history: { warnings: 0, removals: 0, bans: 0 } };
+const subject = { userId: userId1, username: "user1", isDeleted: false, role: "user" as const, isBanned: false, banExpires: null, history: { warnings: 0, removals: 0, bans: 0 } };
 const fields = { subject, reports: [], firstReportedAt: now, lastReportedAt: now, isOpen: true };
 const reportedPost: ReportedItem = { kind: "post", targetId: snapshot.id, snapshot, ...fields };
 const reportedProfile: ReportedItem = { kind: "profile", targetId: userId1, snapshot: mockProfile(), ...fields };
@@ -51,6 +51,13 @@ describe("resolveReportsMutation", () => {
     it("refuses removing a profile", async () => {
         const { result, resolveReports } = run({ item: reportedProfile, outcome: "removed" });
         expect(await result).toMatchObject({ ok: false, error: { type: "validation" } });
+        expect(resolveReports).not.toHaveBeenCalled();
+    });
+
+    it("refuses removing something whose author deleted their account (it's already gone)", async () => {
+        const { result, deletePost, resolveReports } = run({ item: { ...reportedPost, subject: { ...subject, username: null, isDeleted: true } }, outcome: "removed" });
+        expect(await result).toMatchObject({ ok: false, error: { type: "validation" } });
+        expect(deletePost).not.toHaveBeenCalled();
         expect(resolveReports).not.toHaveBeenCalled();
     });
 

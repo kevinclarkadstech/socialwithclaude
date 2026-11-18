@@ -4,7 +4,7 @@ import { reportKinds } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { creatorFields } from "../../../constants";
 import { toCreator } from "../../../mappers/users/toCreator/toCreator";
-import { toModerationSubject } from "../../../mappers/admin/toModerationSubject/toModerationSubject";
+import { toDeletedModerationSubject, toModerationSubject } from "../../../mappers/admin/toModerationSubject/toModerationSubject";
 import { moderationHistory } from "../moderationHistory/moderationHistory";
 
 /**
@@ -145,7 +145,10 @@ async function findReports({ targets, openOnly }: { targets: Target[]; openOnly:
     return byKind.flat();
 }
 
-/** Who each report is about, by user id, with their ban (a ban that has ended counts as none). */
+/**
+ * Who each report is about, by user id, with their ban (a ban that has ended
+ * counts as none). Someone whose account was deleted is still there, as deleted.
+ */
 async function findSubjects(userIds: string[]): Promise<Map<string, ModerationSubject>> {
     if (userIds.length === 0) {
         return new Map();
@@ -162,6 +165,16 @@ async function findSubjects(userIds: string[]): Promise<Map<string, ModerationSu
         .from(schema.users)
         .leftJoin(schema.userProfiles, eq(schema.userProfiles.userId, schema.users.id))
         .where(inArray(schema.users.id, userIds));
-    return new Map(rows.map((row) => [row.userId, toModerationSubject(row)]));
+    const subjects = new Map(rows.map((row) => [row.userId, toModerationSubject(row)]));
+    const deletedIds = userIds.filter((userId) => !subjects.has(userId));
+    if (deletedIds.length > 0) {
+        const deleted = await db
+            .select({ userId: sql<string>`s.id`, history: moderationHistory(sql`s.id`) })
+            .from(sql`unnest(array[${sql.join(deletedIds.map((id) => sql`${id}`), sql`, `)}]::text[]) as s(id)`);
+        for (const row of deleted) {
+            subjects.set(row.userId, toDeletedModerationSubject(row));
+        }
+    }
+    return subjects;
 }
 

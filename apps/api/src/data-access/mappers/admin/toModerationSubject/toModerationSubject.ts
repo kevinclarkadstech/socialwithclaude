@@ -13,9 +13,15 @@ export function toModerationSubject(row: {
     return {
         userId: row.userId,
         username: row.username,
+        isDeleted: false,
         role: row.role,
         isBanned,
         banExpires: isBanned && row.banExpires ? row.banExpires.toISOString() : null,
         history: row.history,
     };
+}
+
+/** Someone whose account was deleted, as moderation shows them: only their id and what was done about them. */
+export function toDeletedModerationSubject(row: { userId: string; history: ModerationSubject["history"] }): ModerationSubject {
+    return { userId: row.userId, username: null, isDeleted: true, role: "user", isBanned: false, banExpires: null, history: row.history };
 }

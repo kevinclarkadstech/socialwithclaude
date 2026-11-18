@@ -7,9 +7,9 @@ import { hasBlocked, hasProfile, isBlockedBy, isChatMember, isSignedIn } from ".
  * Only a chat's members can send messages in it (anyone else gets
  * not-found), and not across a block: not to someone who blocked them, nor
  * to someone they blocked (they can unblock), nor to someone who is
- * banned (until the ban ends).
+ * unavailable (banned, or their account is being deleted).
  */
-export const canSendChatMessage: AuthorizationCheck<{ caller: CallingUser | null; members: Pick<ChatMemberView, "userId" | "isBanned">[] }> = ({ caller, members }) => {
+export const canSendChatMessage: AuthorizationCheck<{ caller: CallingUser | null; members: Pick<ChatMemberView, "userId" | "isUnavailable">[] }> = ({ caller, members }) => {
     if (!isSignedIn(caller)) {
         return disallow("not-signed-in");
     }
@@ -26,7 +26,7 @@ export const canSendChatMessage: AuthorizationCheck<{ caller: CallingUser | null
     if (others.some((member) => hasBlocked(caller, member.userId))) {
         return disallow("blocking-user", "Unblock them to send messages");
     }
-    if (others.some((member) => member.isBanned)) {
+    if (others.some((member) => member.isUnavailable)) {
         return disallow("user-unavailable", "You can't reply to this chat");
     }
     return allow(caller);

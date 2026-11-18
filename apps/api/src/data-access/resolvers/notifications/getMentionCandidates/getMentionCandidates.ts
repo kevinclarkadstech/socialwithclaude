@@ -1,10 +1,10 @@
 import { inArray, sql } from "drizzle-orm";
 import type { MentionCandidate } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { isNotBanned } from "../../../internal/users/isNotBanned/isNotBanned";
+import { isAvailable } from "../../../internal/users/isAvailable/isAvailable";
 
 /**
- * The people with these usernames (who exist and aren't banned), with what
+ * The people with these usernames (who exist and are available: see isAvailable), with what
  * deciding whether to tell them about a mention takes (see mentionRecipients):
  * whether they follow the post's creator, and any block with whoever
  * mentioned them or with the creator.
@@ -30,5 +30,5 @@ export async function getMentionCandidates({ usernames, actorId, postCreatorId }
             blockedWithCreator: blockedWith(postCreatorId),
         })
         .from(p)
-        .where(sql`${inArray(p.username, usernames)} and ${isNotBanned(p.userId)}`);
+        .where(sql`${inArray(p.username, usernames)} and ${isAvailable(p.userId)}`);
 }
