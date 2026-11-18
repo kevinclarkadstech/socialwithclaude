@@ -24,7 +24,7 @@ You're responsible for what you post, and you must have the right to post it.
 
 We have **no tolerance for objectionable content or abusive users**. Don't post, send or sell anything that:
 
-- sexually exploits or endangers children, in any way;
+- sexually exploits or endangers children, in any way (see our [Child Safety Standards](/child-safety));
 - harasses, bullies, threatens or encourages violence against anyone;
 - attacks people for who they are (for example their race, ethnicity, religion, disability, sex, gender identity or sexual orientation);
 - is sexually explicit, or shares intimate images of anyone without their consent;
@@ -61,4 +61,4 @@ These terms are governed by the laws of [JURISDICTION]. [DISPUTE RESOLUTION: cou
 
 ## 11. Contact
 
-[COMPANY NAME], [POSTAL ADDRESS]. Email: [CONTACT EMAIL].
+[COMPANY NAME], [POSTAL ADDRESS]. Email: {{contactEmail}}.

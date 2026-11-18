@@ -42,12 +42,14 @@ What the app stores and the law expect from a social app with photos, and where 
 - [x] **Account deletion** in the app (Apple 5.1.1(v): any app with sign-up must let people delete their account from inside it). Deletes their data, except reports and the moderation log. See [Account deletion](#account-deletion).
 - [x] **Terms and privacy policy agreed to at sign-up** (Apple 1.2 asks for terms with no tolerance for objectionable content), recorded with their version; drafts to finish before launch (below).
 - [x] **A web page for deletion requests**, `/delete-account` (Google Play).
+- [x] **Child safety standards page,** `/child-safety` (Google): what's not allowed, how to report (in the app, by email, to NCMEC), what's done about it, and a child safety point of contact. Linked from the terms and Settings.
+- [x] **Contact us** in Settings, an email link (Apple 1.2).
 - [x] **Email delivery** through Resend or Mailgun (the API won't start in production without one).
 
 **Before launch**
 - [ ] **CSAM scanning** on the media domain: step 6 under Object storage (Google requires handling CSAM; US law requires reporting it).
-- [ ] **Contact details** in the app and on the store listings (Apple 1.2).
-- [ ] **Child safety standards page:** a public web page with your standards against child sexual abuse and exploitation, naming the app, plus a child safety point of contact (Google).
+- [ ] **Real contact addresses:** set `contactEmail` and `childSafetyEmail` in `apps/app/src/common/brand.ts` (they're `@example.com` placeholders), and put the contact address on the store listings too (Apple 1.2).
+- [ ] **Finish the child safety standards:** fill in the [placeholders] in `apps/app/src/domains/legal/documents/child-safety.md` (the point of contact's name or role, response time, minimum age, company), and give `<app web address>/child-safety` and the point of contact in Play Console (Google).
 - [ ] **Self-certify** the Child Safety Standards in Play Console before publishing (Google).
 - [ ] **Finish the Terms of Service and Privacy Policy:** fill in the [placeholders] in `apps/app/src/domains/legal/documents/` (company, contact, minimum age, jurisdiction, providers, retention), have a lawyer review them, and remove the "Draft" notes. Link `/terms` and `/privacy` from the store listings. See [Terms and privacy](#terms-and-privacy).
 - [ ] **Account deletion URL in Play Console:** `<app web address>/delete-account` (Google requires one that works without the app).
@@ -78,7 +80,7 @@ bun run --cwd apps/api admin:revoke someone@example.com
 
 ### Terms and privacy
 
-The Terms of Service and Privacy Policy are Markdown files in `apps/app/src/domains/legal/documents/`, shown at `/terms` and `/privacy` (public, also linked from Settings and sign-up). `{{appName}}` is replaced with the app's name.
+The Terms of Service, Privacy Policy and Child Safety Standards are Markdown files in `apps/app/src/domains/legal/documents/`, shown at `/terms`, `/privacy` and `/child-safety` (public, also linked from Settings; the first two from sign-up too). `{{appName}}`, `{{contactEmail}}` and `{{childSafetyEmail}}` are filled in from `apps/app/src/common/brand.ts`, the addresses as email links.
 
 - **Agreeing:** finishing sign-up needs the "I agree" checkbox; the API refuses sign-up without it and records the version (`users.terms_accepted_version` and `terms_accepted_at`).
 - **Changing them:** `currentTermsVersion` in `packages/shared/src/domains/auth/constants` is "major.minor", agreed to for both documents together. Keep the version printed at the top of each document in step (a test checks). For a small edit, raise the minor version. For a change people must agree to again, raise the major version: everyone signed in then sees "We've updated our terms" before they can carry on (or sign out, or delete their account).

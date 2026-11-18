@@ -62,7 +62,7 @@ We also share information when the law requires it, to protect people from harm,
 
 - **See and change** your profile and settings in the app at any time.
 - **Delete** your posts, comments, messages and photos, or your whole account, from **Settings → Delete account** or at [APP WEB ADDRESS]/delete-account.
-- **Ask for a copy** of your information, or ask anything about it: email [CONTACT EMAIL].
+- **Ask for a copy** of your information, or ask anything about it: email {{contactEmail}}.
 - Depending on where you live (for example the EU, the UK or California), you may have other rights, such as to object to or restrict how we use your information, and to complain to your data protection authority. [Add the legal bases for processing and any region-specific sections that apply.]
 
 ## Children
@@ -79,4 +79,4 @@ If we change this policy in a way that matters, we'll ask you to agree to the ne
 
 ## Contact
 
-[COMPANY NAME], [POSTAL ADDRESS]. Email: [CONTACT EMAIL]. [DATA PROTECTION OFFICER or EU/UK REPRESENTATIVE, if needed.]
+[COMPANY NAME], [POSTAL ADDRESS]. Email: {{contactEmail}}. [DATA PROTECTION OFFICER or EU/UK REPRESENTATIVE, if needed.]

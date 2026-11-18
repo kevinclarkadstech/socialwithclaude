@@ -4,7 +4,7 @@ import type { LegalDocumentName } from '../../types';
 import { legalDocumentTitle } from '../../utils/legalDocumentHtml/legalDocumentHtml';
 import { LegalDocument } from '../LegalDocument/LegalDocument';
 
-const documentPaths: Record<string, LegalDocumentName> = { '/terms': 'terms', '/privacy': 'privacy' };
+const documentPaths: Record<string, LegalDocumentName> = { '/terms': 'terms', '/privacy': 'privacy', '/child-safety': 'child-safety' };
 
 /**
  * A legal document over whatever's open (sign-up, the updated-terms

@@ -56,10 +56,13 @@ export const sharedRoutes: RouteObject[] = [
 export const rootRoutes: RouteObject[] = [
   { path: '/settings', element: <SettingsPage /> },
   { path: '/settings/delete-account', element: <DeleteAccountPage /> },
-  // Public, and linked from the store listings: the address for deletion requests (Google Play), the terms and the privacy policy.
+  // Public, and linked from the store listings: the address for deletion requests (Google Play), the terms, the privacy policy
+  // and the child safety standards.
   { path: '/delete-account', element: <DeleteAccountPage /> },
   { path: '/terms', element: <LegalPage name="terms" /> },
   { path: '/privacy', element: <LegalPage name="privacy" /> },
+  // Google Play's Child Safety Standards: published standards and a point of contact.
+  { path: '/child-safety', element: <LegalPage name="child-safety" /> },
   { path: '/notifications', element: <NotificationsPage /> },
   // Admins only; loaded on demand.
   { path: '/admin', element: <AdminRoute /> },

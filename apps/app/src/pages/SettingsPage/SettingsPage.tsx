@@ -2,6 +2,7 @@ import { IonButton, IonButtons, IonContent, IonHeader, IonItem, IonLabel, IonLis
 import { canAdminister } from '@myapp/shared/domains';
 import { useNavigate } from 'react-router';
 import { requireCallerWithProfile } from '@myapp/shared/authorization';
+import { contactEmail } from '../../common/brand';
 import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
 import { SessionList } from '../../domains/auth';
 import { BlockedUserList, FollowRequestList, PrivacySettings, useCallingUser } from '../../domains/users';
@@ -11,7 +12,8 @@ import '../../common/styles/pages.css';
 /**
  * /settings, from your profile's menu: privacy, follow requests, where you're
  * signed in, and who you've blocked; for admins, a way into Admin;
- * deleting your account; and the terms and privacy policy.
+ * deleting your account; the terms, privacy policy and child safety
+ * standards; and how to contact us.
  */
 export function SettingsPage() {
   const { callingUser } = useCallingUser();
@@ -61,6 +63,15 @@ export function SettingsPage() {
           </IonItem>
           <IonItem button detail onClick={() => navigate('/privacy')}>
             <IonLabel>Privacy Policy</IonLabel>
+          </IonItem>
+          <IonItem button detail onClick={() => navigate('/child-safety')}>
+            <IonLabel>Child safety</IonLabel>
+          </IonItem>
+          <IonItem href={`mailto:${contactEmail}`} detail>
+            <IonLabel>
+              Contact us
+              <p>{contactEmail}</p>
+            </IonLabel>
           </IonItem>
         </IonList>
       </IonContent>
