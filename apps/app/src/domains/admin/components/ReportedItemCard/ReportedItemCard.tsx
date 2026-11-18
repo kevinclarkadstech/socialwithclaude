@@ -58,14 +58,17 @@ function Snapshot({ item }: { item: ReportedItem }) {
 
 /**
  * One reported thing in the moderation queue: it, who it's by, every report
- * about it, and (while open) what to do: dismiss, remove, or ban its person.
+ * about it, and (while open) what to do: dismiss, remove, or ban its person
+ * (for a deleted account, only dismiss or mark reviewed).
  * `onChanged` runs after an action went through, to reload the queue.
  */
 export function ReportedItemCard({ item, onChanged }: { item: ReportedItem; onChanged: () => void }) {
   const [isBusy, setIsBusy] = useState(false);
   const { noun } = describeReportedItem(item);
-  const who = item.subject.username ? `@${item.subject.username}` : 'someone without a profile';
-  const canBan = item.subject.role !== 'admin';
+  const { isDeleted } = item.subject;
+  const who = isDeleted ? 'a deleted account' : item.subject.username ? `@${item.subject.username}` : 'someone without a profile';
+  // A deleted account has no one left to warn or ban, and its content is already gone.
+  const canBan = item.subject.role !== 'admin' && !isDeleted;
 
   async function act(action: () => Promise<boolean>) {
     setIsBusy(true);
@@ -80,14 +83,14 @@ export function ReportedItemCard({ item, onChanged }: { item: ReportedItem; onCh
     <IonCard className="reported-item" data-kind={item.kind} data-target-id={item.targetId}>
       <IonCardHeader>
         <IonCardSubtitle>
-          {item.kind === 'profile' ? 'Profile' : `${noun[0]!.toUpperCase()}${noun.slice(1)} by ${who}`}
+          {item.kind === 'profile' ? (isDeleted ? 'Profile of a deleted account' : 'Profile') : `${noun[0]!.toUpperCase()}${noun.slice(1)} by ${who}`}
           {item.subject.isBanned && (
             <IonBadge color="danger" className="reported-item__badge">
               Banned{item.subject.banExpires ? ` until ${new Date(item.subject.banExpires).toLocaleDateString()}` : ''}
             </IonBadge>
           )}
         </IonCardSubtitle>
-        {canBan && (
+        {item.subject.role !== 'admin' && (
           <p className="reported-item__history" data-history>
             Last 90 days: {plural(item.subject.history.warnings, 'warning')} · {plural(item.subject.history.removals, 'removal')} ·{' '}
             {plural(item.subject.history.bans, 'ban')}
@@ -121,9 +124,14 @@ export function ReportedItemCard({ item, onChanged }: { item: ReportedItem; onCh
               Dismiss
             </IonButton>
           )}
-          {item.isOpen && item.kind !== 'profile' && (
+          {item.isOpen && item.kind !== 'profile' && !isDeleted && (
             <IonButton size="small" color="danger" disabled={isBusy} onClick={() => void act(() => resolveReports({ item, outcome: 'removed' }))}>
               Remove {noun}
+            </IonButton>
+          )}
+          {item.isOpen && isDeleted && (
+            <IonButton size="small" disabled={isBusy} onClick={() => void act(() => resolveReports({ item, outcome: 'reviewed' }))}>
+              Mark reviewed
             </IonButton>
           )}
           {canBan && !item.subject.isBanned && (

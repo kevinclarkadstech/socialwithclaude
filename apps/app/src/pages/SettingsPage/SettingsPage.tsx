@@ -10,7 +10,8 @@ import '../../common/styles/pages.css';
 
 /**
  * /settings, from your profile's menu: privacy, follow requests, where you're
- * signed in, and who you've blocked; for admins, a way into Admin.
+ * signed in, and who you've blocked; for admins, a way into Admin; and
+ * deleting your account.
  */
 export function SettingsPage() {
   const { callingUser } = useCallingUser();
@@ -42,6 +43,7 @@ export function SettingsPage() {
                 </IonItem>
               </IonList>
             )}
+            <DeleteAccountItem />
           </>
         ) : (
           <div className="page-message">
@@ -51,7 +53,21 @@ export function SettingsPage() {
             </IonButton>
           </div>
         )}
+        {/* Someone who never finished sign-up can still delete the account they made. */}
+        {!signedUpCheck.ok && callingUser && <DeleteAccountItem />}
       </IonContent>
     </IonPage>
+  );
+}
+
+/** The way to Delete account, last on the page. */
+function DeleteAccountItem() {
+  const navigate = useNavigate();
+  return (
+    <IonList inset>
+      <IonItem button detail onClick={() => navigate('/settings/delete-account')}>
+        <IonLabel color="danger">Delete account</IonLabel>
+      </IonItem>
+    </IonList>
   );
 }

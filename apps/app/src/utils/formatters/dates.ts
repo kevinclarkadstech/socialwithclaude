@@ -8,3 +8,8 @@ dayjs.extend(relativeTime);
 export function timeAgo(iso: string, now: Date = new Date()): string {
   return dayjs(iso).from(now);
 }
+
+/** A day written out in the device's language, e.g. "December 18, 2026". */
+export function longDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+}

@@ -21,6 +21,13 @@ export async function confirm({ header, message, confirmText }: { header: string
   return role === 'confirm';
 }
 
+/** Tells them something worth stopping for, with a single OK. Resolves once it's closed. */
+export async function showNotice({ header, message }: { header: string; message: string }) {
+  const alert = await alertController.create({ header, message, buttons: [{ text: 'OK', role: 'confirm' }] });
+  await alert.present();
+  await alert.onDidDismiss();
+}
+
 /** Asks for a line or two of text. Resolves the trimmed text, or null if cancelled or left empty. */
 export async function askForText({ header, value = '', placeholder, confirmText }: {
   header: string;
