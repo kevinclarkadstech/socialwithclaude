@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
 import { IonApp, IonSplitPane, setupIonicReact } from '@ionic/react';
+import { needsToAcceptTerms } from '@myapp/shared/domains';
 import { TabNavigationProvider, TabsLayout } from '../../navigation';
 import { rootRoutes, sharedRoutes, tabs } from '../routes';
 import { Sidebar } from '../Sidebar/Sidebar';
@@ -8,6 +9,7 @@ import { PhotoViewer } from '../../common/components/PhotoViewer/PhotoViewer';
 import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
 import { RestoreAccountScreen, SignInModal } from '../../domains/auth';
 import { callingUserStore, OnboardingModal, useCallingUser } from '../../domains/users';
+import { UpdatedTermsScreen } from '../../domains/legal';
 import { showErrorToast } from '../../lib/toasts';
 
 /* Core CSS required for Ionic components to work properly */
@@ -54,7 +56,8 @@ type OpenModal = 'none' | 'signIn' | 'onboarding';
  * through disallowedActions: signed out, the sign-in modal opens; signed in
  * without a profile, onboarding. Signing in to a new account goes on to
  * onboarding. Once the user has a profile, the action they were trying to do runs.
- * While their account is scheduled for deletion, it shows only the screen to restore it.
+ * While their account is scheduled for deletion, it shows only the screen to restore it;
+ * when the terms have changed since they agreed, only the screen to agree again.
  */
 export function App() {
   const { isLoaded, callingUser } = useCallingUser();
@@ -126,6 +129,15 @@ export function App() {
     return (
       <IonApp>
         <RestoreAccountScreen deletionScheduledAt={callingUser.deletionScheduledAt} />
+      </IonApp>
+    );
+  }
+
+  // Signed up before the terms last changed in a way that needs agreeing to again (sign-up itself asks the first time).
+  if (callingUser?.profile && needsToAcceptTerms({ acceptedVersion: callingUser.termsAcceptedVersion })) {
+    return (
+      <IonApp>
+        <UpdatedTermsScreen />
       </IonApp>
     );
   }

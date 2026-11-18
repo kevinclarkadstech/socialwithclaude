@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { IonButton, IonInput, IonText } from '@ionic/react';
 import { accountDeletionGraceDays } from '@myapp/shared/domains';
-import { useNavigate } from 'react-router';
 import { errorMessage } from '../../../../lib/api/errors';
 import { longDate } from '../../../../utils/formatters/dates';
 import { confirm, showNotice } from '../../../../lib/prompts';
@@ -14,10 +13,10 @@ import './DeleteAccountForm.css';
 /**
  * What deleting your account does, then the steps: an emailed code, and a
  * last "are you sure". Once it's done, this device is signed out (the API
- * has signed out the others) and they're told when it goes for good.
+ * has signed out the others), `onDeleted` runs (e.g. to leave the page),
+ * and they're told when it goes for good.
  */
-export function DeleteAccountForm({ email }: { email: string }) {
-  const navigate = useNavigate();
+export function DeleteAccountForm({ email, onDeleted }: { email: string; onDeleted?: () => void }) {
   const [step, setStep] = useState<'intro' | 'code'>('intro');
   const [code, setCode] = useState('');
   const [isBusy, setIsBusy] = useState(false);
@@ -64,7 +63,7 @@ export function DeleteAccountForm({ email }: { email: string }) {
         return;
       }
       await forgetSession();
-      navigate('/feed', { replace: true });
+      onDeleted?.();
       await showNotice({
         header: 'Your account is being deleted',
         message: `It will be deleted for good on ${longDate(result.value.deletesAt)}. Until then, you can sign in again to restore it.`,

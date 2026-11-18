@@ -17,6 +17,8 @@ export const CallingUserSchema = z.object({
     // When they asked to delete their account; null unless it's scheduled for deletion.
     // Until they restore it, the API treats them as signed out everywhere but the account procedures.
     deletionScheduledAt: z.iso.datetime().nullable(),
+    // The version of the terms they last agreed to (see currentTermsVersion); null until they finish sign-up.
+    termsAcceptedVersion: z.string().nullable(),
 });
 
 export type CallingUser = z.infer<typeof CallingUserSchema>;

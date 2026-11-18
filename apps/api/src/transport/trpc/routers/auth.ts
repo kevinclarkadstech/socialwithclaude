@@ -1,4 +1,5 @@
 import {
+    AcceptTermsMutationInputSchema,
     CreateUserProfileMutationInputSchema,
     GetMySessionsQueryInputSchema,
     RevokeOtherSessionsMutationInputSchema,
@@ -7,6 +8,7 @@ import {
     ScheduleAccountDeletionMutationInputSchema,
     SendAccountDeletionCodeMutationInputSchema,
     SignOutMutationInputSchema,
+    acceptTermsMutation,
     createUserProfileMutation,
     restoreAccountMutation,
     scheduleAccountDeletionMutation,
@@ -17,7 +19,7 @@ import {
     signOutMutation,
 } from "@myapp/shared/domains";
 
-import { createUserProfile, getUserProfileByUsername, getUserSessions, restoreAccount, scheduleAccountDeletion } from "../../../data-access";
+import { createUserProfile, getUserProfileByUsername, getUserSessions, recordTermsAccepted, restoreAccount, scheduleAccountDeletion } from "../../../data-access";
 import { sendAccountDeletionCode, verifyAccountDeletionCode } from "../../../accounts";
 import { procedure, router } from "../trpc";
 
@@ -115,6 +117,15 @@ export const authRouter = router({
             input,
             context: { logger: ctx.logger },
             dependencies: { getCallingUser: ctx.getAccountHolder, restoreAccount },
+        }),
+    ),
+
+    /** Records that the caller agreed to the current terms (when they've changed since sign-up). */
+    acceptTerms: procedure.input(AcceptTermsMutationInputSchema).mutation(({ ctx, input }) =>
+        acceptTermsMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: { getCallingUser: ctx.getCallingUser, recordTermsAccepted },
         }),
     ),
 });

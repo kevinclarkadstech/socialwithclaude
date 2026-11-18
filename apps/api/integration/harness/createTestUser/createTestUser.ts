@@ -1,4 +1,4 @@
-import type { CallingUser, ProfileVisibility } from "@myapp/shared/domains";
+import { currentTermsVersion, type CallingUser, type ProfileVisibility } from "@myapp/shared/domains";
 import type { AppLogger } from "@myapp/shared/observability";
 import { eq } from "drizzle-orm";
 import { db, schema } from "../../../src/data-access/db";
@@ -46,6 +46,7 @@ export function callAs(userId: string | null) {
             blockList,
             role: user.role,
             deletionScheduledAt: user.deletionScheduledAt?.toISOString() ?? null,
+            termsAcceptedVersion: user.termsAcceptedVersion,
         };
     };
     // As the API's context: someone whose account is scheduled for deletion counts as signed out, except for the account procedures.
@@ -84,7 +85,7 @@ export async function createTestUser({ name, firstName = null, lastName = null, 
     const username = `${name}_${runId}${next}`.toLowerCase().slice(0, 30);
     const [user] = await db.insert(schema.users).values({ name: username, email: `${username}@example.test`, emailVerified: true }).returning();
     const call = callAs(user!.id);
-    await call.auth.signUp({ username, firstName, lastName, about: null });
+    await call.auth.signUp({ username, firstName, lastName, about: null, acceptedTermsVersion: currentTermsVersion });
     if (visibility) {
         await call.users.updateMySettings({ profileVisibility: visibility });
     }

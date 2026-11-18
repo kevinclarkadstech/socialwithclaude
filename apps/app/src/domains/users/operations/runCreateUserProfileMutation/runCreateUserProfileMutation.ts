@@ -14,8 +14,8 @@ export function runCreateUserProfileMutation(profile: CreateUserProfileMutationI
       getCallingUser,
       getUserProfileByUsername: ({ username }) =>
         nullIfNotFound(fromApi(api.users.getUserProfile.query({ username }))),
-      createUserProfile: ({ username, firstName, lastName, about }) =>
-        fromApi(api.auth.signUp.mutate({ username, firstName, lastName, about })),
+      createUserProfile: ({ username, firstName, lastName, about, acceptedTermsVersion }) =>
+        fromApi(api.auth.signUp.mutate({ username, firstName, lastName, about, acceptedTermsVersion })),
     },
   });
 }

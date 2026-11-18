@@ -1,0 +1,25 @@
+.terms-agreement {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.terms-agreement__checkbox {
+  flex: none;
+  margin-top: 1px;
+}
+
+.terms-agreement__label {
+  line-height: 1.4;
+  cursor: default;
+}
+
+.terms-agreement__link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ion-color-primary);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}

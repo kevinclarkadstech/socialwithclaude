@@ -4,7 +4,7 @@ import { mockCaller, mockProfile } from "../../../../testing/fixtures";
 import { testContext } from "../../../../testing/context";
 import { createUserProfileMutation } from "./createUserProfileMutation";
 
-const input = { username: "new_user", firstName: null, lastName: null, about: null };
+const input = { username: "new_user", firstName: null, lastName: null, about: null, acceptedTermsVersion: "1.0" };
 
 function run(created: UserProfile | "username-taken" | "profile-exists") {
     return createUserProfileMutation({
