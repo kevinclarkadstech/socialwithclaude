@@ -24,7 +24,7 @@ import { displayName } from '../../utils/formatters/names';
 import { chooseFrom } from '../../lib/prompts';
 import { runOrToast } from '../../lib/api/runOrToast';
 import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
-import { runGetOrCreateDirectChatMutation } from '../../domains/chats';
+import { runGetOrCreateDirectChatMutation, useChatHref } from '../../domains/chats';
 import { BackButton, useTabHref } from '../../navigation';
 import { useAuth } from '../../domains/auth';
 import { applyCreatorChange, PostCard, useUserPosts } from '../../domains/posts';
@@ -46,6 +46,7 @@ export function UserProfilePage() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const tabHref = useTabHref();
+  const chatHref = useChatHref();
   const { pathname } = useLocation();
   const ownUsername = callingUser?.profile?.username ?? null;
   const username = params.username ?? null;
@@ -71,7 +72,7 @@ export function UserProfilePage() {
     }
   }
 
-  /** Opens your chat with them, starting it if you don't have one, in the Chats tab. */
+  /** Opens your chat with them, starting it if you don't have one, in the tab you're in (see useChatHref). */
   async function message() {
     if (!profile) {
       return;
@@ -80,7 +81,7 @@ export function UserProfilePage() {
     const action = async () => {
       const result = await runOrToast(() => runGetOrCreateDirectChatMutation({ receiver }));
       if (result.ok) {
-        navigate(`/chats/${result.value.id}`);
+        navigate(chatHref(result.value.id));
       }
     };
     const check = canCreateDirectChat({ caller: callingUser, receiver });
