@@ -39,6 +39,8 @@ What the app stores and the law expect from a social app with photos, and where 
 - [x] **Hide banned people's content:** their profile, posts, listings and comments disappear everywhere (feeds, Marketplace, search, mentions, comments, saves) while the ban lasts, and come back when it ends or is lifted. Nothing is deleted. Chats with them stay, with their history, but show them as "Account unavailable" and can't be replied to.
 - [x] **Warnings and replies to reporters:** admins can warn someone from a report (they get a notification), each report card shows the person's last 90 days (warnings, removals, bans), and everyone who reported something is told the outcome. Notifications are under the bell in the header.
 - [x] **Act on reports** (Settings → Admin, admins only): one queue item per reported thing with every report about it; dismiss, remove it (a post's photo files too), or ban its person. Every action goes in the moderation log. Apple treats removing reported content quickly as the minimum for filtering objectionable material, and expects nonconsensual intimate imagery to be removed proactively. See [Admin and moderation](#admin-and-moderation).
+- [x] **Account deletion** in the app (Apple 5.1.1(v): any app with sign-up must let people delete their account from inside it). Deletes their data, except reports and the moderation log. See [Account deletion](#account-deletion).
+- [x] **Email delivery** through Resend or Mailgun (the API won't start in production without one).
 
 **Before launch**
 - [ ] **CSAM scanning** on the media domain: step 6 under Object storage (Google requires handling CSAM; US law requires reporting it).
@@ -46,8 +48,7 @@ What the app stores and the law expect from a social app with photos, and where 
 - [ ] **Child safety standards page:** a public web page with your standards against child sexual abuse and exploitation, naming the app, plus a child safety point of contact (Google).
 - [ ] **Self-certify** the Child Safety Standards in Play Console before publishing (Google).
 - [ ] **Privacy policy and terms,** linked from sign-up and the store listings. Say that photo links work for anyone who has one, and that public posts' photos may appear in search engines.
-- [ ] **Email provider** for sign-in codes (they're only logged today).
-- [ ] **Account deletion** in the app (Apple 5.1.1(v): any app with sign-up must let people delete their account from inside it). Deletes their data, except what's kept for a report or a legal matter.
+- [ ] **Set up email** for sign-in codes: Resend or Mailgun, with the sending domain verified. See [Email](#email).
 
 **Later**
 - [ ] **Public post and profile pages** (server-rendered, public accounts only, with `og:image`, structured data and a sitemap), so public photos can show in Google Images.
@@ -117,6 +118,21 @@ The API talks to storage through the S3 API, so production uses R2 with no code 
    - In the Cloudflare dashboard, open that zone, go to **Caching → Configuration**, select **Configure** next to CSAM Scanning Tool, and give an email address that's read promptly. Cloudflare notifies it when it finds a match.
    - Check that photos really come through the cache: a media URL's response should have a `cf-cache-status` header.
    - On a match, Cloudflare blocks the URL and emails you. The match still has to be dealt with: in the US, providers must report it to NCMEC's CyberTipline, and other countries have their own rules. Keep what's needed for the report; Cloudflare's email says what that is.
+
+### Email
+
+Sign-in codes and account deletion codes go by email. Locally they're written to the API's log (`EMAIL_PROVIDER=console`); in production the API won't start until a real provider is set. Both Resend and Mailgun are supported, through their REST APIs (the `EmailSender` interface in `apps/api/src/notifications/email/delivery`, so another provider is one file).
+
+1. **Verify a sending domain** with the provider, ideally a subdomain such as `mail.example.com`, so its reputation is separate from your main domain's. Add the DNS records it gives you: SPF and DKIM for sending, and a return-path (bounce) record. Mailgun calls the domain `MAILGUN_DOMAIN`; Resend just needs it verified.
+2. **Add a DMARC record** for the domain (`_dmarc`, e.g. `v=DMARC1; p=none; rua=mailto:dmarc@example.com` to start, then `p=quarantine` once reports look clean). Gmail and Yahoo require one from bulk senders, and it helps codes reach the inbox.
+3. **Set the API's environment:**
+   - Resend: `EMAIL_PROVIDER=resend`, `RESEND_API_KEY`, and `EMAIL_FROM`, e.g. `Placeholder <no-reply@mail.example.com>`.
+   - Mailgun: `EMAIL_PROVIDER=mailgun`, `MAILGUN_API_KEY`, `MAILGUN_DOMAIN`, `MAILGUN_REGION` (`us` or `eu`, where the account was created) and `EMAIL_FROM`.
+
+   A provider chosen without its settings stops the API at startup, naming what's missing.
+4. **Pick a plan that covers sign-ins.** Every sign-in sends an email, and free tiers stop at 100 a day.
+
+A send that fails is logged and reported to Sentry, with the provider's status and reason but never the code.
 
 ### Cache (Redis)
 

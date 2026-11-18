@@ -10,7 +10,7 @@ import { getUserProfileAndBlockList } from "../data-access";
 import { nativeAppOrigins, serverConfig } from "../config";
 import { sendOtp } from "../notifications";
 import { isEmailBanned } from "../accounts";
-import { rootLogger } from "../observability";
+import { errorReporter, rootLogger } from "../observability";
 
 const {
     GOOGLE_CLIENT_ID,
@@ -82,6 +82,7 @@ export function createAuthInstance(db: Database) {
                 sendVerificationOTP: async (data) => {
                     sendOtp({ email: data.email, code: data.otp, type: data.type }).catch((err: unknown) => {
                         rootLogger.error("Couldn't send a sign-in code", { err, type: data.type });
+                        errorReporter.report({ error: err });
                     });
                 },
                 otpLength: 6,
