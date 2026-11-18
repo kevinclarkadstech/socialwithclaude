@@ -9,6 +9,10 @@ export function toUserSettings(row: UserSettingsRow): UserSettings {
         followersCanTag: row.followersCanTag,
         nonFollowersCanTag: row.nonFollowersCanTag,
         profileVisibility: row.profileVisibility,
+        pushMessages: row.pushMessages,
+        pushComments: row.pushComments,
+        pushMentions: row.pushMentions,
+        pushFollows: row.pushFollows,
         createdAt: row.createdAt.toISOString(),
         updatedAt: row.updatedAt.toISOString(),
     };

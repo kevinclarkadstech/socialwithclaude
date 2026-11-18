@@ -12,6 +12,10 @@ export const UpdateMySettingsMutationInputSchema = UserSettingsSchema.pick({
     followersCanTag: true,
     nonFollowersCanTag: true,
     profileVisibility: true,
+    pushMessages: true,
+    pushComments: true,
+    pushMentions: true,
+    pushFollows: true,
 }).partial();
 
 export type UpdateMySettingsMutationInput = z.infer<typeof UpdateMySettingsMutationInputSchema>;

@@ -11,6 +11,11 @@ export const UserSettingsSchema = BaseEntityFieldsSchema.omit({ id: true }).exte
     followersCanTag: z.boolean().default(true),
     nonFollowersCanTag: z.boolean().default(false),
     profileVisibility: ProfileVisibilitySchema,
+    // Push notifications, by kind (see pushSettingFor). Warnings and report outcomes always go.
+    pushMessages: z.boolean().default(true),
+    pushComments: z.boolean().default(true),
+    pushMentions: z.boolean().default(true),
+    pushFollows: z.boolean().default(true),
 });
 
 export type ProfileVisibility = z.infer<typeof ProfileVisibilitySchema>;

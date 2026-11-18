@@ -5,7 +5,7 @@ import { toUserSettings } from "../../../mappers/users/toUserSettings/toUserSett
 
 /** Changes only the settings given. Null until the user has finished sign-up. */
 export async function updateUserSettings({ userId, ...changes }: Pick<UserSettings, "userId"> &
-    Partial<Pick<UserSettings, "darkModeEnabled" | "followersCanTag" | "nonFollowersCanTag" | "profileVisibility">>,
+    Partial<Pick<UserSettings, "darkModeEnabled" | "followersCanTag" | "nonFollowersCanTag" | "profileVisibility" | "pushMessages" | "pushComments" | "pushMentions" | "pushFollows">>,
 ): Promise<UserSettings | null> {
     const [row] = await db
         .update(schema.userSettings)
