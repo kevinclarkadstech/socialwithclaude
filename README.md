@@ -44,7 +44,7 @@ What the app stores and the law expect from a social app with photos, and where 
 - [x] **A web page for deletion requests**, `/delete-account` (Google Play).
 - [x] **Child safety standards page,** `/child-safety` (Google): what's not allowed, how to report (in the app, by email, to NCMEC), what's done about it, and a child safety point of contact. Linked from the terms and Settings.
 - [x] **Contact us** in Settings, an email link (Apple 1.2).
-- [x] **13 and over:** sign-up asks for a birth month and year without saying the cutoff (a "neutral age screen", as the FTC suggests under COPPA). Someone under 13 is told they can't use the app, their account is deleted with what they entered, and the device won't offer sign-up again. The month and year are kept (`users.birth_year`, `birth_month`) and never shown. Set the App Store age rating and Play's content rating to match.
+- [x] **13 and over:** sign-up asks for a birth month and year without saying the cutoff (a "neutral age screen", as the FTC suggests under COPPA). Someone under 13 is told they can't use the app (with the contact address, for a mistake), their account is deleted with what they entered, and that app install or browser won't offer sign-up again. It's a deterrent, not a lock: another browser or device, or clearing the app's data, gets round it, and that's what to tell someone who emails about a mistake. The month and year are kept (`users.birth_year`, `birth_month`) and never shown. Set the App Store age rating and Play's content rating to match.
 - [x] **Email delivery** through Resend or Mailgun (the API won't start in production without one).
 
 **Before launch**

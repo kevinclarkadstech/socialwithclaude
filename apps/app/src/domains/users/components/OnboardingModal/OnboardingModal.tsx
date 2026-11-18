@@ -11,7 +11,7 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/react';
-import { appName } from '../../../../common/brand';
+import { appName, contactEmail } from '../../../../common/brand';
 import type { FormEvent } from 'react';
 import { TermsAgreement } from '../../../legal';
 import { useOnboardingFlow } from '../../hooks/useOnboardingFlow/useOnboardingFlow';
@@ -34,7 +34,8 @@ const years = Array.from({ length: 120 }, (_, index) => thisYear - index);
 /**
  * Finishing sign-up after the first sign-in: a username, optionally a name,
  * a birth month and year, and agreeing to the terms. Someone too young is
- * told they can't use the app instead (and the device remembers it).
+ * told they can't use the app instead (and the device remembers it), with
+ * our contact address for a mistake: we help them try again by hand.
  */
 export function OnboardingModal({ isOpen, onDone, onCancel, onDidDismiss }: OnboardingModalProps) {
   const flow = useOnboardingFlow({ onDone });
@@ -60,6 +61,9 @@ export function OnboardingModal({ isOpen, onDone, onCancel, onDidDismiss }: Onbo
         {flow.isBlocked ? (
           <div className="modal-form">
             <p>Sorry, you can't use {appName}.</p>
+            <p className="onboarding-refused__help">
+              Entered it by mistake? Email us at <a href={`mailto:${contactEmail}`}>{contactEmail}</a>.
+            </p>
             <IonButton expand="block" onClick={() => flow.leave(onCancel)}>
               OK
             </IonButton>
