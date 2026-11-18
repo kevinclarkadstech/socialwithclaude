@@ -52,6 +52,9 @@ What the app stores and the law expect from a social app with photos, and where 
 - [ ] **Finish the Terms of Service and Privacy Policy:** fill in the [placeholders] in `apps/app/src/domains/legal/documents/` (company, contact, minimum age, jurisdiction, providers, retention), have a lawyer review them, and remove the "Draft" notes. Link `/terms` and `/privacy` from the store listings. See [Terms and privacy](#terms-and-privacy).
 - [ ] **Account deletion URL in Play Console:** `<app web address>/delete-account` (Google requires one that works without the app).
 - [ ] **Set up email** for sign-in codes: Resend or Mailgun, with the sending domain verified. See [Email](#email).
+- [ ] **Schedule the daily jobs** once the API is hosted (a cron job, or Cron Triggers on Workers):
+  - `bun run --cwd apps/api accounts:purge`: deletes accounts whose 30 days to restore are up. Without it, deleted accounts are hidden but never actually deleted. See [Account deletion](#account-deletion).
+  - `bun run --cwd apps/api media:sweep --delete`: removes photo files that no post uses. See step 5 under [Object storage](#object-storage-cloudflare-r2).
 
 **Later**
 - [ ] **Public post and profile pages** (server-rendered, public accounts only, with `og:image`, structured data and a sitemap), so public photos can show in Google Images.
