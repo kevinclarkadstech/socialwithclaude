@@ -67,6 +67,7 @@ What the app stores and the law expect from a social app with photos, and where 
 - [ ] **Account deletion URL in Play Console:** `<app web address>/delete-account` (Google requires one that works without the app).
 - [ ] **Set up email** for sign-in codes: Resend or Mailgun, with the sending domain verified. See [Email](#email).
 - [ ] **Set up push notifications** (Firebase): a Firebase project with the Android and iOS apps (using the real app id), its two config files in the native projects, your APNs key uploaded to it, and the API's `PUSH_PROVIDER=fcm` with `FCM_SERVICE_ACCOUNT_JSON`. Then try it on a real iPhone (the simulator can't receive pushes from Apple) and an Android phone. See [Push notifications](#push-notifications).
+- [ ] **Links that open the app** (Universal Links on iOS, App Links on Android): put the real web address in place of `app.example.com` and the real app id, Apple team id and Play signing key's SHA-256 in the two files under `apps/app/public/.well-known/`, and serve them from that address. See [Links that open the app](#links-that-open-the-app).
 - [ ] **The real app id** (reverse domain, e.g. `com.yourcompany.appname`), which can't change after the first store upload: in `apps/app/capacitor.config.ts`, the Xcode project's bundle identifier (`apps/app/ios/App`), `applicationId` in `apps/app/android/app/build.gradle`, and the API's `APPLE_APP_BUNDLE_IDENTIFIER`. Also the app's name, icons and splash screen.
 - [ ] **Signed release builds** to TestFlight and Play's internal testing track: GitHub Actions with fastlane, or a hosted service (Capawesome Cloud, Codemagic). Needs an Apple Developer account and a Google Play developer account.
 - [ ] **Schedule the daily jobs** once the API is hosted (a cron job, or Cron Triggers on Workers):
@@ -193,6 +194,17 @@ Locally, `PUSH_PROVIDER=console` logs each push instead.
 - **Tapping** a notification opens what it's about (the `path` the API sends).
 - **Settings → Notifications:** the four kinds, for every device they're signed in on. On the web it explains that pushes come to the apps.
 - iOS has the Push Notifications entitlement (`App.entitlements`) and the remote-notification background mode. On Android, a notification icon (white on transparent) can be added later; until then Android uses the app icon.
+
+### Links that open the app
+
+With the app installed, a link to the app's web address (`VITE_PUBLIC_URL`, such as a shared profile) opens that screen in the app instead of the browser: a Universal Link on iOS, an App Link on Android. Without the app, it opens the web app as before. `DeepLinksBridge` (`apps/app/src/app`) takes the link's path and opens it, both when a link starts the app and when the app is already running; links to anywhere else are ignored.
+
+Each platform checks, when the app is installed, that the website agrees, using a file it fetches from the web address:
+
+- **iOS:** `/.well-known/apple-app-site-association`, which names the app as `<team id>.<app id>` (your team id is in your Apple Developer account, under Membership). The app's Associated Domains entitlement (`applinks:<host>` in `apps/app/ios/App/App/App.entitlements`) names the website. The Associated Domains capability has to be on for the app id in your Apple Developer account, like Push Notifications.
+- **Android:** `/.well-known/assetlinks.json`, which names the app id and the SHA-256 fingerprint of the key the app is signed with. With Play App Signing that's Google's key, not yours: Play Console → Test and release → App integrity → App signing shows its fingerprint (add your upload key's too if you install builds signed with it). The app's intent filter (`AndroidManifest.xml`) takes its host from `appLinksHost` in `apps/app/android/app/build.gradle`.
+
+Both files are in `apps/app/public/.well-known/` with **placeholders**, and are copied into the web build. Whatever serves the web app has to serve them as they are, over HTTPS without redirects, with `Content-Type: application/json` (the Apple one has no extension, so set it), and not the app's `index.html` in their place. Check them with Apple's `https://app-site-association.cdn-apple.com/a/v1/<host>` (Apple fetches the file through its CDN, so a change can take a day to arrive) and Google's [Statement List Tester](https://developers.google.com/digital-asset-links/tools/generator). On Android, `adb shell pm get-app-links <app id>` shows whether the host was verified.
 
 ### Cache (Redis)
 

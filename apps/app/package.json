@@ -18,6 +18,7 @@
     "@aparajita/capacitor-secure-storage": "^8",
     "@capacitor-firebase/messaging": "8.6.0",
     "@capacitor/android": "8.6.0",
+    "@capacitor/app": "8.1.2",
     "@capacitor/core": "8.6.0",
     "@capacitor/ios": "8.6.0",
     "@capacitor/share": "8.0.3",

@@ -5,6 +5,8 @@ android {
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId "com.example.placeholder"
+        // The app's web address (VITE_PUBLIC_URL's host, a placeholder for now): its links open in the app.
+        manifestPlaceholders = [appLinksHost: "app.example.com"]
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

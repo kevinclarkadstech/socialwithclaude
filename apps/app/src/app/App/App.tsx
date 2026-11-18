@@ -5,6 +5,7 @@ import { needsToAcceptTerms } from '@myapp/shared/domains';
 import { TabNavigationProvider, TabsLayout } from '../../navigation';
 import { rootRoutes, sharedRoutes, tabs } from '../routes';
 import { Sidebar } from '../Sidebar/Sidebar';
+import { DeepLinksBridge } from '../DeepLinksBridge/DeepLinksBridge';
 import { PhotoViewer } from '../../common/components/PhotoViewer/PhotoViewer';
 import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
 import { RestoreAccountScreen, SignInModal } from '../../domains/auth';
@@ -158,6 +159,7 @@ export function App() {
             </div>
           </IonSplitPane>
         </TabNavigationProvider>
+        <DeepLinksBridge />
         <PushNotificationsBridge />
         <PhotoViewer />
         <SignInModal
