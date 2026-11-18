@@ -134,13 +134,20 @@ Sign-in codes and account deletion codes go by email. Locally they're written to
 
 A send that fails is logged and reported to Sentry, with the provider's status and reason but never the code.
 
+**Limits on sending codes** (`apps/api/src/rate-limiting/constants`), so nobody can flood an inbox or run up the bill:
+
+- Sign-in codes: 5 per 15 minutes and 10 a day per email address; 10 per 15 minutes and 30 a day per IP address.
+- Account deletion codes: 3 per 15 minutes and 10 a day per person.
+- **An hourly budget for all email together,** `EMAIL_HOURLY_LIMIT` (default 300), which a bot spread across many addresses and IPs can't get past. It counts only codes the other limits let through. Once it's used up, codes are refused until the hour is up, and Sentry is told (once an hour). Raise it as the app grows.
+- If Redis can't be reached, no codes are sent, rather than sent without limits. People who already have a code can still use it.
+
 ### Cache (Redis)
 
 The API's cache is Redis. For now it only holds rate-limit counters, so the limits hold across instances. Any Redis 7 works, e.g. Upstash. (Rate limiting goes through a `RateLimiter` interface, so on Cloudflare Workers it could use Workers rate-limit bindings instead; see `apps/api/src/rate-limiting/types/index.ts`.)
 
 - Set `REDIS_URL`, e.g. `rediss://default:<password>@<host>:6379`.
 - Set `CLIENT_IP_HEADER` to the header your proxy or CDN puts the caller's IP address in, e.g. `cf-connecting-ip` behind Cloudflare. The default is `x-forwarded-for`. Rate limits per IP trust this header, so the API must only be reachable through that proxy.
-- If Redis goes down, the API keeps serving with rate limiting off and logs it. `/api/ready` reports `cache: false`.
+- If Redis goes down, the API keeps serving with rate limiting off and logs it. `/api/ready` reports `cache: false`. The exception is sending email: without the counters, no codes are sent (see [Email](#email)).
 
 ### Error reporting (Sentry)
 

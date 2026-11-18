@@ -54,6 +54,8 @@ export const ServerConfigSchema = z.object({
     MAILGUN_DOMAIN: z.string().optional(),
     // Where the Mailgun account lives: its API host differs.
     MAILGUN_REGION: z.enum(["us", "eu"]).default("us"),
+    // The most emails the API sends in an hour, all together: past it, sending codes is refused until the hour is up (and Sentry is told).
+    EMAIL_HOURLY_LIMIT: z.coerce.number().int().min(1).default(300),
 
     // How long a notification waits before it shows, so a quick undo (unfollowing, editing a mention out) means it's never seen.
     NOTIFICATION_DELAY_SECONDS: z.coerce.number().int().min(0).max(3600).default(30),
