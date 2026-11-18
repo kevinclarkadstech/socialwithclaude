@@ -1,8 +1,7 @@
-import { reportReasons, type ReportReason, type ReportedItem } from '@myapp/shared/domains';
+import { reportReasonLabels, reportReasons, type ReportReason, type ReportedItem } from '@myapp/shared/domains';
 import { runOrToast } from '../../../../lib/api/runOrToast';
 import { askForText, chooseFrom } from '../../../../lib/prompts';
 import { showToast } from '../../../../lib/toasts';
-import { reportReasonLabels } from '../../../../utils/formatters/reportReasons';
 import { runWarnUserMutation } from '../../operations/runWarnUserMutation/runWarnUserMutation';
 import { describeReportedItem } from '../../utils/describeReportedItem/describeReportedItem';
 import { resolveReports } from '../resolveReports/resolveReports';
