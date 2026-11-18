@@ -14,7 +14,7 @@ describe("agreeing to the terms", () => {
         const call = callAs(user!.id);
         const username = `newbie_${Date.now().toString(36)}`;
         // Without agreeing (an old app, or a hand-made request), sign-up is refused.
-        const withoutTerms = { username, firstName: null, lastName: null, about: null } as Parameters<typeof call.auth.signUp>[0];
+        const withoutTerms = { username, firstName: null, lastName: null, about: null, birthYear: 1990, birthMonth: 5 } as Parameters<typeof call.auth.signUp>[0];
         expect(await outcome(call.auth.signUp(withoutTerms))).toBe("BAD_REQUEST");
         expect(await outcome(call.auth.signUp({ ...withoutTerms, acceptedTermsVersion: "yes" }))).toBe("BAD_REQUEST");
 

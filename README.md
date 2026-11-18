@@ -44,14 +44,15 @@ What the app stores and the law expect from a social app with photos, and where 
 - [x] **A web page for deletion requests**, `/delete-account` (Google Play).
 - [x] **Child safety standards page,** `/child-safety` (Google): what's not allowed, how to report (in the app, by email, to NCMEC), what's done about it, and a child safety point of contact. Linked from the terms and Settings.
 - [x] **Contact us** in Settings, an email link (Apple 1.2).
+- [x] **13 and over:** sign-up asks for a birth month and year without saying the cutoff (a "neutral age screen", as the FTC suggests under COPPA). Someone under 13 is told they can't use the app, their account is deleted with what they entered, and the device won't offer sign-up again. The month and year are kept (`users.birth_year`, `birth_month`) and never shown. Set the App Store age rating and Play's content rating to match.
 - [x] **Email delivery** through Resend or Mailgun (the API won't start in production without one).
 
 **Before launch**
 - [ ] **CSAM scanning** on the media domain: step 6 under Object storage (Google requires handling CSAM; US law requires reporting it).
 - [ ] **Real contact addresses:** set `contactEmail` and `childSafetyEmail` in `apps/app/src/common/brand.ts` (they're `@example.com` placeholders), and put the contact address on the store listings too (Apple 1.2).
-- [ ] **Finish the child safety standards:** fill in the [placeholders] in `apps/app/src/domains/legal/documents/child-safety.md` (the point of contact's name or role, response time, minimum age, company), and give `<app web address>/child-safety` and the point of contact in Play Console (Google).
+- [ ] **Finish the child safety standards:** fill in the [placeholders] in `apps/app/src/domains/legal/documents/child-safety.md` (the point of contact's name or role, response time, company), and give `<app web address>/child-safety` and the point of contact in Play Console (Google).
 - [ ] **Self-certify** the Child Safety Standards in Play Console before publishing (Google).
-- [ ] **Finish the Terms of Service and Privacy Policy:** fill in the [placeholders] in `apps/app/src/domains/legal/documents/` (company, contact, minimum age, jurisdiction, providers, retention), have a lawyer review them, and remove the "Draft" notes. Link `/terms` and `/privacy` from the store listings. See [Terms and privacy](#terms-and-privacy).
+- [ ] **Finish the Terms of Service and Privacy Policy:** fill in the [placeholders] in `apps/app/src/domains/legal/documents/` (company, contact, jurisdiction, providers, retention), have a lawyer review them, and remove the "Draft" notes. Link `/terms` and `/privacy` from the store listings. See [Terms and privacy](#terms-and-privacy).
 - [ ] **Account deletion URL in Play Console:** `<app web address>/delete-account` (Google requires one that works without the app).
 - [ ] **Set up email** for sign-in codes: Resend or Mailgun, with the sending domain verified. See [Email](#email).
 - [ ] **Schedule the daily jobs** once the API is hosted (a cron job, or Cron Triggers on Workers):

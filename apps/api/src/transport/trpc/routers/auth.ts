@@ -1,6 +1,7 @@
 import {
     AcceptTermsMutationInputSchema,
     CreateUserProfileMutationInputSchema,
+    DeleteUnfinishedAccountMutationInputSchema,
     GetMySessionsQueryInputSchema,
     RevokeOtherSessionsMutationInputSchema,
     RevokeSessionMutationInputSchema,
@@ -10,6 +11,7 @@ import {
     SignOutMutationInputSchema,
     acceptTermsMutation,
     createUserProfileMutation,
+    deleteUnfinishedAccountMutation,
     restoreAccountMutation,
     scheduleAccountDeletionMutation,
     sendAccountDeletionCodeMutation,
@@ -19,7 +21,7 @@ import {
     signOutMutation,
 } from "@myapp/shared/domains";
 
-import { createUserProfile, getUserProfileByUsername, getUserSessions, recordTermsAccepted, restoreAccount, scheduleAccountDeletion } from "../../../data-access";
+import { createUserProfile, deleteUnfinishedAccount, getUserProfileByUsername, getUserSessions, recordTermsAccepted, restoreAccount, scheduleAccountDeletion } from "../../../data-access";
 import { sendAccountDeletionCode, verifyAccountDeletionCode } from "../../../accounts";
 import { procedure, router } from "../trpc";
 
@@ -36,7 +38,7 @@ export const authRouter = router({
         createUserProfileMutation({
             input,
             context: { logger: ctx.logger },
-            dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, createUserProfile },
+            dependencies: { getCallingUser: ctx.getCallingUser, getUserProfileByUsername, createUserProfile, deleteUnfinishedAccount },
         }),
     ),
 
@@ -126,6 +128,15 @@ export const authRouter = router({
             input,
             context: { logger: ctx.logger },
             dependencies: { getCallingUser: ctx.getCallingUser, recordTermsAccepted },
+        }),
+    ),
+
+    /** Deletes the caller's account at once while sign-up isn't finished (someone too young to sign up). */
+    deleteUnfinishedAccount: procedure.input(DeleteUnfinishedAccountMutationInputSchema).mutation(({ ctx, input }) =>
+        deleteUnfinishedAccountMutation({
+            input,
+            context: { logger: ctx.logger },
+            dependencies: { getCallingUser: ctx.getCallingUser, deleteUnfinishedAccount },
         }),
     ),
 });

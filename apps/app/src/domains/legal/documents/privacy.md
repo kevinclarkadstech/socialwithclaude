@@ -10,7 +10,7 @@ This policy explains what [COMPANY NAME] ("we", "us") collects when you use {{ap
 
 **What you give us**
 
-- **Account:** your email address, and the version of these terms you agreed to and when.
+- **Account:** your email address, the month and year you were born (to check you're old enough; it isn't shown to anyone), and the version of these terms you agreed to and when.
 - **Profile:** your username, first and last name if you add them, an about text, and a profile and cover photo if you add them.
 - **What you post and send:** posts, listings (with their title, description, condition and price), comments, photos, and chat messages.
 - **What you do in the app:** who you follow and block, what you save, how you vote on comments, mentions, and your settings (such as whether your profile is public or private).
@@ -67,7 +67,7 @@ We also share information when the law requires it, to protect people from harm,
 
 ## Children
 
-{{appName}} isn't for children under [MINIMUM AGE, e.g. 13], and we don't knowingly collect their information. If you believe a child has an account, contact us and we'll delete it.
+{{appName}} isn't for children under 13, and we don't knowingly collect their information. Sign-up asks for your birth month and year; if you're under 13, the account is deleted straight away with what was entered. If you believe a child has an account, contact us and we'll delete it.
 
 ## Security
 

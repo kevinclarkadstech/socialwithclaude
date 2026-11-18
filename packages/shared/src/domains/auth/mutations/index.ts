@@ -5,3 +5,4 @@ export * from './sendAccountDeletionCodeMutation/sendAccountDeletionCodeMutation
 export * from './scheduleAccountDeletionMutation/scheduleAccountDeletionMutation';
 export * from './restoreAccountMutation/restoreAccountMutation';
 export * from './acceptTermsMutation/acceptTermsMutation';
+export * from './deleteUnfinishedAccountMutation/deleteUnfinishedAccountMutation';

@@ -85,7 +85,7 @@ export async function createTestUser({ name, firstName = null, lastName = null, 
     const username = `${name}_${runId}${next}`.toLowerCase().slice(0, 30);
     const [user] = await db.insert(schema.users).values({ name: username, email: `${username}@example.test`, emailVerified: true }).returning();
     const call = callAs(user!.id);
-    await call.auth.signUp({ username, firstName, lastName, about: null, acceptedTermsVersion: currentTermsVersion });
+    await call.auth.signUp({ username, firstName, lastName, about: null, acceptedTermsVersion: currentTermsVersion, birthYear: 1990, birthMonth: 5 });
     if (visibility) {
         await call.users.updateMySettings({ profileVisibility: visibility });
     }

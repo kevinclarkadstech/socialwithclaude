@@ -65,6 +65,10 @@ export const users = pgTable("users", {
     // (at sign-up, then again whenever the major version goes up; see currentTermsVersion).
     termsAcceptedVersion: text("terms_accepted_version"),
     termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
+    // When they were born, month and year only, given at sign-up to check they're old enough
+    // (see minimumAge). Never shown. Null for accounts from before sign-up asked.
+    birthYear: smallint("birth_year"),
+    birthMonth: smallint("birth_month"),
 }, (t) => [
     uniqueIndex("users_email_lower_idx").on(sql`lower(${t.email})`),
     check("users_role_valid", isOneOf(t.role, userRoles)),
