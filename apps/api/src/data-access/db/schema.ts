@@ -15,6 +15,7 @@ import {
     moderationActionTypes,
     reportKinds,
     notificationTypes,
+    pushPlatforms,
     type Notification,
     type ChatMessageReport,
     type PostView,
@@ -185,9 +186,36 @@ export const userSettings = pgTable("user_settings", {
     followersCanTag: boolean("followers_can_tag").notNull().default(true),
     nonFollowersCanTag: boolean("non_followers_can_tag").notNull().default(false),
     profileVisibility: text("profile_visibility", { enum: asEnum(profileVisibilities) }).notNull().default("public"),
+    // Push notifications, by kind (see pushSettingFor). Warnings and report outcomes always go.
+    pushMessages: boolean("push_messages").notNull().default(true),
+    pushComments: boolean("push_comments").notNull().default(true),
+    pushMentions: boolean("push_mentions").notNull().default(true),
+    pushFollows: boolean("push_follows").notNull().default(true),
     ...timestamps(),
 }, (t) => [
     check("user_settings_profile_visibility_valid", isOneOf(t.profileVisibility, profileVisibilities)),
+]);
+
+/**
+ * A device that gets push notifications: its Firebase Cloud Messaging token,
+ * for the account signed in on it. Signing out (or being signed out) deletes
+ * the session, and with it the token, so a shared device stops getting the
+ * last person's notifications. A token Firebase reports as no longer valid
+ * is deleted too.
+ */
+export const pushTokens = pgTable("push_tokens", {
+    token: text("token").primaryKey(),
+    userId: text("user_id")
+        .notNull()
+        .references(() => users.id, { onDelete: "cascade" }),
+    sessionId: text("session_id")
+        .notNull()
+        .references(() => sessions.id, { onDelete: "cascade" }),
+    platform: text("platform", { enum: asEnum(pushPlatforms) }).notNull(),
+    ...timestamps(),
+}, (t) => [
+    index("push_tokens_user_id_idx").on(t.userId),
+    check("push_tokens_platform_valid", isOneOf(t.platform, pushPlatforms)),
 ]);
 
 /**
@@ -486,6 +514,8 @@ export const chatMembers = pgTable("chat_members", {
     lastReadAt: timestamp("last_read_at", { withTimezone: true }),
     // When the member deleted the chat for themselves: earlier messages are hidden for them.
     clearedAt: timestamp("cleared_at", { withTimezone: true }),
+    // When they were last sent a push about this chat: messages after it (and after lastReadAt) are the next one's.
+    lastPushedAt: timestamp("last_pushed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
     primaryKey({ columns: [t.chatId, t.userId] }),
@@ -571,12 +601,16 @@ export const notifications = pgTable("notifications", {
     readAt: timestamp("read_at", { withTimezone: true }),
     // When it starts to show (created_at plus NOTIFICATION_DELAY_SECONDS; see notificationDeliverAt).
     deliverAt: timestamp("deliver_at", { withTimezone: true }).notNull().defaultNow(),
+    // When it was handled for push (sent, or skipped as no longer visible or turned off); null until then.
+    pushedAt: timestamp("pushed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
     // Someone's notifications, newest first.
     index("notifications_user_id_created_at_id_idx").on(t.userId, t.createdAt, t.id),
     // The number on the bell: their unread ones.
     index("notifications_user_id_unread_idx").on(t.userId).where(sql`${t.readAt} is null`),
+    // Push delivery: the ones not handled yet, in the order they're due.
+    index("notifications_unpushed_idx").on(t.deliverAt).where(sql`${t.pushedAt} is null`),
     check("notifications_type_valid", isOneOf(t.type, notificationTypes)),
 ]);
 

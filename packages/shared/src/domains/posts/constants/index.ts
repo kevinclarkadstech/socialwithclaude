@@ -1,5 +1,5 @@
 import { ListingConditionSchema, ListingTypeSchema, ListingStatusSchema } from "../types/post-listing";
-import { ReportReasonSchema, ReportStatusSchema } from "../types/report";
+import { ReportReasonSchema, ReportStatusSchema, type ReportReason } from "../types/report";
 import { PostTypeSchema } from "../types/post";
 import { PhotoCaptionSchema } from "../types/post-media";
 
@@ -25,3 +25,17 @@ export const postPhotoSizes = [320, 640, 1280] as const;
 
 /** The most a photo's longer side can be over its shorter one (3:1 panoramas, 1:3 tall shots). */
 export const maxPhotoAspectRatio = 3;
+
+/** How each report reason reads: in the "Report" menu, the admin queue and warnings. */
+export const reportReasonLabels: Record<ReportReason, string> = {
+    spam: "Spam",
+    harassment: "Harassment or bullying",
+    hate: "Hate speech",
+    violence: "Violence or threats",
+    sexual_content: "Sexual content",
+    child_safety: "Child safety",
+    impersonation: "Pretending to be someone else",
+    scam: "Scam or fraud",
+    prohibited_item: "Prohibited item",
+    other: "Something else",
+};

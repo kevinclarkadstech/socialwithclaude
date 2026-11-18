@@ -23,7 +23,8 @@
     "admin:grant": "bun src/commands/setAdminRole/setAdminRole.ts",
     "admin:revoke": "bun src/commands/setAdminRole/setAdminRole.ts --revoke",
     "accounts:purge": "bun src/commands/purgeDeletedAccounts/purgeDeletedAccounts.ts",
-    "accounts:delete": "bun src/commands/deleteAccountByEmail/deleteAccountByEmail.ts"
+    "accounts:delete": "bun src/commands/deleteAccountByEmail/deleteAccountByEmail.ts",
+    "push:deliver": "bun src/commands/deliverPushes/deliverPushes.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.7.20",

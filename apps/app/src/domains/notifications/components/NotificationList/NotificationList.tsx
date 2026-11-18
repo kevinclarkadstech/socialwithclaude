@@ -1,5 +1,5 @@
 import { IonButton, IonIcon, IonItem, IonLabel, IonList, IonNote, IonSpinner } from '@ionic/react';
-import type { NotificationView } from '@myapp/shared/domains';
+import { describeNotification, type NotificationView } from '@myapp/shared/domains';
 import { flagOutline, warningOutline } from 'ionicons/icons';
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
@@ -10,7 +10,6 @@ import { UserAvatar } from '../../../users';
 import { runGetMyNotificationsQuery } from '../../operations/runGetMyNotificationsQuery/runGetMyNotificationsQuery';
 import { runMarkNotificationsReadMutation } from '../../operations/runMarkNotificationsReadMutation/runMarkNotificationsReadMutation';
 import { unreadCountStore } from '../../unreadCountStore';
-import { describeNotification } from '../../utils/describeNotification/describeNotification';
 import './NotificationList.css';
 
 /** The icon for the app's own notifications; people's show their avatar. */

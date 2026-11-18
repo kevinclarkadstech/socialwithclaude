@@ -57,6 +57,15 @@ export const ServerConfigSchema = z.object({
     // The most emails the API sends in an hour, all together: past it, sending codes is refused until the hour is up (and Sentry is told).
     EMAIL_HOURLY_LIMIT: z.coerce.number().int().min(1).default(300),
 
+    // Push notifications: "none" sends nothing, "console" logs them (local development), "fcm" sends through Firebase Cloud Messaging.
+    PUSH_PROVIDER: z.enum(["none", "console", "fcm"]).default("none"),
+    // The Firebase service account's key, as its JSON (Firebase console → Project settings → Service accounts), when PUSH_PROVIDER is fcm.
+    FCM_SERVICE_ACCOUNT_JSON: z.string().optional(),
+    // How often the API looks for pushes to send; 0 turns the loop off (then run `bun run push:deliver` on a schedule instead).
+    PUSH_DELIVERY_INTERVAL_SECONDS: z.coerce.number().int().min(0).max(300).default(5),
+    // How long a new chat message waits before it's pushed (see claimChatPushes).
+    CHAT_PUSH_DELAY_SECONDS: z.coerce.number().int().min(0).max(600).default(10),
+
     // How long a notification waits before it shows, so a quick undo (unfollowing, editing a mention out) means it's never seen.
     NOTIFICATION_DELAY_SECONDS: z.coerce.number().int().min(0).max(3600).default(30),
 }).superRefine((config, ctx) => {
@@ -70,6 +79,9 @@ export const ServerConfigSchema = z.object({
         if (!config[key]) {
             ctx.addIssue({ code: "custom", path: [key], message: `Required when EMAIL_PROVIDER is ${config.EMAIL_PROVIDER}` });
         }
+    }
+    if (config.PUSH_PROVIDER === "fcm" && !config.FCM_SERVICE_ACCOUNT_JSON) {
+        ctx.addIssue({ code: "custom", path: ["FCM_SERVICE_ACCOUNT_JSON"], message: "Required when PUSH_PROVIDER is fcm" });
     }
 });
 

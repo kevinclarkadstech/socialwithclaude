@@ -1,8 +1,7 @@
 import { IonBadge, IonButton, IonCard, IonCardContent, IonCardHeader, IonCardSubtitle, IonCardTitle } from '@ionic/react';
-import type { ReportedItem } from '@myapp/shared/domains';
+import { reportReasonLabels, type ReportedItem } from '@myapp/shared/domains';
 import { useState } from 'react';
 import { timeAgo } from '../../../../utils/formatters/dates';
-import { reportReasonLabels } from '../../../../utils/formatters/reportReasons';
 import { banUser } from '../../actions/banUser/banUser';
 import { resolveReports } from '../../actions/resolveReports/resolveReports';
 import { unbanUser } from '../../actions/unbanUser/unbanUser';

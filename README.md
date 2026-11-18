@@ -170,6 +170,21 @@ A send that fails is logged and reported to Sentry, with the provider's status a
 - **An hourly budget for all email together,** `EMAIL_HOURLY_LIMIT` (default 300), which a bot spread across many addresses and IPs can't get past. It counts only codes the other limits let through. Once it's used up, codes are refused until the hour is up, and Sentry is told (once an hour). Raise it as the app grows.
 - If Redis can't be reached, no codes are sent, rather than sent without limits. People who already have a code can still use it.
 
+### Push notifications
+
+Pushes go through Firebase Cloud Messaging (FCM) to both platforms: Android directly, iOS through Apple's push service with your APNs key. Each device registers its FCM token with the API while someone is signed in on it; signing out (or being signed out) removes it.
+
+- **What's pushed:** every notification in the bell, in the same words (`describeNotification`), once its delivery time comes (after `NOTIFICATION_DELAY_SECONDS`), unless it's been undone since (an unfollow, a mention edited out…) or the person turned that kind off in Settings (new messages, comments, mentions, follows; warnings and report outcomes always go). New chat messages too, `CHAT_PUSH_DELAY_SECONDS` (10) after the first one not yet pushed, unless they've read the chat by then: one push per chat, saying how many are new, that replaces the previous one for that chat on the device. The badge on iOS is the number on the bell.
+- **How:** the API checks every `PUSH_DELIVERY_INTERVAL_SECONDS` (5) for what's due. Several instances can run at once; each notification and chat is taken by one. On a host without a long-running process, set it to 0 and run `bun run --cwd apps/api push:deliver` from a scheduler instead.
+
+**Setting it up:**
+
+1. Create a Firebase project, and add an Android app and an iOS app to it with the app id (see the launch checklist). The app's side (the plugin and the two config files) comes with the app's push PR.
+2. In your Apple Developer account, create an APNs authentication key (`.p8`) and upload it in Firebase: Project settings → Cloud Messaging → Apple app configuration.
+3. In Firebase: Project settings → Service accounts → Generate new private key. Set the API's `PUSH_PROVIDER=fcm` and `FCM_SERVICE_ACCOUNT_JSON` to that file's contents (it's a secret: keep it out of the repository).
+
+Locally, `PUSH_PROVIDER=console` logs each push instead.
+
 ### Cache (Redis)
 
 The API's cache is Redis. For now it only holds rate-limit counters, so the limits hold across instances. Any Redis 7 works, e.g. Upstash. (Rate limiting goes through a `RateLimiter` interface, so on Cloudflare Workers it could use Workers rate-limit bindings instead; see `apps/api/src/rate-limiting/types/index.ts`.)
