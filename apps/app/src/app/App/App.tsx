@@ -10,6 +10,7 @@ import { disallowedActions } from '../../common/events/disallowedActions/disallo
 import { RestoreAccountScreen, SignInModal } from '../../domains/auth';
 import { callingUserStore, OnboardingModal, useCallingUser } from '../../domains/users';
 import { UpdatedTermsScreen } from '../../domains/legal';
+import { PushNotificationsBridge } from '../../domains/notifications';
 import { showErrorToast } from '../../lib/toasts';
 
 /* Core CSS required for Ionic components to work properly */
@@ -157,6 +158,7 @@ export function App() {
             </div>
           </IonSplitPane>
         </TabNavigationProvider>
+        <PushNotificationsBridge />
         <PhotoViewer />
         <SignInModal
           isOpen={openModal === 'signIn'}

@@ -11,6 +11,7 @@ import { runDeleteChatMessageMutation } from '../../operations/runDeleteChatMess
 import { runGetChatMessagesQuery } from '../../operations/runGetChatMessagesQuery/runGetChatMessagesQuery';
 import { runMarkChatReadMutation } from '../../operations/runMarkChatReadMutation/runMarkChatReadMutation';
 import { runSendChatMessageMutation } from '../../operations/runSendChatMessageMutation/runSendChatMessageMutation';
+import { replyExpected } from '../../../../common/events/replyExpected/replyExpected';
 import { runUpdateChatMessageMutation } from '../../operations/runUpdateChatMessageMutation/runUpdateChatMessageMutation';
 import type { ShownChatMessage } from '../../types';
 import { mergeNewestMessages } from '../../utils/mergeNewestMessages/mergeNewestMessages';
@@ -111,6 +112,9 @@ export function useChatMessages(chat: ChatView | null, { isShown }: { isShown: b
       return;
     }
     const result = await runSendChatMessageMutation({ chat, id: message.id, content: message.content }).catch(() => null);
+    if (result?.ok) {
+      replyExpected.emit('message');
+    }
     setMessages((shown) =>
       shown.map((item) => (item.id !== message.id ? item : result?.ok ? sent(result.value) : { ...item, status: 'failed' })),
     );

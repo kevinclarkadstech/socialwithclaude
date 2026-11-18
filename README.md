@@ -179,11 +179,19 @@ Pushes go through Firebase Cloud Messaging (FCM) to both platforms: Android dire
 
 **Setting it up:**
 
-1. Create a Firebase project, and add an Android app and an iOS app to it with the app id (see the launch checklist). The app's side (the plugin and the two config files) comes with the app's push PR.
+1. Create a Firebase project, and add an Android app and an iOS app to it with the app id (see the launch checklist). Put the two files it gives you in the native projects: `google-services.json` in `apps/app/android/app/`, and `GoogleService-Info.plist` in `apps/app/ios/App/App/` (in Xcode, add it to the App target). They aren't secret (they identify the app to Firebase; sending needs the service account below). Without them the apps still build and run, with push off.
 2. In your Apple Developer account, create an APNs authentication key (`.p8`) and upload it in Firebase: Project settings → Cloud Messaging → Apple app configuration.
 3. In Firebase: Project settings → Service accounts → Generate new private key. Set the API's `PUSH_PROVIDER=fcm` and `FCM_SERVICE_ACCOUNT_JSON` to that file's contents (it's a secret: keep it out of the repository).
 
 Locally, `PUSH_PROVIDER=console` logs each push instead.
+
+**In the app** (`@capacitor-firebase/messaging`, native only; `apps/app/src/domains/notifications`):
+
+- **Asking:** not when the app opens. After someone sends a message, follows someone or comments, the app asks "Turn on notifications?" with the reason, and only on "Turn on" shows the system's question (which iOS allows only once). After "Not now" it waits 30 days. Settings → Notifications has a Turn on button too, and points to the phone's settings if they were turned off there.
+- **Each device** registers its token with the API once someone has signed up and allowed notifications, and again whenever Firebase changes it.
+- **Tapping** a notification opens what it's about (the `path` the API sends).
+- **Settings → Notifications:** the four kinds, for every device they're signed in on. On the web it explains that pushes come to the apps.
+- iOS has the Push Notifications entitlement (`App.entitlements`) and the remote-notification background mode. On Android, a notification icon (white on transparent) can be added later; until then Android uses the app icon.
 
 ### Cache (Redis)
 

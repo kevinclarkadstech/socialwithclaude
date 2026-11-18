@@ -1,4 +1,5 @@
 import { runOrToast } from '../../../../lib/api/runOrToast';
+import { replyExpected } from '../../../../common/events/replyExpected/replyExpected';
 import { postCommentListKey, postCommentStore } from '../../postCommentStore';
 import { postStore } from '../../postStore';
 import { runCreatePostCommentMutation } from '../../operations/runCreatePostCommentMutation/runCreatePostCommentMutation';
@@ -18,6 +19,7 @@ export async function createPostComment({ id, postId, content, photo }: { id: st
       list.ids.includes(comment.id) ? list : { ...list, ids: [...list.ids, comment.id] },
     );
     postStore.updateItem(postId, (post) => ({ ...post, numComments: post.numComments + 1 }));
+    replyExpected.emit('comment');
   }
   return result;
 }

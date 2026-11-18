@@ -20,6 +20,7 @@ export { UserSummaryItem } from './components/UserSummaryItem/UserSummaryItem';
 
 // Hooks
 export { useCallingUser } from './hooks/useCallingUser/useCallingUser';
+export { useMySettings } from './hooks/useMySettings/useMySettings';
 export { useUserProfile } from './hooks/useUserProfile/useUserProfile';
 
 // Operations

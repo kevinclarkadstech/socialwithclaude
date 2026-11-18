@@ -5,3 +5,5 @@
 
 export { NotificationList } from './components/NotificationList/NotificationList';
 export { NotificationsButton } from './components/NotificationsButton/NotificationsButton';
+export { PushNotificationsBridge } from './components/PushNotificationsBridge/PushNotificationsBridge';
+export { PushSettings } from './components/PushSettings/PushSettings';

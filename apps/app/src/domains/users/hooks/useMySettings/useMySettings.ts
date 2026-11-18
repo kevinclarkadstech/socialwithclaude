@@ -1,10 +1,10 @@
-import type { ProfileVisibility, UserSettings } from '@myapp/shared/domains';
+import type { ProfileVisibility, UpdateMySettingsMutationInput, UserSettings } from '@myapp/shared/domains';
 import { useEffect, useState } from 'react';
 import { runOrToast } from '../../../../lib/api/runOrToast';
 import { runGetMySettingsQuery } from '../../operations/runGetMySettingsQuery/runGetMySettingsQuery';
 import { runUpdateMySettingsMutation } from '../../operations/runUpdateMySettingsMutation/runUpdateMySettingsMutation';
 
-/** The signed-in user's settings, and changing who can see their profile. A failed change is undone and shown in a toast. */
+/** The signed-in user's settings, and changing them. A change shows at once; a failed one is undone and shown in a toast. */
 export function useMySettings() {
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isFailed, setIsFailed] = useState(false);
@@ -33,18 +33,20 @@ export function useMySettings() {
     };
   }, []);
 
-  async function setProfileVisibility(profileVisibility: ProfileVisibility) {
+  async function updateSettings(changes: UpdateMySettingsMutationInput) {
     if (!settings) {
       return;
     }
     const before = settings;
     // Shown straight away; put back if the API refuses.
-    setSettings({ ...settings, profileVisibility });
+    setSettings({ ...settings, ...changes });
     setIsSaving(true);
-    const result = await runOrToast(() => runUpdateMySettingsMutation({ profileVisibility }));
+    const result = await runOrToast(() => runUpdateMySettingsMutation(changes));
     setIsSaving(false);
     setSettings(result.ok ? result.value : before);
   }
 
-  return { settings, isFailed, isSaving, setProfileVisibility };
+  const setProfileVisibility = (profileVisibility: ProfileVisibility) => updateSettings({ profileVisibility });
+
+  return { settings, isFailed, isSaving, setProfileVisibility, updateSettings };
 }
