@@ -6,7 +6,7 @@ import './LegalDocument.css';
 /**
  * A legal document, rendered. A link to another page of the app (e.g. from
  * the terms to /privacy) goes to `onOpenLink` instead of reloading the app;
- * links elsewhere open in a new tab.
+ * an email address opens the mail app; other links open in a new tab.
  */
 export function LegalDocument({ name, onOpenLink }: { name: LegalDocumentName; onOpenLink: (path: string) => void }) {
   const html = useMemo(() => legalDocumentHtml(name), [name]);
@@ -15,6 +15,9 @@ export function LegalDocument({ name, onOpenLink }: { name: LegalDocumentName; o
     const link = (event.target as HTMLElement).closest('a');
     const href = link?.getAttribute('href');
     if (!href) {
+      return;
+    }
+    if (href.startsWith('mailto:')) {
       return;
     }
     event.preventDefault();
