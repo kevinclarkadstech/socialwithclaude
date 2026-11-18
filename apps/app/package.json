@@ -11,11 +11,14 @@
     "test.unit": "vitest",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "cap:sync": "vite build && cap sync"
   },
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "^8",
+    "@capacitor/android": "8.6.0",
     "@capacitor/core": "8.6.0",
+    "@capacitor/ios": "8.6.0",
     "@capacitor/share": "8.0.3",
     "@ionic/core": "9.0.10",
     "@ionic/react": "^9.0.10",
@@ -33,6 +36,7 @@
     "ulid": "^3"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.6.0",
     "@eslint/js": "^10.0.1",
     "@testing-library/dom": ">=7.21.4",
     "@testing-library/jest-dom": "^7.0.1",

@@ -27,6 +27,17 @@ bun run dev                   # API on :3000, app on :5173
 
 `apps/api/.env.example` lists every API variable. Its storage values point at the local Garage and aren't secrets.
 
+### iOS and Android
+
+The native apps are Capacitor 8 projects around the web build: `apps/app/ios` (Xcode, Swift Package Manager, no CocoaPods) and `apps/app/android` (Gradle). They're committed; the web build copied into them isn't.
+
+1. Build the web app with the API's real addresses, since a native app has no localhost to fall back on: `VITE_API_URL=https://… VITE_PUBLIC_URL=https://… VITE_MEDIA_URL=https://… bun run --cwd apps/app cap:sync` builds it and copies it into both projects (it also refreshes the plugins' paths in `node_modules`, so run it after installing packages too). Locally, a phone or emulator reaches your computer's API by its address on the network, not `localhost`.
+2. Open `apps/app/ios/App/App.xcodeproj` in Xcode (on a Mac) or `apps/app/android` in Android Studio, and run it.
+
+The app id, `com.example.placeholder` in `apps/app/capacitor.config.ts`, is a **placeholder**: see the launch checklist.
+
+CI builds both on PRs, without signing, so a change that breaks a native build shows up there: Android (an unsigned debug APK, kept for 7 days as the run's artifact) on any change to the app, and iOS (a simulator build) only when the Xcode project, Capacitor's config or a dependency changes, every Monday, and on demand from the Actions tab, since macOS runners cost about 10x Linux minutes on a private repository.
+
 ## Launch checklist
 
 What the app stores and the law expect from a social app with photos, and where the app stands. Apple: [App Review Guideline 1.2](https://developer.apple.com/app-store/review/guidelines/#user-generated-content) (user-generated content). Google Play: the [Child Safety Standards policy](https://support.google.com/googleplay/android-developer/answer/14747720) for social apps.
@@ -55,6 +66,8 @@ What the app stores and the law expect from a social app with photos, and where 
 - [ ] **Finish the Terms of Service and Privacy Policy:** fill in the [placeholders] in `apps/app/src/domains/legal/documents/` (company, contact, jurisdiction, providers, retention), have a lawyer review them, and remove the "Draft" notes. Link `/terms` and `/privacy` from the store listings. See [Terms and privacy](#terms-and-privacy).
 - [ ] **Account deletion URL in Play Console:** `<app web address>/delete-account` (Google requires one that works without the app).
 - [ ] **Set up email** for sign-in codes: Resend or Mailgun, with the sending domain verified. See [Email](#email).
+- [ ] **The real app id** (reverse domain, e.g. `com.yourcompany.appname`), which can't change after the first store upload: in `apps/app/capacitor.config.ts`, the Xcode project's bundle identifier (`apps/app/ios/App`), `applicationId` in `apps/app/android/app/build.gradle`, and the API's `APPLE_APP_BUNDLE_IDENTIFIER`. Also the app's name, icons and splash screen.
+- [ ] **Signed release builds** to TestFlight and Play's internal testing track: GitHub Actions with fastlane, or a hosted service (Capawesome Cloud, Codemagic). Needs an Apple Developer account and a Google Play developer account.
 - [ ] **Schedule the daily jobs** once the API is hosted (a cron job, or Cron Triggers on Workers):
   - `bun run --cwd apps/api accounts:purge`: deletes accounts whose 30 days to restore are up. Without it, deleted accounts are hidden but never actually deleted. See [Account deletion](#account-deletion).
   - `bun run --cwd apps/api media:sweep --delete`: removes photo files that no post uses. See step 5 under [Object storage](#object-storage-cloudflare-r2).
