@@ -6,7 +6,7 @@ import { rootRoutes, sharedRoutes, tabs } from '../routes';
 import { Sidebar } from '../Sidebar/Sidebar';
 import { PhotoViewer } from '../../common/components/PhotoViewer/PhotoViewer';
 import { disallowedActions } from '../../common/events/disallowedActions/disallowedActions';
-import { SignInModal } from '../../domains/auth';
+import { RestoreAccountScreen, SignInModal } from '../../domains/auth';
 import { callingUserStore, OnboardingModal, useCallingUser } from '../../domains/users';
 import { showErrorToast } from '../../lib/toasts';
 
@@ -54,9 +54,10 @@ type OpenModal = 'none' | 'signIn' | 'onboarding';
  * through disallowedActions: signed out, the sign-in modal opens; signed in
  * without a profile, onboarding. Signing in to a new account goes on to
  * onboarding. Once the user has a profile, the action they were trying to do runs.
+ * While their account is scheduled for deletion, it shows only the screen to restore it.
  */
 export function App() {
-  const { isLoaded } = useCallingUser();
+  const { isLoaded, callingUser } = useCallingUser();
   const [openModal, setOpenModal] = useState<OpenModal>('none');
   // What the user was trying to do when they were asked to sign in.
   const pendingAction = useRef<(() => void) | null>(null);
@@ -118,6 +119,15 @@ export function App() {
 
   if (!isLoaded) {
     return <IonApp />;
+  }
+
+  // The API refuses everything else until they restore it (or sign out).
+  if (callingUser?.deletionScheduledAt) {
+    return (
+      <IonApp>
+        <RestoreAccountScreen deletionScheduledAt={callingUser.deletionScheduledAt} />
+      </IonApp>
+    );
   }
 
   return (

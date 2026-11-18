@@ -1,7 +1,7 @@
 import { authClient } from '../../../../lib/auth/authClient';
-import { sessionToken } from '../../../../lib/auth/sessionToken';
-import { callingUserStore, refreshCallingUser } from '../../../users';
+import { refreshCallingUser } from '../../../users';
 import { postCommentStore, postStore } from '../../../posts';
+import { forgetSession } from '../../actions/forgetSession/forgetSession';
 
 const codeErrors: Record<string, string> = {
   INVALID_OTP: "That code isn't right. Check it and try again.",
@@ -32,10 +32,7 @@ export function useAuth() {
 
   async function signOut() {
     await authClient.signOut();
-    await sessionToken.clear();
-    callingUserStore.set(null);
-    postStore.reset();
-    postCommentStore.reset();
+    await forgetSession();
   }
 
   return { sendCode, verifyCode, signOut };
