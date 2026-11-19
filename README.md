@@ -223,14 +223,18 @@ Signing uses fastlane [match](https://docs.fastlane.tools/actions/match/): the A
 
 1. **Apple Developer account** (paid). In Certificates, Identifiers & Profiles, register the app id (the real one: see the launch checklist) with the **Push Notifications** and **Associated Domains** capabilities. In [App Store Connect](https://appstoreconnect.apple.com), create the app with that id.
 2. **An App Store Connect API key:** Users and Access → Integrations → App Store Connect API → Team Keys, with the **Admin** role (match creates certificates; once they exist, App Manager is enough). Download the `.p8` (only possible once) and note its key id and the issuer id.
-3. **A private GitHub repository for the certificates**, empty (e.g. `yourname/ios-certificates`), and a fine-grained personal access token with read and write access to its contents.
+3. **A private GitHub repository for the certificates**, empty, with no README (e.g. `yourname/ios-certificates`). Then a fine-grained personal access token (GitHub → Settings → Developer settings → Fine-grained tokens) with access to only that repository and Contents: Read and write. When the token expires, releases fail until you replace the secret.
 4. **In this repository's Settings → Secrets and variables → Actions:**
    - Secrets:
      - `ASC_KEY_ID` and `ASC_ISSUER_ID`: from step 2.
-     - `ASC_KEY_P8`: the `.p8` file's contents.
+     - `ASC_KEY_P8`: the `.p8` file's whole contents, including the `BEGIN` and `END` lines (open it in a text editor and copy it all). Not base64-encoded.
      - `MATCH_PASSWORD`: a long random password that encrypts the certificates repository. Keep a copy: without it they can't be read.
-     - `MATCH_GIT_BASIC_AUTHORIZATION`: `yourname:token` from step 3, base64-encoded (`echo -n 'yourname:token' | base64`).
-     - `IOS_GOOGLE_SERVICE_INFO_PLIST`: `GoogleService-Info.plist` base64-encoded (`base64 -i GoogleService-Info.plist`). Without it a release builds without push notifications, with a warning.
+     - `MATCH_GIT_BASIC_AUTHORIZATION`: `yourname:token` from step 3, base64-encoded:
+       - macOS or Linux: `echo -n 'yourname:token' | base64`
+       - Windows (PowerShell): `[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("yourname:token"))`
+     - `IOS_GOOGLE_SERVICE_INFO_PLIST`: `GoogleService-Info.plist` base64-encoded. Without it a release builds without push notifications, with a warning.
+       - macOS or Linux: `base64 -i GoogleService-Info.plist`
+       - Windows (PowerShell): `[Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\path\to\GoogleService-Info.plist"))`
    - Variables:
      - `APPLE_TEAM_ID`: your team id (Membership in your Apple Developer account).
      - `MATCH_GIT_URL`: the certificates repository's address, e.g. `https://github.com/yourname/ios-certificates.git`.
