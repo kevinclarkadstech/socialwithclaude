@@ -32,7 +32,7 @@ bun run dev                   # API on :3000, app on :5173
 The native apps are Capacitor 8 projects around the web build: `apps/app/ios` (Xcode, Swift Package Manager, no CocoaPods) and `apps/app/android` (Gradle). They're committed; the web build copied into them isn't.
 
 1. Build the web app with the API's real addresses, since a native app has no localhost to fall back on: `VITE_API_URL=https://… VITE_PUBLIC_URL=https://… VITE_MEDIA_URL=https://… bun run --cwd apps/app cap:sync` builds it and copies it into both projects (it also refreshes the plugins' paths in `node_modules`, so run it after installing packages too). Locally, a phone or emulator reaches your computer's API by its address on the network, not `localhost`.
-2. Open `apps/app/ios/App/App.xcodeproj` in Xcode (on a Mac) or `apps/app/android` in Android Studio, and run it.
+2. Open `apps/app/ios/App/App.xcodeproj` in Xcode (on a Mac) or `apps/app/android` in Android Studio, and run it. Without a Mac, iOS builds come from GitHub Actions: see [Releasing the iOS app](#releasing-the-ios-app).
 
 The app id, `com.example.placeholder` in `apps/app/capacitor.config.ts`, is a **placeholder**: see the launch checklist.
 
@@ -238,7 +238,9 @@ Signing uses fastlane [match](https://docs.fastlane.tools/actions/match/): the A
 5. **Run "iOS certificates"** from the Actions tab (`.github/workflows/ios-certificates.yml`). It creates the certificate and profile and stores them in the certificates repository. Run it again with "Renew the profile" after turning on another capability for the app id, and again when the certificate expires (yearly).
 6. Push a tag.
 
-Locally, nothing changes: Xcode signs debug builds automatically with your own account. The release lane switches the App target to match's profile only for its own build.
+**Without a Mac** (Xcode only runs on macOS), this is how to try the iOS app on an iPhone: push a tag, then install the build from the TestFlight app once Apple has processed it (about 20–30 minutes in all). Push notifications and Universal Links need a real phone and a signed build anyway. Day to day, work in the browser (and Android Studio, which runs on Windows); the iOS simulator build on PRs shows when a change breaks the iOS build.
+
+On a Mac, Xcode still signs debug builds automatically with your own account: the release lane switches the App target to match's profile only for its own build.
 
 ### Cache (Redis)
 
