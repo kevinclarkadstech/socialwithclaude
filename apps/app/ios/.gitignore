@@ -14,3 +14,9 @@ App/App/config.xml
 
 # Made by `cap sync` (Swift packages that point into node_modules, by absolute path)
 App/CapApp-SPM/symlinks
+
+# fastlane's output (release builds go to App/build, ignored above)
+App/fastlane/report.xml
+App/fastlane/README.md
+App/fastlane/test_output
+App/App/GoogleService-Info.plist

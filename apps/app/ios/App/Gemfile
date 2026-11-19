@@ -1,0 +1,4 @@
+source "https://rubygems.org"
+
+# Release builds (see the README's "Releasing the iOS app"). `bundle exec fastlane <lane>`.
+gem "fastlane", "2.242.0"
