@@ -22,6 +22,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- App Links: links to the app's web address open here once Android has checked
+                 /.well-known/assetlinks.json on it. The address is appLinksHost in build.gradle. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="${appLinksHost}" />
+            </intent-filter>
+
         </activity>
 
         <provider

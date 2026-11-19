@@ -8,5 +8,8 @@ project(':aparajita-capacitor-secure-storage').projectDir = new File('../../../n
 include ':capacitor-firebase-messaging'
 project(':capacitor-firebase-messaging').projectDir = new File('../../../node_modules/.bun/@capacitor-firebase+messaging@8.6.0+6ab6186627aac117/node_modules/@capacitor-firebase/messaging/android')
 
+include ':capacitor-app'
+project(':capacitor-app').projectDir = new File('../../../node_modules/.bun/@capacitor+app@8.1.2+6ab6186627aac117/node_modules/@capacitor/app/android')
+
 include ':capacitor-share'
 project(':capacitor-share').projectDir = new File('../../../node_modules/.bun/@capacitor+share@8.0.3+6ab6186627aac117/node_modules/@capacitor/share/android')
