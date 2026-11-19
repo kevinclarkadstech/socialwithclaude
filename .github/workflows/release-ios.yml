@@ -1,0 +1,82 @@
+name: iOS release
+
+# A signed release build of the iOS app, uploaded to TestFlight, when a version
+# tag is pushed: `git tag v1.2.0 && git push origin v1.2.0`. The tag is the
+# version people see (1.2.0); the build number is this workflow's run number.
+# See the README's "Releasing the iOS app" for the secrets and variables it needs.
+on:
+  push:
+    tags: ["v*.*.*"]
+
+# One release at a time; a second tag waits instead of cancelling the first.
+concurrency:
+  group: release-ios
+  cancel-in-progress: false
+
+jobs:
+  testflight:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      VITE_API_URL: ${{ vars.VITE_API_URL }}
+      VITE_PUBLIC_URL: ${{ vars.VITE_PUBLIC_URL }}
+      VITE_MEDIA_URL: ${{ vars.VITE_MEDIA_URL }}
+    steps:
+      - name: Check the version and settings
+        run: |
+          if ! [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::The tag must look like v1.2.0, not $GITHUB_REF_NAME"; exit 1
+          fi
+          for name in VITE_API_URL VITE_PUBLIC_URL VITE_MEDIA_URL; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Set the repository variable $name (Settings → Secrets and variables → Actions → Variables)"; exit 1
+            fi
+          done
+
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+
+      - name: Build the web app
+        run: bun run --cwd apps/app build
+      - name: Sync Capacitor
+        working-directory: apps/app
+        run: bunx cap sync ios
+
+      # Not committed; without it the app works but can't receive push notifications.
+      - name: Add the Firebase config
+        env:
+          GOOGLE_SERVICE_INFO_PLIST: ${{ secrets.IOS_GOOGLE_SERVICE_INFO_PLIST }}
+        run: |
+          if [ -z "$GOOGLE_SERVICE_INFO_PLIST" ]; then
+            echo "::warning::IOS_GOOGLE_SERVICE_INFO_PLIST isn't set: this build has no push notifications"
+          else
+            echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > apps/app/ios/App/App/GoogleService-Info.plist
+          fi
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+          working-directory: apps/app/ios/App
+      - name: Xcode version
+        run: xcodebuild -version
+      - name: Build, sign and upload to TestFlight
+        working-directory: apps/app/ios/App
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          MATCH_GIT_URL: ${{ vars.MATCH_GIT_URL }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          FASTLANE_SKIP_UPDATE_CHECK: "1"
+          FASTLANE_HIDE_CHANGELOG: "1"
+        run: APP_VERSION="${GITHUB_REF_NAME#v}" bundle exec fastlane beta

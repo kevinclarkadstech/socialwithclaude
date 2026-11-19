@@ -68,8 +68,9 @@ What the app stores and the law expect from a social app with photos, and where 
 - [ ] **Set up email** for sign-in codes: Resend or Mailgun, with the sending domain verified. See [Email](#email).
 - [ ] **Set up push notifications** (Firebase): a Firebase project with the Android and iOS apps (using the real app id), its two config files in the native projects, your APNs key uploaded to it, and the API's `PUSH_PROVIDER=fcm` with `FCM_SERVICE_ACCOUNT_JSON`. Then try it on a real iPhone (the simulator can't receive pushes from Apple) and an Android phone. See [Push notifications](#push-notifications).
 - [ ] **Links that open the app** (Universal Links on iOS, App Links on Android): put the real web address in place of `app.example.com` and the real app id, Apple team id and Play signing key's SHA-256 in the two files under `apps/app/public/.well-known/`, and serve them from that address. See [Links that open the app](#links-that-open-the-app).
-- [ ] **The real app id** (reverse domain, e.g. `com.yourcompany.appname`), which can't change after the first store upload: in `apps/app/capacitor.config.ts`, the Xcode project's bundle identifier (`apps/app/ios/App`), `applicationId` in `apps/app/android/app/build.gradle`, and the API's `APPLE_APP_BUNDLE_IDENTIFIER`. Also the app's name, icons and splash screen.
-- [ ] **Signed release builds** to TestFlight and Play's internal testing track: GitHub Actions with fastlane, or a hosted service (Capawesome Cloud, Codemagic). Needs an Apple Developer account and a Google Play developer account.
+- [ ] **The real app id** (reverse domain, e.g. `com.yourcompany.appname`), which can't change after the first store upload: in `apps/app/capacitor.config.ts`, the Xcode project's bundle identifier (`apps/app/ios/App`), `applicationId` in `apps/app/android/app/build.gradle`, `app_identifier` in `apps/app/ios/App/fastlane/Appfile`, the two `.well-known` files (see [Links that open the app](#links-that-open-the-app)), and the API's `APPLE_APP_BUNDLE_IDENTIFIER`. Also the app's name, icons and splash screen.
+- [ ] **Set up iOS releases:** an Apple Developer account, the app in App Store Connect, and the workflow's secrets and variables; then push a version tag to send a build to TestFlight. See [Releasing the iOS app](#releasing-the-ios-app).
+- [ ] **Android releases** (later): signed builds to Play's internal testing track. Needs a Google Play developer account; a new personal account also has to run a closed test (12 testers for 14 days) before it can publish.
 - [ ] **Schedule the daily jobs** once the API is hosted (a cron job, or Cron Triggers on Workers):
   - `bun run --cwd apps/api accounts:purge`: deletes accounts whose 30 days to restore are up. Without it, deleted accounts are hidden but never actually deleted. See [Account deletion](#account-deletion).
   - `bun run --cwd apps/api media:sweep --delete`: removes photo files that no post uses. See step 5 under [Object storage](#object-storage-cloudflare-r2).
@@ -181,7 +182,7 @@ Pushes go through Firebase Cloud Messaging (FCM) to both platforms: Android dire
 
 **Setting it up:**
 
-1. Create a Firebase project, and add an Android app and an iOS app to it with the app id (see the launch checklist). Put the two files it gives you in the native projects: `google-services.json` in `apps/app/android/app/`, and `GoogleService-Info.plist` in `apps/app/ios/App/App/` (in Xcode, add it to the App target). They aren't secret (they identify the app to Firebase; sending needs the service account below). Without them the apps still build and run, with push off.
+1. Create a Firebase project, and add an Android app and an iOS app to it with the app id (see the launch checklist). Put the two files it gives you in the native projects: `google-services.json` in `apps/app/android/app/`, and `GoogleService-Info.plist` in `apps/app/ios/App/App/` (a build step copies it into the app; there's nothing to add in Xcode). For release builds, it comes from the `IOS_GOOGLE_SERVICE_INFO_PLIST` secret instead: see [Releasing the iOS app](#releasing-the-ios-app). They aren't secret (they identify the app to Firebase; sending needs the service account below). Without them the apps still build and run, with push off.
 2. In your Apple Developer account, create an APNs authentication key (`.p8`) and upload it in Firebase: Project settings → Cloud Messaging → Apple app configuration.
 3. In Firebase: Project settings → Service accounts → Generate new private key. Set the API's `PUSH_PROVIDER=fcm` and `FCM_SERVICE_ACCOUNT_JSON` to that file's contents (it's a secret: keep it out of the repository).
 
@@ -205,6 +206,39 @@ Each platform checks, when the app is installed, that the website agrees, using 
 - **Android:** `/.well-known/assetlinks.json`, which names the app id and the SHA-256 fingerprint of the key the app is signed with. With Play App Signing that's Google's key, not yours: Play Console → Test and release → App integrity → App signing shows its fingerprint (add your upload key's too if you install builds signed with it). The app's intent filter (`AndroidManifest.xml`) takes its host from `appLinksHost` in `apps/app/android/app/build.gradle`.
 
 Both files are in `apps/app/public/.well-known/` with **placeholders**, and are copied into the web build. Whatever serves the web app has to serve them as they are, over HTTPS without redirects, with `Content-Type: application/json` (the Apple one has no extension, so set it), and not the app's `index.html` in their place. Check them with Apple's `https://app-site-association.cdn-apple.com/a/v1/<host>` (Apple fetches the file through its CDN, so a change can take a day to arrive) and Google's [Statement List Tester](https://developers.google.com/digital-asset-links/tools/generator). On Android, `adb shell pm get-app-links <app id>` shows whether the host was verified.
+
+### Releasing the iOS app
+
+Pushing a version tag builds a signed release on GitHub Actions and uploads it to TestFlight (`.github/workflows/release-ios.yml`, with fastlane in `apps/app/ios/App/fastlane`):
+
+```sh
+git tag v1.0.0 && git push origin v1.0.0
+```
+
+The tag is the version people see (`1.0.0`); the build number is the workflow's run number, so every build is higher than the last. A new version has to be higher than the last one released on the App Store; more builds of the same version are fine for TestFlight. Apple takes a while to process an upload, then it shows in TestFlight in App Store Connect. A failed release can be run again from the Actions tab; one that already uploaded needs a new tag (the same build number can't be uploaded twice).
+
+Signing uses fastlane [match](https://docs.fastlane.tools/actions/match/): the App Store certificate and profile are kept encrypted in a separate private git repository, and the release reads them from there. No Mac is needed: a workflow makes them.
+
+**Setting it up** (once):
+
+1. **Apple Developer account** (paid). In Certificates, Identifiers & Profiles, register the app id (the real one: see the launch checklist) with the **Push Notifications** and **Associated Domains** capabilities. In [App Store Connect](https://appstoreconnect.apple.com), create the app with that id.
+2. **An App Store Connect API key:** Users and Access → Integrations → App Store Connect API → Team Keys, with the **Admin** role (match creates certificates; once they exist, App Manager is enough). Download the `.p8` (only possible once) and note its key id and the issuer id.
+3. **A private GitHub repository for the certificates**, empty (e.g. `yourname/ios-certificates`), and a fine-grained personal access token with read and write access to its contents.
+4. **In this repository's Settings → Secrets and variables → Actions:**
+   - Secrets:
+     - `ASC_KEY_ID` and `ASC_ISSUER_ID`: from step 2.
+     - `ASC_KEY_P8`: the `.p8` file's contents.
+     - `MATCH_PASSWORD`: a long random password that encrypts the certificates repository. Keep a copy: without it they can't be read.
+     - `MATCH_GIT_BASIC_AUTHORIZATION`: `yourname:token` from step 3, base64-encoded (`echo -n 'yourname:token' | base64`).
+     - `IOS_GOOGLE_SERVICE_INFO_PLIST`: `GoogleService-Info.plist` base64-encoded (`base64 -i GoogleService-Info.plist`). Without it a release builds without push notifications, with a warning.
+   - Variables:
+     - `APPLE_TEAM_ID`: your team id (Membership in your Apple Developer account).
+     - `MATCH_GIT_URL`: the certificates repository's address, e.g. `https://github.com/yourname/ios-certificates.git`.
+     - `VITE_API_URL`, `VITE_PUBLIC_URL` and `VITE_MEDIA_URL`: the real addresses the app is built with.
+5. **Run "iOS certificates"** from the Actions tab (`.github/workflows/ios-certificates.yml`). It creates the certificate and profile and stores them in the certificates repository. Run it again with "Renew the profile" after turning on another capability for the app id, and again when the certificate expires (yearly).
+6. Push a tag.
+
+Locally, nothing changes: Xcode signs debug builds automatically with your own account. The release lane switches the App target to match's profile only for its own build.
 
 ### Cache (Redis)
 

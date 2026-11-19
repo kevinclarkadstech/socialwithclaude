@@ -1,0 +1,4 @@
+# The app id (a placeholder until the real one: see the launch checklist) and your
+# Apple Developer team id (Membership in your account), from the APPLE_TEAM_ID variable.
+app_identifier("com.example.placeholder")
+team_id(ENV["APPLE_TEAM_ID"])

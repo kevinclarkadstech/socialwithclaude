@@ -1,0 +1,53 @@
+# iOS release lanes, run by .github/workflows/release-ios.yml and ios-certificates.yml
+# (see the README's "Releasing the iOS app"). Both sign in to App Store Connect with an
+# API key: ASC_KEY_ID, ASC_ISSUER_ID and ASC_KEY_P8 (the .p8 file's contents).
+
+opt_out_usage
+default_platform(:ios)
+
+platform :ios do
+  before_all do
+    # A temporary keychain for the certificate, on CI only.
+    setup_ci
+    app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_content: ENV.fetch("ASC_KEY_P8"),
+    )
+  end
+
+  desc "Creates the App Store certificate and profile in the match repository (MATCH_FORCE=true renews the profile)"
+  lane :certificates do
+    match(type: "appstore", readonly: false, force: ENV["MATCH_FORCE"] == "true")
+  end
+
+  desc "Builds a signed release (APP_VERSION, BUILD_NUMBER) and uploads it to TestFlight"
+  lane :beta do
+    version = ENV.fetch("APP_VERSION")
+    build_number = ENV.fetch("BUILD_NUMBER")
+    app_id = CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier)
+
+    match(type: "appstore", readonly: true)
+    # The project signs automatically for development; a release signs with match's profile.
+    update_code_signing_settings(
+      path: "App.xcodeproj",
+      targets: ["App"],
+      build_configurations: ["Release"],
+      use_automatic_signing: false,
+      team_id: ENV.fetch("APPLE_TEAM_ID"),
+      bundle_identifier: app_id,
+      code_sign_identity: "Apple Distribution",
+      profile_name: ENV.fetch("sigh_#{app_id}_appstore_profile-name"),
+    )
+    build_app(
+      project: "App.xcodeproj",
+      scheme: "App",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "build/release",
+      xcargs: "MARKETING_VERSION=#{version} CURRENT_PROJECT_VERSION=#{build_number}",
+    )
+    # Apple takes a while to process it; it shows in TestFlight when it's done.
+    upload_to_testflight(skip_waiting_for_build_processing: true)
+  end
+end

@@ -1,0 +1,40 @@
+name: iOS certificates
+
+# Creates the App Store signing certificate and profile with fastlane match and
+# stores them, encrypted, in the match repository the release workflow reads.
+# Run it once from the Actions tab before the first release, again with
+# "Renew the profile" after turning on a capability for the app id (the profile
+# has to include it), and again when the certificate expires (yearly). No Mac needed.
+on:
+  workflow_dispatch:
+    inputs:
+      renew:
+        description: Renew the profile (after turning on a capability)
+        type: boolean
+        default: false
+
+jobs:
+  certificates:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+          working-directory: apps/app/ios/App
+      - name: Create the certificate and profile
+        working-directory: apps/app/ios/App
+        env:
+          MATCH_FORCE: ${{ inputs.renew }}
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          MATCH_GIT_URL: ${{ vars.MATCH_GIT_URL }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          FASTLANE_SKIP_UPDATE_CHECK: "1"
+          FASTLANE_HIDE_CHANGELOG: "1"
+        run: bundle exec fastlane certificates

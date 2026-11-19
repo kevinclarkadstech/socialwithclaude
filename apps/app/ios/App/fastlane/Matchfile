@@ -1,0 +1,5 @@
+# Signing certificates and profiles live encrypted (with MATCH_PASSWORD) in a separate
+# private git repository, MATCH_GIT_URL; CI reads it with MATCH_GIT_BASIC_AUTHORIZATION.
+git_url(ENV["MATCH_GIT_URL"])
+storage_mode("git")
+type("appstore")
