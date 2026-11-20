@@ -3,7 +3,7 @@ import path from "node:path";
 import dotenv from "dotenv";
 
 /** Whether the API is running on Cloudflare Workers (whose runtime sets this user agent). */
-export const onWorkers = globalThis.navigator?.userAgent === "Cloudflare-Workers";
+const onWorkers = globalThis.navigator?.userAgent === "Cloudflare-Workers";
 
 export const ServerConfigSchema = z.object({
     // Postgres. Required except on Cloudflare Workers, where each request connects through Hyperdrive

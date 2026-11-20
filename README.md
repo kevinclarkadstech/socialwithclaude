@@ -153,7 +153,7 @@ Domain code only calls interfaces; each host gets adapters. What's Cloudflare-on
    - *Done:* Redis is optional. With `REDIS_URL`, per-minute limits are counted there; without it, in each instance's memory; on Workers, by the Rate Limiting binding. `/api/ready` never fails because of it.
    - *Done:* push delivery through a queue, with a message delayed until each push is due (keeping the ~10-second chat pushes), plus a Cron Trigger every minute in case one is lost. The daily jobs on a Cron Trigger.
    - *Done:* a smoke test on workerd in CI (`smoke:workers`), since tests run on Bun.
-   - Still to do: errors through `@sentry/cloudflare`. `@sentry/node` can't start on Workers, so until then `SENTRY_DSN` is ignored there (errors are still in the Worker's logs). Logs and traces are in Workers Observability.
+   - *Done:* errors to Sentry through `@sentry/cloudflare` (`@sentry/node` can't start on Workers). Logs and traces are in Workers Observability.
 3. **The web app on Cloudflare**, with a `_headers` file so the `.well-known` files are served as JSON (see [Links that open the app](#links-that-open-the-app)).
 4. **Slower polling** instead of real-time connections, for launch. *Done.*
    - An open chat checks every 8 seconds while messages are coming, and every 30 once nothing's been sent or received for a minute (`chatPollIntervalMs`). Sending, or a new message arriving, makes it quick again.
@@ -180,7 +180,7 @@ The API runs on Cloudflare Workers, built by Nitro's Cloudflare preset with `app
 - **Per-minute rate limits** are Rate Limiting bindings, one per rule. The limits guarding email stay in Postgres. See [Cache](#cache-redis-optional).
 - **Pushes:** saving a notification or chat message queues a message, delayed until the push is due, and the queue's consumer runs a delivery round. A Cron Trigger also runs one every minute.
 - **The daily jobs** (purging deleted accounts, sweeping orphaned photo files) run on a Cron Trigger at 03:17 UTC.
-- **Logs** are in Workers Observability (the Worker's Logs tab). Errors aren't sent to Sentry on Workers yet (`@sentry/cloudflare` is still to do).
+- **Logs** are in Workers Observability (the Worker's Logs tab). Errors go to Sentry, like on a server, through `@sentry/cloudflare`. See [Error reporting](#error-reporting-sentry).
 
 **Setting it up** (once, with `bunx wrangler@4.166.0 login` first):
 
@@ -197,6 +197,7 @@ The API runs on Cloudflare Workers, built by Nitro's Cloudflare preset with `app
    - The `STORAGE_*` settings for R2. See [Object storage](#object-storage-cloudflare-r2).
    - Email: `EMAIL_PROVIDER` and its settings. See [Email](#email).
    - Push: `PUSH_PROVIDER=fcm` and `FCM_SERVICE_ACCOUNT_JSON`. See [Push notifications](#push-notifications).
+   - Errors: `SENTRY_DSN`, and optionally `SENTRY_ENVIRONMENT` and `SENTRY_RELEASE`. See [Error reporting](#error-reporting-sentry).
 6. **Names:** the Worker's `name` and the queue's name in `wrangler.jsonc` are placeholders; rename both before the first deploy if you like.
 7. **Deploy:** `bun run --cwd apps/api build:cloudflare && bun run --cwd apps/api deploy:cloudflare`. Then give the Worker a custom domain (Workers → the Worker → Settings → Domains & Routes), e.g. `api.example.com`.
 
@@ -344,7 +345,7 @@ Rate limits go through a `RateLimiter` interface (`apps/api/src/rate-limiting`),
 
 ### Error reporting (Sentry)
 
-Unexpected errors (what the client sees as "Something went wrong") are reported to Sentry, along with uncaught exceptions and unhandled rejections. Expected failures (validation, not found, forbidden, rate limited) aren't reported. Traces stay on OpenTelemetry: Sentry sends errors only. (It goes through an `ErrorReporter` interface in `apps/api/src/observability/errors`, so the tracker can be swapped.)
+Unexpected errors (what the client sees as "Something went wrong") are reported to Sentry, along with uncaught exceptions and unhandled rejections. Expected failures (validation, not found, forbidden, rate limited) aren't reported. Traces stay on OpenTelemetry (on Workers, in Workers Observability): Sentry sends errors only. It goes through an `ErrorReporter` interface in `apps/api/src/observability/errors`, so the tracker can be swapped. The `#sentry-error-reporter` import picks the SDK when the API is built: `@sentry/node` on a server, `@sentry/cloudflare` on Workers. On Workers, the client starts with the first error (Workers don't allow it at startup), and each report is sent in the background, after the response.
 
 - Set `SENTRY_DSN` from the Sentry project's settings. Optionally set `SENTRY_ENVIRONMENT` (defaults to `NODE_ENV`) and `SENTRY_RELEASE`, e.g. the commit SHA.
 - A report carries the error, its stack, the request id, the procedure, the method and path, and the signed-in user's id. It doesn't carry cookies, headers (other than the user agent), bodies, query parameters, local variables or database query values. The bound values in query error messages are replaced with `[redacted]`.
