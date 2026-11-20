@@ -12,7 +12,7 @@ import { nativeAppOrigins, serverConfig } from "./config";
 import { createAppFeatureFlagStore, type AppFeatureFlagStore } from "./shared/feature-flags";
 import { trpcServer } from "@hono/trpc-server";
 import { db, isDatabaseReachable } from "./data-access/db";
-import { cache } from "./cache";
+import { cache, cacheIsShared } from "./cache";
 import { createCacheRateLimiter, createDatabaseRateLimiter, createRoutedRateLimiter, limitAuthRequestsMiddleware, rateLimitRules, type CountingRateLimiterOptions, type RateLimiter } from "./rate-limiting";
 import { appRouter, createContext } from "./transport/trpc";
 import { trpcOnErrorFunction } from "./error-handling";
@@ -46,7 +46,8 @@ const auth = createAuthInstance(db);
 const featureFlagStore = createAppFeatureFlagStore({ flagsOrLoader: { usersCanPost: true } });
 const featureFlagsLoaded = featureFlagStore.initialize();
 
-// Where rate limits are counted: per-minute rules (auth, queries, mutations) in the cache, the rest
+// Where rate limits are counted: per-minute rules (auth, queries, mutations) in the cache (Redis, or
+// each instance's memory without it), the rest
 // (sending email, signing in with a code) exactly, in Postgres. On Cloudflare Workers the per-minute
 // limiter would be built per request from the Rate Limiting bindings in c.env instead (see
 // rate-limiting/types/index.ts); nothing else changes.
@@ -108,10 +109,11 @@ const app = new Hono<AppHonoEnv>()
     }))
     // Liveness: the process is up.
     .get("/api/health", (c) => c.json({ ok: true }))
-    // Readiness: it can serve requests. The database is required; without the cache, the per-minute rate limits are off.
+    // Readiness: it can serve requests, which needs only the database. Redis, when it's used, is
+    // reported but not required: without it the per-minute rate limits are off.
     .get("/api/ready", async (c) => {
-        const [database, cacheReachable] = await Promise.all([isDatabaseReachable(), cache.isReachable()]);
-        return c.json({ ok: database, database, cache: cacheReachable }, database ? 200 : 503);
+        const [database, cacheReachable] = await Promise.all([isDatabaseReachable(), cacheIsShared ? cache.isReachable() : undefined]);
+        return c.json({ ok: database, database, ...(cacheReachable === undefined ? {} : { cache: cacheReachable }) }, database ? 200 : 503);
     })
     .use("/api/auth/*", limitAuthRequestsMiddleware)
     .on(["POST", "GET"], "/api/auth/*", (c) => c.get("auth").handler(c.req.raw))

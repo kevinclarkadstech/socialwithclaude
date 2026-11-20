@@ -149,6 +149,7 @@ Domain code only calls interfaces; each host gets adapters. What's Cloudflare-on
    - Nitro's Cloudflare preset and a Wrangler config (`nodejs_compat`), Workers Paid plan.
    - Hyperdrive in front of Neon, with a database client per request. `pg` keeps working, transactions included; Neon's HTTP driver wouldn't (no interactive transactions).
    - Smart Placement (or a placement near Neon's region), so a request's queries don't each cross the world.
+   - *Done:* Redis is optional. With `REDIS_URL`, per-minute limits are counted there; without it, in each instance's memory; on Workers, by the Rate Limiting binding. `/api/ready` never fails because of it.
    - Push delivery: Cron every minute, plus Queues with a delay, keeping the ~10-second chat pushes. The daily jobs on Cron Triggers.
    - Errors: `@sentry/cloudflare` in place of `@sentry/node`; logs and traces in Workers Observability in place of the OpenTelemetry Node SDK (which can export over OTLP later).
    - A smoke test on workerd in CI, since tests run on Bun.
@@ -295,15 +296,15 @@ Signing uses fastlane [match](https://docs.fastlane.tools/actions/match/): the A
 
 On a Mac, Xcode still signs debug builds automatically with your own account: the release lane switches the App target to match's profile only for its own build.
 
-### Cache (Redis)
+### Cache (Redis, optional)
 
-The API's cache is Redis. For now it only holds the per-minute rate-limit counters (everything under `/api/auth`, tRPC queries and mutations), so those limits hold across instances. Any Redis 7 works, e.g. Upstash.
+The API's cache holds the per-minute rate-limit counters (everything under `/api/auth`, tRPC queries and mutations). With `REDIS_URL` set it's Redis, shared by every instance; without it, each instance counts in its own memory. That's fine for these limits, which only slow down abuse: with several instances, someone could get up to that many times the limit. Any Redis 7 works, e.g. Upstash.
 
-Rate limits go through a `RateLimiter` interface (`apps/api/src/rate-limiting`), which sends each rule by its window: rules with a 10 or 60 second window to Redis, which is fast enough to check on every request, and every other rule (sending and using codes, the email budget) to Postgres, which counts exactly. On Cloudflare Workers, the Rate Limiting binding would take Redis's place (see [Hosting plan](#hosting-plan-not-built-yet)). A rule's window decides where it's counted, so a new rule that guards something costly needs a window other than 10 or 60 seconds; a test checks that every rule guarding email is counted in Postgres.
+Rate limits go through a `RateLimiter` interface (`apps/api/src/rate-limiting`), which sends each rule by its window: rules with a 10 or 60 second window to the cache, which is fast enough to check on every request, and every other rule (sending and using codes, the email budget) to Postgres, which counts exactly. On Cloudflare Workers, the Rate Limiting binding would take the cache's place (see [Hosting plan](#hosting-plan-not-built-yet)). A rule's window decides where it's counted, so a new rule that guards something costly needs a window other than 10 or 60 seconds; a test checks that every rule guarding email is counted in Postgres.
 
-- Set `REDIS_URL`, e.g. `rediss://default:<password>@<host>:6379`.
+- Optionally set `REDIS_URL`, e.g. `rediss://default:<password>@<host>:6379`.
 - Set `CLIENT_IP_HEADER` to the header your proxy or CDN puts the caller's IP address in, e.g. `cf-connecting-ip` behind Cloudflare. The default is `x-forwarded-for`. Rate limits per IP trust this header, so the API must only be reachable through that proxy.
-- If Redis goes down, the API keeps serving with the per-minute limits off and logs it. `/api/ready` reports `cache: false`. The limits on sending codes are in Postgres, so they still hold.
+- `/api/ready` needs only the database. With Redis, it also reports `cache: true` or `false`, but a Redis outage doesn't fail it: the API keeps serving with the per-minute limits off, and logs it. The limits on sending codes are in Postgres, so they still hold.
 
 ### Error reporting (Sentry)
 

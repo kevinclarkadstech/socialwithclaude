@@ -31,7 +31,6 @@ const placeholders: Record<string, string> = {
     STORAGE_UPLOADS_BUCKET: "test-uploads",
     STORAGE_MEDIA_BUCKET: "test-media",
     STORAGE_MEDIA_PUBLIC_URL: "http://127.0.0.1:1",
-    REDIS_URL: "redis://127.0.0.1:1",
     // Notifications show at once, so tests needn't wait (notification-delay.test.ts sets delivery times itself).
     NOTIFICATION_DELAY_SECONDS: "0",
 };
