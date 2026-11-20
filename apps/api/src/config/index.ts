@@ -2,8 +2,13 @@ import { z } from "zod";
 import path from "node:path";
 import dotenv from "dotenv";
 
+/** Whether the API is running on Cloudflare Workers (whose runtime sets this user agent). */
+export const onWorkers = globalThis.navigator?.userAgent === "Cloudflare-Workers";
+
 export const ServerConfigSchema = z.object({
-    DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
+    // Postgres. Required except on Cloudflare Workers, where each request connects through Hyperdrive
+    // (its binding in wrangler.jsonc) instead; commands and migrations still use it there.
+    DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }).optional(),
     // Signs sessions and tokens: a long random string (e.g. `openssl rand -base64 32`).
     BETTER_AUTH_SECRET: z.string().min(32).refine(
         (secret) => process.env.NODE_ENV !== "production" || secret !== "change-me-to-a-long-random-string",
@@ -70,6 +75,9 @@ export const ServerConfigSchema = z.object({
     // How long a notification waits before it shows, so a quick undo (unfollowing, editing a mention out) means it's never seen.
     NOTIFICATION_DELAY_SECONDS: z.coerce.number().int().min(0).max(3600).default(30),
 }).superRefine((config, ctx) => {
+    if (!config.DATABASE_URL && !onWorkers) {
+        ctx.addIssue({ code: "custom", path: ["DATABASE_URL"], message: "Required" });
+    }
     // Each provider's settings are required once it's chosen, so a deploy can't start half-configured.
     const required = {
         console: [],

@@ -23,7 +23,14 @@ const requestDatabase = new AsyncLocalStorage<Database>();
 let sharedDatabase: Database | undefined;
 
 function currentDatabase(): Database {
-    return requestDatabase.getStore() ?? (sharedDatabase ??= createDb(serverConfig.DATABASE_URL));
+    return requestDatabase.getStore() ?? (sharedDatabase ??= createDb(sharedDatabaseUrl()));
+}
+
+function sharedDatabaseUrl(): string {
+    if (!serverConfig.DATABASE_URL) {
+        throw new Error("DATABASE_URL isn't set: on Workers, the database is only reached inside a request, Cron Trigger or queue batch (withRequestDatabase)");
+    }
+    return serverConfig.DATABASE_URL;
 }
 
 /**

@@ -71,8 +71,8 @@ What the app stores and the law expect from a social app with photos, and where 
 - [ ] **The real app id** (reverse domain, e.g. `com.yourcompany.appname`), which can't change after the first store upload: in `apps/app/capacitor.config.ts`, the Xcode project's bundle identifier (`apps/app/ios/App`), `applicationId` in `apps/app/android/app/build.gradle`, `app_identifier` in `apps/app/ios/App/fastlane/Appfile`, the two `.well-known` files (see [Links that open the app](#links-that-open-the-app)), and the API's `APPLE_APP_BUNDLE_IDENTIFIER`. Also the app's name, icons and splash screen.
 - [ ] **Set up iOS releases:** an Apple Developer account, the app in App Store Connect, and the workflow's secrets and variables; then push a version tag to send a build to TestFlight. See [Releasing the iOS app](#releasing-the-ios-app).
 - [ ] **Android releases** (later): signed builds to Play's internal testing track. Needs a Google Play developer account; a new personal account also has to run a closed test (12 testers for 14 days) before it can publish.
-- [ ] **Host the API and web app:** Cloudflare Workers with Neon is the plan, built in the steps under [Hosting plan](#hosting-plan-not-built-yet).
-- [ ] **Schedule the daily jobs** once the API is hosted (a cron job, or Cron Triggers on Workers):
+- [ ] **Host the API:** on Cloudflare Workers with Neon. See [Deploying the API to Cloudflare](#deploying-the-api-to-cloudflare). The web app is step 3 of the [Hosting plan](#hosting-plan-not-built-yet).
+- [ ] **The daily jobs:** on Workers they're Cron Triggers, set up by the deploy. On a long-running server, schedule these daily:
   - `bun run --cwd apps/api accounts:purge`: deletes accounts whose 30 days to restore are up. Without it, deleted accounts are hidden but never actually deleted. See [Account deletion](#account-deletion).
   - `bun run --cwd apps/api media:sweep --delete`: removes photo files that no post uses. See step 5 under [Object storage](#object-storage-cloudflare-r2).
 
@@ -146,14 +146,14 @@ Domain code only calls interfaces; each host gets adapters. What's Cloudflare-on
 
 1. **Rate limits that fit any host.** *Done, except the binding itself.* Each rule goes to the right backend: rules with a 10 or 60 second window to a fast, approximate limiter, and the rest (the 15-minute and daily email-code rules, the hourly `emailBudget`) to a Postgres counters table, since they protect the email bill and must be one exact count everywhere. `consume` takes a `cost` (the binding's `delta`), so expensive calls can count for more. The Rate Limiting binding's limit and window live in the Wrangler config, so a check (test or startup) makes sure each rule mapped to a binding matches it; that adapter and its check come with step 2. Notes from the binding's docs: counts are approximate and kept per Cloudflare location; windows are 10 or 60 seconds only; a refused call doesn't count; key by user id where there is one (Cloudflare advises against IP keys, which signed-out auth requests still need).
 2. **The API on Workers.**
-   - Nitro's Cloudflare preset and a Wrangler config (`nodejs_compat`), Workers Paid plan.
+   - *Done:* Nitro's Cloudflare preset and `apps/api/wrangler.jsonc`. See [Deploying the API to Cloudflare](#deploying-the-api-to-cloudflare).
    - *Done:* a database client per request on Workers (`withRequestDatabase`, chosen by the `#platform` import, which the Workers build resolves to `src/platform/workerd.ts`), and no push loop there. Tried locally in `wrangler dev`: with one shared pool, every other request that used the database failed; per request, they all work, including signing in.
-   - Hyperdrive in front of Neon, with a database client per request. `pg` keeps working, transactions included; Neon's HTTP driver wouldn't (no interactive transactions).
-   - Smart Placement (or a placement near Neon's region), so a request's queries don't each cross the world.
+   - *Done:* Hyperdrive in front of Neon, with query caching off, and each request's client connecting through it. `pg` keeps working, transactions included; Neon's HTTP driver wouldn't (no interactive transactions).
+   - *Done:* Smart Placement, so a request's queries don't each cross the world.
    - *Done:* Redis is optional. With `REDIS_URL`, per-minute limits are counted there; without it, in each instance's memory; on Workers, by the Rate Limiting binding. `/api/ready` never fails because of it.
-   - Push delivery: Cron every minute, plus Queues with a delay, keeping the ~10-second chat pushes. The daily jobs on Cron Triggers.
-   - Errors: `@sentry/cloudflare` in place of `@sentry/node`; logs and traces in Workers Observability in place of the OpenTelemetry Node SDK (which can export over OTLP later).
-   - A smoke test on workerd in CI, since tests run on Bun.
+   - *Done:* push delivery through a queue, with a message delayed until each push is due (keeping the ~10-second chat pushes), plus a Cron Trigger every minute in case one is lost. The daily jobs on a Cron Trigger.
+   - *Done:* a smoke test on workerd in CI (`smoke:workers`), since tests run on Bun.
+   - Still to do: errors through `@sentry/cloudflare`. `@sentry/node` can't start on Workers, so until then `SENTRY_DSN` is ignored there (errors are still in the Worker's logs). Logs and traces are in Workers Observability.
 3. **The web app on Cloudflare**, with a `_headers` file so the `.well-known` files are served as JSON (see [Links that open the app](#links-that-open-the-app)).
 4. **Real-time updates in place of most polling** (the open chat polls every 4 seconds, the chat list every 15).
    - Events are hints, not data ("chat X has new messages", "your unread count changed"); the app then fetches through tRPC as now. A lost event costs nothing, and the fetching stays in one place.
@@ -169,6 +169,39 @@ Domain code only calls interfaces; each host gets adapters. What's Cloudflare-on
 - **Apps:** a staging build sets `VITE_API_URL` to the staging API; TestFlight builds could use staging from a separate kind of tag (e.g. `v1.2.0-beta.1`).
 
 ## Deployment
+
+### Deploying the API to Cloudflare
+
+The API runs on Cloudflare Workers, built by Nitro's Cloudflare preset with `apps/api/wrangler.jsonc` merged in. On Workers:
+
+- **Postgres through Hyperdrive.** Each request (and each Cron Trigger and queue batch) gets its own database client, connected to Hyperdrive, which keeps pooled connections to Neon. `DATABASE_URL` isn't used by the Worker.
+- **Per-minute rate limits** are Rate Limiting bindings, one per rule. The limits guarding email stay in Postgres. See [Cache](#cache-redis-optional).
+- **Pushes:** saving a notification or chat message queues a message, delayed until the push is due, and the queue's consumer runs a delivery round. A Cron Trigger also runs one every minute.
+- **The daily jobs** (purging deleted accounts, sweeping orphaned photo files) run on a Cron Trigger at 03:17 UTC.
+- **Logs** are in Workers Observability (the Worker's Logs tab). Errors aren't sent to Sentry on Workers yet (`@sentry/cloudflare` is still to do).
+
+**Setting it up** (once, with `bunx wrangler@4.166.0 login` first):
+
+1. **Workers Paid plan** ($5 a month), for the CPU time sign-in and tRPC need, and for Queues.
+2. **Neon:** create the project and database, and run the migrations against its **direct** connection string, from a checkout with `apps/api/.env.local`: `DATABASE_URL=<Neon's direct URL> bun run --cwd apps/api db:migrate`.
+3. **Hyperdrive,** with query caching off. The app reads what it just wrote, and Hyperdrive doesn't clear its cache on writes:
+   ```sh
+   bunx wrangler@4.166.0 hyperdrive create placeholder-db --connection-string="<Neon's direct URL>" --caching-disabled
+   ```
+   Put the id it prints in `hyperdrive[0].id` in `apps/api/wrangler.jsonc`.
+4. **The push queue:** `bunx wrangler@4.166.0 queues create placeholder-push-delivery`.
+5. **Variables and secrets.** `NODE_ENV` and `CLIENT_IP_HEADER` are set in `wrangler.jsonc`. Set the rest with `bunx wrangler@4.166.0 secret put <NAME>` from `apps/api`, or in the dashboard. Deploys keep them (`keep_vars`).
+   - `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (the API's own address), `WEB_APP_URL`, and Google and Apple sign-in if used.
+   - The `STORAGE_*` settings for R2. See [Object storage](#object-storage-cloudflare-r2).
+   - Email: `EMAIL_PROVIDER` and its settings. See [Email](#email).
+   - Push: `PUSH_PROVIDER=fcm` and `FCM_SERVICE_ACCOUNT_JSON`. See [Push notifications](#push-notifications).
+6. **Names:** the Worker's `name` and the queue's name in `wrangler.jsonc` are placeholders; rename both before the first deploy if you like.
+7. **Deploy:** `bun run --cwd apps/api build:cloudflare && bun run --cwd apps/api deploy:cloudflare`. Then give the Worker a custom domain (Workers → the Worker → Settings → Domains & Routes), e.g. `api.example.com`.
+
+**Trying it locally:** `bun run --cwd apps/api build:cloudflare`, then `bun run --cwd apps/api dev:cloudflare` runs it in `wrangler dev`, on Cloudflare's runtime, with the settings in `apps/api/.env.local` (and `NODE_ENV=development`, so the console email provider works).
+- It connects to `localConnectionString` in `wrangler.jsonc` (the docker-compose Postgres), or to `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE` if set. Hyperdrive's local mode needs a password in the URL.
+- Cron Triggers don't run on their own there: `curl "localhost:8787/cdn-cgi/local/scheduled?cron=17+3+*+*+*"` runs one.
+- `bun run --cwd apps/api smoke:workers` runs the check CI does (signing up, a push through the queue, the Cron Triggers, a rate limit) on the last `build:cloudflare`, against `WORKERS_SMOKE_DATABASE_URL`, a migrated database.
 
 ### Object storage (Cloudflare R2)
 
@@ -229,7 +262,7 @@ A send that fails is logged and reported to Sentry, with the provider's status a
 Pushes go through Firebase Cloud Messaging (FCM) to both platforms: Android directly, iOS through Apple's push service with your APNs key. Each device registers its FCM token with the API while someone is signed in on it; signing out (or being signed out) removes it.
 
 - **What's pushed:** every notification in the bell, in the same words (`describeNotification`), once its delivery time comes (after `NOTIFICATION_DELAY_SECONDS`), unless it's been undone since (an unfollow, a mention edited out…) or the person turned that kind off in Settings (new messages, comments, mentions, follows; warnings and report outcomes always go). New chat messages too, `CHAT_PUSH_DELAY_SECONDS` (10) after the first one not yet pushed, unless they've read the chat by then: one push per chat, saying how many are new, that replaces the previous one for that chat on the device. The badge on iOS is the number on the bell.
-- **How:** the API checks every `PUSH_DELIVERY_INTERVAL_SECONDS` (5) for what's due. Several instances can run at once; each notification and chat is taken by one. On a host without a long-running process, set it to 0 and run `bun run --cwd apps/api push:deliver` from a scheduler instead.
+- **How:** the API checks every `PUSH_DELIVERY_INTERVAL_SECONDS` (5) for what's due. Several instances can run at once; each notification and chat is taken by one. On a host without a long-running process, set it to 0 and run `bun run --cwd apps/api push:deliver` from a scheduler instead. On Workers there's no loop: saving a notification or chat message queues a message for when its push is due, and a Cron Trigger runs delivery every minute too (see [Deploying the API to Cloudflare](#deploying-the-api-to-cloudflare)).
 
 **Setting it up:**
 
