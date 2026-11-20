@@ -11,7 +11,8 @@ import { createAuthInstance } from "./auth";
 import { nativeAppOrigins, serverConfig } from "./config";
 import { createAppFeatureFlagStore, type AppFeatureFlagStore } from "./shared/feature-flags";
 import { trpcServer } from "@hono/trpc-server";
-import { db, isDatabaseReachable } from "./data-access/db";
+import { platform } from "#platform";
+import { db, isDatabaseReachable, withRequestDatabase } from "./data-access/db";
 import { cache, cacheIsShared } from "./cache";
 import { createCacheRateLimiter, createDatabaseRateLimiter, createRoutedRateLimiter, limitAuthRequestsMiddleware, rateLimitRules, type CountingRateLimiterOptions, type RateLimiter } from "./rate-limiting";
 import { appRouter, createContext } from "./transport/trpc";
@@ -67,6 +68,10 @@ const rateLimiter = createRoutedRateLimiter({
 });
 
 const app = new Hono<AppHonoEnv>()
+    // On Workers, each request gets its own database client: a connection can't be shared between requests.
+    .use(async (_c, next) => (platform.databasePerRequest
+        ? withRequestDatabase({ connectionString: serverConfig.DATABASE_URL, handle: next })
+        : next()))
     .use(contextStorage())
     .use(requestId())
     .use("*", async (c, next) => {

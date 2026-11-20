@@ -3,6 +3,12 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
+  "imports": {
+    "#platform": {
+      "workerd": "./src/platform/workerd.ts",
+      "default": "./src/platform/node.ts"
+    }
+  },
   "scripts": {
     "dev": "cross-env NODE_OPTIONS=\"--import ./src/observability/otel.mjs\" nitro dev",
     "build": "nitro build",
