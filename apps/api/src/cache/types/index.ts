@@ -1,6 +1,6 @@
 /**
  * What the API needs from a cache. Only this interface is used outside
- * src/cache, so the store behind it (Redis today) can be swapped by writing
+ * src/cache, so the store behind it (Redis, or this instance's memory) can be swapped by writing
  * another implementation. It holds what's used so far; get/set/delete come
  * when something caches data.
  */

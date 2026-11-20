@@ -4,9 +4,9 @@ import type { CountingRateLimiterOptions, RateLimiter } from "../../types";
 import { createCountingRateLimiter } from "../createCountingRateLimiter/createCountingRateLimiter";
 
 /**
- * Rate limits counted in the cache (Redis), shared by every instance. Fast,
- * so it takes the per-minute rules, which are checked on every request
- * (see createRoutedRateLimiter).
+ * Rate limits counted in the cache: Redis, shared by every instance, or each
+ * instance's memory without it. Fast, so it takes the per-minute rules,
+ * which are checked on every request (see createRoutedRateLimiter).
  */
 export function createCacheRateLimiter({ cache, ...options }: CountingRateLimiterOptions & { cache: Cache; logger: AppLogger }): RateLimiter {
     return createCountingRateLimiter({

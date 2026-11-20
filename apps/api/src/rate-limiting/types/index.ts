@@ -22,8 +22,8 @@ export type RateLimitDecision = { allowed: true } | { allowed: false; retryAfter
  *
  * - createRoutedRateLimiter sends each rule to one of two limiters: per-minute
  *   rules (a 10 or 60 second window) to a fast one, the rest to an exact one.
- * - Today the fast one is createCacheRateLimiter (Redis) and the exact one
- *   createDatabaseRateLimiter (Postgres).
+ * - Today the fast one is createCacheRateLimiter (Redis, or each instance's
+ *   memory without REDIS_URL) and the exact one createDatabaseRateLimiter (Postgres).
  * - On Cloudflare Workers the fast one would be a limiter over the Rate
  *   Limiting binding (env.X.limit({ key, delta }) → { success }), built per
  *   request from c.env, with `cost` as its `delta`. Each per-minute rule
