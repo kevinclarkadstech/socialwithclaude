@@ -17,19 +17,29 @@ export type RateLimitDecision = { allowed: true } | { allowed: false; retryAfter
 
 /**
  * Counts requests against rules. The API only uses this interface, so the
- * store behind it can change. It's picked once, in src/index.ts, and put on
+ * stores behind it can change. It's built once, in src/index.ts, and put on
  * each request's context:
  *
- * - createCacheRateLimiter: counters in the cache (Redis today), shared by every instance.
- * - On Cloudflare Workers, a rate limiter over the Workers rate-limit bindings
- *   (env.X.limit({ key }) → { success }) would implement the same interface,
- *   built per request from c.env. Each rule becomes a binding configured in
- *   wrangler with its limit and period. Bindings only allow a period of 10 or
- *   60 seconds and don't say when a key can try again, so longer rules (the
- *   15-minute sign-in ones) would become per-minute limits, and the retry
- *   delay would be the rule's window.
+ * - createRoutedRateLimiter sends each rule to one of two limiters: per-minute
+ *   rules (a 10 or 60 second window) to a fast one, the rest to an exact one.
+ * - Today the fast one is createCacheRateLimiter (Redis) and the exact one
+ *   createDatabaseRateLimiter (Postgres).
+ * - On Cloudflare Workers the fast one would be a limiter over the Rate
+ *   Limiting binding (env.X.limit({ key, delta }) → { success }), built per
+ *   request from c.env, with `cost` as its `delta`. Each per-minute rule
+ *   becomes a binding with the same limit and period in the Wrangler config.
+ *   It counts approximately, per Cloudflare location, which suits those
+ *   rules; the exact one stays Postgres. See the README's hosting plan.
  */
 export interface RateLimiter {
-    consume(args: { rule: RateLimitRule; key: string }): Promise<RateLimitDecision>;
+    /** Counts a request against `rule` for `key`: `cost` units (default 1), so an expensive call can count for more. */
+    consume(args: { rule: RateLimitRule; key: string; cost?: number }): Promise<RateLimitDecision>;
 }
 
+/** What createCacheRateLimiter and createDatabaseRateLimiter share (see createCountingRateLimiter). */
+export interface CountingRateLimiterOptions {
+    /** Rules' limits by name, overriding the rule's own: for the ones set by configuration (the email budget). */
+    limits?: Record<string, number>;
+    /** Called when a rule marked alertWhenReached refuses, at most once an hour per rule. */
+    onLimitReached?: (rule: RateLimitRule) => void;
+}

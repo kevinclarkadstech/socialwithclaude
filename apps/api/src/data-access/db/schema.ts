@@ -640,3 +640,20 @@ export const userSaves = pgTable("user_saves", {
     index("user_saves_user_id_created_at_idx").on(t.userId, t.createdAt),
     check("user_saves_one_target", sql`num_nonnulls(${t.postId}, ${t.postCommentId}, ${t.chatMessageId}) = 1`),
 ]);
+
+/**
+ * Rate-limit counters kept in Postgres: the rules a per-minute limiter can't
+ * count (longer windows, and the ones guarding email, which must be one exact
+ * count across every instance). One row per rule and key; its window starts
+ * with the first request and ends at `expires_at`, when the next request
+ * starts a new one. Expired rows are cleared as new ones are made.
+ */
+export const rateLimitCounters = pgTable("rate_limit_counters", {
+    rule: text("rule").notNull(),
+    key: text("key").notNull(),
+    count: integer("count").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+}, (t) => [
+    primaryKey({ columns: [t.rule, t.key] }),
+    index("rate_limit_counters_expires_at_idx").on(t.expiresAt),
+]);

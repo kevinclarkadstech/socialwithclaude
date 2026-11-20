@@ -30,10 +30,10 @@ export function createRedisCache({ url }: { url: string }): Cache {
     });
 
     return {
-        async increment({ key, windowSeconds }) {
+        async increment({ key, windowSeconds, by = 1 }) {
             // One round trip: the window starts with the first increment and isn't extended by later ones.
             const [count, , secondsLeft] = await client.multi()
-                .incr(key)
+                .incrBy(key, by)
                 .expire(key, windowSeconds, "NX")
                 .ttl(key)
                 .execTyped();
