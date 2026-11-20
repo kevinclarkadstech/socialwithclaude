@@ -21,6 +21,7 @@ import { disallowedActions } from '../../common/events/disallowedActions/disallo
 import { HeaderIconButton } from '../../common/components/HeaderIconButton/HeaderIconButton';
 import { ComposePostModal, PendingPosts, PostCard, useFeed } from '../../domains/posts';
 import '../../common/styles/pages.css';
+import { usePullToRefresh } from '../../lib/usePullToRefresh';
 
 /** The Feed tab: everyone's posts and listings, newest first. Readable signed out. */
 export function FeedPage() {
@@ -29,12 +30,13 @@ export function FeedPage() {
   const createPostCheck = canCreatePost({ caller: callingUser });
   const [isComposing, setIsComposing] = useState(false);
   const compose = () => setIsComposing(true);
+  const onPull = usePullToRefresh(refresh);
 
   return (
     <IonPage>
       <AppHeader actions={<HeaderIconButton icon={searchOutline} label="Search" to="/feed/search" />} />
       <IonContent>
-        <IonRefresher slot="fixed" onIonRefresh={(event) => void refresh().finally(() => event.detail.complete())}>
+        <IonRefresher slot="fixed" onIonRefresh={onPull}>
           <IonRefresherContent />
         </IonRefresher>
 

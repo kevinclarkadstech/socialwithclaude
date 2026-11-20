@@ -122,13 +122,13 @@ People delete their account from the app (Settings → Delete account), confirmi
 
 What the app is planned to launch on, and the work to get there. Nothing below is built yet; today the API runs as a long-running Node or Bun server.
 
-**The stack:** Cloudflare (Workers for the API, the web app, R2 for photos, the Rate Limiting binding, Queues, Durable Objects), Neon (Postgres), Resend (email), Firebase (push only) and Sentry (errors, on the API and in the app). No Redis, and no product analytics to start: SQL on Neon, App Store Connect and Play Console answer the early questions.
+**The stack:** Cloudflare (Workers for the API, the web app, R2 for photos, the Rate Limiting binding, Queues), Neon (Postgres), Resend (email), Firebase (push only) and Sentry (errors, on the API and in the app). No Redis, and no product analytics to start: SQL on Neon, App Store Connect and Play Console answer the early questions.
 
-**Why:** it costs little while there are few users (Workers Paid is $5 a month with 10M requests included, then $0.30 per million), and it grows smoothly with no servers to scale by hand. Polling is what drives the request count, so real-time updates (step 4) keep it down. A long-running server (Fly.io, Railway) would run today's code unchanged for a fixed $6–12 a month, with scaling done by hand; one small machine is roughly enough for 10–20k daily users. Check current prices before deciding, Neon's especially.
+**Why:** it costs little while there are few users (Workers Paid is $5 a month with 10M requests included, then $0.30 per million), and it grows smoothly with no servers to scale by hand. Polling is what drives the request count, so it's kept slow (step 4). A long-running server (Fly.io, Railway) would run today's code unchanged for a fixed $6–12 a month, with scaling done by hand; one small machine is roughly enough for 10–20k daily users. Check current prices before deciding, Neon's especially.
 
 ### Keeping it portable
 
-Domain code only calls interfaces; each host gets adapters. What's Cloudflare-only (the Wrangler config, Durable Object classes, queue consumers, the `scheduled` handler) lives in one folder, and nothing in the domains touches Cloudflare's `env` or its types: the adapters are built from it when each request comes in. Moving host means new adapters and a different Nitro preset.
+Domain code only calls interfaces; each host gets adapters. What's Cloudflare-only (the Wrangler config, queue consumers, the `scheduled` handler) lives in one folder, and nothing in the domains touches Cloudflare's `env` or its types: the adapters are built from it when each request comes in. Moving host means new adapters and a different Nitro preset.
 
 | Concern | Interface | Cloudflare | Long-running server |
 |---|---|---|---|
@@ -136,7 +136,7 @@ Domain code only calls interfaces; each host gets adapters. What's Cloudflare-on
 | Database | drizzle from a connection string (exists) | Hyperdrive's connection string, a client per request | A pool |
 | Delayed delivery (pushes) | The database is the queue (`deliver_at`, `FOR UPDATE SKIP LOCKED`); only the wake-up differs | Cron every minute, plus a queue message with a delay (or a Durable Object alarm) for the next due time | The current loop |
 | Daily jobs | Plain functions (exist, behind the commands) | The `scheduled` handler | Cron or the CLI |
-| Real-time | `Realtime.publish({ userId, event })`, one subscribe hook in the app | A Durable Object per user, with WebSockets | In-process connections, plus Postgres `LISTEN/NOTIFY` across instances |
+| Real-time (later, if needed; see step 4) | `Realtime.publish({ userId, event })`, one subscribe hook in the app | A Durable Object per user, with WebSockets | In-process connections, plus Postgres `LISTEN/NOTIFY` across instances |
 | Photos | S3 API through aws4fetch (exists) | R2's S3 API (not the R2 binding) | Any S3 |
 | Errors | `ErrorReporter` (exists) | `@sentry/cloudflare` | `@sentry/node` |
 | Email, push | `fetch`-based senders (exist) | Same | Same |
@@ -155,11 +155,13 @@ Domain code only calls interfaces; each host gets adapters. What's Cloudflare-on
    - *Done:* a smoke test on workerd in CI (`smoke:workers`), since tests run on Bun.
    - Still to do: errors through `@sentry/cloudflare`. `@sentry/node` can't start on Workers, so until then `SENTRY_DSN` is ignored there (errors are still in the Worker's logs). Logs and traces are in Workers Observability.
 3. **The web app on Cloudflare**, with a `_headers` file so the `.well-known` files are served as JSON (see [Links that open the app](#links-that-open-the-app)).
-4. **Real-time updates in place of most polling** (the open chat polls every 4 seconds, the chat list every 15).
-   - Events are hints, not data ("chat X has new messages", "your unread count changed"); the app then fetches through tRPC as now. A lost event costs nothing, and the fetching stays in one place.
-   - Polling stays as a slow fallback, plus a refresh when the app comes to the foreground. In the background, phones drop connections, and pushes cover that.
-   - On Cloudflare: a Durable Object per user holds that user's WebSockets; a request that changes something tells the objects of the people affected. WebSockets rather than SSE, because a Durable Object can hibernate (not be billed for time) only with WebSockets (check this against Cloudflare's pricing when building). The client sends nothing over it; actions stay tRPC calls.
-   - Why not a separate real-time server (e.g. on Railway): it would be a second deployment, would have to check sessions itself, would need every event sent to it over HTTP (or through Postgres `LISTEN/NOTIFY`, which needs a direct, unpooled Neon connection), and above one instance needs pub/sub between instances. It makes sense if the API itself moves to a long-running server, where the in-process adapter above is that server. Behind `Realtime`, switching later is one adapter.
+4. **Slower polling** instead of real-time connections, for launch. *Done.*
+   - An open chat checks every 8 seconds while messages are coming, and every 30 once nothing's been sent or received for a minute (`chatPollIntervalMs`). Sending, or a new message arriving, makes it quick again.
+   - The chat list and the bell check once a minute.
+   - Everything checks straight away when the app or tab comes back to the foreground, and nothing polls while it's hidden. Pushes cover the app being closed.
+   - Pull-to-refresh on Feed, Chats and Notifications, at most once every 5 seconds (`usePullToRefresh`): a pull sooner than that just closes the spinner.
+   - Roughly: someone with the app open but idle makes about 2 requests a minute, and an active chat about 8 while it lasts.
+   - Later, if chats feel slow: real-time hints over WebSockets, from a Durable Object per user (or in-process on a long-running server). Events would be hints ("chat X has new messages"), and the app would fetch through tRPC as now, so they'd slot in behind the same refresh code. Polling would stay as the fallback.
 5. **Sentry in the app** (`@sentry/capacitor`, with source maps uploaded by the build): errors and crashes on people's phones and in the web app, which nothing reports today. Sentry's free plan has about 5,000 errors a month for one user; the Team plan (about $26 a month) adds users and 50,000 errors, with a spending cap. Crashlytics only if native crashes become a real problem.
 
 ### Test environment

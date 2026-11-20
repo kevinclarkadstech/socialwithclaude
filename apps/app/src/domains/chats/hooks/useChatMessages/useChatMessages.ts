@@ -14,6 +14,7 @@ import { runSendChatMessageMutation } from '../../operations/runSendChatMessageM
 import { replyExpected } from '../../../../common/events/replyExpected/replyExpected';
 import { runUpdateChatMessageMutation } from '../../operations/runUpdateChatMessageMutation/runUpdateChatMessageMutation';
 import type { ShownChatMessage } from '../../types';
+import { chatPollIntervalMs } from '../../utils/chatPollIntervalMs/chatPollIntervalMs';
 import { mergeNewestMessages } from '../../utils/mergeNewestMessages/mergeNewestMessages';
 import { sentMessage as sent } from '../../utils/sentMessage/sentMessage';
 
@@ -25,7 +26,8 @@ export type ChatMessagesStatus = 'loading' | 'ready' | 'failed';
  * shown, and sends, edits and deletes your messages. A message you send shows
  * straight away; if it fails it stays, marked, to retry. Its id is made here,
  * so a retry can't send it twice. While `isShown`, it checks for new
- * messages (and edits and deletes) every few seconds.
+ * messages (and edits and deletes): every 8 seconds while messages are
+ * coming, every 30 once it's been quiet for a minute (chatPollIntervalMs).
  */
 export function useChatMessages(chat: ChatView | null, { isShown }: { isShown: boolean }) {
   const { callingUser } = useCallingUser();
@@ -35,6 +37,19 @@ export function useChatMessages(chat: ChatView | null, { isShown }: { isShown: b
   const [isLoadingOlder, setIsLoadingOlder] = useState(false);
   // The newest message from the other person that's been marked read.
   const lastMarkedRead = useRef<string | null>(null);
+  // The newest message seen, and when a new one last came or went, for how often to check.
+  const newestSeen = useRef<string | null>(null);
+  const lastActivityAt = useRef(0);
+  const [pollIntervalMs, setPollIntervalMs] = useState(() => chatPollIntervalMs({ lastActivityAt: 0, now: 0 }));
+
+  /** Notes a new message (or none), and checks quickly or slowly to match. */
+  const noteActivity = useCallback((isNew: boolean) => {
+    const now = Date.now();
+    if (isNew) {
+      lastActivityAt.current = now;
+    }
+    setPollIntervalMs(chatPollIntervalMs({ lastActivityAt: lastActivityAt.current, now }));
+  }, []);
 
   const applyNewest = useCallback(
     (result: Result<Page<ChatMessageView>> | null, { first }: { first: boolean }) => {
@@ -49,6 +64,10 @@ export function useChatMessages(chat: ChatView | null, { isShown }: { isShown: b
         setOlderCursor(result.value.nextCursor);
       }
       setStatus('ready');
+      // Opening a chat counts as activity: it's checked quickly at first.
+      const newest = result.value.items[0]?.id ?? null;
+      noteActivity(first || newest !== newestSeen.current);
+      newestSeen.current = newest;
 
       const newestFromOther = result.value.items.find((message) => message.createdBy !== callingUser?.userId)?.id ?? null;
       if (chat && newestFromOther && newestFromOther !== lastMarkedRead.current) {
@@ -57,7 +76,7 @@ export function useChatMessages(chat: ChatView | null, { isShown }: { isShown: b
         void runMarkChatReadMutation({ chat }).catch(() => undefined);
       }
     },
-    [chat, callingUser?.userId],
+    [chat, callingUser?.userId, noteActivity],
   );
 
   useEffect(() => {
@@ -77,7 +96,7 @@ export function useChatMessages(chat: ChatView | null, { isShown }: { isShown: b
     };
   }, [chat, applyNewest]);
 
-  usePolling(() => refresh(), { intervalMs: 4000, enabled: isShown && chat !== null && status === 'ready' });
+  usePolling(() => refresh(), { intervalMs: pollIntervalMs, enabled: isShown && chat !== null && status === 'ready' });
 
   /** Checks for new messages (and edits and deletes) without losing what's shown. */
   async function refresh() {
@@ -140,6 +159,8 @@ export function useChatMessages(chat: ChatView | null, { isShown }: { isShown: b
       status: 'sending',
     };
     setMessages((shown) => [...shown, message]);
+    // Sending means a reply may be coming: check quickly again.
+    noteActivity(true);
     void deliver(message);
   }
 
