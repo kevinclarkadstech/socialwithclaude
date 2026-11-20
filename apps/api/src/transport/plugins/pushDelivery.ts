@@ -1,4 +1,5 @@
 import { definePlugin } from "nitro";
+import { platform } from "#platform";
 import { serverConfig } from "../../config";
 import { deliverPushes, pushSender } from "../../notifications";
 import { errorReporter, rootLogger } from "../../observability";
@@ -7,13 +8,13 @@ import { errorReporter, rootLogger } from "../../observability";
  * Sends pushes every PUSH_DELIVERY_INTERVAL_SECONDS while the server runs
  * (when PUSH_PROVIDER isn't "none" and the interval isn't 0). A round that
  * runs long is never overlapped by the next, and several instances can run
- * it at once: each notification and chat is taken by one of them. On a host
- * without a long-running process (e.g. Workers), turn it off and run
- * `bun run push:deliver` from a scheduler instead.
+ * it at once: each notification and chat is taken by one of them. Off where
+ * nothing runs between requests (Workers): there, a scheduler runs
+ * delivery instead (`bun run push:deliver` does one round).
  */
 export default definePlugin((nitroApp) => {
     const intervalSeconds = serverConfig.PUSH_DELIVERY_INTERVAL_SECONDS;
-    if (!pushSender || intervalSeconds === 0) {
+    if (!pushSender || intervalSeconds === 0 || !platform.runsBetweenRequests) {
         return;
     }
     const sender = pushSender;

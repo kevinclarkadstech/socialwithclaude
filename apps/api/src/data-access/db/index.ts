@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { serverConfig } from '../../config';
 import 'dotenv/config';
 import { sql } from 'drizzle-orm';
@@ -17,7 +18,42 @@ export type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 /** The database or a transaction: anything a query can run on. */
 export type Executor = Database | Transaction;
 
-export const db = createDb(serverConfig.DATABASE_URL);
+// The database for the request being handled, when each request has its own (see withRequestDatabase).
+const requestDatabase = new AsyncLocalStorage<Database>();
+let sharedDatabase: Database | undefined;
+
+function currentDatabase(): Database {
+    return requestDatabase.getStore() ?? (sharedDatabase ??= createDb(serverConfig.DATABASE_URL));
+}
+
+/**
+ * The database. Code uses it the same everywhere; which client it reaches
+ * depends on the runtime: on a long-running server one pool shared by every
+ * request (made on first use), on Workers the client of the request being
+ * handled (see withRequestDatabase). Commands and tests use the shared one.
+ */
+export const db: Database = new Proxy({} as Database, {
+    get(_target, property) {
+        const database = currentDatabase();
+        const value: unknown = Reflect.get(database, property, database);
+        return typeof value === "function" ? value.bind(database) : value;
+    },
+});
+
+/**
+ * Runs `handle` with a database client of its own, closed when it's done:
+ * every use of `db` inside it, however deep, reaches that client. For
+ * runtimes where a connection can't outlive one request (Workers).
+ */
+export async function withRequestDatabase<T>({ connectionString, handle }: { connectionString: string; handle: () => Promise<T> }): Promise<T> {
+    const database = createDb(connectionString);
+    try {
+        const result = await requestDatabase.run(database, handle);
+        return result;
+    } finally {
+        await database.$client.end();
+    }
+}
 
 /** Whether the database answers, for the readiness check. */
 export async function isDatabaseReachable(): Promise<boolean> {
@@ -35,7 +71,7 @@ export async function isDatabaseReachable(): Promise<boolean> {
 
 /** Closes the connection pool on shutdown. */
 export async function closeDb() {
-    await db.$client.end();
+    await sharedDatabase?.$client.end();
 }
 
 export * as schema from './schema';

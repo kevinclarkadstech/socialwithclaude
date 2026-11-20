@@ -7,6 +7,8 @@ node_modules
 dist
 build
 .output
+.wrangler
+.dev.vars
 *.tsbuildinfo
 
 # Generated files
