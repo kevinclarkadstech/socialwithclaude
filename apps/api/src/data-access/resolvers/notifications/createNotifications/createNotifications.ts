@@ -2,7 +2,7 @@ import { and, eq, gt } from "drizzle-orm";
 import type { NewNotification, NotificationType } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { notificationDeliverAt } from "../../../internal/notifications/notificationDeliverAt/notificationDeliverAt";
-import { notificationPushesDue } from "../../../internal/notifications/pushesDue/pushesDue";
+import { notificationPushesDue } from "../../../internal/notifications/pushesDueAfterDelay/pushesDueAfterDelay";
 
 /** Follow notifications aren't repeated within this long (following, unfollowing and following again). */
 const repeatWindowMs = 24 * 60 * 60 * 1000;

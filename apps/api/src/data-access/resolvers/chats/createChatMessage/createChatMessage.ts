@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import type { ChatMessageView } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
-import { chatPushesDue } from "../../../internal/notifications/pushesDue/pushesDue";
+import { chatPushesDue } from "../../../internal/notifications/pushesDueAfterDelay/pushesDueAfterDelay";
 import { getChatMessageViewById } from "../getChatMessageViewById/getChatMessageViewById";
 
 /**

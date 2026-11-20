@@ -1,7 +1,7 @@
 import type { ReportKind, ReportReason } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { notificationDeliverAt } from "../../../internal/notifications/notificationDeliverAt/notificationDeliverAt";
-import { notificationPushesDue } from "../../../internal/notifications/pushesDue/pushesDue";
+import { notificationPushesDue } from "../../../internal/notifications/pushesDueAfterDelay/pushesDueAfterDelay";
 
 /** Sends `userId` a "warning" notification and logs it, in one transaction. */
 export async function warnUser({ userId, moderatorId, reason, note, kind, targetId }: {

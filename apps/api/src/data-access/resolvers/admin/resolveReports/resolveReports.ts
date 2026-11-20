@@ -2,7 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { ModerationActionType, ReportKind, ReportOutcome, ReportStatus } from "@myapp/shared/domains";
 import { db, schema } from "../../../db";
 import { notificationDeliverAt } from "../../../internal/notifications/notificationDeliverAt/notificationDeliverAt";
-import { notificationPushesDue } from "../../../internal/notifications/pushesDue/pushesDue";
+import { notificationPushesDue } from "../../../internal/notifications/pushesDueAfterDelay/pushesDueAfterDelay";
 
 /** The report table and its "what was reported" column, per kind. */
 const reportTables = {

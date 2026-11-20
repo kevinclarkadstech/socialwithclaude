@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { rateLimitRules } from "../../../rate-limiting";
+// The rules only: the package index brings in the database, which needs the API's settings.
+import { rateLimitRules } from "../../../rate-limiting/constants";
 import { countsPerMinute } from "../../../rate-limiting/utils/countsPerMinute/countsPerMinute";
 import { cronSchedules } from "../constants";
 import { rateLimitBindingName } from "../utils/rateLimitBindingName/rateLimitBindingName";
