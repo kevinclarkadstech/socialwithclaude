@@ -20,6 +20,7 @@ import { PageColumns } from '../../common/components/PageColumns/PageColumns';
 import { usePagedQuery } from '../../lib/api/usePagedQuery';
 import { usePageContext } from '../../navigation';
 import { usePolling } from '../../lib/usePolling';
+import { usePullToRefresh } from '../../lib/usePullToRefresh';
 import '../../common/styles/pages.css';
 
 /** The Chats tab: your conversations, the most recent first, unread ones marked. Needs sign-in. */
@@ -64,8 +65,10 @@ function Inbox() {
   const { isVisible } = usePageContext();
   const wasVisible = useRef(isVisible);
 
-  // New messages come in while it's open.
-  usePolling(() => chats.reload(), { intervalMs: 15000, enabled: isVisible && chats.status === 'ready' });
+  // New messages come in while it's open: checked once a minute (an open chat checks more often),
+  // straight away when the app comes back to the foreground, and on pulling down.
+  usePolling(() => chats.reload(), { intervalMs: 60_000, enabled: isVisible && chats.status === 'ready' });
+  const onPull = usePullToRefresh(() => chats.reload());
 
   // Back from a chat: what's unread, and the order, may have changed.
   useEffect(() => {
@@ -77,7 +80,7 @@ function Inbox() {
 
   return (
     <>
-      <IonRefresher slot="fixed" onIonRefresh={(event) => void chats.reload().finally(() => event.detail.complete())}>
+      <IonRefresher slot="fixed" onIonRefresh={onPull}>
         <IonRefresherContent />
       </IonRefresher>
       {chats.status === 'loading' && (
