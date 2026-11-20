@@ -71,6 +71,7 @@ What the app stores and the law expect from a social app with photos, and where 
 - [ ] **The real app id** (reverse domain, e.g. `com.yourcompany.appname`), which can't change after the first store upload: in `apps/app/capacitor.config.ts`, the Xcode project's bundle identifier (`apps/app/ios/App`), `applicationId` in `apps/app/android/app/build.gradle`, `app_identifier` in `apps/app/ios/App/fastlane/Appfile`, the two `.well-known` files (see [Links that open the app](#links-that-open-the-app)), and the API's `APPLE_APP_BUNDLE_IDENTIFIER`. Also the app's name, icons and splash screen.
 - [ ] **Set up iOS releases:** an Apple Developer account, the app in App Store Connect, and the workflow's secrets and variables; then push a version tag to send a build to TestFlight. See [Releasing the iOS app](#releasing-the-ios-app).
 - [ ] **Android releases** (later): signed builds to Play's internal testing track. Needs a Google Play developer account; a new personal account also has to run a closed test (12 testers for 14 days) before it can publish.
+- [ ] **Host the API and web app:** Cloudflare Workers with Neon is the plan, built in the steps under [Hosting plan](#hosting-plan-not-built-yet).
 - [ ] **Schedule the daily jobs** once the API is hosted (a cron job, or Cron Triggers on Workers):
   - `bun run --cwd apps/api accounts:purge`: deletes accounts whose 30 days to restore are up. Without it, deleted accounts are hidden but never actually deleted. See [Account deletion](#account-deletion).
   - `bun run --cwd apps/api media:sweep --delete`: removes photo files that no post uses. See step 5 under [Object storage](#object-storage-cloudflare-r2).
@@ -116,6 +117,54 @@ People delete their account from the app (Settings → Delete account), confirmi
   ```
 
   A banned person's email is kept as a keyed hash (`banned_emails`), so it can't be used to sign up again.
+
+## Hosting plan (not built yet)
+
+What the app is planned to launch on, and the work to get there. Nothing below is built yet; today the API runs as a long-running Node or Bun server.
+
+**The stack:** Cloudflare (Workers for the API, the web app, R2 for photos, the Rate Limiting binding, Queues, Durable Objects), Neon (Postgres), Resend (email), Firebase (push only) and Sentry (errors, on the API and in the app). No Redis, and no product analytics to start: SQL on Neon, App Store Connect and Play Console answer the early questions.
+
+**Why:** it costs little while there are few users (Workers Paid is $5 a month with 10M requests included, then $0.30 per million), and it grows smoothly with no servers to scale by hand. Polling is what drives the request count, so real-time updates (step 4) keep it down. A long-running server (Fly.io, Railway) would run today's code unchanged for a fixed $6–12 a month, with scaling done by hand; one small machine is roughly enough for 10–20k daily users. Check current prices before deciding, Neon's especially.
+
+### Keeping it portable
+
+Domain code only calls interfaces; each host gets adapters. What's Cloudflare-only (the Wrangler config, Durable Object classes, queue consumers, the `scheduled` handler) lives in one folder, and nothing in the domains touches Cloudflare's `env` or its types: the adapters are built from it when each request comes in. Moving host means new adapters and a different Nitro preset.
+
+| Concern | Interface | Cloudflare | Long-running server |
+|---|---|---|---|
+| Rate limits | `RateLimiter.consume({ rule, key, cost? })` (exists; add `cost`) | Per-minute rules: the Rate Limiting binding. Longer or exact rules: Postgres | Postgres, in-memory or Redis |
+| Database | drizzle from a connection string (exists) | Hyperdrive's connection string, a client per request | A pool |
+| Delayed delivery (pushes) | The database is the queue (`deliver_at`, `FOR UPDATE SKIP LOCKED`); only the wake-up differs | Cron every minute, plus a queue message with a delay (or a Durable Object alarm) for the next due time | The current loop |
+| Daily jobs | Plain functions (exist, behind the commands) | The `scheduled` handler | Cron or the CLI |
+| Real-time | `Realtime.publish({ userId, event })`, one subscribe hook in the app | A Durable Object per user, with WebSockets | In-process connections, plus Postgres `LISTEN/NOTIFY` across instances |
+| Photos | S3 API through aws4fetch (exists) | R2's S3 API (not the R2 binding) | Any S3 |
+| Errors | `ErrorReporter` (exists) | `@sentry/cloudflare` | `@sentry/node` |
+| Email, push | `fetch`-based senders (exist) | Same | Same |
+| Entry point | Hono app (exists) | Nitro's Cloudflare preset | Nitro's Node or Bun preset |
+
+### Steps, in order
+
+1. **Rate limits that fit any host.** Each rule goes to the right backend: rules with a 10 or 60 second window to a fast, approximate limiter, and the rest (the 15-minute and daily email-code rules, the hourly `emailBudget`) to a Postgres counters table, since they protect the email bill and must be one exact count everywhere. `consume` takes a `cost` (the binding's `delta`), so expensive calls can count for more. The Rate Limiting binding's limit and window live in the Wrangler config, so a check (test or startup) makes sure each rule mapped to a binding matches it. Notes from the binding's docs: counts are approximate and kept per Cloudflare location; windows are 10 or 60 seconds only; a refused call doesn't count; key by user id where there is one (Cloudflare advises against IP keys, which signed-out auth requests still need).
+2. **The API on Workers.**
+   - Nitro's Cloudflare preset and a Wrangler config (`nodejs_compat`), Workers Paid plan.
+   - Hyperdrive in front of Neon, with a database client per request. `pg` keeps working, transactions included; Neon's HTTP driver wouldn't (no interactive transactions).
+   - Smart Placement (or a placement near Neon's region), so a request's queries don't each cross the world.
+   - Push delivery: Cron every minute, plus Queues with a delay, keeping the ~10-second chat pushes. The daily jobs on Cron Triggers.
+   - Errors: `@sentry/cloudflare` in place of `@sentry/node`; logs and traces in Workers Observability in place of the OpenTelemetry Node SDK (which can export over OTLP later).
+   - A smoke test on workerd in CI, since tests run on Bun.
+3. **The web app on Cloudflare**, with a `_headers` file so the `.well-known` files are served as JSON (see [Links that open the app](#links-that-open-the-app)).
+4. **Real-time updates in place of most polling** (the open chat polls every 4 seconds, the chat list every 15).
+   - Events are hints, not data ("chat X has new messages", "your unread count changed"); the app then fetches through tRPC as now. A lost event costs nothing, and the fetching stays in one place.
+   - Polling stays as a slow fallback, plus a refresh when the app comes to the foreground. In the background, phones drop connections, and pushes cover that.
+   - On Cloudflare: a Durable Object per user holds that user's WebSockets; a request that changes something tells the objects of the people affected. WebSockets rather than SSE, because a Durable Object can hibernate (not be billed for time) only with WebSockets (check this against Cloudflare's pricing when building). The client sends nothing over it; actions stay tRPC calls.
+   - Why not a separate real-time server (e.g. on Railway): it would be a second deployment, would have to check sessions itself, would need every event sent to it over HTTP (or through Postgres `LISTEN/NOTIFY`, which needs a direct, unpooled Neon connection), and above one instance needs pub/sub between instances. It makes sense if the API itself moves to a long-running server, where the in-process adapter above is that server. Behind `Realtime`, switching later is one adapter.
+5. **Sentry in the app** (`@sentry/capacitor`, with source maps uploaded by the build): errors and crashes on people's phones and in the web app, which nothing reports today. Sentry's free plan has about 5,000 errors a month for one user; the Team plan (about $26 a month) adds users and 50,000 errors, with a spending cap. Crashlytics only if native crashes become a real problem.
+
+### Test environment
+
+- **Database:** a Neon `staging` branch (a copy-on-write copy that pauses itself when idle, so it costs almost nothing), and optionally a branch per PR from Neon's GitHub Action, deleted when the PR closes.
+- **API:** a `staging` environment in the Wrangler config: its own Worker, secrets, bindings, Hyperdrive (pointing at the staging branch) and R2 bucket. Pay-per-request, so idle staging is free. `wrangler versions upload` gives each version a preview URL.
+- **Apps:** a staging build sets `VITE_API_URL` to the staging API; TestFlight builds could use staging from a separate kind of tag (e.g. `v1.2.0-beta.1`).
 
 ## Deployment
 
