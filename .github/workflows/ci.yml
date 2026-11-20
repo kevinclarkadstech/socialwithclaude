@@ -73,6 +73,49 @@ jobs:
       - name: Integration tests
         run: bun run --cwd apps/api test:integration
 
+  # The API built for Cloudflare Workers, run on Cloudflare's own runtime (wrangler dev) against a
+  # real Postgres: a client per request, signing up, a push through the queue, the Cron Triggers and
+  # a Rate Limiting binding (scripts/workers-smoke.ts).
+  api-workers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      - name: Apply the migrations
+        env:
+          PGPASSWORD: postgres
+        run: |
+          for migration in apps/api/drizzle/*/migration.sql; do
+            sed 's/--> statement-breakpoint//' "$migration" | psql -h localhost -U postgres -d app -v ON_ERROR_STOP=1 -q
+          done
+      - name: Build for Workers
+        run: bun run --cwd apps/api build:cloudflare
+      - name: Smoke test on workerd
+        env:
+          WORKERS_SMOKE_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/app
+        run: bun run --cwd apps/api smoke:workers
+
   # The Ionic app (web and Capacitor share one build).
   app:
     runs-on: ubuntu-latest

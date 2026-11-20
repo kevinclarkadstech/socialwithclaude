@@ -10,6 +10,7 @@ import { getUserProfileAndBlockList } from "../data-access";
 import { nativeAppOrigins, serverConfig } from "../config";
 import { sendOtp } from "../notifications";
 import { isEmailBanned } from "../accounts";
+import { platform } from "#platform";
 import { errorReporter, rootLogger } from "../observability";
 
 const {
@@ -118,6 +119,8 @@ export function createAuthInstance(db: Database) {
                 generateId: () => newId(),
                 // A session and its user in one query (needs the relations in data-access/db).
                 joins: true,
+                // Checked at startup, against the shared pool. On Workers there's no database outside a request to check with.
+                validateSchema: !platform.databasePerRequest,
             },
         },
     });

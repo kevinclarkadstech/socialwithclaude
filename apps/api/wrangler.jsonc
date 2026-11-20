@@ -1,0 +1,54 @@
+// The API on Cloudflare Workers. `bun run build:cloudflare` builds it and merges this into the
+// Wrangler config it generates (.output/server/wrangler.json). See the README's "Deploying the API to
+// Cloudflare" for creating what the ids below refer to, and the secrets and variables to set.
+{
+  "name": "placeholder-api",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  // Run near the database rather than near each user: a request makes several queries in a row.
+  "placement": { "mode": "smart" },
+  "observability": { "enabled": true },
+  // Variables set in the dashboard (or with `wrangler secret put`) are kept on deploy.
+  "keep_vars": true,
+  "vars": {
+    "NODE_ENV": "production",
+    // Cloudflare sets it on every request, so callers can't.
+    "CLIENT_IP_HEADER": "cf-connecting-ip"
+  },
+
+  // Postgres (Neon) through Hyperdrive, created with query caching off: the app reads what it just
+  // wrote (chats, notifications), and Hyperdrive doesn't clear its cache on writes. Locally,
+  // `wrangler dev` connects straight to localConnectionString (or
+  // CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE, which takes precedence).
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "00000000000000000000000000000000",
+      "localConnectionString": "postgresql://postgres:postgres@localhost:5432/app"
+    }
+  ],
+
+  // The per-minute rate limits (rateLimitRules with a 10 or 60 second window), one binding each,
+  // named by rateLimitBindingName. A test checks they match the rules. Counts are approximate and
+  // per Cloudflare location; the limits guarding email are exact, in Postgres. namespace_id is any
+  // integer unique in the Cloudflare account.
+  "ratelimits": [
+    { "name": "RATE_LIMIT_AUTH", "namespace_id": "1001", "simple": { "limit": 60, "period": 60 } },
+    { "name": "RATE_LIMIT_QUERIES", "namespace_id": "1002", "simple": { "limit": 600, "period": 60 } },
+    { "name": "RATE_LIMIT_MUTATIONS", "namespace_id": "1003", "simple": { "limit": 60, "period": 60 } }
+  ],
+
+  // Push delivery: a message is queued, delayed until a push is due (pushesDue), and the consumer
+  // runs a delivery round. The Worker is both producer and consumer.
+  "queues": {
+    "producers": [{ "queue": "placeholder-push-delivery", "binding": "PUSH_QUEUE" }],
+    "consumers": [
+      { "queue": "placeholder-push-delivery", "max_batch_size": 100, "max_batch_timeout": 1, "max_retries": 3 }
+    ]
+  },
+
+  // What each runs is in src/platform/cloudflare/constants (a test checks they match):
+  // every minute, push delivery in case a queue message was lost; daily at 03:17 UTC, purging deleted
+  // accounts and sweeping orphaned photo files.
+  "triggers": { "crons": ["* * * * *", "17 3 * * *"] }
+}

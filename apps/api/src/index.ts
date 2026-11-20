@@ -48,10 +48,8 @@ const featureFlagStore = createAppFeatureFlagStore({ flagsOrLoader: { usersCanPo
 const featureFlagsLoaded = featureFlagStore.initialize();
 
 // Where rate limits are counted: per-minute rules (auth, queries, mutations) in the cache (Redis, or
-// each instance's memory without it), the rest
-// (sending email, signing in with a code) exactly, in Postgres. On Cloudflare Workers the per-minute
-// limiter would be built per request from the Rate Limiting bindings in c.env instead (see
-// rate-limiting/types/index.ts); nothing else changes.
+// each instance's memory without it), or on Workers by the Rate Limiting bindings
+// (platform.createPerMinuteRateLimiter); the rest (sending email, signing in with a code) exactly, in Postgres.
 const rateLimitOptions: CountingRateLimiterOptions & { logger: AppLogger } = {
     logger: rootLogger,
     limits: { [rateLimitRules.emailBudget.name]: serverConfig.EMAIL_HOURLY_LIMIT },
@@ -63,14 +61,14 @@ const rateLimitOptions: CountingRateLimiterOptions & { logger: AppLogger } = {
     },
 };
 const rateLimiter = createRoutedRateLimiter({
-    perMinute: createCacheRateLimiter({ cache, ...rateLimitOptions }),
+    perMinute: platform.createPerMinuteRateLimiter?.() ?? createCacheRateLimiter({ cache, ...rateLimitOptions }),
     exact: createDatabaseRateLimiter(rateLimitOptions),
 });
 
 const app = new Hono<AppHonoEnv>()
     // On Workers, each request gets its own database client: a connection can't be shared between requests.
-    .use(async (_c, next) => (platform.databasePerRequest
-        ? withRequestDatabase({ connectionString: serverConfig.DATABASE_URL, handle: next })
+    .use(async (_c, next) => (platform.requestDatabaseUrl
+        ? withRequestDatabase({ connectionString: platform.requestDatabaseUrl(), handle: next })
         : next()))
     .use(contextStorage())
     .use(requestId())
