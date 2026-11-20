@@ -132,7 +132,7 @@ Domain code only calls interfaces; each host gets adapters. What's Cloudflare-on
 
 | Concern | Interface | Cloudflare | Long-running server |
 |---|---|---|---|
-| Rate limits | `RateLimiter.consume({ rule, key, cost? })` (exists; add `cost`) | Per-minute rules: the Rate Limiting binding. Longer or exact rules: Postgres | Postgres, in-memory or Redis |
+| Rate limits | `RateLimiter.consume({ rule, key, cost? })` (exists, routed by window) | Per-minute rules: the Rate Limiting binding. Longer or exact rules: Postgres | Postgres, in-memory or Redis |
 | Database | drizzle from a connection string (exists) | Hyperdrive's connection string, a client per request | A pool |
 | Delayed delivery (pushes) | The database is the queue (`deliver_at`, `FOR UPDATE SKIP LOCKED`); only the wake-up differs | Cron every minute, plus a queue message with a delay (or a Durable Object alarm) for the next due time | The current loop |
 | Daily jobs | Plain functions (exist, behind the commands) | The `scheduled` handler | Cron or the CLI |
@@ -144,7 +144,7 @@ Domain code only calls interfaces; each host gets adapters. What's Cloudflare-on
 
 ### Steps, in order
 
-1. **Rate limits that fit any host.** Each rule goes to the right backend: rules with a 10 or 60 second window to a fast, approximate limiter, and the rest (the 15-minute and daily email-code rules, the hourly `emailBudget`) to a Postgres counters table, since they protect the email bill and must be one exact count everywhere. `consume` takes a `cost` (the binding's `delta`), so expensive calls can count for more. The Rate Limiting binding's limit and window live in the Wrangler config, so a check (test or startup) makes sure each rule mapped to a binding matches it. Notes from the binding's docs: counts are approximate and kept per Cloudflare location; windows are 10 or 60 seconds only; a refused call doesn't count; key by user id where there is one (Cloudflare advises against IP keys, which signed-out auth requests still need).
+1. **Rate limits that fit any host.** *Done, except the binding itself.* Each rule goes to the right backend: rules with a 10 or 60 second window to a fast, approximate limiter, and the rest (the 15-minute and daily email-code rules, the hourly `emailBudget`) to a Postgres counters table, since they protect the email bill and must be one exact count everywhere. `consume` takes a `cost` (the binding's `delta`), so expensive calls can count for more. The Rate Limiting binding's limit and window live in the Wrangler config, so a check (test or startup) makes sure each rule mapped to a binding matches it; that adapter and its check come with step 2. Notes from the binding's docs: counts are approximate and kept per Cloudflare location; windows are 10 or 60 seconds only; a refused call doesn't count; key by user id where there is one (Cloudflare advises against IP keys, which signed-out auth requests still need).
 2. **The API on Workers.**
    - Nitro's Cloudflare preset and a Wrangler config (`nodejs_compat`), Workers Paid plan.
    - Hyperdrive in front of Neon, with a database client per request. `pg` keeps working, transactions included; Neon's HTTP driver wouldn't (no interactive transactions).
@@ -220,7 +220,7 @@ A send that fails is logged and reported to Sentry, with the provider's status a
 - Sign-in codes: 5 per 15 minutes and 10 a day per email address; 10 per 15 minutes and 30 a day per IP address.
 - Account deletion codes: 3 per 15 minutes and 10 a day per person.
 - **An hourly budget for all email together,** `EMAIL_HOURLY_LIMIT` (default 300), which a bot spread across many addresses and IPs can't get past. It counts only codes the other limits let through. Once it's used up, codes are refused until the hour is up, and Sentry is told (once an hour). Raise it as the app grows.
-- If Redis can't be reached, no codes are sent, rather than sent without limits. People who already have a code can still use it.
+- These limits are counted in Postgres (`rate_limit_counters`), exactly, across every instance. If the database can't be reached, no codes are sent, rather than sent without limits.
 
 ### Push notifications
 
@@ -297,11 +297,13 @@ On a Mac, Xcode still signs debug builds automatically with your own account: th
 
 ### Cache (Redis)
 
-The API's cache is Redis. For now it only holds rate-limit counters, so the limits hold across instances. Any Redis 7 works, e.g. Upstash. (Rate limiting goes through a `RateLimiter` interface, so on Cloudflare Workers it could use Workers rate-limit bindings instead; see `apps/api/src/rate-limiting/types/index.ts`.)
+The API's cache is Redis. For now it only holds the per-minute rate-limit counters (everything under `/api/auth`, tRPC queries and mutations), so those limits hold across instances. Any Redis 7 works, e.g. Upstash.
+
+Rate limits go through a `RateLimiter` interface (`apps/api/src/rate-limiting`), which sends each rule by its window: rules with a 10 or 60 second window to Redis, which is fast enough to check on every request, and every other rule (sending and using codes, the email budget) to Postgres, which counts exactly. On Cloudflare Workers, the Rate Limiting binding would take Redis's place (see [Hosting plan](#hosting-plan-not-built-yet)). A rule's window decides where it's counted, so a new rule that guards something costly needs a window other than 10 or 60 seconds; a test checks that every rule guarding email is counted in Postgres.
 
 - Set `REDIS_URL`, e.g. `rediss://default:<password>@<host>:6379`.
 - Set `CLIENT_IP_HEADER` to the header your proxy or CDN puts the caller's IP address in, e.g. `cf-connecting-ip` behind Cloudflare. The default is `x-forwarded-for`. Rate limits per IP trust this header, so the API must only be reachable through that proxy.
-- If Redis goes down, the API keeps serving with rate limiting off and logs it. `/api/ready` reports `cache: false`. The exception is sending email: without the counters, no codes are sent (see [Email](#email)).
+- If Redis goes down, the API keeps serving with the per-minute limits off and logs it. `/api/ready` reports `cache: false`. The limits on sending codes are in Postgres, so they still hold.
 
 ### Error reporting (Sentry)
 

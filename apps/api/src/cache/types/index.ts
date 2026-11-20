@@ -6,10 +6,11 @@
  */
 export interface Cache {
     /**
-     * Adds 1 to the counter at `key`, which expires `windowSeconds` after its
-     * first increment. Returns the count and how many seconds are left.
+     * Adds `by` (default 1) to the counter at `key`, which expires
+     * `windowSeconds` after its first increment. Returns the count and how
+     * many seconds are left.
      */
-    increment(args: { key: string; windowSeconds: number }): Promise<{ count: number; secondsLeft: number }>;
+    increment(args: { key: string; windowSeconds: number; by?: number }): Promise<{ count: number; secondsLeft: number }>;
     /** Whether the cache answers, for the readiness check. */
     isReachable(): Promise<boolean>;
     /** Closes the connection on shutdown. */

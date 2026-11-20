@@ -13,7 +13,7 @@ import { createAppFeatureFlagStore, type AppFeatureFlagStore } from "./shared/fe
 import { trpcServer } from "@hono/trpc-server";
 import { db, isDatabaseReachable } from "./data-access/db";
 import { cache } from "./cache";
-import { createCacheRateLimiter, limitAuthRequestsMiddleware, rateLimitRules, type RateLimiter } from "./rate-limiting";
+import { createCacheRateLimiter, createDatabaseRateLimiter, createRoutedRateLimiter, limitAuthRequestsMiddleware, rateLimitRules, type CountingRateLimiterOptions, type RateLimiter } from "./rate-limiting";
 import { appRouter, createContext } from "./transport/trpc";
 import { trpcOnErrorFunction } from "./error-handling";
 import { assertCanNotify } from "./notifications";
@@ -46,10 +46,11 @@ const auth = createAuthInstance(db);
 const featureFlagStore = createAppFeatureFlagStore({ flagsOrLoader: { usersCanPost: true } });
 const featureFlagsLoaded = featureFlagStore.initialize();
 
-// Where rate limits are counted. On Cloudflare Workers this would be built per request from the
-// rate-limit bindings in c.env instead (see rate-limiting/types/index.ts); nothing else changes.
-const rateLimiter = createCacheRateLimiter({
-    cache,
+// Where rate limits are counted: per-minute rules (auth, queries, mutations) in the cache, the rest
+// (sending email, signing in with a code) exactly, in Postgres. On Cloudflare Workers the per-minute
+// limiter would be built per request from the Rate Limiting bindings in c.env instead (see
+// rate-limiting/types/index.ts); nothing else changes.
+const rateLimitOptions: CountingRateLimiterOptions & { logger: AppLogger } = {
     logger: rootLogger,
     limits: { [rateLimitRules.emailBudget.name]: serverConfig.EMAIL_HOURLY_LIMIT },
     // Only the email budget alerts: either the app is busier than EMAIL_HOURLY_LIMIT allows, or someone is sending a lot through it.
@@ -58,6 +59,10 @@ const rateLimiter = createCacheRateLimiter({
         rootLogger.error(message);
         errorReporter.report({ error: new Error(message) });
     },
+};
+const rateLimiter = createRoutedRateLimiter({
+    perMinute: createCacheRateLimiter({ cache, ...rateLimitOptions }),
+    exact: createDatabaseRateLimiter(rateLimitOptions),
 });
 
 const app = new Hono<AppHonoEnv>()
@@ -103,7 +108,7 @@ const app = new Hono<AppHonoEnv>()
     }))
     // Liveness: the process is up.
     .get("/api/health", (c) => c.json({ ok: true }))
-    // Readiness: it can serve requests. The database is required; without the cache, rate limiting is off.
+    // Readiness: it can serve requests. The database is required; without the cache, the per-minute rate limits are off.
     .get("/api/ready", async (c) => {
         const [database, cacheReachable] = await Promise.all([isDatabaseReachable(), cache.isReachable()]);
         return c.json({ ok: database, database, cache: cacheReachable }, database ? 200 : 503);
