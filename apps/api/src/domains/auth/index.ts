@@ -12,6 +12,7 @@ import { sendOtp } from "../notifications";
 import { isEmailBanned } from "../accounts";
 import { platform } from "#platform";
 import { errorReporter, rootLogger } from "../../infra/observability";
+import { reviewAccountCode } from "./utils/reviewAccountCode/reviewAccountCode";
 
 const {
     GOOGLE_CLIENT_ID,
@@ -24,6 +25,11 @@ const {
 const google = GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET
     ? { clientId: GOOGLE_CLIENT_ID, clientSecret: GOOGLE_CLIENT_SECRET }
     : undefined;
+
+// See reviewAccountCode: the app stores' reviewers sign in with this email and fixed code.
+const reviewAccount = serverConfig.REVIEW_ACCOUNT_EMAIL && serverConfig.REVIEW_ACCOUNT_CODE
+    ? { email: serverConfig.REVIEW_ACCOUNT_EMAIL, code: serverConfig.REVIEW_ACCOUNT_CODE }
+    : null;
 
 const apple = APPLE_CLIENT_ID && APPLE_CLIENT_SECRET
     ? { clientId: APPLE_CLIENT_ID, clientSecret: APPLE_CLIENT_SECRET, appBundleIdentifier: APPLE_APP_BUNDLE_IDENTIFIER }
@@ -83,11 +89,17 @@ export function createAuthInstance(db: Database) {
             emailOTP({
                 // Not awaited, so how long sending takes doesn't reveal whether the email has an account.
                 sendVerificationOTP: async (data) => {
+                    // The review account's code is fixed and given to the reviewers: nothing to send.
+                    if (reviewAccountCode({ email: data.email, type: data.type, reviewAccount })) {
+                        return;
+                    }
                     sendOtp({ email: data.email, code: data.otp, type: data.type }).catch((err: unknown) => {
                         rootLogger.error("Couldn't send a sign-in code", { err, type: data.type });
                         errorReporter.report({ error: err });
                     });
                 },
+                // The review account's fixed code; everyone else gets a random one (undefined: better-auth's own).
+                generateOTP: ({ email, type }) => reviewAccountCode({ email, type, reviewAccount }) ?? undefined,
                 otpLength: 6,
                 expiresIn: 5 * 60,
                 allowedAttempts: 3,
