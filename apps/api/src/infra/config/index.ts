@@ -43,6 +43,12 @@ export const ServerConfigSchema = z.object({
     // e.g. cf-connecting-ip on Cloudflare. Without a proxy in front, callers could set it themselves.
     CLIENT_IP_HEADER: z.string().default("x-forwarded-for"),
 
+    // The app stores' review account: reviewers sign in with this email and this fixed 6-digit code
+    // (no email is sent to it), given to them in App Store Connect and Play Console. Set both or
+    // neither; remove them once the app is through review if you like. See the README.
+    REVIEW_ACCOUNT_EMAIL: z.email().optional(),
+    REVIEW_ACCOUNT_CODE: z.string().regex(/^\d{6}$/, "Six digits, like the emailed codes").optional(),
+
     // Unexpected errors go to Sentry when this is set; without it nothing is reported.
     SENTRY_DSN: z.url().optional(),
     // Defaults to NODE_ENV.
@@ -88,6 +94,9 @@ export const ServerConfigSchema = z.object({
         if (!config[key]) {
             ctx.addIssue({ code: "custom", path: [key], message: `Required when EMAIL_PROVIDER is ${config.EMAIL_PROVIDER}` });
         }
+    }
+    if (Boolean(config.REVIEW_ACCOUNT_EMAIL) !== Boolean(config.REVIEW_ACCOUNT_CODE)) {
+        ctx.addIssue({ code: "custom", path: ["REVIEW_ACCOUNT_CODE"], message: "Set REVIEW_ACCOUNT_EMAIL and REVIEW_ACCOUNT_CODE together" });
     }
     if (config.PUSH_PROVIDER === "fcm" && !config.FCM_SERVICE_ACCOUNT_JSON) {
         ctx.addIssue({ code: "custom", path: ["FCM_SERVICE_ACCOUNT_JSON"], message: "Required when PUSH_PROVIDER is fcm" });

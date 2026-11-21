@@ -93,6 +93,7 @@ What the app stores and the law expect from a social app with photos, and where 
 - [ ] **Links that open the app** (Universal Links on iOS, App Links on Android): put the real web address in place of `app.example.com` and the real app id, Apple team id and Play signing key's SHA-256 in the two files under `apps/app/public/.well-known/`, and serve them from that address. See [Links that open the app](#links-that-open-the-app).
 - [ ] **The real app id** (reverse domain, e.g. `com.yourcompany.appname`), which can't change after the first store upload: in `apps/app/capacitor.config.ts`, the Xcode project's bundle identifier (`apps/app/ios/App`), `applicationId` in `apps/app/android/app/build.gradle`, `app_identifier` in `apps/app/ios/App/fastlane/Appfile`, the two `.well-known` files (see [Links that open the app](#links-that-open-the-app)), and the API's `APPLE_APP_BUNDLE_IDENTIFIER`. Also the app's name, icons and splash screen.
 - [ ] **Set up iOS releases:** an Apple Developer account, the app in App Store Connect, and the workflow's secrets and variables; then push a version tag to send a build to TestFlight. See [Releasing the iOS app](#releasing-the-ios-app).
+- [ ] **The review account** for App Review (and Play's app access): `REVIEW_ACCOUNT_EMAIL` and `REVIEW_ACCOUNT_CODE` on the API, the same in App Store Connect's sign-in information, and the account signed up with some content. See [the review account](#releasing-the-ios-app).
 - [ ] **Android releases** (later): signed builds to Play's internal testing track. Needs a Google Play developer account; a new personal account also has to run a closed test (12 testers for 14 days) before it can publish.
 - [ ] **Host the API and web app:** both on Cloudflare Workers, the API with Neon. See [Deploying the API to Cloudflare](#deploying-the-api-to-cloudflare) and [Deploying the web app to Cloudflare](#deploying-the-web-app-to-cloudflare).
 - [ ] **The daily jobs:** on Workers they're Cron Triggers, set up by the deploy. On a long-running server, schedule these daily:
@@ -383,6 +384,14 @@ Signing uses fastlane [match](https://docs.fastlane.tools/actions/match/): the A
      - Optionally, for errors and crashes (see [Error reporting in the app](#error-reporting-in-the-app-sentry)): the variables `VITE_SENTRY_DSN`, `SENTRY_ORG` and `SENTRY_APP_PROJECT`, and the secret `SENTRY_AUTH_TOKEN`. Each release's source maps are uploaded as `ios@<tag>`.
 5. **Run "iOS certificates"** from the Actions tab (`.github/workflows/ios-certificates.yml`). It creates the certificate and profile and stores them in the certificates repository. Run it again with "Renew the profile" after turning on another capability for the app id, and again when the certificate expires (yearly).
 6. Push a tag.
+
+**The review account.** App Review has to sign in, and sign-in is a code emailed to the address, which a reviewer can't receive. So the API can have one review account that signs in with a fixed code and is sent no email:
+
+1. Pick an address for it that no one uses, e.g. `app-review@yourdomain.com`, and a 6-digit code, and set them on the API: `REVIEW_ACCOUNT_EMAIL` and `REVIEW_ACCOUNT_CODE` (secrets, like the others).
+2. In App Store Connect → the app → App Review Information → Sign-In Information, give that email as the user name and the code as the password, with a note: "Enter the email on the sign-in screen, then this code when asked for the code. No email is sent." Play Console's App access section takes the same.
+3. Sign in with it once yourself and finish sign-up (a name, and a birth date over 13), so reviewers land in the app. Post something, follow someone, and start a chat with another test account, so there's something to look at.
+
+Only that address gets the fixed code, and only for signing in. The usual limits still apply (3 tries per code, 10 codes a day per address, the per-IP limits), which allows about 30 guesses a day against a million codes. Keep it an ordinary account (never an admin), and remove the two settings after review if you like: the account then needs an emailed code like anyone else.
 
 **Without a Mac** (Xcode only runs on macOS), this is how to try the iOS app on an iPhone: push a tag, then install the build from the TestFlight app once Apple has processed it (about 20–30 minutes in all). Push notifications and Universal Links need a real phone and a signed build anyway. Day to day, work in the browser (and Android Studio, which runs on Windows); the iOS simulator build on PRs shows when a change breaks the iOS build.
 
