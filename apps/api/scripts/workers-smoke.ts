@@ -6,7 +6,7 @@
  * - the database answers, one request after another and at the same time (a client per request);
  * - two people sign up with emailed codes and finish sign-up;
  * - a chat message to someone with a push token is pushed, through the push queue;
- * - both Cron Triggers run;
+ * - the daily Cron Trigger runs its jobs;
  * - the per-minute auth limit (a Rate Limiting binding) refuses past 60.
  *
  * Emails and pushes go to the log (EMAIL_PROVIDER and PUSH_PROVIDER "console"), which is read for
@@ -130,7 +130,7 @@ try {
     const pushed = await waitFor("the push", () => output.includes("Push (not sent: PUSH_PROVIDER is console)") && output.includes("Is it still for sale?"), 20_000).catch(() => false);
     check(pushed === true, "a chat message is pushed through the push queue");
 
-    for (const cron of ["*/15 * * * *", "17 3 * * *"]) {
+    for (const cron of ["17 3 * * *"]) {
         const result = await fetch(`${base}/cdn-cgi/local/scheduled?format=json&cron=${encodeURIComponent(cron)}`);
         const outcome = (await result.json() as { outcome: string }).outcome;
         check(outcome === "ok", `the Cron Trigger "${cron}" runs`);

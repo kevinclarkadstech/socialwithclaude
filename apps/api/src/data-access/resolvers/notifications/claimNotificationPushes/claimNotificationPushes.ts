@@ -20,13 +20,16 @@ export interface NotificationToPush {
  * Takes up to `limit` notifications that are due (their delivery time has
  * come) and haven't been handled for push, and marks them handled, in one
  * go: rows another instance is taking at the same moment are skipped, so
- * each is pushed once. Returns the ones still worth pushing: those the
- * recipient would still see (see visibleNotifications: nothing since
- * undone, nothing across a block), with their settings and unread count.
+ * each is pushed once. Returns the ones still worth pushing: due within
+ * the last `maxAgeSeconds` (one that waited longer, say because the wake-up
+ * for it was lost, is marked handled but not pushed: it's in the bell, and
+ * a push that late is noise), and that the recipient would still see (see
+ * visibleNotifications: nothing since undone, nothing across a block), with
+ * their settings and unread count.
  */
-export async function claimNotificationPushes({ limit }: { limit: number }): Promise<NotificationToPush[]> {
+export async function claimNotificationPushes({ limit, maxAgeSeconds }: { limit: number; maxAgeSeconds: number }): Promise<NotificationToPush[]> {
     const n = schema.notifications;
-    const claimed = await db.execute<{ id: string; user_id: string }>(sql`
+    const claimed = await db.execute<{ id: string; user_id: string; fresh: boolean }>(sql`
         with due as (
             select id from ${n}
             where pushed_at is null and deliver_at <= now()
@@ -35,9 +38,9 @@ export async function claimNotificationPushes({ limit }: { limit: number }): Pro
             for update skip locked
         )
         update ${n} set pushed_at = now() from due where ${n.id} = due.id
-        returning ${n.id} as id, ${n.userId} as user_id`);
+        returning ${n.id} as id, ${n.userId} as user_id, ${n.deliverAt} > now() - make_interval(secs => ${maxAgeSeconds}) as fresh`);
     const idsByUser = new Map<string, string[]>();
-    for (const row of claimed.rows) {
+    for (const row of claimed.rows.filter((claimedRow) => claimedRow.fresh)) {
         idsByUser.set(row.user_id, [...(idsByUser.get(row.user_id) ?? []), row.id]);
     }
 
