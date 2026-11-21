@@ -119,7 +119,7 @@ jobs:
   # The Ionic app (web and Capacitor share one build).
   app:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       # Vitest and jsdom run on Node (jsdom 31 needs 22.22.2+ or 24.15+), so pin it rather than take the runner's.
@@ -139,3 +139,7 @@ jobs:
         run: bun run --cwd apps/app test
       - name: Build app
         run: bun run --cwd apps/app build
+      # Serves the build the way Cloudflare will (wrangler dev, wrangler.jsonc, public/_headers): app
+      # routes load the app, the .well-known files are JSON, built scripts are cached for good.
+      - name: Smoke test on Cloudflare
+        run: bun run --cwd apps/app smoke:cloudflare
