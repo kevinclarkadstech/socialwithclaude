@@ -15,7 +15,8 @@ let package = Package(
         .package(name: "AparajitaCapacitorSecureStorage", path: "../../../../../node_modules/.bun/@aparajita+capacitor-secure-storage@8.0.1/node_modules/@aparajita/capacitor-secure-storage"),
         .package(name: "CapacitorFirebaseMessaging", path: "symlinks/CapacitorFirebaseMessaging"),
         .package(name: "CapacitorApp", path: "../../../../../node_modules/.bun/@capacitor+app@8.1.2+6ab6186627aac117/node_modules/@capacitor/app"),
-        .package(name: "CapacitorShare", path: "../../../../../node_modules/.bun/@capacitor+share@8.0.3+6ab6186627aac117/node_modules/@capacitor/share")
+        .package(name: "CapacitorShare", path: "../../../../../node_modules/.bun/@capacitor+share@8.0.3+6ab6186627aac117/node_modules/@capacitor/share"),
+        .package(name: "SentryCapacitor", path: "../../../../../node_modules/.bun/@sentry+capacitor@4.5.0+461955d09b4edc83/node_modules/@sentry/capacitor")
     ],
     targets: [
         .target(
@@ -26,7 +27,8 @@ let package = Package(
                 .product(name: "AparajitaCapacitorSecureStorage", package: "AparajitaCapacitorSecureStorage"),
                 .product(name: "CapacitorFirebaseMessaging", package: "CapacitorFirebaseMessaging"),
                 .product(name: "CapacitorApp", package: "CapacitorApp"),
-                .product(name: "CapacitorShare", package: "CapacitorShare")
+                .product(name: "CapacitorShare", package: "CapacitorShare"),
+                .product(name: "SentryCapacitor", package: "SentryCapacitor")
             ]
         )
     ]

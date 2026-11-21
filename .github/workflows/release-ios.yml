@@ -21,6 +21,14 @@ jobs:
       VITE_API_URL: ${{ vars.VITE_API_URL }}
       VITE_PUBLIC_URL: ${{ vars.VITE_PUBLIC_URL }}
       VITE_MEDIA_URL: ${{ vars.VITE_MEDIA_URL }}
+      # Optional: errors and crashes to Sentry, with source maps uploaded for this version (see the
+      # README's "Error reporting in the app"). Without them the app builds without reporting.
+      VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+      VITE_SENTRY_ENVIRONMENT: production
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ vars.SENTRY_APP_PROJECT }}
+      SENTRY_RELEASE: ios@${{ github.ref_name }}
     steps:
       - name: Check the version and settings
         run: |

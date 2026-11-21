@@ -162,7 +162,7 @@ Domain code only calls interfaces; each host gets adapters. What's Cloudflare-on
    - Pull-to-refresh on Feed, Chats and Notifications, at most once every 5 seconds (`usePullToRefresh`): a pull sooner than that just closes the spinner.
    - Roughly: someone with the app open but idle makes about 2 requests a minute, and an active chat about 8 while it lasts.
    - Later, if chats feel slow: real-time hints over WebSockets, from a Durable Object per user (or in-process on a long-running server). Events would be hints ("chat X has new messages"), and the app would fetch through tRPC as now, so they'd slot in behind the same refresh code. Polling would stay as the fallback.
-5. **Sentry in the app** (`@sentry/capacitor`, with source maps uploaded by the build): errors and crashes on people's phones and in the web app, which nothing reports today. Sentry's free plan has about 5,000 errors a month for one user; the Team plan (about $26 a month) adds users and 50,000 errors, with a spending cap. Crashlytics only if native crashes become a real problem.
+5. **Sentry in the app.** *Done:* `@sentry/capacitor`: errors in the web app, and errors and native crashes in the iOS and Android apps, with source maps uploaded by the build. See [Error reporting in the app](#error-reporting-in-the-app-sentry). Sentry's free plan has about 5,000 errors a month for one user; the Team plan (about $26 a month) adds users and 50,000 errors, with a spending cap.
 
 ### Test environment
 
@@ -227,7 +227,7 @@ The web app is static files (the Vite build), served by Cloudflare Workers with 
    - Build command: `bun install --frozen-lockfile && bun run --cwd apps/app build`
    - Deploy command: `cd apps/app && npx wrangler deploy`
    - Preview command (other branches): `cd apps/app && npx wrangler preview`
-3. Build variables: `VITE_API_URL` (the API's address), `VITE_PUBLIC_URL` (the web app's own address, e.g. `https://app.example.com`) and `VITE_MEDIA_URL` (the media domain). They're compiled into the app, so a change needs a new build.
+3. Build variables: `VITE_API_URL` (the API's address), `VITE_PUBLIC_URL` (the web app's own address, e.g. `https://app.example.com`) and `VITE_MEDIA_URL` (the media domain). They're compiled into the app, so a change needs a new build. For error reporting, also `VITE_SENTRY_DSN`, plus `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` and `SENTRY_RELEASE` (e.g. `web@$WORKERS_CI_COMMIT_SHA`) to upload source maps: see [Error reporting in the app](#error-reporting-in-the-app-sentry).
 4. Give the Worker its custom domain (Settings → Domains & Routes), the same one as `VITE_PUBLIC_URL`, and set the API's `WEB_APP_URL` to it, so the API's CORS and sign-in accept the app.
 5. The Worker's `name` in `wrangler.jsonc` is a placeholder; rename it before the first deploy if you like.
 
@@ -357,6 +357,7 @@ Signing uses fastlane [match](https://docs.fastlane.tools/actions/match/): the A
      - `APPLE_TEAM_ID`: your team id (Membership in your Apple Developer account).
      - `MATCH_GIT_URL`: the certificates repository's address, e.g. `https://github.com/yourname/ios-certificates.git`.
      - `VITE_API_URL`, `VITE_PUBLIC_URL` and `VITE_MEDIA_URL`: the real addresses the app is built with.
+     - Optionally, for errors and crashes (see [Error reporting in the app](#error-reporting-in-the-app-sentry)): the variables `VITE_SENTRY_DSN`, `SENTRY_ORG` and `SENTRY_APP_PROJECT`, and the secret `SENTRY_AUTH_TOKEN`. Each release's source maps are uploaded as `ios@<tag>`.
 5. **Run "iOS certificates"** from the Actions tab (`.github/workflows/ios-certificates.yml`). It creates the certificate and profile and stores them in the certificates repository. Run it again with "Renew the profile" after turning on another capability for the app id, and again when the certificate expires (yearly).
 6. Push a tag.
 
@@ -376,10 +377,23 @@ Rate limits go through a `RateLimiter` interface (`apps/api/src/rate-limiting`),
 
 ### Error reporting (Sentry)
 
+The API's errors (the app's are below, in [Error reporting in the app](#error-reporting-in-the-app-sentry)).
+
+
 Unexpected errors (what the client sees as "Something went wrong") are reported to Sentry, along with uncaught exceptions and unhandled rejections. Expected failures (validation, not found, forbidden, rate limited) aren't reported. Traces stay on OpenTelemetry (on Workers, in Workers Observability): Sentry sends errors only. It goes through an `ErrorReporter` interface in `apps/api/src/observability/errors`, so the tracker can be swapped. The `#sentry-error-reporter` import picks the SDK when the API is built: `@sentry/node` on a server, `@sentry/cloudflare` on Workers. On Workers, the client starts with the first error (Workers don't allow it at startup), and each report is sent in the background, after the response.
 
 - Set `SENTRY_DSN` from the Sentry project's settings. Optionally set `SENTRY_ENVIRONMENT` (defaults to `NODE_ENV`) and `SENTRY_RELEASE`, e.g. the commit SHA.
 - A report carries the error, its stack, the request id, the procedure, the method and path, and the signed-in user's id. It doesn't carry cookies, headers (other than the user agent), bodies, query parameters, local variables or database query values. The bound values in query error messages are replaced with `[redacted]`.
+
+### Error reporting in the app (Sentry)
+
+The web app and the iOS and Android apps report to Sentry with `@sentry/capacitor` (`apps/app/src/lib/errorReporting`), when the build has `VITE_SENTRY_DSN`:
+
+- **What's reported:** uncaught errors and rejected promises in the app, and in the native apps also crashes of the app itself (Sentry's iOS and Android SDKs come with the plugin). Errors only: no tracing, no session replay.
+- **What a report carries:** the error and its stack, the device and OS, the signed-in user's id (never their email), and the trail of what happened before it, with requests and page changes reduced to their path (no query: tRPC puts its input there) and no console messages (`sanitizeBreadcrumb`). Unexpected API errors are reported by the API itself (above).
+- **Readable stacks:** with `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT` set for the build, the Vite build makes source maps, uploads them under `SENTRY_RELEASE` (e.g. the commit SHA, or `ios@v1.2.0`), and deletes them from `dist`, so they're never served. Without the token, builds are as before.
+- **Settings:** `VITE_SENTRY_DSN` (the app's Sentry project; a separate project from the API's keeps them apart), optionally `VITE_SENTRY_ENVIRONMENT` (the Vite mode by default), and the auth token from Sentry → Settings → Auth Tokens (with project write and release permissions). Set them in Workers Builds for the web app, and in the repository's Actions settings for iOS releases (see [Releasing the iOS app](#releasing-the-ios-app)).
+- **Privacy:** Sentry receives crash and error data. The privacy policy already lists it (for error reports); also declare "Crash Data" and "Other Diagnostic Data" (linked to the user's id) in the App Store's privacy details and Play's Data safety form.
 
 ### Health checks
 

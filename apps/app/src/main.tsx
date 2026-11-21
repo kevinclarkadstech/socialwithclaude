@@ -1,11 +1,20 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './app/App/App';
-import { refreshCallingUser } from './domains/users';
+import { callingUserStore, refreshCallingUser } from './domains/users';
 import { sessionToken } from './lib/auth/sessionToken';
 import { onForeground } from './lib/foreground';
+import { config } from './lib/config';
+import { startErrorReporting } from './lib/errorReporting/startErrorReporting/startErrorReporting';
 import { logger } from './lib/logger';
 import { reloadOnStaleBuild } from './lib/reloadOnStaleBuild';
+
+// First, so errors while starting up are reported too (when VITE_SENTRY_DSN is set).
+startErrorReporting({
+  dsn: config.sentryDsn,
+  environment: config.sentryEnvironment,
+  signedInUser: { getId: () => callingUserStore.get().callingUser?.userId ?? null, subscribe: callingUserStore.subscribe },
+});
 
 // After a deploy, a page opened before it reloads when it can't find the old build's files.
 reloadOnStaleBuild();

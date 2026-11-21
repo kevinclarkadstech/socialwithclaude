@@ -11,4 +11,8 @@ export const config = {
    * (R2's custom domain in production; local Garage by default).
    */
   mediaUrl: import.meta.env.VITE_MEDIA_URL ?? 'http://myapp-media-dev.web.garage.localhost:3902',
+  /** Where errors are reported (Sentry); without it, they aren't. See lib/errorReporting. */
+  sentryDsn: import.meta.env.VITE_SENTRY_DSN as string | undefined,
+  /** Which environment a report says it came from: "production", "staging"… (the Vite mode by default). */
+  sentryEnvironment: (import.meta.env.VITE_SENTRY_ENVIRONMENT as string | undefined) ?? import.meta.env.MODE,
 };
