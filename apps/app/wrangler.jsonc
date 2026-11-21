@@ -1,0 +1,14 @@
+// The web app on Cloudflare Workers, as static assets (no Worker script): `bun run build`, then
+// `bun run deploy:cloudflare`, or Workers Builds from GitHub. See the README's "Deploying the web app
+// to Cloudflare". Headers (the .well-known files' Content-Type, caching) are in public/_headers.
+{
+  "name": "placeholder-web",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist",
+    // A path that isn't a file (/feed/posts/…, /profile/…: the app routes those itself) gets
+    // index.html. So does a previous build's script, which is gone after a deploy: the app reloads
+    // itself when that happens (src/lib/reloadOnStaleBuild.ts).
+    "not_found_handling": "single-page-application"
+  }
+}

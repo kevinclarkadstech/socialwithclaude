@@ -5,6 +5,10 @@ import { refreshCallingUser } from './domains/users';
 import { sessionToken } from './lib/auth/sessionToken';
 import { onForeground } from './lib/foreground';
 import { logger } from './lib/logger';
+import { reloadOnStaleBuild } from './lib/reloadOnStaleBuild';
+
+// After a deploy, a page opened before it reloads when it can't find the old build's files.
+reloadOnStaleBuild();
 
 const root = createRoot(document.getElementById('root')!);
 

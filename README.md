@@ -71,7 +71,7 @@ What the app stores and the law expect from a social app with photos, and where 
 - [ ] **The real app id** (reverse domain, e.g. `com.yourcompany.appname`), which can't change after the first store upload: in `apps/app/capacitor.config.ts`, the Xcode project's bundle identifier (`apps/app/ios/App`), `applicationId` in `apps/app/android/app/build.gradle`, `app_identifier` in `apps/app/ios/App/fastlane/Appfile`, the two `.well-known` files (see [Links that open the app](#links-that-open-the-app)), and the API's `APPLE_APP_BUNDLE_IDENTIFIER`. Also the app's name, icons and splash screen.
 - [ ] **Set up iOS releases:** an Apple Developer account, the app in App Store Connect, and the workflow's secrets and variables; then push a version tag to send a build to TestFlight. See [Releasing the iOS app](#releasing-the-ios-app).
 - [ ] **Android releases** (later): signed builds to Play's internal testing track. Needs a Google Play developer account; a new personal account also has to run a closed test (12 testers for 14 days) before it can publish.
-- [ ] **Host the API:** on Cloudflare Workers with Neon. See [Deploying the API to Cloudflare](#deploying-the-api-to-cloudflare). The web app is step 3 of the [Hosting plan](#hosting-plan-not-built-yet).
+- [ ] **Host the API and web app:** both on Cloudflare Workers, the API with Neon. See [Deploying the API to Cloudflare](#deploying-the-api-to-cloudflare) and [Deploying the web app to Cloudflare](#deploying-the-web-app-to-cloudflare).
 - [ ] **The daily jobs:** on Workers they're Cron Triggers, set up by the deploy. On a long-running server, schedule these daily:
   - `bun run --cwd apps/api accounts:purge`: deletes accounts whose 30 days to restore are up. Without it, deleted accounts are hidden but never actually deleted. See [Account deletion](#account-deletion).
   - `bun run --cwd apps/api media:sweep --delete`: removes photo files that no post uses. See step 5 under [Object storage](#object-storage-cloudflare-r2).
@@ -154,7 +154,7 @@ Domain code only calls interfaces; each host gets adapters. What's Cloudflare-on
    - *Done:* push delivery through a queue, with a message delayed until each push is due (keeping the ~10-second chat pushes), plus a Cron Trigger every minute in case one is lost. The daily jobs on a Cron Trigger.
    - *Done:* a smoke test on workerd in CI (`smoke:workers`), since tests run on Bun.
    - *Done:* errors to Sentry through `@sentry/cloudflare` (`@sentry/node` can't start on Workers). Logs and traces are in Workers Observability.
-3. **The web app on Cloudflare**, with a `_headers` file so the `.well-known` files are served as JSON (see [Links that open the app](#links-that-open-the-app)).
+3. **The web app on Cloudflare.** *Done:* static assets with the single-page-app fallback, `public/_headers` (the `.well-known` files as JSON, caching, security headers), and a reload when an open page can't find a previous build's files. See [Deploying the web app to Cloudflare](#deploying-the-web-app-to-cloudflare).
 4. **Slower polling** instead of real-time connections, for launch. *Done.*
    - An open chat checks every 8 seconds while messages are coming, and every 30 once nothing's been sent or received for a minute (`chatPollIntervalMs`). Sending, or a new message arriving, makes it quick again.
    - The chat list and the bell check once a minute.
@@ -169,6 +169,7 @@ Domain code only calls interfaces; each host gets adapters. What's Cloudflare-on
 - **Database:** a Neon `staging` branch (a copy-on-write copy that pauses itself when idle, so it costs almost nothing), and optionally a branch per PR from Neon's GitHub Action, deleted when the PR closes.
 - **API:** a `staging` environment in the Wrangler config: its own Worker, secrets, bindings, Hyperdrive (pointing at the staging branch) and R2 bucket. Pay-per-request, so idle staging is free. `wrangler versions upload` gives each version a preview URL.
 - **Apps:** a staging build sets `VITE_API_URL` to the staging API; TestFlight builds could use staging from a separate kind of tag (e.g. `v1.2.0-beta.1`).
+- **Web app previews:** Workers Builds already makes a preview URL per branch. For them to sign in, their build points `VITE_API_URL` at the staging API, and the staging API accepts the preview addresses (today `WEB_APP_URL` is a single origin, so accepting every preview needs a small change to the API's CORS).
 
 ## Deployment
 
@@ -205,6 +206,36 @@ The API runs on Cloudflare Workers, built by Nitro's Cloudflare preset with `app
 - It connects to `localConnectionString` in `wrangler.jsonc` (the docker-compose Postgres), or to `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE` if set. Hyperdrive's local mode needs a password in the URL.
 - Cron Triggers don't run on their own there: `curl "localhost:8787/cdn-cgi/local/scheduled?cron=17+3+*+*+*"` runs one.
 - `bun run --cwd apps/api smoke:workers` runs the check CI does (signing up, a push through the queue, the Cron Triggers, a rate limit) on the last `build:cloudflare`, against `WORKERS_SMOKE_DATABASE_URL`, a migrated database.
+
+### Deploying the web app to Cloudflare
+
+The web app is static files (the Vite build), served by Cloudflare Workers with no Worker script of its own (`apps/app/wrangler.jsonc`):
+
+- **Any path that isn't a file loads the app** (`not_found_handling: "single-page-application"`), so a shared link like `/profile/sam` or a refresh on `/chats/…` works.
+- **`apps/app/public/_headers`,** copied into the build:
+  - serves `/.well-known/apple-app-site-association` as JSON (see [Links that open the app](#links-that-open-the-app));
+  - caches `/assets/*` for a year (their names change with every build; `index.html` isn't cached);
+  - adds `X-Content-Type-Options`, `Referrer-Policy` and `X-Frame-Options` to every response.
+- **After a deploy,** a page opened before it can't find the previous build's files: Cloudflare keeps only the current build, and answers with `index.html`. When a lazily loaded part (the Admin screen) fails to load, the app reloads once and picks up the new build (`src/lib/reloadOnStaleBuild.ts`).
+- Static files are free on Workers, with no bandwidth charge.
+
+**Setting it up**, with Workers Builds (deploys from GitHub on every push to `main`, and a preview URL for every other branch):
+
+1. In the Cloudflare dashboard: Workers & Pages → Create → Import a repository, and pick this repository.
+2. Build settings:
+   - Root directory: `/` (the repository: the app needs the workspace's install).
+   - Build command: `bun install --frozen-lockfile && bun run --cwd apps/app build`
+   - Deploy command: `cd apps/app && npx wrangler deploy`
+   - Preview command (other branches): `cd apps/app && npx wrangler preview`
+3. Build variables: `VITE_API_URL` (the API's address), `VITE_PUBLIC_URL` (the web app's own address, e.g. `https://app.example.com`) and `VITE_MEDIA_URL` (the media domain). They're compiled into the app, so a change needs a new build.
+4. Give the Worker its custom domain (Settings → Domains & Routes), the same one as `VITE_PUBLIC_URL`, and set the API's `WEB_APP_URL` to it, so the API's CORS and sign-in accept the app.
+5. The Worker's `name` in `wrangler.jsonc` is a placeholder; rename it before the first deploy if you like.
+
+Preview builds call the same API, which only accepts `WEB_APP_URL`, so signing in from a preview URL is refused until there's a staging API that allows it (see [Test environment](#test-environment)).
+
+Without Workers Builds: `bun run --cwd apps/app build` (with the `VITE_*` variables set), then `bun run --cwd apps/app deploy:cloudflare`.
+
+**Trying it locally:** after a build, `bun run --cwd apps/app dev:cloudflare` serves `dist` as Cloudflare will, and `bun run --cwd apps/app smoke:cloudflare` checks it (CI runs that too).
 
 ### Object storage (Cloudflare R2)
 
@@ -292,7 +323,7 @@ Each platform checks, when the app is installed, that the website agrees, using 
 - **iOS:** `/.well-known/apple-app-site-association`, which names the app as `<team id>.<app id>` (your team id is in your Apple Developer account, under Membership). The app's Associated Domains entitlement (`applinks:<host>` in `apps/app/ios/App/App/App.entitlements`) names the website. The Associated Domains capability has to be on for the app id in your Apple Developer account, like Push Notifications.
 - **Android:** `/.well-known/assetlinks.json`, which names the app id and the SHA-256 fingerprint of the key the app is signed with. With Play App Signing that's Google's key, not yours: Play Console → Test and release → App integrity → App signing shows its fingerprint (add your upload key's too if you install builds signed with it). The app's intent filter (`AndroidManifest.xml`) takes its host from `appLinksHost` in `apps/app/android/app/build.gradle`.
 
-Both files are in `apps/app/public/.well-known/` with **placeholders**, and are copied into the web build. Whatever serves the web app has to serve them as they are, over HTTPS without redirects, with `Content-Type: application/json` (the Apple one has no extension, so set it), and not the app's `index.html` in their place. Check them with Apple's `https://app-site-association.cdn-apple.com/a/v1/<host>` (Apple fetches the file through its CDN, so a change can take a day to arrive) and Google's [Statement List Tester](https://developers.google.com/digital-asset-links/tools/generator). On Android, `adb shell pm get-app-links <app id>` shows whether the host was verified.
+Both files are in `apps/app/public/.well-known/` with **placeholders**, and are copied into the web build. Whatever serves the web app has to serve them as they are, over HTTPS without redirects, with `Content-Type: application/json` (the Apple one has no extension, so set it), and not the app's `index.html` in their place. On Cloudflare, `apps/app/public/_headers` does that (see [Deploying the web app to Cloudflare](#deploying-the-web-app-to-cloudflare)). Check them with Apple's `https://app-site-association.cdn-apple.com/a/v1/<host>` (Apple fetches the file through its CDN, so a change can take a day to arrive) and Google's [Statement List Tester](https://developers.google.com/digital-asset-links/tools/generator). On Android, `adb shell pm get-app-links <app id>` shows whether the host was verified.
 
 ### Releasing the iOS app
 
