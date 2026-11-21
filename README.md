@@ -30,6 +30,19 @@ bun run dev                   # API on :3000, app on :5173
   - Entry points: `index.ts` (the Hono app), `transport/` (tRPC routers, Nitro plugins), `jobs/` (work outside requests), `commands/` (`bun run …` scripts).
 - `apps/app/src`: `domains/` (each domain's components, hooks and operations), `pages/`, `navigation/`, `lib/` and `common/`.
 
+**Why there's no posts or chats folder in the API.** A domain is spread over the layers, and only server-only work gets a folder in `apps/api/src/domains`. Posts (listings included) and chats, for example:
+
+| | Posts (and listings) | Chats |
+|---|---|---|
+| Rules: types, authorization, mutations, queries, validation | `packages/shared/src/domains/posts` (`createPostMutation`, `savePostMutation`…) | `packages/shared/src/domains/chats` |
+| Storage: the database queries | `apps/api/src/data-access/resolvers/posts` | `…/resolvers/chats` |
+| Procedures the app calls | `apps/api/src/transport/trpc/routers/posts.ts`, `post-comments.ts`, `post-listings.ts` | `…/routers/chats.ts` |
+| Screens | `apps/app/src/domains/posts` | `apps/app/src/domains/chats` |
+
+A mutation such as `createPostMutation` holds the domain's rules (who may, what's valid, what happens) but doesn't touch the database: the router hands it the resolvers it needs (`createPost`, `getPostById`…). So the rules live in one place, and the API plugs the database in. `apps/api/src/domains` is only for what a shared mutation can't do: checking and publishing photos (`media`), sending email and pushes (`notifications`), purging accounts and banned emails (`accounts`), and Better Auth (`auth`). Posts and chats have no such work of their own (their photos go through `media`, their pushes through `notifications`); one that needs it later, such as a job expiring old listings, gets a folder then.
+
+**Listings** are posts of the listing kind, not a domain of their own: hence the `post-listings` router and resolvers like `getListingPostViews` within posts. If they grow their own rules (marking as sold, price changes, expiry), they can become a `listings` domain in `packages/shared`.
+
 ### Tests
 
 - `bun run --cwd apps/api test`, `bun run --cwd packages/shared test`, `bun run --cwd apps/app test`: unit tests, no services needed.
