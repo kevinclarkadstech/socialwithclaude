@@ -48,7 +48,8 @@
   },
 
   // What each runs is in src/infra/platform/cloudflare/constants (a test checks they match):
-  // every minute, push delivery in case a queue message was lost; daily at 03:17 UTC, purging deleted
-  // accounts and sweeping orphaned photo files.
-  "triggers": { "crons": ["* * * * *", "17 3 * * *"] }
+  // every 15 minutes, push delivery in case a queue message was lost (not every minute, so the database
+  // can go idle when nobody's using the app); daily at 03:17 UTC, purging deleted accounts and sweeping
+  // orphaned photo files.
+  "triggers": { "crons": ["*/15 * * * *", "17 3 * * *"] }
 }

@@ -3,8 +3,11 @@
  * setUpCloudflare). A test checks the two match.
  */
 export const cronSchedules = {
-    /** Every minute: push delivery, in case a queue message was lost (the queue brings most pushes forward). */
-    pushDelivery: "* * * * *",
+    /**
+     * Every 15 minutes: push delivery, in case a queue message was lost (the queue delivers pushes on
+     * time). Not more often: a query every minute would keep the database (Neon) from ever going idle.
+     */
+    pushDelivery: "*/15 * * * *",
     /** Daily at 03:17 UTC: purging deleted accounts and sweeping orphaned photo files. */
     daily: "17 3 * * *",
 } as const;

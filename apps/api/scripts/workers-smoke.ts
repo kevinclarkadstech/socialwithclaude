@@ -130,11 +130,14 @@ try {
     const pushed = await waitFor("the push", () => output.includes("Push (not sent: PUSH_PROVIDER is console)") && output.includes("Is it still for sale?"), 20_000).catch(() => false);
     check(pushed === true, "a chat message is pushed through the push queue");
 
-    for (const cron of ["* * * * *", "17 3 * * *"]) {
+    for (const cron of ["*/15 * * * *", "17 3 * * *"]) {
         const result = await fetch(`${base}/cdn-cgi/local/scheduled?format=json&cron=${encodeURIComponent(cron)}`);
         const outcome = (await result.json() as { outcome: string }).outcome;
         check(outcome === "ok", `the Cron Trigger "${cron}" runs`);
     }
+    // A schedule with no job still ends "ok", so make sure each one matched its job (setUpCloudflare).
+    await Bun.sleep(500);
+    check(!output.includes("A Cron Trigger with no job ran"), "each Cron Trigger runs its job (the schedules match cronSchedules)");
 
     const statuses = [];
     for (let i = 0; i < 65; i++) {

@@ -12,7 +12,7 @@ import { cloudflareEnv, hyperdriveConnectionString } from "../utils/cloudflareEn
  *
  * - Pushes: when one becomes due (pushesDue), a message goes on the push
  *   queue, delayed until then; its consumer runs a delivery round. A Cron
- *   Trigger also runs one every minute, in case a message was lost.
+ *   Trigger also runs one every 15 minutes, in case a message was lost.
  * - The daily jobs: purging deleted accounts and sweeping orphaned photo files.
  *
  * Each runs with a database client of its own, through Hyperdrive, like a request.
