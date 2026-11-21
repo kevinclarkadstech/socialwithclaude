@@ -13,3 +13,6 @@ project(':capacitor-app').projectDir = new File('../../../node_modules/.bun/@cap
 
 include ':capacitor-share'
 project(':capacitor-share').projectDir = new File('../../../node_modules/.bun/@capacitor+share@8.0.3+6ab6186627aac117/node_modules/@capacitor/share/android')
+
+include ':sentry-capacitor'
+project(':sentry-capacitor').projectDir = new File('../../../node_modules/.bun/@sentry+capacitor@4.5.0+461955d09b4edc83/node_modules/@sentry/capacitor/android')

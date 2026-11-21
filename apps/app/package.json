@@ -28,6 +28,8 @@
     "@ionic/core": "9.0.10",
     "@ionic/react": "^9.0.10",
     "@myapp/shared": "workspace:*",
+    "@sentry/capacitor": "4.5.0",
+    "@sentry/react": "10.76.2",
     "@trpc/client": "11.28.0",
     "better-auth": "1.7.20",
     "dayjs": "^1.11.23",
@@ -43,6 +45,7 @@
   "devDependencies": {
     "@capacitor/cli": "8.6.0",
     "@eslint/js": "^10.0.1",
+    "@sentry/vite-plugin": "11.11.0",
     "@testing-library/dom": ">=7.21.4",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
