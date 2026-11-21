@@ -11,8 +11,10 @@ import { cloudflareEnv, hyperdriveConnectionString } from "../utils/cloudflareEn
  * What runs outside requests on Workers, where nothing runs between them:
  *
  * - Pushes: when one becomes due (pushesDue), a message goes on the push
- *   queue, delayed until then; its consumer runs a delivery round. A Cron
- *   Trigger also runs one every minute, in case a message was lost.
+ *   queue, delayed until then; its consumer runs a delivery round, which
+ *   sends everything due. If a message is lost, its pushes go with the next
+ *   round (any later notification or chat message), unless they're an hour
+ *   old by then (pushMaxAgeSeconds).
  * - The daily jobs: purging deleted accounts and sweeping orphaned photo files.
  *
  * Each runs with a database client of its own, through Hyperdrive, like a request.
@@ -47,10 +49,6 @@ export function setUpCloudflare(nitroApp: Required<Pick<NitroApp, "hooks">>): vo
 }
 
 async function runScheduled(cron: string): Promise<void> {
-    if (cron === cronSchedules.pushDelivery) {
-        await runPushDeliveryRound({ context: { command: "push-cron" } });
-        return;
-    }
     if (cron === cronSchedules.daily) {
         await runAccountPurge({ context: { command: "accounts:purge" } });
         await runMediaSweep({ olderThanHours: 24, dryRun: false, context: { command: "media:sweep" } });

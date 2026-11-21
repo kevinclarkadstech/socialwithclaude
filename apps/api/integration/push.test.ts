@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import type { PushMessage } from "@myapp/shared/domains";
 import { db, newId, schema } from "../src/data-access/db";
 import { deliverPushes, type PushSender } from "../src/domains/notifications";
@@ -51,6 +51,7 @@ const tokensOf = async (userId: string) => (await db.select().from(schema.pushTo
 const ann = await createTestUser({ name: "pushann" });
 const sam = await createTestUser({ name: "pushsam" });
 const lee = await createTestUser({ name: "pushlee" });
+const kim = await createTestUser({ name: "pushkim" });
 const annsToken = await addDevice(ann);
 const annsPost = await valueOf(ann.call.posts.createPost({ id: newId(), content: "New exhaust fitted" }));
 // Anything from setting up is out of the way.
@@ -115,6 +116,31 @@ describe("push notifications", () => {
         await valueOf(lee.call.chats.sendMessage({ id: newId(), chatId: chat.id, content: "Nice car" }));
         expect(await deliver({ token: annsToken, chatDelaySeconds: 600 })).toEqual([]);
         expect(await deliver({ token: annsToken })).toEqual([expect.objectContaining({ title: `@${lee.username}`, body: "Nice car" })]);
+    });
+
+    it("doesn't push a notification that waited more than an hour (its wake-up was lost), and keeps it in the bell", async () => {
+        const comment = await valueOf(sam.call.postComments.createPostComment({ id: newId(), postId: annsPost.id, content: "Late one" }));
+        const n = schema.notifications;
+        const [latest] = await db.select({ id: n.id }).from(n).where(eq(n.userId, ann.userId)).orderBy(desc(n.createdAt)).limit(1);
+        await db.update(n).set({ deliverAt: sql`now() - interval '2 hours'` }).where(eq(n.id, latest!.id));
+
+        expect(await deliver({ token: annsToken })).toEqual([]);
+        // Handled: not pushed on a later round either.
+        expect(await deliver({ token: annsToken })).toEqual([]);
+        const bell = await valueOf(ann.call.notifications.getMine({ limit: 50 }));
+        expect(bell.items.some((item) => item.id === latest!.id)).toBe(true);
+        expect(comment.content).toBe("Late one");
+    });
+
+    it("doesn't push a chat whose newest message waited more than an hour, but pushes the next message", async () => {
+        const chat = await valueOf(kim.call.chats.getOrCreateDirectChat({ id: newId(), username: ann.username }));
+        const first = await valueOf(kim.call.chats.sendMessage({ id: newId(), chatId: chat.id, content: "Are you there?" }));
+        const x = schema.chatMessages;
+        await db.update(x).set({ createdAt: sql`now() - interval '2 hours'` }).where(and(eq(x.id, first.id), eq(x.chatId, chat.id)));
+        expect(await deliver({ token: annsToken })).toEqual([]);
+
+        await valueOf(kim.call.chats.sendMessage({ id: newId(), chatId: chat.id, content: "Still interested in the car" }));
+        expect(await deliver({ token: annsToken })).toEqual([expect.objectContaining({ title: expect.stringContaining(`@${kim.username}`), body: "Still interested in the car" })]);
     });
 
     it("deletes a token Firebase says is dead", async () => {

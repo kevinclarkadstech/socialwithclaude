@@ -3,6 +3,14 @@ import type { AppLogger } from "@myapp/shared/observability";
 import { claimChatPushes, claimNotificationPushes, deletePushTokens, getPushTokens } from "../../../../data-access";
 import type { PushSender } from "../../push/delivery/types";
 
+/**
+ * A push that's waited longer than this isn't sent (it's still in the bell
+ * and the chat list). Pushes go out when they're due; one this late means
+ * its wake-up was lost (on Workers, a queue message), and it's picked up by
+ * the next round, whenever that is.
+ */
+export const pushMaxAgeSeconds = 60 * 60;
+
 /** What a delivery round did. */
 export interface PushDeliverySummary {
     // Notifications and chats taken this round (pushed, or skipped as turned off or no longer visible).
@@ -23,15 +31,18 @@ export interface PushDeliverySummary {
  * Firebase says are dead. A notification is pushed only if the person still
  * has its kind turned on (see pushSettingFor); its wording is the bell's
  * (describeNotification). A chat's push replaces the last one for that chat.
+ * Anything that's waited more than `maxAgeSeconds` (pushMaxAgeSeconds) is
+ * taken but not sent.
  */
-export async function deliverPushes({ sender, logger, chatDelaySeconds, limit = 200 }: {
+export async function deliverPushes({ sender, logger, chatDelaySeconds, maxAgeSeconds = pushMaxAgeSeconds, limit = 200 }: {
     sender: PushSender;
     logger: AppLogger;
     chatDelaySeconds: number;
+    maxAgeSeconds?: number;
     limit?: number;
 }): Promise<PushDeliverySummary> {
-    const notifications = await claimNotificationPushes({ limit });
-    const chats = await claimChatPushes({ delaySeconds: chatDelaySeconds, limit });
+    const notifications = await claimNotificationPushes({ limit, maxAgeSeconds });
+    const chats = await claimChatPushes({ delaySeconds: chatDelaySeconds, maxAgeSeconds, limit });
 
     const pending: (Omit<PushMessage, "token"> & { userId: string })[] = [];
     for (const { userId, notification, settings, unreadCount } of notifications) {
