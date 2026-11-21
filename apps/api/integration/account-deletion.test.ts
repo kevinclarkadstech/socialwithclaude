@@ -1,8 +1,8 @@
 import { describe, expect, it, spyOn } from "bun:test";
 import { and, eq } from "drizzle-orm";
 import { db, newId, schema } from "../src/data-access/db";
-import { isEmailBanned, purgeAccount, purgeDueAccounts } from "../src/accounts";
-import { emailSender } from "../src/notifications/email/delivery/emailSender/emailSender";
+import { isEmailBanned, purgeAccount, purgeDueAccounts } from "../src/domains/accounts";
+import { emailSender } from "../src/domains/notifications/email/delivery/emailSender/emailSender";
 import { createTestUser } from "./harness/createTestUser/createTestUser";
 import { outcome, valueOf } from "./harness/outcome/outcome";
 

@@ -10,9 +10,9 @@
 import { parseArgs } from "node:util";
 import { closeDb } from "../../data-access/db";
 import { getUserIdByEmail } from "../../data-access";
-import { purgeAccount } from "../../accounts";
-import { rootLogger } from "../../observability";
-import { storage } from "../../storage";
+import { purgeAccount } from "../../domains/accounts";
+import { rootLogger } from "../../infra/observability";
+import { storage } from "../../infra/storage";
 
 const { values, positionals } = parseArgs({
     options: { confirm: { type: "boolean", default: false } },

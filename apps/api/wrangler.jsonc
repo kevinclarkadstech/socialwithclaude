@@ -47,7 +47,7 @@
     ]
   },
 
-  // What each runs is in src/platform/cloudflare/constants (a test checks they match):
+  // What each runs is in src/infra/platform/cloudflare/constants (a test checks they match):
   // every minute, push delivery in case a queue message was lost; daily at 03:17 UTC, purging deleted
   // accounts and sweeping orphaned photo files.
   "triggers": { "crons": ["* * * * *", "17 3 * * *"] }

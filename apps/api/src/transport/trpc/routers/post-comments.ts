@@ -33,10 +33,10 @@ import {
     deleteUserSave,
     createNotifications,
 } from "../../../data-access";
-import { notifyMentions, retractMentions } from "../../../notifications";
-import { deletePostCommentPhotoUploads, publishPostCommentPhoto } from "../../../media";
-import { storage } from "../../../storage";
-import { errorReporter, reportingFailures } from "../../../observability";
+import { notifyMentions, retractMentions } from "../../../domains/notifications";
+import { deletePostCommentPhotoUploads, publishPostCommentPhoto } from "../../../domains/media";
+import { storage } from "../../../infra/storage";
+import { errorReporter, reportingFailures } from "../../../infra/observability";
 import { procedure, router } from "../trpc";
 
 export const postCommentsRouter = router({

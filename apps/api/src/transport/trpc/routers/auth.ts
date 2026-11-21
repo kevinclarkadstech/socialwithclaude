@@ -22,7 +22,7 @@ import {
 } from "@myapp/shared/domains";
 
 import { createUserProfile, deleteUnfinishedAccount, getUserProfileByUsername, getUserSessions, recordTermsAccepted, restoreAccount, scheduleAccountDeletion } from "../../../data-access";
-import { sendAccountDeletionCode, verifyAccountDeletionCode } from "../../../accounts";
+import { sendAccountDeletionCode, verifyAccountDeletionCode } from "../../../domains/accounts";
 import { procedure, router } from "../trpc";
 
 /*

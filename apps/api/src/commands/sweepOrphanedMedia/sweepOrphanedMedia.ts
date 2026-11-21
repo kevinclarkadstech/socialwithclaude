@@ -15,7 +15,7 @@
 import { parseArgs } from "node:util";
 import { closeDb } from "../../data-access/db";
 import { runMediaSweep } from "../../jobs";
-import { errorReporter } from "../../observability";
+import { errorReporter } from "../../infra/observability";
 
 const { values } = parseArgs({
     options: {

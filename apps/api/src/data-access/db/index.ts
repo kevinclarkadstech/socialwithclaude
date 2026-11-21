@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { serverConfig } from '../../config';
+import { serverConfig } from '../../infra/config';
 import 'dotenv/config';
 import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';

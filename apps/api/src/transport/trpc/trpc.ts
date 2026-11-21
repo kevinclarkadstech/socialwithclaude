@@ -3,8 +3,8 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import type { TRPCContext } from "./context";
 import z, { ZodError } from "zod";
 import { ResultSchema } from "@myapp/shared/types/result";
-import { appErrorToTrpcError, AppTrpcError } from "../../error-handling";
-import { limitProcedureCallsMiddleware } from "../../rate-limiting";
+import { appErrorToTrpcError, AppTrpcError } from "../../infra/error-handling";
+import { limitProcedureCallsMiddleware } from "../../infra/rate-limiting";
 
 const t = initTRPC.context<TRPCContext>().create({
     /**

@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { and, eq, sql } from "drizzle-orm";
 import { db, schema } from "../src/data-access/db";
 import { incrementRateLimitCounter } from "../src/data-access";
-import { createDatabaseRateLimiter } from "../src/rate-limiting";
+import { createDatabaseRateLimiter } from "../src/infra/rate-limiting";
 
 const silentLogger = { info() {}, warn() {}, error() {}, debug() {}, child: () => silentLogger, setBindings() {} };
 

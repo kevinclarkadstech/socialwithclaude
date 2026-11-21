@@ -1,6 +1,6 @@
-import { purgeDueAccounts } from "../../accounts";
-import { errorReporter, reportingFailures, rootLogger, type ErrorReportContext } from "../../observability";
-import { storage } from "../../storage";
+import { purgeDueAccounts } from "../../domains/accounts";
+import { errorReporter, reportingFailures, rootLogger, type ErrorReportContext } from "../../infra/observability";
+import { storage } from "../../infra/storage";
 
 /**
  * Deletes for good the accounts whose days to restore are up (see

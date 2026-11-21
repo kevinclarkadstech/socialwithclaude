@@ -6,8 +6,8 @@
  */
 import { closeDb } from "../../data-access/db";
 import { runPushDeliveryRound } from "../../jobs";
-import { pushSender } from "../../notifications";
-import { errorReporter, rootLogger } from "../../observability";
+import { pushSender } from "../../domains/notifications";
+import { errorReporter, rootLogger } from "../../infra/observability";
 
 try {
     if (!pushSender) {

@@ -1,8 +1,8 @@
 import { definePlugin } from "nitro";
 import { platform } from "#platform";
-import { serverConfig } from "../../config";
-import { deliverPushes, pushSender } from "../../notifications";
-import { errorReporter, rootLogger } from "../../observability";
+import { serverConfig } from "../../infra/config";
+import { deliverPushes, pushSender } from "../../domains/notifications";
+import { errorReporter, rootLogger } from "../../infra/observability";
 
 /**
  * Sends pushes every PUSH_DELIVERY_INTERVAL_SECONDS while the server runs
