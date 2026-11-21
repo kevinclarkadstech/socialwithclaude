@@ -67,8 +67,8 @@ import {
     searchUserProfiles,
     createNotifications,
 } from "../../../data-access";
-import { publishProfilePhoto } from "../../../media";
-import { storage } from "../../../storage";
+import { publishProfilePhoto } from "../../../domains/media";
+import { storage } from "../../../infra/storage";
 import { procedure, router } from "../trpc";
 
 export const usersRouter = router({

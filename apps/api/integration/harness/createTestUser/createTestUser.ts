@@ -6,7 +6,7 @@ import { getUserProfileAndBlockList } from "../../../src/data-access";
 import { appRouter } from "../../../src/transport/trpc";
 import { createCallerFactory } from "../../../src/transport/trpc/trpc";
 import type { TRPCContext } from "../../../src/transport/trpc/context";
-import { createAppFeatureFlagStore } from "../../../src/shared/feature-flags";
+import { createAppFeatureFlagStore } from "../../../src/infra/feature-flags";
 
 const createCaller = createCallerFactory(appRouter);
 

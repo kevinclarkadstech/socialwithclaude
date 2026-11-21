@@ -20,6 +20,16 @@ bun run --cwd apps/api db:migrate
 bun run dev                   # API on :3000, app on :5173
 ```
 
+### Where things are
+
+- `packages/shared/src/domains`: each domain's types, mutations, queries and authorization (posts, chats, users, notifications, auth, admin), used by both the API and the app. Most of the app's logic lives here.
+- `apps/api/src`:
+  - `domains/`: what only the server can do: `accounts` (deleting and purging accounts, banned emails), `auth` (Better Auth), `media` (checking and publishing photos, the orphan sweep), `notifications` (email and push delivery).
+  - `infra/`: what the API runs on and talks to: `config`, `cache`, `storage`, `rate-limiting`, `observability`, `error-handling`, `feature-flags`, and `platform` (what differs between a server and Cloudflare Workers).
+  - `data-access/`: the database schema and every query (resolvers).
+  - Entry points: `index.ts` (the Hono app), `transport/` (tRPC routers, Nitro plugins), `jobs/` (work outside requests), `commands/` (`bun run …` scripts).
+- `apps/app/src`: `domains/` (each domain's components, hooks and operations), `pages/`, `navigation/`, `lib/` and `common/`.
+
 ### Tests
 
 - `bun run --cwd apps/api test`, `bun run --cwd packages/shared test`, `bun run --cwd apps/app test`: unit tests, no services needed.
@@ -147,7 +157,7 @@ Domain code only calls interfaces; each host gets adapters. What's Cloudflare-on
 1. **Rate limits that fit any host.** *Done, except the binding itself.* Each rule goes to the right backend: rules with a 10 or 60 second window to a fast, approximate limiter, and the rest (the 15-minute and daily email-code rules, the hourly `emailBudget`) to a Postgres counters table, since they protect the email bill and must be one exact count everywhere. `consume` takes a `cost` (the binding's `delta`), so expensive calls can count for more. The Rate Limiting binding's limit and window live in the Wrangler config, so a check (test or startup) makes sure each rule mapped to a binding matches it; that adapter and its check come with step 2. Notes from the binding's docs: counts are approximate and kept per Cloudflare location; windows are 10 or 60 seconds only; a refused call doesn't count; key by user id where there is one (Cloudflare advises against IP keys, which signed-out auth requests still need).
 2. **The API on Workers.**
    - *Done:* Nitro's Cloudflare preset and `apps/api/wrangler.jsonc`. See [Deploying the API to Cloudflare](#deploying-the-api-to-cloudflare).
-   - *Done:* a database client per request on Workers (`withRequestDatabase`, chosen by the `#platform` import, which the Workers build resolves to `src/platform/workerd.ts`), and no push loop there. Tried locally in `wrangler dev`: with one shared pool, every other request that used the database failed; per request, they all work, including signing in.
+   - *Done:* a database client per request on Workers (`withRequestDatabase`, chosen by the `#platform` import, which the Workers build resolves to `src/infra/platform/workerd.ts`), and no push loop there. Tried locally in `wrangler dev`: with one shared pool, every other request that used the database failed; per request, they all work, including signing in.
    - *Done:* Hyperdrive in front of Neon, with query caching off, and each request's client connecting through it. `pg` keeps working, transactions included; Neon's HTTP driver wouldn't (no interactive transactions).
    - *Done:* Smart Placement, so a request's queries don't each cross the world.
    - *Done:* Redis is optional. With `REDIS_URL`, per-minute limits are counted there; without it, in each instance's memory; on Workers, by the Rate Limiting binding. `/api/ready` never fails because of it.
@@ -271,7 +281,7 @@ The API talks to storage through the S3 API, so production uses R2 with no code 
 
 ### Email
 
-Sign-in codes and account deletion codes go by email. Locally they're written to the API's log (`EMAIL_PROVIDER=console`); in production the API won't start until a real provider is set. Both Resend and Mailgun are supported, through their REST APIs (the `EmailSender` interface in `apps/api/src/notifications/email/delivery`, so another provider is one file).
+Sign-in codes and account deletion codes go by email. Locally they're written to the API's log (`EMAIL_PROVIDER=console`); in production the API won't start until a real provider is set. Both Resend and Mailgun are supported, through their REST APIs (the `EmailSender` interface in `apps/api/src/domains/notifications/email/delivery`, so another provider is one file).
 
 1. **Verify a sending domain** with the provider, ideally a subdomain such as `mail.example.com`, so its reputation is separate from your main domain's. Add the DNS records it gives you: SPF and DKIM for sending, and a return-path (bounce) record. Mailgun calls the domain `MAILGUN_DOMAIN`; Resend just needs it verified.
 2. **Add a DMARC record** for the domain (`_dmarc`, e.g. `v=DMARC1; p=none; rua=mailto:dmarc@example.com` to start, then `p=quarantine` once reports look clean). Gmail and Yahoo require one from bulk senders, and it helps codes reach the inbox.
@@ -284,7 +294,7 @@ Sign-in codes and account deletion codes go by email. Locally they're written to
 
 A send that fails is logged and reported to Sentry, with the provider's status and reason but never the code.
 
-**Limits on sending codes** (`apps/api/src/rate-limiting/constants`), so nobody can flood an inbox or run up the bill:
+**Limits on sending codes** (`apps/api/src/infra/rate-limiting/constants`), so nobody can flood an inbox or run up the bill:
 
 - Sign-in codes: 5 per 15 minutes and 10 a day per email address; 10 per 15 minutes and 30 a day per IP address.
 - Account deletion codes: 3 per 15 minutes and 10 a day per person.
@@ -369,7 +379,7 @@ On a Mac, Xcode still signs debug builds automatically with your own account: th
 
 The API's cache holds the per-minute rate-limit counters (everything under `/api/auth`, tRPC queries and mutations). With `REDIS_URL` set it's Redis, shared by every instance; without it, each instance counts in its own memory. That's fine for these limits, which only slow down abuse: with several instances, someone could get up to that many times the limit. Any Redis 7 works, e.g. Upstash.
 
-Rate limits go through a `RateLimiter` interface (`apps/api/src/rate-limiting`), which sends each rule by its window: rules with a 10 or 60 second window to the cache, which is fast enough to check on every request, and every other rule (sending and using codes, the email budget) to Postgres, which counts exactly. On Cloudflare Workers, the Rate Limiting binding would take the cache's place (see [Hosting plan](#hosting-plan-not-built-yet)). A rule's window decides where it's counted, so a new rule that guards something costly needs a window other than 10 or 60 seconds; a test checks that every rule guarding email is counted in Postgres.
+Rate limits go through a `RateLimiter` interface (`apps/api/src/infra/rate-limiting`), which sends each rule by its window: rules with a 10 or 60 second window to the cache, which is fast enough to check on every request, and every other rule (sending and using codes, the email budget) to Postgres, which counts exactly. On Cloudflare Workers, the Rate Limiting binding would take the cache's place (see [Hosting plan](#hosting-plan-not-built-yet)). A rule's window decides where it's counted, so a new rule that guards something costly needs a window other than 10 or 60 seconds; a test checks that every rule guarding email is counted in Postgres.
 
 - Optionally set `REDIS_URL`, e.g. `rediss://default:<password>@<host>:6379`.
 - Set `CLIENT_IP_HEADER` to the header your proxy or CDN puts the caller's IP address in, e.g. `cf-connecting-ip` behind Cloudflare. The default is `x-forwarded-for`. Rate limits per IP trust this header, so the API must only be reachable through that proxy.
@@ -380,7 +390,7 @@ Rate limits go through a `RateLimiter` interface (`apps/api/src/rate-limiting`),
 The API's errors (the app's are below, in [Error reporting in the app](#error-reporting-in-the-app-sentry)).
 
 
-Unexpected errors (what the client sees as "Something went wrong") are reported to Sentry, along with uncaught exceptions and unhandled rejections. Expected failures (validation, not found, forbidden, rate limited) aren't reported. Traces stay on OpenTelemetry (on Workers, in Workers Observability): Sentry sends errors only. It goes through an `ErrorReporter` interface in `apps/api/src/observability/errors`, so the tracker can be swapped. The `#sentry-error-reporter` import picks the SDK when the API is built: `@sentry/node` on a server, `@sentry/cloudflare` on Workers. On Workers, the client starts with the first error (Workers don't allow it at startup), and each report is sent in the background, after the response.
+Unexpected errors (what the client sees as "Something went wrong") are reported to Sentry, along with uncaught exceptions and unhandled rejections. Expected failures (validation, not found, forbidden, rate limited) aren't reported. Traces stay on OpenTelemetry (on Workers, in Workers Observability): Sentry sends errors only. It goes through an `ErrorReporter` interface in `apps/api/src/infra/observability/errors`, so the tracker can be swapped. The `#sentry-error-reporter` import picks the SDK when the API is built: `@sentry/node` on a server, `@sentry/cloudflare` on Workers. On Workers, the client starts with the first error (Workers don't allow it at startup), and each report is sent in the background, after the response.
 
 - Set `SENTRY_DSN` from the Sentry project's settings. Optionally set `SENTRY_ENVIRONMENT` (defaults to `NODE_ENV`) and `SENTRY_RELEASE`, e.g. the commit SHA.
 - A report carries the error, its stack, the request id, the procedure, the method and path, and the signed-in user's id. It doesn't carry cookies, headers (other than the user agent), bodies, query parameters, local variables or database query values. The bound values in query error messages are replaced with `[redacted]`.

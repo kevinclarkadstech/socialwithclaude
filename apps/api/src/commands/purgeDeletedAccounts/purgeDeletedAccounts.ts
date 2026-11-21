@@ -10,7 +10,7 @@
  */
 import { closeDb } from "../../data-access/db";
 import { runAccountPurge } from "../../jobs";
-import { errorReporter } from "../../observability";
+import { errorReporter } from "../../infra/observability";
 
 try {
     const summary = await runAccountPurge({ context: { command: "accounts:purge" } });

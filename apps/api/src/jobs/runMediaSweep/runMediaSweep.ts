@@ -1,7 +1,7 @@
 import { getLivePostMediaIds } from "../../data-access";
-import { sweepOrphanedMedia } from "../../media";
-import { errorReporter, reportingFailures, rootLogger, type ErrorReportContext } from "../../observability";
-import { storage } from "../../storage";
+import { sweepOrphanedMedia } from "../../domains/media";
+import { errorReporter, reportingFailures, rootLogger, type ErrorReportContext } from "../../infra/observability";
+import { storage } from "../../infra/storage";
 
 /**
  * Finds post photo files no live post uses, older than `olderThanHours`, and

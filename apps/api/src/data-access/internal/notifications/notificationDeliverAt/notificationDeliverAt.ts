@@ -1,4 +1,4 @@
-import { serverConfig } from "../../../../config";
+import { serverConfig } from "../../../../infra/config";
 
 /**
  * When a notification saved now starts to show: NOTIFICATION_DELAY_SECONDS

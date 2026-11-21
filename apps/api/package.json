@@ -5,18 +5,18 @@
   "type": "module",
   "imports": {
     "#platform": {
-      "workerd": "./src/platform/workerd.ts",
-      "default": "./src/platform/node.ts"
+      "workerd": "./src/infra/platform/workerd.ts",
+      "default": "./src/infra/platform/node.ts"
     },
     "#sentry-error-reporter": {
-      "workerd": "./src/observability/errors/sentry/workerd.ts",
-      "default": "./src/observability/errors/sentry/node.ts"
+      "workerd": "./src/infra/observability/errors/sentry/workerd.ts",
+      "default": "./src/infra/observability/errors/sentry/node.ts"
     }
   },
   "scripts": {
-    "dev": "cross-env NODE_OPTIONS=\"--import ./src/observability/otel.mjs\" nitro dev",
+    "dev": "cross-env NODE_OPTIONS=\"--import ./src/infra/observability/otel.mjs\" nitro dev",
     "build": "nitro build",
-    "start": "cross-env NODE_ENV=production node --import ./src/observability/otel.mjs .output/server/index.mjs",
+    "start": "cross-env NODE_ENV=production node --import ./src/infra/observability/otel.mjs .output/server/index.mjs",
     "preview": "nitro preview",
     "build:cloudflare": "cross-env NITRO_PRESET=cloudflare-module nitro build",
     "dev:cloudflare": "bunx wrangler@4.166.0 dev --env-file .env.local --var NODE_ENV:development",
@@ -31,8 +31,8 @@
     "db:migrate": "drizzle-kit migrate --config=src/data-access/db/drizzle.config.ts",
     "db:push": "drizzle-kit push --config=src/data-access/db/drizzle.config.ts",
     "db:studio": "drizzle-kit studio --config=src/data-access/db/drizzle.config.ts",
-    "auth:generate": "npx @better-auth/cli generate --config=src/auth/auth.cli.ts",
-    "auth:migrate": "npx @better-auth/cli migrate --config=src/auth/auth.cli.ts",
+    "auth:generate": "npx @better-auth/cli generate --config=src/domains/auth/auth.cli.ts",
+    "auth:migrate": "npx @better-auth/cli migrate --config=src/domains/auth/auth.cli.ts",
     "media:sweep": "bun src/commands/sweepOrphanedMedia/sweepOrphanedMedia.ts",
     "admin:grant": "bun src/commands/setAdminRole/setAdminRole.ts",
     "admin:revoke": "bun src/commands/setAdminRole/setAdminRole.ts --revoke",

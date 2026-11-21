@@ -1,6 +1,6 @@
-import { serverConfig } from "../../config";
-import { deliverPushes, pushSender } from "../../notifications";
-import { errorReporter, rootLogger, type ErrorReportContext } from "../../observability";
+import { serverConfig } from "../../infra/config";
+import { deliverPushes, pushSender } from "../../domains/notifications";
+import { errorReporter, rootLogger, type ErrorReportContext } from "../../infra/observability";
 
 /**
  * One round of push delivery (see deliverPushes): what's due is sent, each

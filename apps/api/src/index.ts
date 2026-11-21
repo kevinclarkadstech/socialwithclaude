@@ -7,18 +7,18 @@ import { secureHeaders } from "hono/secure-headers";
 import { bodyLimit } from "hono/body-limit";
 import type { AppLogger } from "@myapp/shared/observability";
 import type { CallingUser } from "@myapp/shared/domains";
-import { createAuthInstance } from "./auth";
-import { nativeAppOrigins, serverConfig } from "./config";
-import { createAppFeatureFlagStore, type AppFeatureFlagStore } from "./shared/feature-flags";
+import { createAuthInstance } from "./domains/auth";
+import { nativeAppOrigins, serverConfig } from "./infra/config";
+import { createAppFeatureFlagStore, type AppFeatureFlagStore } from "./infra/feature-flags";
 import { trpcServer } from "@hono/trpc-server";
 import { platform } from "#platform";
 import { db, isDatabaseReachable, withRequestDatabase } from "./data-access/db";
-import { cache, cacheIsShared } from "./cache";
-import { createCacheRateLimiter, createDatabaseRateLimiter, createRoutedRateLimiter, limitAuthRequestsMiddleware, rateLimitRules, type CountingRateLimiterOptions, type RateLimiter } from "./rate-limiting";
+import { cache, cacheIsShared } from "./infra/cache";
+import { createCacheRateLimiter, createDatabaseRateLimiter, createRoutedRateLimiter, limitAuthRequestsMiddleware, rateLimitRules, type CountingRateLimiterOptions, type RateLimiter } from "./infra/rate-limiting";
 import { appRouter, createContext } from "./transport/trpc";
-import { trpcOnErrorFunction } from "./error-handling";
-import { assertCanNotify } from "./notifications";
-import { errorReporter, rootLogger } from "./observability";
+import { trpcOnErrorFunction } from "./infra/error-handling";
+import { assertCanNotify } from "./domains/notifications";
+import { errorReporter, rootLogger } from "./infra/observability";
 
 type Auth = ReturnType<typeof createAuthInstance>;
 

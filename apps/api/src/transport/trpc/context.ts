@@ -1,7 +1,7 @@
 import type { Context } from "hono";
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 import type { GetCallingUser } from "@myapp/shared/domains";
-import type { ErrorReportContext } from "../../observability";
+import type { ErrorReportContext } from "../../infra/observability";
 
 import type { AppHonoEnv } from "../../index";
 

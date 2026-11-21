@@ -1,4 +1,4 @@
-import { serverConfig } from '../../config';
+import { serverConfig } from '../../infra/config';
 import { defineConfig } from 'drizzle-kit';
 
 if (!serverConfig.DATABASE_URL) {

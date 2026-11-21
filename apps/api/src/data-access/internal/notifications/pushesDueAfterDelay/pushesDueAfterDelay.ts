@@ -1,4 +1,4 @@
-import { serverConfig } from "../../../../config";
+import { serverConfig } from "../../../../infra/config";
 import { pushesDue } from "../pushesDue/pushesDue";
 
 /** Pushes for notifications saved now are due after NOTIFICATION_DELAY_SECONDS (see notificationDeliverAt). */

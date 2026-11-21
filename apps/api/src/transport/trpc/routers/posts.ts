@@ -39,10 +39,10 @@ import {
     deleteUserSave,
     searchPostViews,
 } from "../../../data-access";
-import { deletePostPhotoUploads, publishPostPhotos } from "../../../media";
-import { storage } from "../../../storage";
-import { errorReporter, reportingFailures } from "../../../observability";
-import { notifyMentions, retractMentions } from "../../../notifications";
+import { deletePostPhotoUploads, publishPostPhotos } from "../../../domains/media";
+import { storage } from "../../../infra/storage";
+import { errorReporter, reportingFailures } from "../../../infra/observability";
+import { notifyMentions, retractMentions } from "../../../domains/notifications";
 import { procedure, router } from "../trpc";
 
 export const postsRouter = router({

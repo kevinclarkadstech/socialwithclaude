@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { eq } from "drizzle-orm";
 import type { PushMessage } from "@myapp/shared/domains";
 import { db, newId, schema } from "../src/data-access/db";
-import { deliverPushes, type PushSender } from "../src/notifications";
+import { deliverPushes, type PushSender } from "../src/domains/notifications";
 import { createTestUser, type TestUser } from "./harness/createTestUser/createTestUser";
 import { outcome, valueOf } from "./harness/outcome/outcome";
 

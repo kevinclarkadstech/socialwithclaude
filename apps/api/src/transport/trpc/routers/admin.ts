@@ -31,8 +31,8 @@ import {
     updateUserFeedbackStatus,
     warnUser,
 } from "../../../data-access";
-import { storage } from "../../../storage";
-import { errorReporter, reportingFailures } from "../../../observability";
+import { storage } from "../../../infra/storage";
+import { errorReporter, reportingFailures } from "../../../infra/observability";
 import { procedure, router } from "../trpc";
 
 /** Admin-only: the report queue and what to do about it, bans, and feedback (see canAdminister). */
