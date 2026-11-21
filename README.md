@@ -157,7 +157,7 @@ Domain code only calls interfaces; each host gets adapters. What's Cloudflare-on
 |---|---|---|---|
 | Rate limits | `RateLimiter.consume({ rule, key, cost? })` (exists, routed by window) | Per-minute rules: the Rate Limiting binding. Longer or exact rules: Postgres | Postgres, in-memory or Redis |
 | Database | drizzle from a connection string (exists) | Hyperdrive's connection string, a client per request | A pool |
-| Delayed delivery (pushes) | The database is the queue (`deliver_at`, `FOR UPDATE SKIP LOCKED`); only the wake-up differs | Cron every minute, plus a queue message with a delay (or a Durable Object alarm) for the next due time | The current loop |
+| Delayed delivery (pushes) | The database is the queue (`deliver_at`, `FOR UPDATE SKIP LOCKED`); only the wake-up differs | A queue message with a delay (or a Durable Object alarm) for the next due time | The current loop |
 | Daily jobs | Plain functions (exist, behind the commands) | The `scheduled` handler | Cron or the CLI |
 | Real-time (later, if needed; see step 4) | `Realtime.publish({ userId, event })`, one subscribe hook in the app | A Durable Object per user, with WebSockets | In-process connections, plus Postgres `LISTEN/NOTIFY` across instances |
 | Photos | S3 API through aws4fetch (exists) | R2's S3 API (not the R2 binding) | Any S3 |
@@ -174,7 +174,7 @@ Domain code only calls interfaces; each host gets adapters. What's Cloudflare-on
    - *Done:* Hyperdrive in front of Neon, with query caching off, and each request's client connecting through it. `pg` keeps working, transactions included; Neon's HTTP driver wouldn't (no interactive transactions).
    - *Done:* Smart Placement, so a request's queries don't each cross the world.
    - *Done:* Redis is optional. With `REDIS_URL`, per-minute limits are counted there; without it, in each instance's memory; on Workers, by the Rate Limiting binding. `/api/ready` never fails because of it.
-   - *Done:* push delivery through a queue, with a message delayed until each push is due (keeping the ~10-second chat pushes), plus a Cron Trigger every minute in case one is lost. The daily jobs on a Cron Trigger.
+   - *Done:* push delivery through a queue, with a message delayed until each push is due (keeping the ~10-second chat pushes). No schedule for it, so the database can go idle when nobody's using the app: a lost queue message's pushes go with the next round, or not at all once they're an hour old. The daily jobs on a Cron Trigger.
    - *Done:* a smoke test on workerd in CI (`smoke:workers`), since tests run on Bun.
    - *Done:* errors to Sentry through `@sentry/cloudflare` (`@sentry/node` can't start on Workers). Logs and traces are in Workers Observability.
 3. **The web app on Cloudflare.** *Done:* static assets with the single-page-app fallback, `public/_headers` (the `.well-known` files as JSON, caching, security headers), and a reload when an open page can't find a previous build's files. See [Deploying the web app to Cloudflare](#deploying-the-web-app-to-cloudflare).
@@ -202,7 +202,7 @@ The API runs on Cloudflare Workers, built by Nitro's Cloudflare preset with `app
 
 - **Postgres through Hyperdrive.** Each request (and each Cron Trigger and queue batch) gets its own database client, connected to Hyperdrive, which keeps pooled connections to Neon. `DATABASE_URL` isn't used by the Worker.
 - **Per-minute rate limits** are Rate Limiting bindings, one per rule. The limits guarding email stay in Postgres. See [Cache](#cache-redis-optional).
-- **Pushes:** saving a notification or chat message queues a message, delayed until the push is due, and the queue's consumer runs a delivery round. A Cron Trigger also runs one every minute.
+- **Pushes:** saving a notification or chat message queues a message, delayed until the push is due, and the queue's consumer runs a delivery round (which sends everything due). There's no schedule for pushes, so the database can go idle: if a queue message is lost, its pushes go with the next round, or not at all once they're an hour old.
 - **The daily jobs** (purging deleted accounts, sweeping orphaned photo files) run on a Cron Trigger at 03:17 UTC.
 - **Logs** are in Workers Observability (the Worker's Logs tab). Errors go to Sentry, like on a server, through `@sentry/cloudflare`. See [Error reporting](#error-reporting-sentry).
 
@@ -318,8 +318,8 @@ A send that fails is logged and reported to Sentry, with the provider's status a
 
 Pushes go through Firebase Cloud Messaging (FCM) to both platforms: Android directly, iOS through Apple's push service with your APNs key. Each device registers its FCM token with the API while someone is signed in on it; signing out (or being signed out) removes it.
 
-- **What's pushed:** every notification in the bell, in the same words (`describeNotification`), once its delivery time comes (after `NOTIFICATION_DELAY_SECONDS`), unless it's been undone since (an unfollow, a mention edited out…) or the person turned that kind off in Settings (new messages, comments, mentions, follows; warnings and report outcomes always go). New chat messages too, `CHAT_PUSH_DELAY_SECONDS` (10) after the first one not yet pushed, unless they've read the chat by then: one push per chat, saying how many are new, that replaces the previous one for that chat on the device. The badge on iOS is the number on the bell.
-- **How:** the API checks every `PUSH_DELIVERY_INTERVAL_SECONDS` (5) for what's due. Several instances can run at once; each notification and chat is taken by one. On a host without a long-running process, set it to 0 and run `bun run --cwd apps/api push:deliver` from a scheduler instead. On Workers there's no loop: saving a notification or chat message queues a message for when its push is due, and a Cron Trigger runs delivery every minute too (see [Deploying the API to Cloudflare](#deploying-the-api-to-cloudflare)).
+- **What's pushed:** every notification in the bell, in the same words (`describeNotification`), once its delivery time comes (after `NOTIFICATION_DELAY_SECONDS`), unless it's been undone since (an unfollow, a mention edited out…) or the person turned that kind off in Settings (new messages, comments, mentions, follows; warnings and report outcomes always go). New chat messages too, `CHAT_PUSH_DELAY_SECONDS` (10) after the first one not yet pushed, unless they've read the chat by then: one push per chat, saying how many are new, that replaces the previous one for that chat on the device. The badge on iOS is the number on the bell. Anything that's waited more than an hour (`pushMaxAgeSeconds`), because its wake-up was lost or the API was down, isn't pushed: it's still in the bell and the chat list, and a push that late is noise.
+- **How:** the API checks every `PUSH_DELIVERY_INTERVAL_SECONDS` (5) for what's due. Several instances can run at once; each notification and chat is taken by one. On a host without a long-running process, set it to 0 and run `bun run --cwd apps/api push:deliver` from a scheduler instead. On Workers there's no loop: saving a notification or chat message queues a message for when its push is due (see [Deploying the API to Cloudflare](#deploying-the-api-to-cloudflare)).
 
 **Setting it up:**
 
